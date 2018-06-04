@@ -1,0 +1,5 @@
+out
+*.dylib
+*.so
+bin
+obj
