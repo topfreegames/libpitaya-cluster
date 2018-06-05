@@ -1,0 +1,135 @@
+using System;
+using System.Runtime.InteropServices;
+using System.Text;
+
+
+namespace Pitaya
+{
+  public struct GoSlice
+  {
+    public IntPtr data;
+    public long len;
+    public long cap;
+
+    public GoSlice(IntPtr data, int len, int cap)
+    {
+      this.data = data;
+      this.len = len;
+      this.cap = cap;
+    }
+
+    public static GoSlice fromSlice<T>(T[] arr){
+      GCHandle handle = GCHandle.Alloc(arr, GCHandleType.Pinned);
+      try
+      {
+        IntPtr pointer = handle.AddrOfPinnedObject();
+        GoSlice slice = new GoSlice(pointer, arr.Length, arr.Length);
+        return slice;
+      } finally
+      {
+        if (handle.IsAllocated)
+        {
+          handle.Free();
+        }
+      }
+    }
+
+    public T[] toSlice<T>(bool pointersInside) {
+      T[] res = new T[this.len];
+      IntPtr addr = this.data;
+      for (int i = 0; i < this.len; i++){
+        IntPtr ptr = addr;
+        if (pointersInside) {
+          ptr = (IntPtr)Marshal.PtrToStructure(addr, typeof(IntPtr));
+        }
+        T managedT = (T)Marshal.PtrToStructure(ptr, typeof(T));
+        res[i] = managedT;
+        addr += Marshal.SizeOf(typeof(IntPtr));
+      }
+      return res;
+    }
+  }
+
+  public struct GoString
+  {
+    public IntPtr data;
+    public long n;
+
+    public GoString(IntPtr data, int n) {
+      this.data = data;
+      this.n = n;
+    }
+
+    public static GoString fromString(string str){
+      byte[] bytes = Encoding.ASCII.GetBytes(str);
+      GCHandle handle = GCHandle.Alloc(bytes, GCHandleType.Pinned);
+      try
+      {
+        IntPtr ptr = handle.AddrOfPinnedObject();
+        GoString gstr = new GoString(ptr, str.Length);
+        return gstr;
+      } finally
+      {
+        if (handle.IsAllocated)
+        {
+          handle.Free();
+        }
+      }
+    }
+
+    public string toString() {
+      return Marshal.PtrToStringAnsi(this.data, (int)this.n);
+    }
+  }
+
+  public struct Server {
+    [MarshalAs(UnmanagedType.LPStr)]
+      public string id;
+
+    [MarshalAs(UnmanagedType.LPStr)]
+      public string type;
+
+    [MarshalAs(UnmanagedType.LPStr)]
+      public string metadata;
+    public bool frontend;
+
+    public Server(string id, string type, string metadata, bool frontend) {
+      this.id = id;
+      this.type = type;
+      this.metadata = metadata;
+      this.frontend = frontend;
+    }
+  }
+
+  public struct SDConfig {
+    [MarshalAs(UnmanagedType.ByValArray)]
+    public string[] endpoints;
+    public int endpointsLen;
+    public int etcdDialTimeoutSec;
+    [MarshalAs(UnmanagedType.LPStr)]
+    public string etcdPrefix;
+    public int heartbeatTTLSec;
+    public bool logHeartbeat;
+    public int syncServersIntervalSec;
+
+    public SDConfig(string[] endpoints, int etcdDialTimeoutSec, string etcdPrefix, int heartbeatTTLSec, bool logHeartbeat, int syncServersIntervalSec) {
+      this.endpoints = endpoints;
+      this.endpointsLen = endpoints.Length;
+      this.etcdDialTimeoutSec = etcdDialTimeoutSec;
+      this.etcdPrefix = etcdPrefix;
+      this.heartbeatTTLSec = heartbeatTTLSec;
+      this.logHeartbeat = logHeartbeat;
+      this.syncServersIntervalSec = syncServersIntervalSec;
+    }
+  }
+
+  public struct PtrResWithStatus {
+    public IntPtr ptr;
+    public int status;
+
+    public PtrResWithStatus(IntPtr ptr, int status) {
+      this.ptr = ptr;
+      this.status = status;
+    }
+  }
+}
