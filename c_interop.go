@@ -6,26 +6,12 @@ import (
 	"unsafe"
 
 	"github.com/topfreegames/pitaya/cluster"
+	"github.com/topfreegames/pitaya/protos"
+	"github.com/topfreegames/pitaya/route"
 )
 
 /*
-#include <stdlib.h>
-
-typedef int bool;
-
-struct Server {
-	char* id;
-	char* svType;
-	char* metadata;
-	bool frontend; };
-struct SDConfig {
-	char** endpoints;
-	int endpointsLen;
-	int etcdDialTimeoutSec;
-	char* etcdPrefix;
-	int heartbeatTTLSec;
-	bool logHeartbeat;
-	int syncServersIntervalSec;};
+#include "cluster.h"
 */
 import "C"
 
@@ -38,12 +24,55 @@ type CServer C.struct_Server
 // CSDConfig is the C config for service discovery
 type CSDConfig C.struct_SDConfig
 
+// CNatsRPCClientConfig is the C nats rpc client config
+type CNatsRPCClientConfig C.struct_NatsRPCClientConfig
+
+// CNatsRPCServerConfig is the C nats rpc server config
+type CNatsRPCServerConfig C.struct_NatsRPCServerConfig
+
+// CRoute is the C route
+type CRoute C.struct_Route
+
+// CRPCMsg struct for representing rpc requests
+type CRPCMsg C.struct_RPCMsg
+
 const (
 	// Ok success result
 	Ok Result = iota
 	// Fail failure result
 	Fail
 )
+
+var rpcCbFunc C.rpcCbFunc
+
+func bridgeRPCCb(req *protos.Request) {
+	data := req.GetMsg().GetData()
+	route := req.GetMsg().GetRoute()
+	replyTopic := req.GetMsg().GetReply()
+
+	r := C.struct_RPCReq{
+		data:       C.CBytes(data),
+		dataLen:    C.int(int32(len(data))),
+		route:      C.CString(route),
+		replyTopic: C.CString(replyTopic),
+	}
+
+	defer C.free(unsafe.Pointer(r.data))
+	defer C.free(unsafe.Pointer(r.route))
+	defer C.free(unsafe.Pointer(r.replyTopic))
+
+	C.bridgeFunc(rpcCbFunc, r)
+	// get return
+}
+
+//export SetRPCCallback
+func SetRPCCallback(funcPtr C.rpcCbFunc) {
+	rpcCbFunc = funcPtr
+}
+
+func fromCRoute(cr CRoute) *route.Route {
+	return route.NewRoute(C.GoString(cr.svType), C.GoString(cr.service), C.GoString(cr.method))
+}
 
 func fromCServer(csv CServer) (*cluster.Server, error) {
 	mtd := []byte(C.GoString(csv.metadata))

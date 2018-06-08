@@ -194,27 +194,35 @@
   version = "v1.0.2"
 
 [[projects]]
-  branch = "master"
+  branch = "rpc_protobuf"
   name = "github.com/topfreegames/pitaya"
   packages = [
+    "agent",
     "cluster",
+    "component",
     "config",
     "constants",
     "context",
     "errors",
     "interfaces",
+    "internal/codec",
     "internal/message",
+    "internal/packet",
     "logger",
     "metrics",
+    "pipeline",
     "protos",
     "route",
+    "router",
     "serialize",
+    "service",
     "session",
+    "timer",
     "tracing",
     "util",
     "util/compression"
   ]
-  revision = "51f5fa4ebdd340ee5d6cb5ffd6e95cd9c8b441c6"
+  revision = "221dc48f0b2d60d05e3473283d4cdd27c8057adf"
 
 [[projects]]
   branch = "master"
@@ -305,6 +313,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "7010706ed2a9840810127eaf908a63efd551cda588bb127b43c6a53ea5bb122b"
+  inputs-digest = "6f50e711ebb937431f1a869feea096b919de929e446f21158de6523b640437af"
   solver-name = "gps-cdcl"
   solver-version = 1

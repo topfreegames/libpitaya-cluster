@@ -43,12 +43,25 @@ message Request {
 }
 
 message Response {
-  bytes Data = 1;
-  Error Error = 2;
+  bytes data = 1;
+  Error error = 2;
 }
 
 message Error {
   string code = 1;
   string msg = 2;
   map<string, string> metadata = 3;
+}
+
+message KickMsg {
+  string userId = 1;
+}
+
+message KickAnswer {
+  bool kicked = 1;
+}
+
+message BindMsg {
+  string uid = 1;
+  string fid = 2;
 }

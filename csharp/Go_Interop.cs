@@ -2,7 +2,6 @@ using System;
 using System.Runtime.InteropServices;
 using System.Text;
 
-
 namespace Pitaya
 {
   public struct GoSlice
@@ -120,6 +119,56 @@ namespace Pitaya
       this.heartbeatTTLSec = heartbeatTTLSec;
       this.logHeartbeat = logHeartbeat;
       this.syncServersIntervalSec = syncServersIntervalSec;
+    }
+  }
+
+  public struct Route {
+    [MarshalAs(UnmanagedType.LPStr)]
+    public string svType;
+    [MarshalAs(UnmanagedType.LPStr)]
+    public string service;
+    [MarshalAs(UnmanagedType.LPStr)]
+    public string method;
+
+    public Route(string svType, string service, string method) {
+      this.svType = svType;
+      this.service = service;
+      this.method = method;
+    }
+  }
+
+  public struct RPCReq {
+    public IntPtr data;
+    public int dataLen;
+    [MarshalAs(UnmanagedType.LPStr)]
+    public string route;
+    [MarshalAs(UnmanagedType.LPStr)]
+    public string replyTopic;
+  }
+
+  public struct NatsRPCClientConfig {
+    [MarshalAs(UnmanagedType.LPStr)]
+    public string endpoint;
+    public int maxConnectionRetries;
+    public int requestTimeoutMs;
+
+    public NatsRPCClientConfig(string endpoint, int maxConnectionRetries, int requestTimeoutMs) {
+      this.endpoint = endpoint;
+      this.maxConnectionRetries = maxConnectionRetries;
+      this.requestTimeoutMs = requestTimeoutMs;
+    }
+  }
+
+  public struct NatsRPCServerConfig {
+    [MarshalAs(UnmanagedType.LPStr)]
+    public string endpoint;
+    public int maxConnectionRetries;
+    public int messagesBufferSize;
+
+    public NatsRPCServerConfig(string endpoint, int maxConnectionRetries, int messagesBufferSize) {
+      this.endpoint = endpoint;
+      this.maxConnectionRetries = maxConnectionRetries;
+      this.messagesBufferSize = messagesBufferSize;
     }
   }
 
