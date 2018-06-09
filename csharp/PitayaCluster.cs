@@ -63,16 +63,6 @@ namespace Pitaya
       }
     }
 
-    private static T GetProtoMessageFromResponse<T>(RPCRes rpcRes) {
-      byte[] resData = rpcRes.getResData();
-      Protos.Response response = new Protos.Response();
-      response.MergeFrom(new CodedInputStream(resData));
-      IMessage res = (IMessage) Activator.CreateInstance(typeof(T));
-      res.MergeFrom(new CodedInputStream(response.Data.ToByteArray()));
-      Console.WriteLine("got this res {0}", res);
-      return (T)res;
-    }
-
     public static void RegisterRemote(BaseRemote remote) {
       string className = remote.GetType().Name.ToLower();
       Dictionary<string,  RemoteMethod> m = remote.getRemotesMap();
@@ -116,12 +106,24 @@ namespace Pitaya
       }
     }
 
+    private static T GetProtoMessageFromResponse<T>(RPCRes rpcRes) {
+      byte[] resData = rpcRes.getResData();
+      Protos.Response response = new Protos.Response();
+      response.MergeFrom(new CodedInputStream(resData));
+      IMessage res = (IMessage) Activator.CreateInstance(typeof(T));
+      res.MergeFrom(new CodedInputStream(response.Data.ToByteArray()));
+      Console.WriteLine("got this res {0}", res);
+      return (T)res;
+    }
+
     public static T RPC<T>(Server server, Route route, IMessage msg) {
       byte[] data = protoMessageToByteArray(msg);
       IntPtr ptr = SendRPC(GoString.fromString(server.id), route, GoSlice.fromSlice<byte>(data));
       RPCRes ret = (RPCRes)Marshal.PtrToStructure(ptr, typeof(RPCRes));
       if (ret.success){
-        return GetProtoMessageFromResponse<T>(ret);
+        T protoRet = GetProtoMessageFromResponse<T>(ret);
+        FreeRPCRes(ptr);
+        return protoRet;
       } else {
         throw new Exception("RPC call failed!");
       }
@@ -165,6 +167,9 @@ namespace Pitaya
 
     [DllImport("libpitaya_cluster", CallingConvention = CallingConvention.Cdecl)]
       static extern void FreeServer(IntPtr ptr);
+
+    [DllImport("libpitaya_cluster", CallingConvention = CallingConvention.Cdecl)]
+      static extern void FreeRPCRes(IntPtr ptr);
 
     [DllImport("libpitaya_cluster", CallingConvention = CallingConvention.Cdecl, EntryPoint= "SetRPCCallback")]
       static extern void SetRPCCallbackInternal(IntPtr funcPtr);

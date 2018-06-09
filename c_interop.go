@@ -115,6 +115,12 @@ func FreeServer(sv *CServer) {
 	C.free(unsafe.Pointer(sv.metadata))
 }
 
+//export FreeRPCRes
+//remember that C.CString and C.CBytes allocs memory, we must free them
+func FreeRPCRes(rpcRes *CRPCRes) {
+	C.free(unsafe.Pointer(rpcRes.data))
+}
+
 func goStringSliceFromCStringArray(arr **C.char, sz int) []string {
 	var cCharSlice []*C.char
 	slice := (*reflect.SliceHeader)(unsafe.Pointer(&cCharSlice))
