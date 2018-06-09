@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Runtime.InteropServices;
 using System.Text;
+using Google.Protobuf;
 
 namespace Pitaya
 {
@@ -9,7 +10,7 @@ namespace Pitaya
     public static void rpcCbWrapper(RPCReq req) {
       byte[] data = new byte[req.dataLen];
       Marshal.Copy(req.data, data, 0, req.dataLen);
-      Console.WriteLine("called with route: " + req.route + " reply: " + req.replyTopic + " and bts: " + data[0]);
+      Console.WriteLine("called with route: " + req.route + " and bts: " + data[0]);
     }
     
     static void Main(string[] args)
@@ -35,14 +36,15 @@ namespace Pitaya
       PitayaCluster.Init(sdConfig, rpcClientConfig, rpcServerConfig, new Server("someid", "game", "{\"ip\":\"127.0.0.1\"}", true));
       Console.ReadKey();
 
+      TestRemote tr = new TestRemote();    
+      PitayaCluster.RegisterRemote(tr);
+
       Protos.TestMessage tm = new Protos.TestMessage();
       tm.Msg = "ola";
       tm.I = 1;
-      Console.WriteLine("received tm " + tm);
-      PitayaCluster.RPC(new Server("someid", "game", "", true), new Route("abc","abc", "abc"), tm);
+      Protos.TestMessage res = PitayaCluster.RPC<Protos.TestMessage>(new Server("someid", "game", "", true), new Route("game","testremote", "validremote"), tm);
+      Console.WriteLine("received res from c# rpc: {0}", res);
       // prevent from closing
-      Console.ReadKey();
-      
       Console.ReadKey();
     }
   }

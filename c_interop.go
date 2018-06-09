@@ -36,6 +36,9 @@ type CRoute C.struct_Route
 // CRPCMsg struct for representing rpc requests
 type CRPCMsg C.struct_RPCMsg
 
+// CRPCRes struct for sending rpc response to C
+type CRPCRes C.struct_RPCRes
+
 const (
 	// Ok success result
 	Ok Result = iota
@@ -45,24 +48,20 @@ const (
 
 var rpcCbFunc C.rpcCbFunc
 
-func bridgeRPCCb(req *protos.Request) {
+func bridgeRPCCb(req *protos.Request) unsafe.Pointer {
 	data := req.GetMsg().GetData()
 	route := req.GetMsg().GetRoute()
-	replyTopic := req.GetMsg().GetReply()
 
 	r := C.struct_RPCReq{
-		data:       C.CBytes(data),
-		dataLen:    C.int(int32(len(data))),
-		route:      C.CString(route),
-		replyTopic: C.CString(replyTopic),
+		data:    C.CBytes(data),
+		dataLen: C.int(int32(len(data))),
+		route:   C.CString(route),
 	}
 
 	defer C.free(unsafe.Pointer(r.data))
 	defer C.free(unsafe.Pointer(r.route))
-	defer C.free(unsafe.Pointer(r.replyTopic))
 
-	C.bridgeFunc(rpcCbFunc, r)
-	// get return
+	return C.bridgeFunc(rpcCbFunc, r)
 }
 
 //export SetRPCCallback

@@ -83,13 +83,11 @@ namespace Pitaya
 
   public struct Server {
     [MarshalAs(UnmanagedType.LPStr)]
-      public string id;
-
+    public string id;
     [MarshalAs(UnmanagedType.LPStr)]
-      public string type;
-
+    public string type;
     [MarshalAs(UnmanagedType.LPStr)]
-      public string metadata;
+    public string metadata;
     public bool frontend;
 
     public Server(string id, string type, string metadata, bool frontend) {
@@ -135,6 +133,14 @@ namespace Pitaya
       this.service = service;
       this.method = method;
     }
+
+    public static Route fromString(string r){
+      string[] res = r.Split(new string[]{"."}, StringSplitOptions.None);
+      if (res.Length < 3) {
+        throw new Exception(String.Format("invalid route: {0}", r));
+      }
+      return new Route(res[0], res[1], res[2]);
+    }
   }
 
   public struct RPCReq {
@@ -142,8 +148,30 @@ namespace Pitaya
     public int dataLen;
     [MarshalAs(UnmanagedType.LPStr)]
     public string route;
-    [MarshalAs(UnmanagedType.LPStr)]
-    public string replyTopic;
+
+    public byte[] getReqData() {
+      byte[] data = new byte[this.dataLen];
+      Marshal.Copy(this.data, data, 0, this.dataLen);
+      return data;
+    }
+  }
+
+  // TODO receive error
+  public struct RPCRes {
+    public IntPtr data;
+    public int dataLen;
+    public bool success;
+
+    public byte[] getResData() {
+      byte[] data = new byte[this.dataLen];
+      Marshal.Copy(this.data, data, 0, this.dataLen);
+      return data;
+    }
+  }
+
+  public struct Error {
+    public GoString Msg;
+    public GoString Code;
   }
 
   public struct NatsRPCClientConfig {
@@ -179,6 +207,11 @@ namespace Pitaya
     public PtrResWithStatus(IntPtr ptr, int status) {
       this.ptr = ptr;
       this.status = status;
+    }
+
+    public T getStructFromPtr<T>(){
+      T res = (T) Marshal.PtrToStructure(this.ptr, typeof(T));
+      return res;
     }
   }
 }

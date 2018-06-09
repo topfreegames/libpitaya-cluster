@@ -36,6 +36,7 @@ func GetServer(id string) (*CServer, Result) {
 	return (*CServer)(unsafe.Pointer(toCServer(gsv))), Ok
 }
 
+// TODO remove double arg return by a C struct
 //export GetServersByType
 func GetServersByType(svType string) (*[]*CServer, Result) {
 	var res []*CServer
@@ -46,34 +47,43 @@ func GetServersByType(svType string) (*[]*CServer, Result) {
 	for _, v := range servers {
 		res = append(res, (*CServer)(unsafe.Pointer(toCServer(v))))
 	}
-	fmt.Printf("from go im returning %s\n", res)
 	return &res, Ok
 }
 
 // TODO put jaeger
+// TODO returne rror string in the struct
 //export SendRPC
-func SendRPC(svId string, route CRoute, msg []byte) (*[]byte, Result) {
+func SendRPC(svId string, route CRoute, msg []byte) *CRPCRes {
 	r := fromCRoute(route)
-	fmt.Printf("rpc to svId:%s, route: %s, msg: %v\n", svId, r, msg)
 	res, err := remote.DoRPC(context.Background(), svId, r, msg)
 	// TODO return error msg?
-	var arr []byte
 	if err != nil {
-		fmt.Printf("rpc failed: %s\n", err.Error())
-		return &arr, Fail
+		return &CRPCRes{
+			success: 0,
+		}
 	}
-	fmt.Printf("res from go rpc: %s\n", res)
 	resBytes, err := proto.Marshal(res)
 	if err != nil {
-		fmt.Printf("serialization failed: %s\n", err.Error())
-		return &arr, Fail
+		return &CRPCRes{
+			success: 0,
+		}
 	}
-	return &resBytes, Ok
+	return &CRPCRes{
+		data:    C.CBytes(resBytes),
+		dataLen: C.int(int(len(resBytes))),
+		success: 1,
+	}
 }
 
 func handleIncomingMessages(chMsg chan *protos.Request) {
 	for msg := range chMsg {
-		bridgeRPCCb(msg)
+		reply := msg.GetMsg().GetReply()
+		ptr := bridgeRPCCb(msg)
+		data := *(*[]byte)(ptr)
+		err := rpcClient.Send(reply, data)
+		if err != nil {
+			fmt.Printf("failed to answer to rpc, err: %s\n", err.Error())
+		}
 	}
 }
 

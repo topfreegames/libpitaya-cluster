@@ -31,7 +31,12 @@ struct RPCReq {
   void* data;
   int dataLen;
   char* route;
-  char* replyTopic;
+};
+
+struct RPCRes {
+  void* data;
+  int dataLen;
+  bool success;
 };
 
 struct Route {
@@ -39,5 +44,5 @@ struct Route {
 	char* service;
 	char* method;};
 
-typedef char* (*rpcCbFunc) (struct RPCReq);
-void bridgeFunc(rpcCbFunc f, struct RPCReq req);
+typedef void* (*rpcCbFunc) (struct RPCReq);
+void* bridgeFunc(rpcCbFunc f, struct RPCReq req);
