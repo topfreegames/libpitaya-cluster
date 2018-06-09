@@ -3,29 +3,29 @@
 typedef int bool;
 
 struct Server {
-	char* id;
-	char* svType;
-	char* metadata;
-	bool frontend; };
+  char* id;
+  char* svType;
+  char* metadata;
+  bool frontend; };
 
 struct SDConfig {
-	char** endpoints;
-	int endpointsLen;
-	int etcdDialTimeoutSec;
-	char* etcdPrefix;
-	int heartbeatTTLSec;
-	bool logHeartbeat;
-	int syncServersIntervalSec;};
+  char** endpoints;
+  int endpointsLen;
+  int etcdDialTimeoutSec;
+  char* etcdPrefix;
+  int heartbeatTTLSec;
+  bool logHeartbeat;
+  int syncServersIntervalSec;};
 
 struct NatsRPCClientConfig {
-	char* endpoint;
-	int maxConnectionRetries;
-	int requestTimeoutMs;};
+  char* endpoint;
+  int maxConnectionRetries;
+  int requestTimeoutMs;};
 
 struct NatsRPCServerConfig {
-	char* endpoint;
-	int maxConnectionRetries;
-	int messagesBufferSize;};
+  char* endpoint;
+  int maxConnectionRetries;
+  int messagesBufferSize;};
 
 struct RPCReq {
   void* data;
@@ -40,9 +40,9 @@ struct RPCRes {
 };
 
 struct Route {
-	char* svType;
-	char* service;
-	char* method;};
+  char* svType;
+  char* service;
+  char* method;};
 
 typedef void* (*rpcCbFunc) (struct RPCReq);
 void* bridgeFunc(rpcCbFunc f, struct RPCReq req);
