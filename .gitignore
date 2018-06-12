@@ -3,3 +3,4 @@ out
 *.so
 bin
 obj
+.vscode
