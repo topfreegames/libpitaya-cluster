@@ -8,8 +8,7 @@ using System.Reflection;
 
 namespace Pitaya
 {
-  // TODO debug logging and levels
-  class PitayaCluster
+  public class PitayaCluster
   {
     [UnmanagedFunctionPointer(CallingConvention.StdCall)]
     public delegate GoSlice RPCCb(RPCReq req);
@@ -47,9 +46,8 @@ namespace Pitaya
     public static Server[] GetServers(string type) {
       IntPtr ptr = GetServersByTypeInternal(GoString.fromString(type));
       GetServersRes res = (GetServersRes)Marshal.PtrToStructure(ptr, typeof(GetServersRes));
-      if reeServer(ptr);
-          addr += Marshal.SizeOf(typeof(IntPtr));
-        }
+      if (res.success){
+        Server[] servers = res.getServers();
         return servers;
       } else {
         throw new Exception("failed to get servers with type " + type);
@@ -64,7 +62,7 @@ namespace Pitaya
         if (remotesDict.ContainsKey(remoteName)){
           throw new Exception(String.Format("tried to register same remote twice! remote name: {0}",remoteName));
         }
-        Console.WriteLine("registering remote {0}", remoteName);
+        Logger.Info("registering remote {0}", remoteName);
         remotesDict[remoteName] = kvp.Value;
       }
     }
@@ -73,7 +71,7 @@ namespace Pitaya
     private static GoSlice RPCCbFunc(RPCReq req) {
       byte[] data = req.getReqData();
       Route route = Route.fromString(req.route);
-      Console.WriteLine("called with route: " + route + " and data: " + Encoding.UTF8.GetString(data));
+      Logger.Debug("called with route: " + route + " and data: " + Encoding.UTF8.GetString(data));
       Protos.Response response = new Protos.Response();
       string remoteName = String.Format("{0}.{1}", route.service, route.method);
       if (!remotesDict.ContainsKey(remoteName)){
@@ -82,7 +80,7 @@ namespace Pitaya
         return GoSlice.fromSlice<byte>(resBytes);
       }
       RemoteMethod remote = remotesDict[remoteName];
-      Console.WriteLine(String.Format("found delegate: {0}", remote));
+      Logger.Debug(String.Format("found delegate: {0}", remote));
       try{
         IMessage arg = (IMessage) Activator.CreateInstance(remote.argType);
         arg.MergeFrom(new CodedInputStream(data));
@@ -105,7 +103,8 @@ namespace Pitaya
       response.MergeFrom(new CodedInputStream(resData));
       IMessage res = (IMessage) Activator.CreateInstance(typeof(T));
       res.MergeFrom(new CodedInputStream(response.Data.ToByteArray()));
-      Console.WriteLine("got this res {0}", res);
+      Logger.Debug("getProtoMsgFromResponse: got this res {0}", res);
+
       return (T)res;
     }
 
@@ -134,32 +133,32 @@ namespace Pitaya
     }
 
     public static void Init(SDConfig sdConfig, NatsRPCClientConfig rpcClientConfig, NatsRPCServerConfig rpcServerConfig, Server server) {
-      int res = InitInternal(sdConfig, rpcClientConfig, rpcServerConfig, server);
-      if(res == 0){
-        Console.WriteLine("initialized pitaya go module");
+      bool res = InitInternal(sdConfig, rpcClientConfig, rpcServerConfig, server);
+      if(res){
         PitayaCluster.RPCCb rpcCbFunc = RPCCbFunc;
         IntPtr rpcCbFuncPtr = Marshal.GetFunctionPointerForDelegate (rpcCbFunc);
         // hack, inject pointer to cb function into Go code
         PitayaCluster.SetRPCCallbackInternal(rpcCbFuncPtr);
+        Logger.Error("initialized pitaya go module");
       } else {
         throw new Exception("failed to initialize pitaya go module");
       }
     }
 
     [DllImport("libpitaya_cluster", CallingConvention = CallingConvention.Cdecl, EntryPoint= "Init")]
-      static extern int InitInternal(SDConfig sdConfig, NatsRPCClientConfig rpcClientConfig, NatsRPCServerConfig rpcServerConfig, Server server);
+      static extern bool InitInternal(SDConfig sdConfig, NatsRPCClientConfig rpcClientConfig, NatsRPCServerConfig rpcServerConfig, Server server);
 
     [DllImport("libpitaya_cluster", CallingConvention = CallingConvention.Cdecl, EntryPoint= "GetServer")]
-      static extern PtrResWithStatus GetServerInternal(GoString id);
+      static extern IntPtr GetServerInternal(GoString id);
 
     [DllImport("libpitaya_cluster", CallingConvention = CallingConvention.Cdecl, EntryPoint= "GetServersByType")]
-      static extern PtrResWithStatus GetServersByTypeInternal(GoString type);
+      static extern IntPtr GetServersByTypeInternal(GoString type);
 
     [DllImport("libpitaya_cluster", CallingConvention = CallingConvention.Cdecl)]
       static extern IntPtr SendRPC(GoString svId, Route route, GoSlice message);
 
     [DllImport("libpitaya_cluster", CallingConvention = CallingConvention.Cdecl)]
-      static extern void FreeServer(IntPtr ptr);
+      public static extern void FreeServer(IntPtr ptr);
 
     [DllImport("libpitaya_cluster", CallingConvention = CallingConvention.Cdecl)]
       static extern void FreeRPCRes(IntPtr ptr);

@@ -1,14 +1,10 @@
-using System;
-using System.IO;
-using System.Runtime.InteropServices;
 using System.Reflection;
-using System.Text;
 using Google.Protobuf;
 using System.Collections.Generic;
 
 namespace Pitaya
 {
-  class BaseRemote
+  public class BaseRemote
   {
     public string GetName() {
       return this.GetType().Name;

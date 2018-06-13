@@ -1,11 +1,8 @@
 using System;
-using System.IO;
-using System.Runtime.InteropServices;
-using System.Reflection;
-using System.Text;
 using Google.Protobuf;
+using Pitaya;
 
-namespace Pitaya
+namespace PitayaCSharpExample
 {
   class TestRemote : BaseRemote
   {

@@ -10,6 +10,7 @@ import (
 	"github.com/spf13/viper"
 	"github.com/topfreegames/pitaya/cluster"
 	"github.com/topfreegames/pitaya/config"
+	"github.com/topfreegames/pitaya/logger"
 	"github.com/topfreegames/pitaya/protos"
 	"github.com/topfreegames/pitaya/router"
 	"github.com/topfreegames/pitaya/service"
@@ -20,21 +21,23 @@ import (
 */
 import "C"
 
-// TODO ensure that its inited
 var (
-	sd        cluster.ServiceDiscovery
-	rpcClient cluster.RPCClient
-	rpcServer cluster.RPCServer
-	remote    *service.RemoteService
+	sd          cluster.ServiceDiscovery
+	rpcClient   cluster.RPCClient
+	rpcServer   cluster.RPCServer
+	remote      *service.RemoteService
+	initialized bool
+	log         = logger.Log
 )
 
 func main() {}
 
 //export GetServer
 func GetServer(id string) *CGetServerRes {
+	checkInitialized()
 	gsv, err := sd.GetServer(id)
 	if err != nil {
-		fmt.Printf("error getting server: %s", err.Error())
+		log.Errorf("error getting server: %s", err.Error())
 		return &CGetServerRes{
 			server:  (*_Ctype_struct_Server)(unsafe.Pointer(&CServer{})),
 			success: 0,
@@ -46,13 +49,13 @@ func GetServer(id string) *CGetServerRes {
 	}
 }
 
-// TODO remove double arg return by a C struct
 //export GetServersByType
 func GetServersByType(svType string) *CGetServersRes {
+	checkInitialized()
 	var res []*CServer
 	servers, err := sd.GetServersByType(svType)
 	if err != nil {
-		fmt.Printf("error getting servers by type: %s", err.Error())
+		log.Errorf("error getting servers by type: %s", err.Error())
 		return &CGetServersRes{
 			servers: nil,
 			success: 0,
@@ -68,19 +71,21 @@ func GetServersByType(svType string) *CGetServersRes {
 }
 
 // TODO put jaeger
-// TODO returne rror string in the struct
 //export SendRPC
 func SendRPC(svID string, route CRoute, msg []byte) *CRPCRes {
+	checkInitialized()
 	r := fromCRoute(route)
 	res, err := remote.DoRPC(context.Background(), svID, r, msg)
 	// TODO return error msg?
 	if err != nil {
+		log.Error(err.Error())
 		return &CRPCRes{
 			success: 0,
 		}
 	}
 	resBytes, err := proto.Marshal(res)
 	if err != nil {
+		log.Error(err.Error())
 		return &CRPCRes{
 			success: 0,
 		}
@@ -92,6 +97,12 @@ func SendRPC(svID string, route CRoute, msg []byte) *CRPCRes {
 	}
 }
 
+func checkInitialized() {
+	if !initialized {
+		panic("pitaya cluster module is not initialized, call Init first")
+	}
+}
+
 func handleIncomingMessages(chMsg chan *protos.Request) {
 	for msg := range chMsg {
 		reply := msg.GetMsg().GetReply()
@@ -99,7 +110,7 @@ func handleIncomingMessages(chMsg chan *protos.Request) {
 		data := *(*[]byte)(ptr)
 		err := rpcClient.Send(reply, data)
 		if err != nil {
-			fmt.Printf("failed to answer to rpc, err: %s\n", err.Error())
+			log.Errorf("failed to answer to rpc, err: %s\n", err.Error())
 		}
 	}
 }
@@ -136,7 +147,49 @@ func getConfig(
 	return config.NewConfig(cfg)
 }
 
-// TODO megazord method should be broken into smaller pieces
+func createModules(conf *config.Config, sv *cluster.Server) error {
+	var err error
+	sd, err = cluster.NewEtcdServiceDiscovery(conf, sv)
+	if err != nil {
+		log.Error(err.Error())
+		return err
+	}
+
+	rpcClient, err = cluster.NewNatsRPCClient(conf, sv, nil)
+	if err != nil {
+		log.Error(err.Error())
+		return err
+	}
+
+	rpcServer, err = cluster.NewNatsRPCServer(conf, sv, nil)
+	if err != nil {
+		log.Error(err.Error())
+		return err
+	}
+	return nil
+}
+
+func initModules() error {
+	err := sd.Init()
+	if err != nil {
+		log.Error(err.Error())
+		return err
+	}
+
+	err = rpcClient.Init()
+	if err != nil {
+		log.Error(err.Error())
+		return err
+	}
+
+	err = rpcServer.Init()
+	if err != nil {
+		log.Error(err.Error())
+		return err
+	}
+	return nil
+}
+
 //export Init
 func Init(
 	sdConfig CSDConfig,
@@ -153,39 +206,13 @@ func Init(
 
 	conf := getConfig(sdConfig, rpcClientConfig, rpcServerConfig)
 
-	sd, err = cluster.NewEtcdServiceDiscovery(conf, sv)
+	err = createModules(conf, sv)
 	if err != nil {
 		fmt.Println(err.Error())
 		return false
 	}
 
-	rpcClient, err = cluster.NewNatsRPCClient(conf, sv, nil)
-	if err != nil {
-		fmt.Println(err.Error())
-		return false
-	}
-
-	rpcServer, err = cluster.NewNatsRPCServer(conf, sv, nil)
-	if err != nil {
-		fmt.Println(err.Error())
-		return false
-	}
-
-	//TODO use modules? init better
-
-	err = sd.Init()
-	if err != nil {
-		fmt.Println(err.Error())
-		return false
-	}
-
-	err = rpcClient.Init()
-	if err != nil {
-		fmt.Println(err.Error())
-		return false
-	}
-
-	err = rpcServer.Init()
+	err = initModules()
 	if err != nil {
 		fmt.Println(err.Error())
 		return false
@@ -205,5 +232,8 @@ func Init(
 		sv,
 	)
 
+	initialized = true
+
+	log.Info("go module initialized")
 	return true
 }
