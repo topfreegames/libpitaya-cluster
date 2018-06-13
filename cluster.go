@@ -15,6 +15,9 @@ import (
 	"github.com/topfreegames/pitaya/service"
 )
 
+/*
+#include "cluster.h"
+*/
 import "C"
 
 // TODO ensure that its inited
@@ -28,34 +31,48 @@ var (
 func main() {}
 
 //export GetServer
-func GetServer(id string) (*CServer, Result) {
+func GetServer(id string) *CGetServerRes {
 	gsv, err := sd.GetServer(id)
 	if err != nil {
-		return (*CServer)(unsafe.Pointer(&CServer{})), Fail
+		fmt.Printf("error getting server: %s", err.Error())
+		return &CGetServerRes{
+			server:  (*_Ctype_struct_Server)(unsafe.Pointer(&CServer{})),
+			success: 0,
+		}
 	}
-	return (*CServer)(unsafe.Pointer(toCServer(gsv))), Ok
+	return &CGetServerRes{
+		server:  (*_Ctype_struct_Server)(unsafe.Pointer(toCServer(gsv))),
+		success: 1,
+	}
 }
 
 // TODO remove double arg return by a C struct
 //export GetServersByType
-func GetServersByType(svType string) (*[]*CServer, Result) {
+func GetServersByType(svType string) *CGetServersRes {
 	var res []*CServer
 	servers, err := sd.GetServersByType(svType)
 	if err != nil {
-		return &res, Fail
+		fmt.Printf("error getting servers by type: %s", err.Error())
+		return &CGetServersRes{
+			servers: nil,
+			success: 0,
+		}
 	}
 	for _, v := range servers {
 		res = append(res, (*CServer)(unsafe.Pointer(toCServer(v))))
 	}
-	return &res, Ok
+	return &CGetServersRes{
+		servers: unsafe.Pointer(&res),
+		success: 1,
+	}
 }
 
 // TODO put jaeger
 // TODO returne rror string in the struct
 //export SendRPC
-func SendRPC(svId string, route CRoute, msg []byte) *CRPCRes {
+func SendRPC(svID string, route CRoute, msg []byte) *CRPCRes {
 	r := fromCRoute(route)
-	res, err := remote.DoRPC(context.Background(), svId, r, msg)
+	res, err := remote.DoRPC(context.Background(), svID, r, msg)
 	// TODO return error msg?
 	if err != nil {
 		return &CRPCRes{
@@ -87,13 +104,11 @@ func handleIncomingMessages(chMsg chan *protos.Request) {
 	}
 }
 
-//export Init
-func Init(
+func getConfig(
 	sdConfig CSDConfig,
 	rpcClientConfig CNatsRPCClientConfig,
 	rpcServerConfig CNatsRPCServerConfig,
-	server CServer,
-) Result {
+) *config.Config {
 	var cEndpoints []*C.char
 	fromCArray(uintptr(unsafe.Pointer(&sdConfig.endpoints)), int(sdConfig.endpointsLen), uintptr(unsafe.Pointer(&cEndpoints)))
 	endpoints := fromCStringSliceToGoStringSlice(cEndpoints)
@@ -118,30 +133,42 @@ func Init(
 	cfg.Set("pitaya.cluster.rpc.server.nats.maxreconnectionretries", int(rpcServerConfig.maxConnectionRetries))
 	cfg.Set("pitaya.buffer.cluster.rpc.server.messages", int(rpcServerConfig.messagesBufferSize))
 
+	return config.NewConfig(cfg)
+}
+
+// TODO megazord method should be broken into smaller pieces
+//export Init
+func Init(
+	sdConfig CSDConfig,
+	rpcClientConfig CNatsRPCClientConfig,
+	rpcServerConfig CNatsRPCServerConfig,
+	server CServer,
+) bool {
+
 	sv, err := fromCServer(server)
 	if err != nil {
 		fmt.Println(err.Error())
-		return Fail
+		return false
 	}
 
-	conf := config.NewConfig(cfg)
+	conf := getConfig(sdConfig, rpcClientConfig, rpcServerConfig)
 
 	sd, err = cluster.NewEtcdServiceDiscovery(conf, sv)
 	if err != nil {
 		fmt.Println(err.Error())
-		return Fail
+		return false
 	}
 
 	rpcClient, err = cluster.NewNatsRPCClient(conf, sv, nil)
 	if err != nil {
 		fmt.Println(err.Error())
-		return Fail
+		return false
 	}
 
 	rpcServer, err = cluster.NewNatsRPCServer(conf, sv, nil)
 	if err != nil {
 		fmt.Println(err.Error())
-		return Fail
+		return false
 	}
 
 	//TODO use modules? init better
@@ -149,23 +176,22 @@ func Init(
 	err = sd.Init()
 	if err != nil {
 		fmt.Println(err.Error())
-		return Fail
+		return false
 	}
 
 	err = rpcClient.Init()
 	if err != nil {
 		fmt.Println(err.Error())
-		return Fail
+		return false
 	}
 
 	err = rpcServer.Init()
 	if err != nil {
 		fmt.Println(err.Error())
-		return Fail
+		return false
 	}
 
-	// TODO get chan handle rpc
-	// TODO concurrently? many goroutines?
+	// TODO concurrently? many goroutines? needs config
 	go handleIncomingMessages(rpcServer.GetUnhandledRequestsChannel())
 
 	remote = service.NewRemoteService(
@@ -179,5 +205,5 @@ func Init(
 		sv,
 	)
 
-	return Ok
+	return true
 }

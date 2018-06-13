@@ -30,7 +30,7 @@
   version = "3.3.6"
 
 [[constraint]]
-  branch = "rpc_protobuf"
+  branch = "master"
   name = "github.com/topfreegames/pitaya"
 
 [prune]

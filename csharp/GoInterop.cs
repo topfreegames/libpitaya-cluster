@@ -200,18 +200,31 @@ namespace Pitaya
     }
   }
 
-  public struct PtrResWithStatus {
-    public IntPtr ptr;
-    public int status;
+  public struct GetServerRes {
+    public IntPtr serverPtr;
+    public bool success;
 
-    public PtrResWithStatus(IntPtr ptr, int status) {
-      this.ptr = ptr;
-      this.status = status;
-    }
-
-    public T getStructFromPtr<T>(){
-      T res = (T) Marshal.PtrToStructure(this.ptr, typeof(T));
+    public Server getServer(){
+      Server res = (Server)Marshal.PtrToStructure(this.serverPtr, typeof(Server));
+      PitayaCluster.FreeServer(this.serverPtr); // free server in golang side because of allocated memory (prevent memory leak)
       return res;
+    }
+  }
+
+  public struct GetServersRes {
+    public IntPtr serversPtr;
+    public bool success;
+
+    public Server[] getServers(){
+      GoSlice serverSlice = (GoSlice)Marshal.PtrToStructure(this.serversPtr, typeof(GoSlice));
+      Server[] servers = serverSlice.toSlice<Server>(true);
+      IntPtr addr = serverSlice.data;
+      for (int i = 0; i < serverSlice.len; i++){
+        IntPtr ptr = (IntPtr)Marshal.PtrToStructure(addr, typeof(IntPtr));
+        PitayaCluster.FreeServer(ptr);
+        addr += Marshal.SizeOf(typeof(IntPtr));
+      }
+      return servers;
     }
   }
 }

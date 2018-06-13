@@ -15,9 +15,6 @@ import (
 */
 import "C"
 
-// Result is a sugar for int
-type Result int32
-
 // CServer represents c server type
 type CServer C.struct_Server
 
@@ -39,12 +36,11 @@ type CRPCMsg C.struct_RPCMsg
 // CRPCRes struct for sending rpc response to C
 type CRPCRes C.struct_RPCRes
 
-const (
-	// Ok success result
-	Ok Result = iota
-	// Fail failure result
-	Fail
-)
+// CGetServerRes is returned by getServer
+type CGetServerRes C.struct_GetServerRes
+
+// CGetServersRes is returned by getServersByType
+type CGetServersRes C.struct_GetServersRes
 
 var rpcCbFunc C.rpcCbFunc
 

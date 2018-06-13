@@ -14,7 +14,6 @@ namespace Pitaya
     [UnmanagedFunctionPointer(CallingConvention.StdCall)]
     public delegate GoSlice RPCCb(RPCReq req);
 
-    // TODO criar algo ja com tipo para mais ferformance
     private static Dictionary<string, RemoteMethod> remotesDict = new Dictionary<string, RemoteMethod>();
 
     public static Protos.Response getErrorResponse(string code, string msg) {
@@ -35,10 +34,10 @@ namespace Pitaya
     }
 
     public static Server GetServer(string id) {
-      PtrResWithStatus res = GetServerInternal(GoString.fromString(id));
-      if (res.status == 0){
-        Server sv = res.getStructFromPtr<Server>();
-        FreeServer(res.ptr); // free server in golang side because of allocated memory (prevent memory leak)
+      IntPtr ptr = GetServerInternal(GoString.fromString(id));
+      GetServerRes res = (GetServerRes)Marshal.PtrToStructure(ptr, typeof(GetServerRes));
+      if (res.success){
+        Server sv = res.getServer();
         return sv;
       } else {
         throw new Exception("failed to get server! with id " + id);
@@ -46,15 +45,9 @@ namespace Pitaya
     }
 
     public static Server[] GetServers(string type) {
-      PtrResWithStatus res = GetServersByTypeInternal(GoString.fromString(type));
-      if (res.status == 0){
-        GoSlice slice = res.getStructFromPtr<GoSlice>();
-        Server[] servers = slice.toSlice<Server>(true);
-        // free all servers
-        IntPtr addr = slice.data;
-        for (int i = 0; i < slice.len; i++){
-          IntPtr ptr = (IntPtr)Marshal.PtrToStructure(addr, typeof(IntPtr));
-          FreeServer(ptr);
+      IntPtr ptr = GetServersByTypeInternal(GoString.fromString(type));
+      GetServersRes res = (GetServersRes)Marshal.PtrToStructure(ptr, typeof(GetServersRes));
+      if reeServer(ptr);
           addr += Marshal.SizeOf(typeof(IntPtr));
         }
         return servers;

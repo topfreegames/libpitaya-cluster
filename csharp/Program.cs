@@ -31,8 +31,6 @@ namespace Pitaya
       NatsRPCClientConfig rpcClientConfig = new NatsRPCClientConfig("nats://localhost:4222", 10, 5000);
       // TODO does it makes sense to give freedom to set reconnectionRetries and messagesBufferSize?
       NatsRPCServerConfig rpcServerConfig = new NatsRPCServerConfig("nats://localhost:4222", 10, 75);
-      // TODO configure better
-      // TODO if res fail, panic
       PitayaCluster.Init(sdConfig, rpcClientConfig, rpcServerConfig, new Server("someid", "game", "{\"ip\":\"127.0.0.1\"}", true));
       Console.ReadKey();
 

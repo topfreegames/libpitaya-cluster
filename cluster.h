@@ -1,5 +1,7 @@
 #include <stdlib.h>
 
+#pragma once
+
 typedef int bool;
 
 struct Server {
@@ -36,6 +38,16 @@ struct RPCReq {
 struct RPCRes {
   void* data;
   int dataLen;
+  bool success;
+};
+
+struct GetServerRes {
+  struct Server *server;
+  bool success;
+};
+
+struct GetServersRes {
+  void *servers;
   bool success;
 };
 
