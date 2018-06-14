@@ -8,3 +8,7 @@ build: ensure-out-dir
 
 run-csharp-example:
 	@cd ./csharp-example && GODEBUG=cgocheck=0 dotnet run
+
+protos-compile:
+	@protoc --csharp_out=./csharp-example/gen/ ./go-server/protos/*.proto
+	@protoc --gogofaster_out=./go-server/protos/ ./go-server/protos/*.proto

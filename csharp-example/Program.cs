@@ -7,12 +7,6 @@ namespace PitayaCSharpExample
 {
   class Example 
   {
-    public static void rpcCbWrapper(RPCReq req) {
-      byte[] data = new byte[req.dataLen];
-      Marshal.Copy(req.data, data, 0, req.dataLen);
-      Console.WriteLine("called with route: " + req.route + " and bts: " + data[0]);
-    }
-    
     static void Main(string[] args)
     {
       string debugEnv = Environment.GetEnvironmentVariable("GODEBUG");
@@ -34,23 +28,23 @@ namespace PitayaCSharpExample
       NatsRPCClientConfig rpcClientConfig = new NatsRPCClientConfig("nats://localhost:4222", 10, 5000);
       // TODO does it makes sense to give freedom to set reconnectionRetries and messagesBufferSize?
       NatsRPCServerConfig rpcServerConfig = new NatsRPCServerConfig("nats://localhost:4222", 10, 75);
-      PitayaCluster.Init(sdConfig, rpcClientConfig, rpcServerConfig, new Server("someid", "game", "{\"ip\":\"127.0.0.1\"}", true));
-      Console.ReadKey();
 
-      Server[] servers = PitayaCluster.GetServers("game");
-      Console.WriteLine("ola server {0}", servers[0].id);
+      PitayaCluster.Init(
+        sdConfig,
+        rpcClientConfig,
+        rpcServerConfig,
+        new Server(
+          System.Guid.NewGuid().ToString(),
+          "csharp",
+          "{\"ip\":\"127.0.0.1\"}",
+          false)
+      );
 
       TestRemote tr = new TestRemote();    
       PitayaCluster.RegisterRemote(tr);
 
-      Protos.TestMessage tm = new Protos.TestMessage();
-      tm.Msg = "ola";
-      tm.I = 1;
-      Protos.TestMessage res = PitayaCluster.RPC<Protos.TestMessage>(new Server("someid", "game", "", true), new Route("game","testremote", "validremote"), tm);
-      Console.WriteLine("received res from c# rpc: {0}", res);
       // prevent from closing
       Console.ReadKey();
-
       PitayaCluster.Shutdown();
     }
   }

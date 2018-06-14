@@ -69,6 +69,7 @@ namespace Pitaya
 
     // TODO can we make this faster with some delegate-fu?
     private static GoSlice RPCCbFunc(RPCReq req) {
+      Logger.Debug("rpc cb func called");
       byte[] data = req.getReqData();
       Route route = Route.fromString(req.route);
       Logger.Debug("called with route: " + route + " and data: " + Encoding.UTF8.GetString(data));
@@ -139,7 +140,7 @@ namespace Pitaya
         IntPtr rpcCbFuncPtr = Marshal.GetFunctionPointerForDelegate (rpcCbFunc);
         // hack, inject pointer to cb function into Go code
         PitayaCluster.SetRPCCallbackInternal(rpcCbFuncPtr);
-        Logger.Error("initialized pitaya go module");
+        Logger.Info("initialized pitaya go module");
       } else {
         throw new Exception("failed to initialize pitaya go module");
       }

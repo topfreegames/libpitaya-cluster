@@ -105,6 +105,7 @@ func checkInitialized() {
 func handleIncomingMessages(chMsg chan *protos.Request) {
 	for msg := range chMsg {
 		reply := msg.GetMsg().GetReply()
+		log.Debugf("processing incoming message with route: %s", msg.GetMsg().GetRoute())
 		ptr := bridgeRPCCb(msg)
 		data := *(*[]byte)(ptr)
 		err := rpcClient.Send(reply, data)

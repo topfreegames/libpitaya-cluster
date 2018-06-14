@@ -1,0 +1,17 @@
+using System;
+using Google.Protobuf;
+using Pitaya;
+
+namespace PitayaCSharpExample
+{
+  class TestRemote : BaseRemote
+  {
+    public Protos.RPCRes remote(Protos.RPCMsg msg){
+      Protos.RPCRes response = new Protos.RPCRes();
+      response.Msg = "hello from csharp :)";
+      response.Code = 200;
+      Console.WriteLine("remote executed with arg {0}", msg);
+      return response;
+    }
+  }
+}

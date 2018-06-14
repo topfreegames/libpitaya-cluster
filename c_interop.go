@@ -57,7 +57,9 @@ func bridgeRPCCb(req *protos.Request) unsafe.Pointer {
 	defer C.free(unsafe.Pointer(r.data))
 	defer C.free(unsafe.Pointer(r.route))
 
-	return C.bridgeFunc(rpcCbFunc, r)
+	log.Debugf("calling cb func @ %p", rpcCbFunc)
+	ptrRes := C.bridgeFunc(rpcCbFunc, r)
+	return unsafe.Pointer(ptrRes)
 }
 
 //export SetRPCCallback
