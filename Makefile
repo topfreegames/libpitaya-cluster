@@ -11,4 +11,4 @@ run-csharp-example:
 
 protos-compile:
 	@protoc --csharp_out=./csharp-example/gen/ ./go-server/protos/*.proto
-	@protoc --gogofaster_out=./go-server/protos/ ./go-server/protos/*.proto
+	@protoc --gogofaster_out=. ./go-server/protos/*.proto

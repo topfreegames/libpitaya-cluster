@@ -11,7 +11,10 @@ namespace Pitaya
   public class PitayaCluster
   {
     [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-    public delegate GoSlice RPCCb(RPCReq req);
+    public delegate IntPtr RPCCb(RPCReq req);
+
+    [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+    public delegate void FreeRPCCb(IntPtr ptr);
 
     private static Dictionary<string, RemoteMethod> remotesDict = new Dictionary<string, RemoteMethod>();
 
@@ -67,18 +70,25 @@ namespace Pitaya
       }
     }
 
+    private static void FreeRPCCbFunc(IntPtr ptr){
+      Logger.Debug("freeing ptr {0}", ptr);
+      Marshal.FreeHGlobal(ptr);
+    }
+
     // TODO can we make this faster with some delegate-fu?
-    private static GoSlice RPCCbFunc(RPCReq req) {
-      Logger.Debug("rpc cb func called");
+    private static IntPtr RPCCbFunc(RPCReq req) {
       byte[] data = req.getReqData();
       Route route = Route.fromString(req.route);
       Logger.Debug("called with route: " + route + " and data: " + Encoding.UTF8.GetString(data));
       Protos.Response response = new Protos.Response();
       string remoteName = String.Format("{0}.{1}", route.service, route.method);
+      IntPtr pnt = Marshal.AllocHGlobal(Marshal.SizeOf(new GoSlice()));
+      Logger.Debug("allocated ptr {0}", pnt);
       if (!remotesDict.ContainsKey(remoteName)){
         response = getErrorResponse("PIT-404", String.Format("remote not found! remote name: {0}", remoteName));
         byte[] resBytes = protoMessageToByteArray(response);
-        return GoSlice.fromSlice<byte>(resBytes);
+        Marshal.StructureToPtr(GoSlice.fromSlice<byte>(resBytes), pnt, false);
+        return pnt;
       }
       RemoteMethod remote = remotesDict[remoteName];
       Logger.Debug(String.Format("found delegate: {0}", remote));
@@ -90,11 +100,13 @@ namespace Pitaya
         byte[] ansBytes = protoMessageToByteArray(ans);
         response.Data = ByteString.CopyFrom(ansBytes);
         byte[] resBytes = protoMessageToByteArray(response);
-        return GoSlice.fromSlice<byte>(resBytes);
+        Marshal.StructureToPtr(GoSlice.fromSlice<byte>(resBytes), pnt, false);
+        return pnt;
       } catch(Exception e) {
         response = getErrorResponse("PIT-500", e.Message);
         byte[] resBytes = protoMessageToByteArray(response);
-        return GoSlice.fromSlice<byte>(resBytes);
+        Marshal.StructureToPtr(GoSlice.fromSlice<byte>(resBytes), pnt, false);
+        return pnt;
       }
     }
 
@@ -137,9 +149,12 @@ namespace Pitaya
       bool res = InitInternal(sdConfig, rpcClientConfig, rpcServerConfig, server);
       if(res){
         PitayaCluster.RPCCb rpcCbFunc = RPCCbFunc;
+        PitayaCluster.FreeRPCCb freeRPCCbFunc = FreeRPCCbFunc;
         IntPtr rpcCbFuncPtr = Marshal.GetFunctionPointerForDelegate (rpcCbFunc);
+        IntPtr freeRPCCbFuncPtr = Marshal.GetFunctionPointerForDelegate (freeRPCCbFunc);
         // hack, inject pointer to cb function into Go code
         PitayaCluster.SetRPCCallbackInternal(rpcCbFuncPtr);
+        PitayaCluster.SetFreeRPCCallbackInternal(freeRPCCbFuncPtr);
         Logger.Info("initialized pitaya go module");
       } else {
         throw new Exception("failed to initialize pitaya go module");
@@ -169,5 +184,8 @@ namespace Pitaya
 
     [DllImport("libpitaya_cluster", CallingConvention = CallingConvention.Cdecl, EntryPoint= "SetRPCCallback")]
       static extern void SetRPCCallbackInternal(IntPtr funcPtr);
+
+    [DllImport("libpitaya_cluster", CallingConvention = CallingConvention.Cdecl, EntryPoint= "SetFreeRPCCallback")]
+      static extern void SetFreeRPCCallbackInternal(IntPtr funcPtr);
   }
 }

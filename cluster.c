@@ -1,6 +1,10 @@
 #include "cluster.h"
 #include "stdio.h"
 
-void* bridgeFunc(rpcCbFunc f, struct RPCReq req){
+void* bridgeRPCFunc(rpcCbFunc f, struct RPCReq req){
 	return f(req);
+}
+
+void bridgeFreeRPCFunc(freeRPCCbFunc f, void* ptr){
+	return f(ptr);
 }

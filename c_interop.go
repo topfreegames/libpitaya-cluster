@@ -43,6 +43,7 @@ type CGetServerRes C.struct_GetServerRes
 type CGetServersRes C.struct_GetServersRes
 
 var rpcCbFunc C.rpcCbFunc
+var freeRPCCbFunc C.freeRPCCbFunc
 
 func bridgeRPCCb(req *protos.Request) unsafe.Pointer {
 	data := req.GetMsg().GetData()
@@ -58,13 +59,24 @@ func bridgeRPCCb(req *protos.Request) unsafe.Pointer {
 	defer C.free(unsafe.Pointer(r.route))
 
 	log.Debugf("calling cb func @ %p", rpcCbFunc)
-	ptrRes := C.bridgeFunc(rpcCbFunc, r)
+	ptrRes := C.bridgeRPCFunc(rpcCbFunc, r)
 	return unsafe.Pointer(ptrRes)
+}
+
+func freeRPCCb(ptr unsafe.Pointer) {
+	if freeRPCCbFunc != nil {
+		C.bridgeFreeRPCFunc(freeRPCCbFunc, ptr)
+	}
 }
 
 //export SetRPCCallback
 func SetRPCCallback(funcPtr C.rpcCbFunc) {
 	rpcCbFunc = funcPtr
+}
+
+//export SetFreeRPCCallback
+func SetFreeRPCCallback(funcPtr C.freeRPCCbFunc) {
+	freeRPCCbFunc = funcPtr
 }
 
 func fromCRoute(cr CRoute) *route.Route {
