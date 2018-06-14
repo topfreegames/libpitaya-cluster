@@ -7,4 +7,4 @@ build: ensure-out-dir
 	@go build -o out/libpitaya_cluster.dylib -buildmode=c-shared .
 
 run-csharp-example:
-	@cd ./csharp && GODEBUG=cgocheck=0 dotnet run
+	@cd ./csharp-example && GODEBUG=cgocheck=0 dotnet run

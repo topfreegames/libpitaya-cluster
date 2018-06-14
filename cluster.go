@@ -76,7 +76,6 @@ func SendRPC(svID string, route CRoute, msg []byte) *CRPCRes {
 	checkInitialized()
 	r := fromCRoute(route)
 	res, err := remote.DoRPC(context.Background(), svID, r, msg)
-	// TODO return error msg?
 	if err != nil {
 		log.Error(err.Error())
 		return &CRPCRes{
@@ -190,6 +189,27 @@ func initModules() error {
 	return nil
 }
 
+//export Shutdown
+func Shutdown() bool {
+	err := rpcServer.Shutdown()
+	if err != nil {
+		log.Error(err.Error())
+		return false
+	}
+	err = rpcClient.Shutdown()
+	if err != nil {
+		log.Error(err.Error())
+		return false
+	}
+	err = sd.Shutdown()
+	if err != nil {
+		log.Error(err.Error())
+		return false
+	}
+	log.Info("pitaya-cluster go lib shutdown complete")
+	return true
+}
+
 //export Init
 func Init(
 	sdConfig CSDConfig,
@@ -218,8 +238,10 @@ func Init(
 		return false
 	}
 
-	// TODO concurrently? many goroutines? needs config
-	go handleIncomingMessages(rpcServer.GetUnhandledRequestsChannel())
+	for i := 0; i < int(rpcServerConfig.rpcHandleWorkerNum); i++ {
+		log.Debug("started handle rpc routine")
+		go handleIncomingMessages(rpcServer.GetUnhandledRequestsChannel())
+	}
 
 	remote = service.NewRemoteService(
 		rpcClient,

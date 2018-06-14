@@ -50,6 +50,8 @@ namespace PitayaCSharpExample
       Console.WriteLine("received res from c# rpc: {0}", res);
       // prevent from closing
       Console.ReadKey();
+
+      PitayaCluster.Shutdown();
     }
   }
 }

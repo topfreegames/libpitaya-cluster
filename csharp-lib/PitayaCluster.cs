@@ -145,6 +145,9 @@ namespace Pitaya
       }
     }
 
+    [DllImport("libpitaya_cluster", CallingConvention = CallingConvention.Cdecl)]
+      public static extern bool Shutdown();
+
     [DllImport("libpitaya_cluster", CallingConvention = CallingConvention.Cdecl, EntryPoint= "Init")]
       static extern bool InitInternal(SDConfig sdConfig, NatsRPCClientConfig rpcClientConfig, NatsRPCServerConfig rpcServerConfig, Server server);
 

@@ -192,11 +192,13 @@ namespace Pitaya
     public string endpoint;
     public int maxConnectionRetries;
     public int messagesBufferSize;
+    public int rpcHandleWorkerNum;
 
-    public NatsRPCServerConfig(string endpoint, int maxConnectionRetries, int messagesBufferSize) {
+    public NatsRPCServerConfig(string endpoint, int maxConnectionRetries, int messagesBufferSize, int rpcHandleWorkerNum = 10) {
       this.endpoint = endpoint;
       this.maxConnectionRetries = maxConnectionRetries;
       this.messagesBufferSize = messagesBufferSize;
+      this.rpcHandleWorkerNum = rpcHandleWorkerNum;
     }
   }
 

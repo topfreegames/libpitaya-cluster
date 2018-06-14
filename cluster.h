@@ -27,7 +27,8 @@ struct NatsRPCClientConfig {
 struct NatsRPCServerConfig {
   char* endpoint;
   int maxConnectionRetries;
-  int messagesBufferSize;};
+  int messagesBufferSize;
+  int rpcHandleWorkerNum;};
 
 struct RPCReq {
   void* data;
