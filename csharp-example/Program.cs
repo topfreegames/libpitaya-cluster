@@ -24,7 +24,7 @@ namespace PitayaCSharpExample
       Environment.SetEnvironmentVariable("GODEBUG", "cgocheck=0");
       Console.WriteLine("c# prog running");
 
-      SDConfig sdConfig = new SDConfig(new string[]{"127.0.0.1:2379"}, 30, "pitaya/", 30, true, 60);
+      SDConfig sdConfig = new SDConfig("127.0.0.1:2379", 30, "pitaya/", 30, true, 60);
       NatsRPCClientConfig rpcClientConfig = new NatsRPCClientConfig("nats://localhost:4222", 10, 5000);
       // TODO does it makes sense to give freedom to set reconnectionRetries and messagesBufferSize?
       NatsRPCServerConfig rpcServerConfig = new NatsRPCServerConfig("nats://localhost:4222", 10, 75);
@@ -44,6 +44,18 @@ namespace PitayaCSharpExample
       PitayaCluster.RegisterRemote(tr);
 
       // prevent from closing
+      Console.ReadKey();
+
+      Protos.RPCMsg msg = new Protos.RPCMsg();
+      msg.Msg = "hellow from bla";
+
+      try{
+        Protos.RPCRes res = PitayaCluster.RPC<Protos.RPCRes>(Pitaya.Route.fromString("connector.testremote.test"), msg);
+        Logger.Info("received rpc res {0}",res);
+      }catch(Exception e){
+        Logger.Error("deu ruim: {0}",e);
+      }
+
       Console.ReadKey();
       PitayaCluster.Shutdown();
     }

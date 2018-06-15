@@ -11,8 +11,7 @@ struct Server {
   bool frontend; };
 
 struct SDConfig {
-  char** endpoints;
-  int endpointsLen;
+  char* endpoints;
   int etcdDialTimeoutSec;
   char* etcdPrefix;
   int heartbeatTTLSec;

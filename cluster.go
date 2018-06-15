@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 	"unsafe"
 
@@ -121,14 +122,11 @@ func getConfig(
 	rpcClientConfig CNatsRPCClientConfig,
 	rpcServerConfig CNatsRPCServerConfig,
 ) *config.Config {
-	var cEndpoints []*C.char
-	fromCArray(uintptr(unsafe.Pointer(&sdConfig.endpoints)), int(sdConfig.endpointsLen), uintptr(unsafe.Pointer(&cEndpoints)))
-	endpoints := fromCStringSliceToGoStringSlice(cEndpoints)
 	logHeartbeat := int(sdConfig.logHeartbeat) == 1
 	cfg := viper.New()
 
 	// configure service discovery
-	cfg.Set("pitaya.cluster.sd.etcd.endpoints", endpoints)
+	cfg.Set("pitaya.cluster.sd.etcd.endpoints", strings.Split(C.GoString(sdConfig.endpoints), ","))
 	cfg.Set("pitaya.cluster.sd.etcd.dialtimeout", time.Duration(int(sdConfig.etcdDialTimeoutSec))*time.Second)
 	cfg.Set("pitaya.cluster.sd.etcd.prefix", C.GoString(sdConfig.etcdPrefix))
 	cfg.Set("pitaya.cluster.sd.etcd.heartbeat.ttl", time.Duration(int(sdConfig.heartbeatTTLSec))*time.Second)
@@ -230,13 +228,13 @@ func Init(
 
 	err = createModules(conf, sv)
 	if err != nil {
-		fmt.Println(err.Error())
+		log.Error(err.Error())
 		return false
 	}
 
 	err = initModules()
 	if err != nil {
-		fmt.Println(err.Error())
+		log.Error(err.Error())
 		return false
 	}
 
@@ -245,13 +243,16 @@ func Init(
 		go handleIncomingMessages(rpcServer.GetUnhandledRequestsChannel())
 	}
 
+	r := router.New()
+	r.SetServiceDiscovery(sd)
+
 	remote = service.NewRemoteService(
 		rpcClient,
 		nil,
 		sd,
 		nil,
 		nil,
-		router.New(),
+		r,
 		nil,
 		sv,
 	)

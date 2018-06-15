@@ -43,7 +43,7 @@ namespace Pitaya
         }
         T managedT = (T)Marshal.PtrToStructure(ptr, typeof(T));
         res[i] = managedT;
-        addr += Marshal.SizeOf(typeof(IntPtr));
+        addr = (IntPtr)(addr.ToInt64() + Marshal.SizeOf(typeof(IntPtr)));
       }
       return res;
     }
@@ -99,9 +99,8 @@ namespace Pitaya
   }
 
   public struct SDConfig {
-    [MarshalAs(UnmanagedType.ByValArray)]
-    public string[] endpoints;
-    public int endpointsLen;
+    [MarshalAs(UnmanagedType.LPStr)]
+    public string endpoints;
     public int etcdDialTimeoutSec;
     [MarshalAs(UnmanagedType.LPStr)]
     public string etcdPrefix;
@@ -109,9 +108,8 @@ namespace Pitaya
     public bool logHeartbeat;
     public int syncServersIntervalSec;
 
-    public SDConfig(string[] endpoints, int etcdDialTimeoutSec, string etcdPrefix, int heartbeatTTLSec, bool logHeartbeat, int syncServersIntervalSec) {
+    public SDConfig(string endpoints, int etcdDialTimeoutSec, string etcdPrefix, int heartbeatTTLSec, bool logHeartbeat, int syncServersIntervalSec) {
       this.endpoints = endpoints;
-      this.endpointsLen = endpoints.Length;
       this.etcdDialTimeoutSec = etcdDialTimeoutSec;
       this.etcdPrefix = etcdPrefix;
       this.heartbeatTTLSec = heartbeatTTLSec;
@@ -156,7 +154,6 @@ namespace Pitaya
     }
   }
 
-  // TODO receive error
   public struct RPCRes {
     public IntPtr data;
     public int dataLen;
@@ -224,7 +221,7 @@ namespace Pitaya
       for (int i = 0; i < serverSlice.len; i++){
         IntPtr ptr = (IntPtr)Marshal.PtrToStructure(addr, typeof(IntPtr));
         PitayaCluster.FreeServer(ptr);
-        addr += Marshal.SizeOf(typeof(IntPtr));
+        addr = (IntPtr)(addr.ToInt64()+ Marshal.SizeOf(typeof(IntPtr)));
       }
       return servers;
     }

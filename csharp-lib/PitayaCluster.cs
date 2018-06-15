@@ -4,7 +4,6 @@ using System.Runtime.InteropServices;
 using System.Text;
 using Google.Protobuf;
 using System.Collections.Generic;
-using System.Reflection;
 
 namespace Pitaya
 {
@@ -146,6 +145,7 @@ namespace Pitaya
     }
 
     public static void Init(SDConfig sdConfig, NatsRPCClientConfig rpcClientConfig, NatsRPCServerConfig rpcServerConfig, Server server) {
+      Logger.Info("initializing pitaya module");
       bool res = InitInternal(sdConfig, rpcClientConfig, rpcServerConfig, server);
       if(res){
         PitayaCluster.RPCCb rpcCbFunc = RPCCbFunc;
