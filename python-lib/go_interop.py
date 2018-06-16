@@ -38,22 +38,17 @@ class Server(Structure):
 class GoString(Structure):
     _fields_ = [("p", c_char_p), ("n", c_longlong)]
 
-class GetServerRes(Structure):
-  _fields_ = [
-    ("server", POINTER(Server)),
-    ("success", c_bool)]
-
 # Init
 lib.Init.restype = c_bool
 lib.Init.argtypes = [SdConfig, NatsRpcClientConfig, NatsRpcServerConfig, Server]
 
 #GetServer
-lib.GetServer.restype = POINTER(GetServerRes)
-lib.GetServer.argtypes= [GoString]
+lib.GetServer.restype = c_bool
+lib.GetServer.argtypes= [GoString, POINTER(Server)]
 
-#[DllImport("libpitaya_cluster", CallingConvention = CallingConvention.Cdecl, EntryPoint= "GetServersByType")]
-#  static extern IntPtr GetServersByTypeInternal(GoString type);
-#
+#FreeServer
+lib.FreeServer.argtypes= [POINTER(Server)]
+
 #[DllImport("libpitaya_cluster", CallingConvention = CallingConvention.Cdecl)]
 #  static extern IntPtr SendRPC(GoString svId, Route route, GoSlice message);
 #
