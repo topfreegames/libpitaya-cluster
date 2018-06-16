@@ -9,11 +9,6 @@ namespace PitayaCSharpExample
   {
     static void Main(string[] args)
     {
-      string debugEnv = Environment.GetEnvironmentVariable("GODEBUG");
-      if (String.IsNullOrEmpty(debugEnv)) {
-        throw new Exception("pitaya-cluster lib require you to set env var GODEBUG=cgocheck=0");
-      }
-
       // this line is necessary for sending an array of pointer structs from go to C#
       // disabling this check is hacky and I don't know the implications of it
       // read more https://golang.org/cmd/cgo/#hdr-Passing_pointers
@@ -21,7 +16,6 @@ namespace PitayaCSharpExample
       Logger.SetLevel(LogLevel.DEBUG);
 
       // TODO y the fuck this doesnt work
-      Environment.SetEnvironmentVariable("GODEBUG", "cgocheck=0");
       Console.WriteLine("c# prog running");
 
       SDConfig sdConfig = new SDConfig("127.0.0.1:2379", 30, "pitaya/", 30, true, 60);

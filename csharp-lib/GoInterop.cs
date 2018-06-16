@@ -153,11 +153,10 @@ namespace Pitaya
       return data;
     }
   }
-
+  [StructLayout(LayoutKind.Sequential)]
   public struct RPCRes {
     public IntPtr data;
     public int dataLen;
-    public bool success;
 
     public byte[] getResData() {
       byte[] data = new byte[this.dataLen];
@@ -196,34 +195,6 @@ namespace Pitaya
       this.maxConnectionRetries = maxConnectionRetries;
       this.messagesBufferSize = messagesBufferSize;
       this.rpcHandleWorkerNum = rpcHandleWorkerNum;
-    }
-  }
-
-  public struct GetServerRes {
-    public IntPtr serverPtr;
-    public bool success;
-
-    public Server getServer(){
-      Server res = (Server)Marshal.PtrToStructure(this.serverPtr, typeof(Server));
-      PitayaCluster.FreeServer(this.serverPtr); // free server in golang side because of allocated memory (prevent memory leak)
-      return res;
-    }
-  }
-
-  public struct GetServersRes {
-    public IntPtr serversPtr;
-    public bool success;
-
-    public Server[] getServers(){
-      GoSlice serverSlice = (GoSlice)Marshal.PtrToStructure(this.serversPtr, typeof(GoSlice));
-      Server[] servers = serverSlice.toSlice<Server>(true);
-      IntPtr addr = serverSlice.data;
-      for (int i = 0; i < serverSlice.len; i++){
-        IntPtr ptr = (IntPtr)Marshal.PtrToStructure(addr, typeof(IntPtr));
-        PitayaCluster.FreeServer(ptr);
-        addr = (IntPtr)(addr.ToInt64()+ Marshal.SizeOf(typeof(IntPtr)));
-      }
-      return servers;
     }
   }
 }

@@ -13,7 +13,7 @@ build-csharp-lib:
 	@cd ./csharp-lib && msbuild
 	
 run-csharp-example:
-	@cd ./csharp-example && GODEBUG=cgocheck=0 mono ./bin/Debug/net35/example.exe
+	@cd ./csharp-example && mono ./bin/Debug/net35/example.exe
 
 run-go-server:
 	@cd ./go-server && go run main.go

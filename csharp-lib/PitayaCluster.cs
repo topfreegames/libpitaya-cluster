@@ -32,25 +32,22 @@ namespace Pitaya
     }
 
     public static Server GetServer(string id) {
-      IntPtr ptr = GetServerInternal(GoString.fromString(id));
-      GetServerRes res = (GetServerRes)Marshal.PtrToStructure(ptr, typeof(GetServerRes));
-      //PitayaCluster.FreeServer(this.serverPtr); // free server in golang side because of allocated memory (prevent memory leak)
-      if (res.success){
-        Server sv = res.getServer();
-        return sv;
-      } else {
-        throw new Exception("failed to get server! with id " + id);
-      }
-    }
-
-    public static Server[] GetServers(string type) {
-      IntPtr ptr = GetServersByTypeInternal(GoString.fromString(type));
-      GetServersRes res = (GetServersRes)Marshal.PtrToStructure(ptr, typeof(GetServersRes));
-      if (res.success){
-        Server[] servers = res.getServers();
-        return servers;
-      } else {
-        throw new Exception("failed to get servers with type " + type);
+      IntPtr pnt = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(Server)));
+      Server ret = new Server();
+      try
+      {
+        Marshal.StructureToPtr(ret, pnt, false);
+        bool success = GetServerInternal(GoString.fromString(id), pnt);
+        if (success){
+          ret = (Server) Marshal.PtrToStructure(pnt, typeof(Server));
+          FreeServer(pnt);
+          return ret;
+        } else {
+          throw new Exception("failed to get server! with id " + id);
+        }
+      } finally
+      {
+        Marshal.FreeHGlobal(pnt);
       }
     }
 
@@ -112,27 +109,30 @@ namespace Pitaya
       return (T)res;
     }
 
-    public static T RPC<T>(Server server, Route route, IMessage msg) {
+    public static T RPC<T>(string serverId, Route route, IMessage msg) {
       byte[] data = protoMessageToByteArray(msg);
-      IntPtr ptr = SendRPC(GoString.fromString(server.id), route, GoSlice.fromSlice<byte>(data));
-      RPCRes ret = (RPCRes)Marshal.PtrToStructure(ptr, typeof(RPCRes));
-      if (ret.success){
-        T protoRet = GetProtoMessageFromResponse<T>(ret);
-        return protoRet;
-      } else {
-        throw new Exception("RPC call failed!");
+      RPCRes ret = new RPCRes();
+      IntPtr pnt = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(RPCRes)));
+      try
+      {
+        Marshal.StructureToPtr(ret, pnt, false);
+        bool success = SendRPC(GoString.fromString(serverId), route, GoSlice.fromSlice<byte>(data), pnt);
+        if (success){
+          ret = (RPCRes) Marshal.PtrToStructure(pnt, typeof(RPCRes));
+          T protoRet = GetProtoMessageFromResponse<T>(ret); 
+          FreeRPCRes(pnt);
+          return protoRet;
+        } else {
+          throw new Exception("RPC call failed!");
+        }
+      } finally
+      {
+        Marshal.FreeHGlobal(pnt);
       }
     }
 
     public static T RPC<T>(Route route, IMessage msg) {
-      byte[] data = protoMessageToByteArray(msg);
-      IntPtr ptr = SendRPC(GoString.fromString(""), route, GoSlice.fromSlice<byte>(data));
-      RPCRes ret = (RPCRes)Marshal.PtrToStructure(ptr, typeof(RPCRes));
-      if (ret.success){
-        return GetProtoMessageFromResponse<T>(ret);
-      } else {
-        throw new Exception("RPC call failed!");
-      }
+      return RPC<T>("", route, msg);
     }
 
     public static void Init(SDConfig sdConfig, NatsRPCClientConfig rpcClientConfig, NatsRPCServerConfig rpcServerConfig, Server server) {
@@ -156,13 +156,10 @@ namespace Pitaya
       static extern bool InitInternal(SDConfig sdConfig, NatsRPCClientConfig rpcClientConfig, NatsRPCServerConfig rpcServerConfig, Server server);
 
     [DllImport("libpitaya_cluster", CallingConvention = CallingConvention.Cdecl, EntryPoint= "GetServer")]
-      static extern IntPtr GetServerInternal(GoString id);
-
-    [DllImport("libpitaya_cluster", CallingConvention = CallingConvention.Cdecl, EntryPoint= "GetServersByType")]
-      static extern IntPtr GetServersByTypeInternal(GoString type);
+      static extern bool GetServerInternal(GoString id, IntPtr ret);
 
     [DllImport("libpitaya_cluster", CallingConvention = CallingConvention.Cdecl)]
-      static extern IntPtr SendRPC(GoString svId, Route route, GoSlice message);
+      static extern bool SendRPC(GoString svId, Route route, GoSlice message, IntPtr ret);
 
     [DllImport("libpitaya_cluster", CallingConvention = CallingConvention.Cdecl)]
       public static extern void FreeServer(IntPtr ptr);

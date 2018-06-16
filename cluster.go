@@ -34,67 +34,35 @@ var (
 func main() {}
 
 //export GetServer
-func GetServer(id string) *CGetServerRes {
+func GetServer(id string, res *CServer) bool {
 	checkInitialized()
 	gsv, err := sd.GetServer(id)
 	if err != nil {
 		log.Errorf("error getting server: %s", err.Error())
-		return &CGetServerRes{
-			server:  (*_Ctype_struct_Server)(unsafe.Pointer(&CServer{})),
-			success: 0,
-		}
+		return false
 	}
-	return &CGetServerRes{
-		server:  (*_Ctype_struct_Server)(unsafe.Pointer(toCServer(gsv))),
-		success: 1,
-	}
-}
-
-//export GetServersByType
-func GetServersByType(svType string) *CGetServersRes {
-	checkInitialized()
-	var res []*CServer
-	servers, err := sd.GetServersByType(svType)
-	if err != nil {
-		log.Errorf("error getting servers by type: %s", err.Error())
-		return &CGetServersRes{
-			servers: nil,
-			success: 0,
-		}
-	}
-	for _, v := range servers {
-		res = append(res, (*CServer)(unsafe.Pointer(toCServer(v))))
-	}
-	return &CGetServersRes{
-		servers: unsafe.Pointer(&res),
-		success: 1,
-	}
+	toCServer(gsv, res)
+	return true
 }
 
 // TODO put jaeger
 //export SendRPC
-func SendRPC(svID string, route CRoute, msg []byte) *CRPCRes {
+func SendRPC(svID string, route CRoute, msg []byte, ret *CRPCRes) bool {
 	checkInitialized()
 	r := fromCRoute(route)
 	res, err := remote.DoRPC(context.Background(), svID, r, msg)
 	if err != nil {
 		log.Error(err.Error())
-		return &CRPCRes{
-			success: 0,
-		}
+		return false
 	}
 	resBytes, err := proto.Marshal(res)
 	if err != nil {
 		log.Error(err.Error())
-		return &CRPCRes{
-			success: 0,
-		}
+		return false
 	}
-	return &CRPCRes{
-		data:    C.CBytes(resBytes),
-		dataLen: C.int(int(len(resBytes))),
-		success: 1,
-	}
+	ret.data = C.CBytes(resBytes)
+	ret.dataLen = C.int(int(len(resBytes)))
+	return true
 }
 
 func checkInitialized() {

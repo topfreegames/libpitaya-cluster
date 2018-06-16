@@ -16,9 +16,6 @@ public class LibPitayaExample : MonoBehaviour {
     void InitButtonClicked()
     {
         Pitaya.Logger.SetLevel(LogLevel.DEBUG);
-
-        // TODO y the fuck this doesnt work
-        Environment.SetEnvironmentVariable("GODEBUG", "cgocheck=0");
         Console.WriteLine("c# prog running");
 
         SDConfig sdConfig = new SDConfig("127.0.0.1:2379", 30, "pitaya/", 30, true, 60);

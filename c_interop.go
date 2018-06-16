@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"reflect"
 	"unsafe"
 
 	"github.com/topfreegames/pitaya/cluster"
@@ -82,27 +81,16 @@ func fromCServer(csv CServer) (*cluster.Server, error) {
 	return res, nil
 }
 
-func toCServer(sv *cluster.Server) *CServer {
+func toCServer(sv *cluster.Server, dst *CServer) {
 	frontend := 0
 	if sv.Frontend {
 		frontend = 1
 	}
 	meta, _ := json.Marshal(sv.Metadata)
-	csv := &CServer{
-		id:       C.CString(sv.ID),
-		svType:   C.CString(sv.Type),
-		frontend: C.int(frontend),
-		metadata: C.CString(string(meta)),
-	}
-	return csv
-}
-
-func fromCStringSliceToGoStringSlice(cSlice []*C.char) []string {
-	res := make([]string, 0)
-	for _, cStr := range cSlice {
-		res = append(res, C.GoString(cStr))
-	}
-	return res
+	dst.id = C.CString(sv.ID)
+	dst.svType = C.CString(sv.Type)
+	dst.frontend = C.int(frontend)
+	dst.metadata = C.CString(string(meta))
 }
 
 //export FreeServer
@@ -113,23 +101,8 @@ func FreeServer(sv *CServer) {
 	C.free(unsafe.Pointer(sv.metadata))
 }
 
-func goStringSliceFromCStringArray(arr **C.char, sz int) []string {
-	var cCharSlice []*C.char
-	slice := (*reflect.SliceHeader)(unsafe.Pointer(&cCharSlice))
-	slice.Cap = sz
-	slice.Len = sz
-	slice.Data = uintptr(unsafe.Pointer(&arr))
-	res := make([]string, 0)
-	for _, cStr := range cCharSlice {
-		res = append(res, C.GoString(cStr))
-	}
-	return res
-}
-
-// fromCArray receives an array from C and puts it into the Go slice pointed by s
-func fromCArray(arr uintptr, sz int, s uintptr) {
-	slice := (*reflect.SliceHeader)(unsafe.Pointer(s))
-	slice.Cap = sz
-	slice.Len = sz
-	slice.Data = arr
+//export FreeRPCRes
+//remember that C.CString and C.CBytes allocs memory, we must free them
+func FreeRPCRes(rres *CRPCRes) {
+	C.free(unsafe.Pointer(rres.data))
 }
