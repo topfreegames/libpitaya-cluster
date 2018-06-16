@@ -29,12 +29,14 @@ namespace PitayaCSharpExample
       // TODO does it makes sense to give freedom to set reconnectionRetries and messagesBufferSize?
       NatsRPCServerConfig rpcServerConfig = new NatsRPCServerConfig("nats://localhost:4222", 10, 75);
 
+      string serverId = System.Guid.NewGuid().ToString();
+
       PitayaCluster.Init(
         sdConfig,
         rpcClientConfig,
         rpcServerConfig,
         new Server(
-          System.Guid.NewGuid().ToString(),
+          serverId,
           "csharp",
           "{\"ip\":\"127.0.0.1\"}",
           false)
@@ -45,6 +47,9 @@ namespace PitayaCSharpExample
 
       // prevent from closing
       Console.ReadKey();
+
+      Server sv = PitayaCluster.GetServer(serverId);
+      Logger.Info("got server with id: {0}", sv.id);
 
       Protos.RPCMsg msg = new Protos.RPCMsg();
       msg.Msg = "hellow from bla";

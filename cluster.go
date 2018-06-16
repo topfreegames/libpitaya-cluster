@@ -110,7 +110,7 @@ func handleIncomingMessages(chMsg chan *protos.Request) {
 		ptr := bridgeRPCCb(msg)
 		data := *(*[]byte)(ptr)
 		err := rpcClient.Send(reply, data)
-		freeRPCCb(ptr) // memory returned from C is likely to be unmanaged and will leak unless freed
+		C.free((unsafe.Pointer)(ptr))
 		if err != nil {
 			log.Errorf("failed to answer to rpc, err: %s\n", err.Error())
 		}

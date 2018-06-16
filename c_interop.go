@@ -43,7 +43,6 @@ type CGetServerRes C.struct_GetServerRes
 type CGetServersRes C.struct_GetServersRes
 
 var rpcCbFunc C.rpcCbFunc
-var freeRPCCbFunc C.freeRPCCbFunc
 
 func bridgeRPCCb(req *protos.Request) unsafe.Pointer {
 	data := req.GetMsg().GetData()
@@ -63,20 +62,9 @@ func bridgeRPCCb(req *protos.Request) unsafe.Pointer {
 	return unsafe.Pointer(ptrRes)
 }
 
-func freeRPCCb(ptr unsafe.Pointer) {
-	if freeRPCCbFunc != nil {
-		C.bridgeFreeRPCFunc(freeRPCCbFunc, ptr)
-	}
-}
-
 //export SetRPCCallback
 func SetRPCCallback(funcPtr C.rpcCbFunc) {
 	rpcCbFunc = funcPtr
-}
-
-//export SetFreeRPCCallback
-func SetFreeRPCCallback(funcPtr C.freeRPCCbFunc) {
-	freeRPCCbFunc = funcPtr
 }
 
 func fromCRoute(cr CRoute) *route.Route {
@@ -123,12 +111,6 @@ func FreeServer(sv *CServer) {
 	C.free(unsafe.Pointer(sv.id))
 	C.free(unsafe.Pointer(sv.svType))
 	C.free(unsafe.Pointer(sv.metadata))
-}
-
-//export FreeRPCRes
-//remember that C.CString and C.CBytes allocs memory, we must free them
-func FreeRPCRes(rpcRes *CRPCRes) {
-	C.free(unsafe.Pointer(rpcRes.data))
 }
 
 func goStringSliceFromCStringArray(arr **C.char, sz int) []string {

@@ -57,6 +57,4 @@ struct Route {
   char* method;};
 
 typedef void* (*rpcCbFunc) (struct RPCReq);
-typedef void (*freeRPCCbFunc) (void* ptr);
 void* bridgeRPCFunc(rpcCbFunc f, struct RPCReq req);
-void bridgeFreeRPCFunc(freeRPCCbFunc f, void* ptr);
