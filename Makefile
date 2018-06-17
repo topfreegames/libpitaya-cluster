@@ -21,6 +21,7 @@ run-go-server:
 protos-compile:
 	@protoc --csharp_out=./csharp-example/gen/ ./go-server/protos/*.proto
 	@protoc --csharp_out=./unity-example/Assets/Gen/ ./go-server/protos/*.proto
+	@protoc --proto_path=./go-server/protos --python_out=./python-lib/gen/ ./go-server/protos/cluster.proto
 	@protoc --gogofaster_out=. ./go-server/protos/*.proto
 
 start-deps:

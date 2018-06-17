@@ -81,6 +81,7 @@ namespace Pitaya
     }
   }
 
+  [StructLayout(LayoutKind.Sequential)]
   public struct Server {
     [MarshalAs(UnmanagedType.LPStr)]
     public string id;
@@ -153,6 +154,7 @@ namespace Pitaya
       return data;
     }
   }
+
   [StructLayout(LayoutKind.Sequential)]
   public struct RPCRes {
     public IntPtr data;

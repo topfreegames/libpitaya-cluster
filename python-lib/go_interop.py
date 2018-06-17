@@ -2,9 +2,6 @@ from ctypes import *
 
 lib = cdll.LoadLibrary("./libpitaya_cluster.dylib")
 
-#[DllImport("libpitaya_cluster", CallingConvention = CallingConvention.Cdecl)]
-#  public static extern bool Shutdown();
-
 class SdConfig(Structure):
   _fields_ = [
     ("endpoints", c_char_p),
@@ -35,31 +32,51 @@ class Server(Structure):
     ("metadata", c_char_p),
     ("frontend", c_bool)]
 
-class GoString(Structure):
-    _fields_ = [("p", c_char_p), ("n", c_longlong)]
+class RPCRes(Structure):
+  _fields_ = [
+    ("data", c_void_p),
+    ("data_len", c_int)]
 
-# Init
+class RPCReq(Structure):
+  _fields_ = [
+    ("data", c_void_p),
+    ("data_len", c_int),
+    ("route", c_char_p)]
+
+class GoString(Structure):
+  _fields_ = [("p", c_char_p), ("n", c_longlong)]
+
+class GoSlice(Structure):
+  _fields_ = [("data", c_void_p), ("len", c_longlong), ("cap", c_longlong)]
+
+class Route(Structure):
+  _fields_ = [("sv_type", c_char_p), ("service", c_char_p), ("method", c_char_p)]
+
+def route_from_str(route_str:str):
+  r = Route()
+  route_splitted = route_str.split(".")
+  if len(route_splitted) != 3:
+    raise Exception('invalid route {}'.format(route_str))
+  r.sv_type = route_splitted[0].encode('utf-8')
+  r.service = route_splitted[1].encode('utf-8')
+  r.method = route_splitted[2].encode('utf-8')
+  return r
+
+RPCCB = CFUNCTYPE(c_void_p, RPCReq)
+
 lib.Init.restype = c_bool
 lib.Init.argtypes = [SdConfig, NatsRpcClientConfig, NatsRpcServerConfig, Server]
 
-#GetServer
 lib.GetServer.restype = c_bool
-lib.GetServer.argtypes= [GoString, POINTER(Server)]
+lib.GetServer.argtypes = [GoString, POINTER(Server)]
 
-#FreeServer
-lib.FreeServer.argtypes= [POINTER(Server)]
+lib.FreeServer.argtypes = [POINTER(Server)]
 
-#[DllImport("libpitaya_cluster", CallingConvention = CallingConvention.Cdecl)]
-#  static extern IntPtr SendRPC(GoString svId, Route route, GoSlice message);
-#
-#[DllImport("libpitaya_cluster", CallingConvention = CallingConvention.Cdecl)]
-#  public static extern void FreeServer(IntPtr ptr);
-#
-#[DllImport("libpitaya_cluster", CallingConvention = CallingConvention.Cdecl)]
-#  static extern void FreeRPCRes(IntPtr ptr);
-#
-#[DllImport("libpitaya_cluster", CallingConvention = CallingConvention.Cdecl, EntryPoint= "SetRPCCallback")]
-#  static extern void SetRPCCallbackInternal(IntPtr funcPtr);
-#
-#[DllImport("libpitaya_cluster", CallingConvention = CallingConvention.Cdecl, EntryPoint= "SetFreeRPCCallback")]
-#  static extern void SetFreeRPCCallbackInternal(IntPtr funcPtr);
+lib.FreeRPCRes.argtypes = [POINTER(RPCRes)]
+
+lib.Shutdown.restype = c_bool
+
+lib.SendRPC.restype = c_bool
+lib.SendRPC.argtypes = [GoString, Route, GoSlice, POINTER(RPCRes)]
+
+lib.SetRPCCallback.argtypes = [c_void_p]
