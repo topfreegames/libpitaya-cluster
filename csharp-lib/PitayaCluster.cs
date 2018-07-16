@@ -23,7 +23,7 @@ namespace Pitaya
     }
 
     public static byte[] protoMessageToByteArray(IMessage msg){
-       MemoryStream mem = new MemoryStream();
+      MemoryStream mem = new MemoryStream();
       CodedOutputStream o = new CodedOutputStream(mem);
       msg.WriteTo(o);
       o.Flush();
