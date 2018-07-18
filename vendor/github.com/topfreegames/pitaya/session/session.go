@@ -48,17 +48,36 @@ type NetworkEntity interface {
 
 var (
 	sessionBindCallbacks = make([]func(ctx context.Context, s *Session) error, 0)
-	sessionsByUID        sync.Map
-	sessionsByID         sync.Map
-	sessionIDSvc         = newSessionIDService()
+	afterBindCallbacks   = make([]func(ctx context.Context, s *Session) error, 0)
+	// SessionCloseCallbacks contains global session close callbacks
+	SessionCloseCallbacks = make([]func(s *Session), 0)
+	sessionsByUID         sync.Map
+	sessionsByID          sync.Map
+	sessionIDSvc          = newSessionIDService()
 	// SessionCount keeps the current number of sessions
 	SessionCount int64
 )
 
-// Session represents a client session which could storage temp data during low-level
-// keep connected, all data will be released when the low-level connection was broken.
-// Session instance related to the client will be passed to Handler method as the first
-// parameter.
+// HandshakeClientData represents information about the client sent on the handshake.
+type HandshakeClientData struct {
+	Platform    string `json:"platform"`
+	LibVersion  string `json:"libVersion"`
+	BuildNumber string `json:"clientBuildNumber"`
+	Version     string `json:"clientVersion"`
+}
+
+// HandshakeData represents information about the handshake sent by the client.
+// `sys` corresponds to information independent from the app and `user` information
+// that depends on the app and is customized by the user.
+type HandshakeData struct {
+	Sys  HandshakeClientData    `json:"sys"`
+	User map[string]interface{} `json:"user,omitempty"`
+}
+
+// Session represents a client session, which can store data during the connection.
+// All data is released when the low-level connection is broken.
+// Session instance related to the client will be passed to Handler method in the
+// context parameter.
 type Session struct {
 	sync.RWMutex                             // protect data
 	id                int64                  // session global unique id
@@ -66,6 +85,7 @@ type Session struct {
 	lastTime          int64                  // last heartbeat time
 	entity            NetworkEntity          // low-level network entity
 	data              map[string]interface{} // session data store
+	handshakeData     *HandshakeData         // handshake data received by the client
 	encodedData       []byte                 // session data encoded as a byte array
 	OnCloseCallbacks  []func()               //onClose callbacks
 	IsFrontend        bool                   // if session is a frontend session
@@ -96,6 +116,7 @@ func New(entity NetworkEntity, frontend bool, UID ...string) *Session {
 		id:               sessionIDSvc.sessionID(),
 		entity:           entity,
 		data:             make(map[string]interface{}),
+		handshakeData:    nil,
 		lastTime:         time.Now().Unix(),
 		OnCloseCallbacks: []func(){},
 		IsFrontend:       frontend,
@@ -112,6 +133,7 @@ func New(entity NetworkEntity, frontend bool, UID ...string) *Session {
 
 // GetSessionByUID return a session bound to an user id
 func GetSessionByUID(uid string) *Session {
+	// TODO: Block this operation in backend servers
 	if val, ok := sessionsByUID.Load(uid); ok {
 		return val.(*Session)
 	}
@@ -120,6 +142,7 @@ func GetSessionByUID(uid string) *Session {
 
 // GetSessionByID return a session bound to a frontend server id
 func GetSessionByID(id int64) *Session {
+	// TODO: Block this operation in backend servers
 	if val, ok := sessionsByID.Load(id); ok {
 		return val.(*Session)
 	}
@@ -138,6 +161,31 @@ func OnSessionBind(f func(ctx context.Context, s *Session) error) {
 		}
 	}
 	sessionBindCallbacks = append(sessionBindCallbacks, f)
+}
+
+// OnAfterSessionBind adds a method to be called when session is bound and after all sessionBind callbacks
+func OnAfterSessionBind(f func(ctx context.Context, s *Session) error) {
+	// Prevents the same function to be added twice in onSessionBind
+	sf1 := reflect.ValueOf(f)
+	for _, fun := range afterBindCallbacks {
+		sf2 := reflect.ValueOf(fun)
+		if sf1.Pointer() == sf2.Pointer() {
+			return
+		}
+	}
+	afterBindCallbacks = append(afterBindCallbacks, f)
+}
+
+// OnSessionClose adds a method that will be called when every session closes
+func OnSessionClose(f func(s *Session)) {
+	sf1 := reflect.ValueOf(f)
+	for _, fun := range SessionCloseCallbacks {
+		sf2 := reflect.ValueOf(fun)
+		if sf1.Pointer() == sf2.Pointer() {
+			return
+		}
+	}
+	SessionCloseCallbacks = append(SessionCloseCallbacks, f)
 }
 
 func (s *Session) updateEncodedData() error {
@@ -223,13 +271,19 @@ func (s *Session) Bind(ctx context.Context, uid string) error {
 	}
 
 	s.uid = uid
-	if len(sessionBindCallbacks) > 0 {
-		for _, cb := range sessionBindCallbacks {
-			err := cb(ctx, s)
-			if err != nil {
-				s.uid = ""
-				return err
-			}
+	for _, cb := range sessionBindCallbacks {
+		err := cb(ctx, s)
+		if err != nil {
+			s.uid = ""
+			return err
+		}
+	}
+
+	for _, cb := range afterBindCallbacks {
+		err := cb(ctx, s)
+		if err != nil {
+			s.uid = ""
+			return err
 		}
 	}
 
@@ -268,12 +322,13 @@ func (s *Session) OnClose(c func()) error {
 	return nil
 }
 
-// Close terminate current session, session related data will not be released,
+// Close terminates current session, session related data will not be released,
 // all related data should be cleared explicitly in Session closed callback
 func (s *Session) Close() {
 	atomic.AddInt64(&SessionCount, -1)
 	sessionsByID.Delete(s.ID())
 	sessionsByUID.Delete(s.UID())
+	// TODO: this logic should be moved to nats rpc server
 	if s.IsFrontend && s.Subscription != nil {
 		// if the user is bound to an userid and nats rpc server is being used we need to unsubscribe
 		err := s.Subscription.Unsubscribe()
@@ -581,9 +636,22 @@ func (s *Session) Clear() {
 	s.updateEncodedData()
 }
 
+// SetHandshakeData sets the handshake data received by the client.
+func (s *Session) SetHandshakeData(data *HandshakeData) {
+	s.Lock()
+	defer s.Unlock()
+
+	s.handshakeData = data
+}
+
+// GetHandshakeData gets the handshake data received by the client.
+func (s *Session) GetHandshakeData() *HandshakeData {
+	return s.handshakeData
+}
+
 func (s *Session) sendRequestToFront(ctx context.Context, route string, includeData bool) error {
 	sessionData := &protos.Session{
-		ID:  s.frontendSessionID,
+		Id:  s.frontendSessionID,
 		Uid: s.uid,
 	}
 	if includeData {

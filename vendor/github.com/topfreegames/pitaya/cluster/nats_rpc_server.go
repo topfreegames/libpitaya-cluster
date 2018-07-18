@@ -21,6 +21,8 @@
 package cluster
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"math"
 
@@ -28,9 +30,12 @@ import (
 	nats "github.com/nats-io/go-nats"
 	"github.com/topfreegames/pitaya/config"
 	"github.com/topfreegames/pitaya/constants"
+	e "github.com/topfreegames/pitaya/errors"
 	"github.com/topfreegames/pitaya/logger"
 	"github.com/topfreegames/pitaya/metrics"
 	"github.com/topfreegames/pitaya/protos"
+	"github.com/topfreegames/pitaya/session"
+	"github.com/topfreegames/pitaya/util"
 )
 
 // NatsRPCServer struct
@@ -49,11 +54,18 @@ type NatsRPCServer struct {
 	userPushCh             chan *protos.Push
 	sub                    *nats.Subscription
 	dropped                int
+	pitayaServer           protos.PitayaServer
 	metricsReporters       []metrics.Reporter
+	appDieChan             chan bool
 }
 
 // NewNatsRPCServer ctor
-func NewNatsRPCServer(config *config.Config, server *Server, metricsReporters []metrics.Reporter) (*NatsRPCServer, error) {
+func NewNatsRPCServer(
+	config *config.Config,
+	server *Server,
+	metricsReporters []metrics.Reporter,
+	appDieChan chan bool,
+) (*NatsRPCServer, error) {
 	ns := &NatsRPCServer{
 		config:           config,
 		server:           server,
@@ -61,6 +73,7 @@ func NewNatsRPCServer(config *config.Config, server *Server, metricsReporters []
 		unhandledReqCh:   make(chan *protos.Request),
 		dropped:          0,
 		metricsReporters: metricsReporters,
+		appDieChan:       appDieChan,
 	}
 	if err := ns.configure(); err != nil {
 		return nil, err
@@ -106,14 +119,29 @@ func GetBindBroadcastTopic(svType string) string {
 	return fmt.Sprintf("pitaya/%s/bindings", svType)
 }
 
-// SubscribeToBindingsChannel subscribes to the channel that will receive binding notifications from other servers
-func (ns *NatsRPCServer) SubscribeToBindingsChannel() error {
+// onSessionBind should be called on each session bind
+func (ns *NatsRPCServer) onSessionBind(ctx context.Context, s *session.Session) error {
+	if ns.server.Frontend {
+		subs, err := ns.subscribeToUserMessages(s.UID(), ns.server.Type)
+		if err != nil {
+			return err
+		}
+		s.Subscription = subs
+	}
+	return nil
+}
+
+// SetPitayaServer sets the pitaya server
+func (ns *NatsRPCServer) SetPitayaServer(ps protos.PitayaServer) {
+	ns.pitayaServer = ps
+}
+
+func (ns *NatsRPCServer) subscribeToBindingsChannel() error {
 	_, err := ns.conn.ChanSubscribe(GetBindBroadcastTopic(ns.server.Type), ns.bindingsChan)
 	return err
 }
 
-// SubscribeToUserMessages subscribes to user msg channel
-func (ns *NatsRPCServer) SubscribeToUserMessages(uid string, svType string) (*nats.Subscription, error) {
+func (ns *NatsRPCServer) subscribeToUserMessages(uid string, svType string) (*nats.Subscription, error) {
 	subs, err := ns.conn.Subscribe(GetUserMessagesTopic(uid, svType), func(msg *nats.Msg) {
 		push := &protos.Push{}
 		err := proto.Unmarshal(msg.Data, push)
@@ -166,21 +194,84 @@ func (ns *NatsRPCServer) handleMessages() {
 	}
 }
 
-// GetUnhandledRequestsChannel returns the channel that will receive unhandled messages
+// GetUnhandledRequestsChannel gets the unhandled requests channel from nats rpc server
 func (ns *NatsRPCServer) GetUnhandledRequestsChannel() chan *protos.Request {
 	return ns.unhandledReqCh
 }
 
-// GetUserPushChannel returns the channel that will receive user pushs
-func (ns *NatsRPCServer) GetUserPushChannel() chan *protos.Push {
+func (ns *NatsRPCServer) getUserPushChannel() chan *protos.Push {
 	return ns.userPushCh
+}
+
+func (ns *NatsRPCServer) marshalResponse(res *protos.Response) ([]byte, error) {
+	p, err := proto.Marshal(res)
+	if err != nil {
+		res := &protos.Response{
+			Error: &protos.Error{
+				Code: e.ErrUnknownCode,
+				Msg:  err.Error(),
+			},
+		}
+		p, _ = proto.Marshal(res)
+	}
+
+	if err == nil && res.Error != nil {
+		err = errors.New(res.Error.Msg)
+	}
+	return p, err
+}
+
+func (ns *NatsRPCServer) processMessages(threadID int) {
+	for req := range ns.GetUnhandledRequestsChannel() {
+		logger.Log.Debugf("(%d) processing message %v", threadID, req.GetMsg().GetId())
+		reply := req.GetMsg().GetReply()
+		var response *protos.Response
+		ctx, err := util.GetContextFromRequest(req, ns.server.ID)
+		if err != nil {
+			response = &protos.Response{
+				Error: &protos.Error{
+					Code: e.ErrInternalCode,
+					Msg:  err.Error(),
+				},
+			}
+		} else {
+			response, _ = ns.pitayaServer.Call(ctx, req)
+		}
+		p, err := ns.marshalResponse(response)
+		err = ns.conn.Publish(reply, p)
+		if err != nil {
+			logger.Log.Error("error sending message response")
+		}
+	}
+}
+
+func (ns *NatsRPCServer) processSessionBindings() {
+	for bind := range ns.bindingsChan {
+		b := &protos.BindMsg{}
+		err := proto.Unmarshal(bind.Data, b)
+		if err != nil {
+			logger.Log.Errorf("error processing binding msg: %v", err)
+			continue
+		}
+		ns.pitayaServer.SessionBindRemote(context.Background(), b)
+	}
+}
+
+func (ns *NatsRPCServer) processPushes() {
+	for push := range ns.getUserPushChannel() {
+		logger.Log.Debugf("sending push to user %s: %v", push.GetUid(), string(push.Data))
+		_, err := ns.pitayaServer.PushToUser(context.Background(), push)
+		if err != nil {
+			logger.Log.Errorf("error sending push to user: %v", err)
+		}
+	}
 }
 
 // Init inits nats rpc server
 func (ns *NatsRPCServer) Init() error {
 	// TODO should we have concurrency here? it feels like we should
 	go ns.handleMessages()
-	conn, err := setupNatsConn(ns.connString, nats.MaxReconnects(ns.maxReconnectionRetries))
+	conn, err := setupNatsConn(ns.connString, ns.appDieChan, nats.MaxReconnects(ns.maxReconnectionRetries))
 	if err != nil {
 		return err
 	}
@@ -188,7 +279,23 @@ func (ns *NatsRPCServer) Init() error {
 	if ns.sub, err = ns.subscribe(getChannel(ns.server.Type, ns.server.ID)); err != nil {
 		return err
 	}
-	return ns.SubscribeToBindingsChannel()
+
+	err = ns.subscribeToBindingsChannel()
+	if err != nil {
+		return err
+	}
+	// this handles remote messages
+	for i := 0; i < ns.config.GetInt("pitaya.concurrency.remote.service"); i++ {
+		go ns.processMessages(i)
+	}
+
+	session.OnSessionBind(ns.onSessionBind)
+
+	// this should be so fast that we shoudn't need concurrency
+	go ns.processPushes()
+	go ns.processSessionBindings()
+
+	return nil
 }
 
 // AfterInit runs after initialization

@@ -43,7 +43,7 @@ import (
 type Remote struct {
 	Session          *session.Session // session
 	chDie            chan struct{}    // wait for close
-	messageEncoder   message.MessageEncoder
+	messageEncoder   message.Encoder
 	encoder          codec.PacketEncoder      // binary encoder
 	frontendID       string                   // the frontend that sent the request
 	reply            string                   // nats reply topic
@@ -61,7 +61,7 @@ func NewRemote(
 	serializer serialize.Serializer,
 	serviceDiscovery cluster.ServiceDiscovery,
 	frontendID string,
-	messageEncoder message.MessageEncoder,
+	messageEncoder message.Encoder,
 ) (*Remote, error) {
 	a := &Remote{
 		chDie:            make(chan struct{}),
@@ -76,7 +76,7 @@ func NewRemote(
 
 	// binding session
 	s := session.New(a, false, sess.GetUid())
-	s.SetFrontendData(frontendID, sess.GetID())
+	s.SetFrontendData(frontendID, sess.GetId())
 	err := s.SetDataEncoded(sess.GetData())
 	if err != nil {
 		return nil, err
@@ -122,7 +122,7 @@ func (a *Remote) Push(route string, v interface{}) error {
 	}
 	return a.sendPush(
 		pendingMessage{typ: message.Push, route: route, payload: v},
-		cluster.GetUserMessagesTopic(a.Session.UID(), sv.Type),
+		a.Session.UID(), sv,
 	)
 }
 
@@ -199,7 +199,7 @@ func (a *Remote) send(m pendingMessage, to string) (err error) {
 	return a.rpcClient.Send(to, bt)
 }
 
-func (a *Remote) sendPush(m pendingMessage, to string) (err error) {
+func (a *Remote) sendPush(m pendingMessage, userID string, sv *cluster.Server) (err error) {
 	payload, err := util.SerializeOrRaw(a.serializer, m.payload)
 	if err != nil {
 		return err
@@ -209,11 +209,7 @@ func (a *Remote) sendPush(m pendingMessage, to string) (err error) {
 		Uid:   a.Session.UID(),
 		Data:  payload,
 	}
-	msg, err := proto.Marshal(push)
-	if err != nil {
-		return err
-	}
-	return a.rpcClient.Send(to, msg)
+	return a.rpcClient.SendPush(userID, sv, push)
 }
 
 // SendRequest sends a request to a server

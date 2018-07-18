@@ -22,7 +22,7 @@ package agent
 
 import (
 	"context"
-	"encoding/json"
+	gojson "encoding/json"
 	"errors"
 	"fmt"
 	"net"
@@ -30,6 +30,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	opentracing "github.com/opentracing/opentracing-go"
 	"github.com/topfreegames/pitaya/constants"
 	"github.com/topfreegames/pitaya/internal/codec"
 	"github.com/topfreegames/pitaya/internal/message"
@@ -71,7 +72,7 @@ type (
 		messagesBufferSize int                  // size of the pending messages buffer
 		serializer         serialize.Serializer // message serializer
 		state              int32                // current agent state
-		messageEncoder     message.MessageEncoder
+		messageEncoder     message.Encoder
 		metricsReporters   []metrics.Reporter
 	}
 
@@ -94,12 +95,12 @@ func NewAgent(
 	heartbeatTime time.Duration,
 	messagesBufferSize int,
 	dieChan chan bool,
-	messageEncoder message.MessageEncoder,
+	messageEncoder message.Encoder,
 	metricsReporters []metrics.Reporter,
 ) *Agent {
 	// initialize heartbeat and handshake data on first player connection
 	once.Do(func() {
-		hbdEncode(heartbeatTime, packetEncoder, messageEncoder.CompressEnabled())
+		hbdEncode(heartbeatTime, packetEncoder, messageEncoder.IsCompressionEnabled(), serializer.GetName())
 	})
 
 	a := &Agent{
@@ -264,8 +265,6 @@ func (a *Agent) Handle() {
 	select {
 	case <-a.chDie: // agent closed signal
 		return
-	case <-a.appDieChan: // application quit
-		return
 	}
 }
 
@@ -303,12 +302,12 @@ func onSessionClosed(s *session.Session) {
 		}
 	}()
 
-	if len(s.OnCloseCallbacks) < 1 {
-		return
+	for _, fn1 := range s.OnCloseCallbacks {
+		fn1()
 	}
 
-	for _, fn := range s.OnCloseCallbacks {
-		fn()
+	for _, fn2 := range session.SessionCloseCallbacks {
+		fn2(s)
 	}
 }
 
@@ -379,7 +378,8 @@ func (a *Agent) write() {
 				logger.Log.Error(err.Error())
 				return
 			}
-			tracing.FinishSpan(data.ctx, nil)
+			var e error
+			tracing.FinishSpan(data.ctx, e)
 			if data.typ == message.Response {
 				metrics.ReportTimingFromCtx(data.ctx, a.metricsReporters, handlerType, m.Err)
 			}
@@ -396,6 +396,12 @@ func (a *Agent) SendRequest(ctx context.Context, serverID, route string, v inter
 
 // AnswerWithError answers with an error
 func (a *Agent) AnswerWithError(ctx context.Context, mid uint, err error) {
+	if ctx != nil && err != nil {
+		s := opentracing.SpanFromContext(ctx)
+		if s != nil {
+			tracing.LogError(s, err.Error())
+		}
+	}
 	p, e := util.GetErrorPayload(a.serializer, err)
 	if e != nil {
 		logger.Log.Error("error answering the player with an error: ", e.Error())
@@ -407,15 +413,16 @@ func (a *Agent) AnswerWithError(ctx context.Context, mid uint, err error) {
 	}
 }
 
-func hbdEncode(heartbeatTimeout time.Duration, packetEncoder codec.PacketEncoder, dataCompression bool) {
+func hbdEncode(heartbeatTimeout time.Duration, packetEncoder codec.PacketEncoder, dataCompression bool, serializerName string) {
 	hData := map[string]interface{}{
 		"code": 200,
 		"sys": map[string]interface{}{
-			"heartbeat": heartbeatTimeout.Seconds(),
-			"dict":      message.GetDictionary(),
+			"heartbeat":  heartbeatTimeout.Seconds(),
+			"dict":       message.GetDictionary(),
+			"serializer": serializerName,
 		},
 	}
-	data, err := json.Marshal(hData)
+	data, err := gojson.Marshal(hData)
 	if err != nil {
 		panic(err)
 	}

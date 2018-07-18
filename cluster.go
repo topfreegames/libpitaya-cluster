@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"fmt"
+	"os"
+	"reflect"
 	"strings"
 	"time"
 	"unsafe"
@@ -11,10 +13,14 @@ import (
 	"github.com/spf13/viper"
 	"github.com/topfreegames/pitaya/cluster"
 	"github.com/topfreegames/pitaya/config"
+	"github.com/topfreegames/pitaya/errors"
 	"github.com/topfreegames/pitaya/logger"
 	"github.com/topfreegames/pitaya/protos"
 	"github.com/topfreegames/pitaya/router"
 	"github.com/topfreegames/pitaya/service"
+	"github.com/topfreegames/pitaya/tracing"
+	"github.com/topfreegames/pitaya/tracing/jaeger"
+	"github.com/topfreegames/pitaya/util"
 )
 
 /*
@@ -23,6 +29,7 @@ import (
 import "C"
 
 var (
+	server      *cluster.Server
 	sd          cluster.ServiceDiscovery
 	rpcClient   cluster.RPCClient
 	rpcServer   cluster.RPCServer
@@ -45,7 +52,6 @@ func GetServer(id string, res *CServer) bool {
 	return true
 }
 
-// TODO put jaeger
 //export SendRPC
 func SendRPC(svID string, route CRoute, msg []byte, ret *CRPCRes) bool {
 	checkInitialized()
@@ -71,17 +77,38 @@ func checkInitialized() {
 	}
 }
 
+func replyWithError(reply string, err error) {
+	res := &protos.Response{
+		Error: &protos.Error{
+			Code: errors.ErrInternalCode,
+			Msg:  err.Error(),
+		},
+	}
+	data, _ := proto.Marshal(res)
+	e := rpcClient.Send(reply, data)
+	if e != nil {
+		log.Errorf("failed to answer to rpc, err: %s\n", e.Error())
+	}
+}
+
 func handleIncomingMessages(chMsg chan *protos.Request) {
 	for msg := range chMsg {
 		reply := msg.GetMsg().GetReply()
+		ctx, err := util.GetContextFromRequest(msg, server.ID)
+		if err != nil {
+			log.Errorf("failed to get context from request: %s", err.Error())
+			replyWithError(reply, err)
+			continue
+		}
 		log.Debugf("processing incoming message with route: %s", msg.GetMsg().GetRoute())
 		ptr := bridgeRPCCb(msg)
 		data := *(*[]byte)(ptr)
-		err := rpcClient.Send(reply, data)
+		err = rpcClient.Send(reply, data)
 		C.free((unsafe.Pointer)(ptr))
 		if err != nil {
 			log.Errorf("failed to answer to rpc, err: %s\n", err.Error())
 		}
+		tracing.FinishSpan(ctx, err)
 	}
 }
 
@@ -110,11 +137,13 @@ func getConfig(
 	cfg.Set("pitaya.cluster.rpc.server.nats.connect", C.GoString(rpcServerConfig.endpoint))
 	cfg.Set("pitaya.cluster.rpc.server.nats.maxreconnectionretries", int(rpcServerConfig.maxConnectionRetries))
 	cfg.Set("pitaya.buffer.cluster.rpc.server.messages", int(rpcServerConfig.messagesBufferSize))
+	// hack for stopping nats rpc server from processing messages
+	cfg.Set("pitaya.concurrency.remote.service", 0)
 
 	return config.NewConfig(cfg)
 }
 
-func createModules(conf *config.Config, sv *cluster.Server) error {
+func createModules(conf *config.Config, sv *cluster.Server, dieChan chan bool) error {
 	var err error
 	sd, err = cluster.NewEtcdServiceDiscovery(conf, sv)
 	if err != nil {
@@ -122,13 +151,13 @@ func createModules(conf *config.Config, sv *cluster.Server) error {
 		return err
 	}
 
-	rpcClient, err = cluster.NewNatsRPCClient(conf, sv, nil)
+	rpcClient, err = cluster.NewNatsRPCClient(conf, sv, nil, dieChan)
 	if err != nil {
 		log.Error(err.Error())
 		return err
 	}
 
-	rpcServer, err = cluster.NewNatsRPCServer(conf, sv, nil)
+	rpcServer, err = cluster.NewNatsRPCServer(conf, sv, nil, dieChan)
 	if err != nil {
 		log.Error(err.Error())
 		return err
@@ -178,15 +207,45 @@ func Shutdown() bool {
 	return true
 }
 
+func wait(dieChan chan bool) {
+	<-dieChan
+	os.Exit(1)
+}
+
+func copyStr(s string) string {
+	var b []byte
+	h := (*reflect.SliceHeader)(unsafe.Pointer(&b))
+	h.Data = (*reflect.StringHeader)(unsafe.Pointer(&s)).Data
+	h.Len = len(s)
+	h.Cap = len(s)
+	return string(b)
+}
+
+//export ConfigureJaeger
+func ConfigureJaeger(probability float64, serviceName string) {
+	opts := jaeger.Options{
+		Disabled:    false,
+		Probability: probability,
+		ServiceName: copyStr(serviceName),
+	}
+
+	_, err := jaeger.Configure(opts)
+	log.Infof("jaeger activated with probability: %f and name: %s", probability, serviceName)
+	if err != nil {
+		log.Error("failed to configure jaeger")
+	}
+}
+
 //export Init
 func Init(
 	sdConfig CSDConfig,
 	rpcClientConfig CNatsRPCClientConfig,
 	rpcServerConfig CNatsRPCServerConfig,
-	server CServer,
+	sv CServer,
 ) bool {
 
-	sv, err := fromCServer(server)
+	var err error
+	server, err = fromCServer(sv)
 	if err != nil {
 		fmt.Println(err.Error())
 		return false
@@ -194,7 +253,9 @@ func Init(
 
 	conf := getConfig(sdConfig, rpcClientConfig, rpcServerConfig)
 
-	err = createModules(conf, sv)
+	dieChan := make(chan bool)
+
+	err = createModules(conf, server, dieChan)
 	if err != nil {
 		log.Error(err.Error())
 		return false
@@ -208,7 +269,7 @@ func Init(
 
 	for i := 0; i < int(rpcServerConfig.rpcHandleWorkerNum); i++ {
 		log.Debug("started handle rpc routine")
-		go handleIncomingMessages(rpcServer.GetUnhandledRequestsChannel())
+		go handleIncomingMessages(rpcServer.(*cluster.NatsRPCServer).GetUnhandledRequestsChannel())
 	}
 
 	r := router.New()
@@ -222,11 +283,14 @@ func Init(
 		nil,
 		r,
 		nil,
-		sv,
+		server,
 	)
 
 	initialized = true
 
 	log.Info("go module initialized")
+
+	go wait(dieChan)
+
 	return true
 }
