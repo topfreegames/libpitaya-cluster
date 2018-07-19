@@ -253,7 +253,7 @@
     "util",
     "util/compression"
   ]
-  revision = "bb973113f8514d8b368e719224c1464702603a5f"
+  revision = "de653998c2ab8377c448bc40305ae2f95d4ee763"
 
 [[projects]]
   name = "github.com/uber/jaeger-client-go"
@@ -297,9 +297,9 @@
     "context",
     "http2",
     "http2/hpack",
-    "lex/httplex",
     "idna",
     "internal/timeseries",
+    "lex/httplex",
     "trace"
   ]
   revision = "66aacef3dd8a676686c7ae3716979581e8b03c47"
