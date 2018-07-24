@@ -18,9 +18,14 @@ run-csharp-example:
 run-go-server:
 	@cd ./go-server && go run main.go
 
-protos-compile:
+submodules:
+	@git submodule update --init --recursive --remote
+
+protos-compile: submodules
 	@protoc --csharp_out=./csharp-example/gen/ ./go-server/protos/*.proto
 	@protoc --csharp_out=./unity-example/Assets/Gen/ ./go-server/protos/*.proto
+	@protoc --proto_path=pitaya-protos --csharp_out=./csharp-lib/cluster-lib/gen ./pitaya-protos/*.proto
+	@protoc --proto_path=pitaya-protos --python_out=./python-lib/gen ./pitaya-protos/*.proto
 	@protoc --proto_path=./go-server/protos --python_out=./python-lib/gen/ ./go-server/protos/cluster.proto
 	@protoc --gogofaster_out=. ./go-server/protos/*.proto
 
