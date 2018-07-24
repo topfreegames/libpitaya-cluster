@@ -11,20 +11,21 @@ namespace Pitaya
   {
     [UnmanagedFunctionPointer(CallingConvention.StdCall)]
     public delegate IntPtr RPCCb(RPCReq req);
+    public delegate string RemoteNameFunc(string methodName);
 
     private static Dictionary<string, RemoteMethod> remotesDict = new Dictionary<string, RemoteMethod>();
 
-    public static Protos.Response getErrorResponse(string code, string msg) {
-      Protos.Response response = new Protos.Response();
+    public static Protos.Response GetErrorResponse(string code, string msg) {
+      var response = new Protos.Response();
       response.Error = new Protos.Error();
       response.Error.Code = code;
       response.Error.Msg = msg;
       return response;
     }
 
-    public static byte[] protoMessageToByteArray(IMessage msg){
-      MemoryStream mem = new MemoryStream();
-      CodedOutputStream o = new CodedOutputStream(mem);
+    public static byte[] ProtoMessageToByteArray(IMessage msg){
+      var mem = new MemoryStream();
+      var o = new CodedOutputStream(mem);
       msg.WriteTo(o);
       o.Flush();
       mem.Close();
@@ -32,8 +33,8 @@ namespace Pitaya
     }
 
     public static Server GetServer(string id) {
-      IntPtr pnt = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(Server)));
-      Server ret = new Server();
+      var pnt = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(Server)));
+      var ret = new Server();
       try
       {
         Marshal.StructureToPtr(ret, pnt, false);
@@ -42,9 +43,8 @@ namespace Pitaya
           ret = (Server) Marshal.PtrToStructure(pnt, typeof(Server));
           FreeServer(pnt);
           return ret;
-        } else {
-          throw new Exception("failed to get server! with id " + id);
         }
+        throw new Exception("failed to get server! with id " + id);
       } finally
       {
         Marshal.FreeHGlobal(pnt);
@@ -53,9 +53,18 @@ namespace Pitaya
 
     public static void RegisterRemote(BaseRemote remote) {
       string className = remote.GetType().Name.ToLower();
+      RegisterRemote(remote, className, Utils.DefaultRemoteNameFunc);
+    }
+
+    public static void RegisterRemote(BaseRemote remote, string name) {
+      RegisterRemote(remote, name, Utils.DefaultRemoteNameFunc);
+    }
+
+    public static void RegisterRemote(BaseRemote remote, string name, RemoteNameFunc remoteNameFunc) {
       Dictionary<string,  RemoteMethod> m = remote.getRemotesMap();
       foreach (KeyValuePair<string, RemoteMethod> kvp in m){
-        string remoteName = String.Format("{0}.{1}", className, kvp.Key);
+        var rn = remoteNameFunc(kvp.Key);
+        var remoteName = String.Format("{0}.{1}", name, rn);
         if (remotesDict.ContainsKey(remoteName)){
           throw new Exception(String.Format("tried to register same remote twice! remote name: {0}",remoteName));
         }
@@ -69,30 +78,30 @@ namespace Pitaya
       byte[] data = req.getReqData();
       Route route = Route.fromString(req.route);
       Logger.Debug("called with route: " + route + " and data: " + Encoding.UTF8.GetString(data));
-      Protos.Response response = new Protos.Response();
+      var response = new Protos.Response();
       string remoteName = String.Format("{0}.{1}", route.service, route.method);
       IntPtr pnt = Marshal.AllocHGlobal(Marshal.SizeOf(new GoSlice()));
       if (!remotesDict.ContainsKey(remoteName)){
-        response = getErrorResponse("PIT-404", String.Format("remote not found! remote name: {0}", remoteName));
-        byte[] resBytes = protoMessageToByteArray(response);
+        response = GetErrorResponse("PIT-404", String.Format("remote not found! remote name: {0}", remoteName));
+        byte[] resBytes = ProtoMessageToByteArray(response);
         Marshal.StructureToPtr(GoSlice.fromSlice<byte>(resBytes), pnt, false);
         return pnt;
       }
       RemoteMethod remote = remotesDict[remoteName];
       Logger.Debug(String.Format("found delegate: {0}", remote));
       try{
-        IMessage arg = (IMessage) Activator.CreateInstance(remote.argType);
+        var arg = (IMessage) Activator.CreateInstance(remote.argType);
         arg.MergeFrom(new CodedInputStream(data));
         // invoke is slow :/
-        IMessage ans = (IMessage) remote.method.Invoke(remote.obj, new object[]{arg});
-        byte[] ansBytes = protoMessageToByteArray(ans);
+        var ans = (IMessage) remote.method.Invoke(remote.obj, new object[]{arg});
+        byte[] ansBytes = ProtoMessageToByteArray(ans);
         response.Data = ByteString.CopyFrom(ansBytes);
-        byte[] resBytes = protoMessageToByteArray(response);
+        byte[] resBytes = ProtoMessageToByteArray(response);
         Marshal.StructureToPtr(GoSlice.fromSlice<byte>(resBytes), pnt, false);
         return pnt;
       } catch(Exception e) {
-        response = getErrorResponse("PIT-500", e.Message);
-        byte[] resBytes = protoMessageToByteArray(response);
+        response = GetErrorResponse("PIT-500", e.Message);
+        byte[] resBytes = ProtoMessageToByteArray(response);
         Marshal.StructureToPtr(GoSlice.fromSlice<byte>(resBytes), pnt, false);
         return pnt;
       }
@@ -100,9 +109,9 @@ namespace Pitaya
 
     private static T GetProtoMessageFromResponse<T>(RPCRes rpcRes) {
       byte[] resData = rpcRes.getResData();
-      Protos.Response response = new Protos.Response();
+      var response = new Protos.Response();
       response.MergeFrom(new CodedInputStream(resData));
-      IMessage res = (IMessage) Activator.CreateInstance(typeof(T));
+      var res = (IMessage) Activator.CreateInstance(typeof(T));
       res.MergeFrom(new CodedInputStream(response.Data.ToByteArray()));
       Logger.Debug("getProtoMsgFromResponse: got this res {0}", res);
 
@@ -110,8 +119,8 @@ namespace Pitaya
     }
 
     public static T RPC<T>(string serverId, Route route, IMessage msg) {
-      byte[] data = protoMessageToByteArray(msg);
-      RPCRes ret = new RPCRes();
+      byte[] data = ProtoMessageToByteArray(msg);
+      var ret = new RPCRes();
       IntPtr pnt = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(RPCRes)));
       try
       {
@@ -122,9 +131,8 @@ namespace Pitaya
           T protoRet = GetProtoMessageFromResponse<T>(ret); 
           FreeRPCRes(pnt);
           return protoRet;
-        } else {
-          throw new Exception("RPC call failed!");
-        }
+        } 
+        throw new Exception("RPC call failed!");
       } finally
       {
         Marshal.FreeHGlobal(pnt);

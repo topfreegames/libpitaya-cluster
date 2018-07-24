@@ -1,5 +1,4 @@
 using System;
-using System.IO;
 
 namespace Pitaya{
     public enum LogLevel{
@@ -8,7 +7,8 @@ namespace Pitaya{
         INFO=2,
         DEBUG=3
     }
-    public class Logger{
+
+    public static class Logger{
         private static LogLevel level = LogLevel.INFO;
 
         private static void log(LogLevel logLevel, string logMsg, params object[] modifiers){

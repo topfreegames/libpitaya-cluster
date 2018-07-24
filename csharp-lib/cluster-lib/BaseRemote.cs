@@ -19,7 +19,7 @@ namespace Pitaya
             ParameterInfo[] parameters = m.GetParameters();
             if (parameters.Length == 1) {
               if (typeof(IMessage).IsAssignableFrom(parameters[0].ParameterType)){
-                dict[m.Name.ToLower()] = new RemoteMethod(this, m, m.ReturnType, parameters[0].ParameterType);
+                dict[m.Name] = new RemoteMethod(this, m, m.ReturnType, parameters[0].ParameterType);
               }
             }
           }
