@@ -1,0 +1,23 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2012
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "csharp-example", "csharp-example\csharp-example.csproj", "{259313EA-3C3C-49C2-BB41-E5B8197F5906}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "cluster-lib", "..\csharp-lib\cluster-lib\cluster-lib.csproj", "{5C59D55E-F293-48C3-B95E-758F7EF403C4}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x86 = Debug|x86
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{259313EA-3C3C-49C2-BB41-E5B8197F5906}.Debug|x86.ActiveCfg = Debug|x86
+		{259313EA-3C3C-49C2-BB41-E5B8197F5906}.Debug|x86.Build.0 = Debug|x86
+		{259313EA-3C3C-49C2-BB41-E5B8197F5906}.Release|x86.ActiveCfg = Release|x86
+		{259313EA-3C3C-49C2-BB41-E5B8197F5906}.Release|x86.Build.0 = Release|x86
+		{5C59D55E-F293-48C3-B95E-758F7EF403C4}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{5C59D55E-F293-48C3-B95E-758F7EF403C4}.Debug|x86.Build.0 = Debug|Any CPU
+		{5C59D55E-F293-48C3-B95E-758F7EF403C4}.Release|x86.ActiveCfg = Release|Any CPU
+		{5C59D55E-F293-48C3-B95E-758F7EF403C4}.Release|x86.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
