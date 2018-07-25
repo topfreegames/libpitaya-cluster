@@ -143,18 +143,20 @@ namespace Pitaya
       return RPC<T>("", route, msg);
     }
 
+    public static void InitDefault(SDConfig sdConfig, NatsRPCClientConfig rpcClientConfig, NatsRPCServerConfig rpcServerConfig, Server server) {
+        if (!InitServerInternal(server) || !SetSDEtcdInternal(sdConfig) || !SetRPCNatsInternal(rpcClientConfig, rpcServerConfig) || !StartInternal()) {
+            throw new Exception("failed to initialize pitaya go module");
+        }
+    }
+
     public static void Init(SDConfig sdConfig, NatsRPCClientConfig rpcClientConfig, NatsRPCServerConfig rpcServerConfig, Server server) {
       Logger.Info("initializing pitaya module");
-      bool res = InitInternal(sdConfig, rpcClientConfig, rpcServerConfig, server);
-      if(res){
-        PitayaCluster.RPCCb rpcCbFunc = RPCCbFunc;
-        IntPtr rpcCbFuncPtr = Marshal.GetFunctionPointerForDelegate (rpcCbFunc);
-        // hack, inject pointer to cb function into Go code
-        PitayaCluster.SetRPCCallbackInternal(rpcCbFuncPtr);
-        Logger.Info("initialized pitaya go module");
-      } else {
-        throw new Exception("failed to initialize pitaya go module");
-      }
+      InitDefault(sdConfig, rpcClientConfig, rpcServerConfig, server);
+      PitayaCluster.RPCCb rpcCbFunc = RPCCbFunc;
+      IntPtr rpcCbFuncPtr = Marshal.GetFunctionPointerForDelegate (rpcCbFunc);
+      // hack, inject pointer to cb function into Go code
+      PitayaCluster.SetRPCCallbackInternal(rpcCbFuncPtr);
+      Logger.Info("initialized pitaya go module");
     }
 
     [DllImport("libpitaya_cluster", CallingConvention = CallingConvention.Cdecl)]
@@ -163,8 +165,20 @@ namespace Pitaya
     [DllImport("libpitaya_cluster", CallingConvention = CallingConvention.Cdecl)]
       public static extern bool ConfigureJaeger(double probability, GoString serviceName);
 
-    [DllImport("libpitaya_cluster", CallingConvention = CallingConvention.Cdecl, EntryPoint= "Init")]
+    [DllImport("libpitaya_cluster", CallingConvention = CallingConvention.Cdecl, EntryPoint= "StartDefault")]
       static extern bool InitInternal(SDConfig sdConfig, NatsRPCClientConfig rpcClientConfig, NatsRPCServerConfig rpcServerConfig, Server server);
+
+    [DllImport("libpitaya_cluster", CallingConvention = CallingConvention.Cdecl, EntryPoint= "InitServer")]
+      static extern bool InitServerInternal(Server server);
+
+    [DllImport("libpitaya_cluster", CallingConvention = CallingConvention.Cdecl, EntryPoint= "SetSDEtcd")]
+      static extern bool SetSDEtcdInternal(SDConfig sdConfig);
+
+    [DllImport("libpitaya_cluster", CallingConvention = CallingConvention.Cdecl, EntryPoint= "SetRPCNats")]
+      static extern bool SetRPCNatsInternal(NatsRPCClientConfig rpcClientConfig, NatsRPCServerConfig rpcServerConfig);
+
+    [DllImport("libpitaya_cluster", CallingConvention = CallingConvention.Cdecl, EntryPoint= "Start")]
+      static extern bool StartInternal();
 
     [DllImport("libpitaya_cluster", CallingConvention = CallingConvention.Cdecl, EntryPoint= "GetServer")]
       static extern bool GetServerInternal(GoString id, IntPtr ret);

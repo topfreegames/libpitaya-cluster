@@ -2,17 +2,12 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"reflect"
-	"strings"
-	"time"
 	"unsafe"
 
 	"github.com/gogo/protobuf/proto"
-	"github.com/spf13/viper"
 	"github.com/topfreegames/pitaya/cluster"
-	"github.com/topfreegames/pitaya/config"
 	"github.com/topfreegames/pitaya/errors"
 	"github.com/topfreegames/pitaya/logger"
 	"github.com/topfreegames/pitaya/protos"
@@ -36,6 +31,7 @@ var (
 	rpcServer   cluster.RPCServer
 	sd          cluster.ServiceDiscovery
 	server      *cluster.Server
+	dieChan     chan bool
 )
 
 func main() {}
@@ -112,77 +108,6 @@ func handleIncomingMessages(chMsg chan *protos.Request) {
 	}
 }
 
-func getSdEtcdConfig(
-	cfg *viper.Viper,
-	sdConfig CSDConfig,
-) *viper.Viper {
-	logHeartbeat := int(sdConfig.logHeartbeat) == 1
-
-	// configure service discovery
-	cfg.Set("pitaya.cluster.sd.etcd.endpoints", strings.Split(C.GoString(sdConfig.endpoints), ","))
-	cfg.Set("pitaya.cluster.sd.etcd.dialtimeout", time.Duration(int(sdConfig.etcdDialTimeoutSec))*time.Second)
-	cfg.Set("pitaya.cluster.sd.etcd.prefix", C.GoString(sdConfig.etcdPrefix))
-	cfg.Set("pitaya.cluster.sd.etcd.heartbeat.ttl", time.Duration(int(sdConfig.heartbeatTTLSec))*time.Second)
-	cfg.Set("pitaya.cluster.sd.etcd.heartbeat.log", logHeartbeat)
-	cfg.Set("pitaya.cluster.sd.etcd.syncservers.interval", time.Duration(int(sdConfig.syncServersIntervalSec))*time.Second)
-
-	return cfg
-}
-
-func getRPCNatsConfig(
-	cfg *viper.Viper,
-	rpcClientConfig CNatsRPCClientConfig,
-	rpcServerConfig CNatsRPCServerConfig,
-) *viper.Viper {
-	// configure rpc client
-	cfg.Set("pitaya.cluster.rpc.client.nats.connect", C.GoString(rpcClientConfig.endpoint))
-	cfg.Set("pitaya.cluster.rpc.client.nats.maxreconnectionretries", int(rpcClientConfig.maxConnectionRetries))
-	cfg.Set("pitaya.cluster.rpc.client.nats.requesttimeout", time.Duration(int(rpcClientConfig.requestTimeoutMs))*time.Millisecond)
-
-	// configure rpc server
-	cfg.Set("pitaya.cluster.rpc.server.nats.connect", C.GoString(rpcServerConfig.endpoint))
-	cfg.Set("pitaya.cluster.rpc.server.nats.maxreconnectionretries", int(rpcServerConfig.maxConnectionRetries))
-	cfg.Set("pitaya.buffer.cluster.rpc.server.messages", int(rpcServerConfig.messagesBufferSize))
-	// hack for stopping nats rpc server from processing messages
-	cfg.Set("pitaya.concurrency.remote.service", 0)
-
-	return cfg
-}
-
-func getConfig(
-	sdConfig CSDConfig,
-	rpcClientConfig CNatsRPCClientConfig,
-	rpcServerConfig CNatsRPCServerConfig,
-) *config.Config {
-	cfg := viper.New()
-	natsCfg := getRPCNatsConfig(cfg, rpcClientConfig, rpcServerConfig)
-	etcdCfg := getSdEtcdConfig(cfg, sdConfig)
-
-	return config.NewConfig(etcdCfg, natsCfg)
-}
-
-func createModules(conf *config.Config, sv *cluster.Server, dieChan chan bool) error {
-	var err error
-	sd, err = cluster.NewEtcdServiceDiscovery(conf, sv)
-	if err != nil {
-		log.Error(err.Error())
-		return err
-	}
-
-	rpcClient, err = cluster.NewNatsRPCClient(conf, sv, nil, dieChan)
-	if err != nil {
-		log.Error(err.Error())
-		return err
-	}
-
-	rpcServer, err = cluster.NewNatsRPCServer(conf, sv, nil, dieChan)
-	if err != nil {
-		log.Error(err.Error())
-		return err
-	}
-	return nil
-}
-
 func initModules() error {
 	if err := sd.Init(); err != nil {
 		return err
@@ -203,54 +128,79 @@ func afterInitModules() error {
 	return nil
 }
 
-func InitDefault(
+func initDefault(
 	sdConfig CSDConfig,
 	rpcClientConfig CNatsRPCClientConfig,
 	rpcServerConfig CNatsRPCServerConfig,
-	server *cluster.Server,
-) (chan bool, bool) {
-	conf := getConfig(sdConfig, rpcClientConfig, rpcServerConfig)
-	dieChan := make(chan bool)
-	if err := createModules(conf, server, dieChan); err != nil {
-		log.Error(err.Error())
-		return nil, false
+) bool {
+	if ok := SetRPCNats(rpcClientConfig, rpcServerConfig); !ok {
+		return false
 	}
 
-	if err := initModules(); err != nil {
-		log.Error(err.Error())
-		return nil, false
+	if ok := SetSDEtcd(sdConfig); !ok {
+		return false
 	}
 
-	if err := afterInitModules(); err != nil {
-		log.Error(err.Error())
-		return nil, false
-	}
-
-	for i := 0; i < int(rpcServerConfig.rpcHandleWorkerNum); i++ {
-		log.Debug("started handle rpc routine")
-		go handleIncomingMessages(rpcServer.(*cluster.NatsRPCServer).GetUnhandledRequestsChannel())
-	}
-
-	return dieChan, true
+	return true
 }
 
-//export Init
-func Init(
+//export InitServer
+func InitServer(sv CServer) bool {
+	if server != nil {
+		return true
+	}
+
+	dieChan = make(chan bool)
+	var err error
+	server, err = fromCServer(sv)
+	if err != nil {
+		log.Error(err.Error())
+		return false
+	}
+	return true
+}
+
+//export StartDefault
+func StartDefault(
 	sdConfig CSDConfig,
 	rpcClientConfig CNatsRPCClientConfig,
 	rpcServerConfig CNatsRPCServerConfig,
 	sv CServer,
 ) bool {
-	var err error
-	server, err = fromCServer(sv)
-	if err != nil {
-		fmt.Println(err.Error())
+	if ok := InitServer(sv); !ok {
 		return false
 	}
 
-	dieChan, ok := InitDefault(sdConfig, rpcClientConfig, rpcServerConfig, server)
+	ok := initDefault(sdConfig, rpcClientConfig, rpcServerConfig)
 	if !ok {
 		return false
+	}
+
+	return Start()
+}
+
+//export Start
+func Start() bool {
+	if server == nil || rpcClient == nil || rpcServer == nil || sd == nil {
+		log.Error("Server not initialized!")
+		return false
+	}
+
+	if err := initModules(); err != nil {
+		log.Error(err.Error())
+		return false
+	}
+
+	if err := afterInitModules(); err != nil {
+		log.Error(err.Error())
+		return false
+	}
+
+	if sv, ok := rpcServer.(*cluster.NatsRPCServer); ok {
+		for i := 0; i < 10; i++ { // TODO: Get Value from rpcServerConfig.rpcHandlerWorkerNum
+			log.Debug("started handle rpc routine")
+			go handleIncomingMessages(sv.GetUnhandledRequestsChannel())
+		}
 	}
 
 	r := router.New()
