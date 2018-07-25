@@ -29,13 +29,13 @@ import (
 import "C"
 
 var (
-	server      *cluster.Server
-	sd          cluster.ServiceDiscovery
-	rpcClient   cluster.RPCClient
-	rpcServer   cluster.RPCServer
-	remote      *service.RemoteService
 	initialized bool
 	log         = logger.Log
+	remote      *service.RemoteService
+	rpcClient   cluster.RPCClient
+	rpcServer   cluster.RPCServer
+	sd          cluster.ServiceDiscovery
+	server      *cluster.Server
 )
 
 func main() {}
@@ -112,13 +112,11 @@ func handleIncomingMessages(chMsg chan *protos.Request) {
 	}
 }
 
-func getConfig(
+func getSdEtcdConfig(
+	cfg *viper.Viper,
 	sdConfig CSDConfig,
-	rpcClientConfig CNatsRPCClientConfig,
-	rpcServerConfig CNatsRPCServerConfig,
-) *config.Config {
+) *viper.Viper {
 	logHeartbeat := int(sdConfig.logHeartbeat) == 1
-	cfg := viper.New()
 
 	// configure service discovery
 	cfg.Set("pitaya.cluster.sd.etcd.endpoints", strings.Split(C.GoString(sdConfig.endpoints), ","))
@@ -128,6 +126,14 @@ func getConfig(
 	cfg.Set("pitaya.cluster.sd.etcd.heartbeat.log", logHeartbeat)
 	cfg.Set("pitaya.cluster.sd.etcd.syncservers.interval", time.Duration(int(sdConfig.syncServersIntervalSec))*time.Second)
 
+	return cfg
+}
+
+func getRPCNatsConfig(
+	cfg *viper.Viper,
+	rpcClientConfig CNatsRPCClientConfig,
+	rpcServerConfig CNatsRPCServerConfig,
+) *viper.Viper {
 	// configure rpc client
 	cfg.Set("pitaya.cluster.rpc.client.nats.connect", C.GoString(rpcClientConfig.endpoint))
 	cfg.Set("pitaya.cluster.rpc.client.nats.maxreconnectionretries", int(rpcClientConfig.maxConnectionRetries))
@@ -140,7 +146,19 @@ func getConfig(
 	// hack for stopping nats rpc server from processing messages
 	cfg.Set("pitaya.concurrency.remote.service", 0)
 
-	return config.NewConfig(cfg)
+	return cfg
+}
+
+func getConfig(
+	sdConfig CSDConfig,
+	rpcClientConfig CNatsRPCClientConfig,
+	rpcServerConfig CNatsRPCServerConfig,
+) *config.Config {
+	cfg := viper.New()
+	natsCfg := getRPCNatsConfig(cfg, rpcClientConfig, rpcServerConfig)
+	etcdCfg := getSdEtcdConfig(cfg, sdConfig)
+
+	return config.NewConfig(etcdCfg, natsCfg)
 }
 
 func createModules(conf *config.Config, sv *cluster.Server, dieChan chan bool) error {
@@ -166,21 +184,112 @@ func createModules(conf *config.Config, sv *cluster.Server, dieChan chan bool) e
 }
 
 func initModules() error {
-	err := sd.Init()
-	if err != nil {
-		log.Error(err.Error())
+	if err := sd.Init(); err != nil {
 		return err
 	}
-
-	err = rpcClient.Init()
-	if err != nil {
-		log.Error(err.Error())
+	if err := rpcClient.Init(); err != nil {
 		return err
 	}
+	if err := rpcServer.Init(); err != nil {
+		return err
+	}
+	return nil
+}
 
-	err = rpcServer.Init()
-	if err != nil {
+func afterInitModules() error {
+	sd.AfterInit()
+	rpcClient.AfterInit()
+	rpcServer.AfterInit()
+	return nil
+}
+
+func InitDefault(
+	sdConfig CSDConfig,
+	rpcClientConfig CNatsRPCClientConfig,
+	rpcServerConfig CNatsRPCServerConfig,
+	server *cluster.Server,
+) (chan bool, bool) {
+	conf := getConfig(sdConfig, rpcClientConfig, rpcServerConfig)
+	dieChan := make(chan bool)
+	if err := createModules(conf, server, dieChan); err != nil {
 		log.Error(err.Error())
+		return nil, false
+	}
+
+	if err := initModules(); err != nil {
+		log.Error(err.Error())
+		return nil, false
+	}
+
+	if err := afterInitModules(); err != nil {
+		log.Error(err.Error())
+		return nil, false
+	}
+
+	for i := 0; i < int(rpcServerConfig.rpcHandleWorkerNum); i++ {
+		log.Debug("started handle rpc routine")
+		go handleIncomingMessages(rpcServer.(*cluster.NatsRPCServer).GetUnhandledRequestsChannel())
+	}
+
+	return dieChan, true
+}
+
+//export Init
+func Init(
+	sdConfig CSDConfig,
+	rpcClientConfig CNatsRPCClientConfig,
+	rpcServerConfig CNatsRPCServerConfig,
+	sv CServer,
+) bool {
+	var err error
+	server, err = fromCServer(sv)
+	if err != nil {
+		fmt.Println(err.Error())
+		return false
+	}
+
+	dieChan, ok := InitDefault(sdConfig, rpcClientConfig, rpcServerConfig, server)
+	if !ok {
+		return false
+	}
+
+	r := router.New()
+	r.SetServiceDiscovery(sd)
+
+	remote = service.NewRemoteService(
+		rpcClient,
+		nil,
+		sd,
+		nil,
+		nil,
+		r,
+		nil,
+		server,
+	)
+
+	go wait(dieChan)
+
+	initialized = true
+	log.Info("go module initialized")
+
+	return true
+}
+
+func beforeShutdownModules() error {
+	rpcServer.BeforeShutdown()
+	rpcClient.BeforeShutdown()
+	sd.BeforeShutdown()
+	return nil
+}
+
+func shutdownModules() error {
+	if err := rpcServer.Shutdown(); err != nil {
+		return err
+	}
+	if err := rpcClient.Shutdown(); err != nil {
+		return err
+	}
+	if err := sd.Shutdown(); err != nil {
 		return err
 	}
 	return nil
@@ -188,18 +297,11 @@ func initModules() error {
 
 //export Shutdown
 func Shutdown() bool {
-	err := rpcServer.Shutdown()
-	if err != nil {
+	if err := beforeShutdownModules(); err != nil {
 		log.Error(err.Error())
 		return false
 	}
-	err = rpcClient.Shutdown()
-	if err != nil {
-		log.Error(err.Error())
-		return false
-	}
-	err = sd.Shutdown()
-	if err != nil {
+	if err := shutdownModules(); err != nil {
 		log.Error(err.Error())
 		return false
 	}
@@ -234,63 +336,4 @@ func ConfigureJaeger(probability float64, serviceName string) {
 	if err != nil {
 		log.Error("failed to configure jaeger")
 	}
-}
-
-//export Init
-func Init(
-	sdConfig CSDConfig,
-	rpcClientConfig CNatsRPCClientConfig,
-	rpcServerConfig CNatsRPCServerConfig,
-	sv CServer,
-) bool {
-
-	var err error
-	server, err = fromCServer(sv)
-	if err != nil {
-		fmt.Println(err.Error())
-		return false
-	}
-
-	conf := getConfig(sdConfig, rpcClientConfig, rpcServerConfig)
-
-	dieChan := make(chan bool)
-
-	err = createModules(conf, server, dieChan)
-	if err != nil {
-		log.Error(err.Error())
-		return false
-	}
-
-	err = initModules()
-	if err != nil {
-		log.Error(err.Error())
-		return false
-	}
-
-	for i := 0; i < int(rpcServerConfig.rpcHandleWorkerNum); i++ {
-		log.Debug("started handle rpc routine")
-		go handleIncomingMessages(rpcServer.(*cluster.NatsRPCServer).GetUnhandledRequestsChannel())
-	}
-
-	r := router.New()
-	r.SetServiceDiscovery(sd)
-
-	remote = service.NewRemoteService(
-		rpcClient,
-		nil,
-		sd,
-		nil,
-		nil,
-		r,
-		nil,
-		server,
-	)
-
-	initialized = true
-
-	log.Info("go module initialized")
-
-	go wait(dieChan)
-
-	return true
 }

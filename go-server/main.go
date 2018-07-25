@@ -7,9 +7,9 @@ import (
 
 	"strings"
 
+	"github.com/topfreegames/libpitaya-cluster/go-server/protos"
+	"github.com/topfreegames/libpitaya-cluster/go-server/services"
 	"github.com/topfreegames/pitaya"
-	"github.com/topfreegames/pitaya-cluster/go-server/protos"
-	"github.com/topfreegames/pitaya-cluster/go-server/services"
 	"github.com/topfreegames/pitaya/acceptor"
 	"github.com/topfreegames/pitaya/component"
 	"github.com/topfreegames/pitaya/serialize/json"

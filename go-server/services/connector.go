@@ -3,8 +3,8 @@ package services
 import (
 	"context"
 
+	"github.com/topfreegames/libpitaya-cluster/go-server/protos"
 	"github.com/topfreegames/pitaya"
-	"github.com/topfreegames/pitaya-cluster/go-server/protos"
 	"github.com/topfreegames/pitaya/component"
 )
 

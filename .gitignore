@@ -41,3 +41,6 @@ sysinfo.txt
 *.apk
 *.unitypackage
 *.pyc
+*.swp
+
+go-server/vendor

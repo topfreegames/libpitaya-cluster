@@ -31,7 +31,7 @@ namespace PitayaCSharpExample
 
       PitayaCluster.ConfigureJaeger(1.0, GoString.fromString("test-svc"));
 
-      TestRemote tr = new TestRemote();    
+      TestRemote tr = new TestRemote();
       PitayaCluster.RegisterRemote(tr);
 
       // prevent from closing

@@ -8,7 +8,8 @@ struct Server {
   char* id;
   char* svType;
   char* metadata;
-  bool frontend; };
+  bool frontend;
+};
 
 struct SDConfig {
   char* endpoints;
@@ -16,18 +17,21 @@ struct SDConfig {
   char* etcdPrefix;
   int heartbeatTTLSec;
   bool logHeartbeat;
-  int syncServersIntervalSec;};
+  int syncServersIntervalSec;
+};
 
 struct NatsRPCClientConfig {
   char* endpoint;
   int maxConnectionRetries;
-  int requestTimeoutMs;};
+  int requestTimeoutMs;
+};
 
 struct NatsRPCServerConfig {
   char* endpoint;
   int maxConnectionRetries;
   int messagesBufferSize;
-  int rpcHandleWorkerNum;};
+  int rpcHandleWorkerNum;
+};
 
 struct RPCReq {
   void* data;
@@ -43,7 +47,8 @@ struct RPCRes {
 struct Route {
   char* svType;
   char* service;
-  char* method;};
+  char* method;
+};
 
 typedef void* (*rpcCbFunc) (struct RPCReq);
 void* bridgeRPCFunc(rpcCbFunc f, struct RPCReq req);
