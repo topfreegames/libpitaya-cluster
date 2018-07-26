@@ -52,13 +52,13 @@ func (c *Config) fillDefaultValues() {
 	defaultsMap := map[string]interface{}{
 		"pitaya.buffer.agent.messages": 100,
 		// the max buffer size that nats will accept, if this buffer overflows, messages will begin to be dropped
-		"pitaya.buffer.cluster.rpc.server.messages": 75,
-		"pitaya.buffer.cluster.rpc.server.push":     100,
-		"pitaya.buffer.handler.localprocess":        20,
-		"pitaya.buffer.handler.remoteprocess":       20,
+		"pitaya.buffer.cluster.rpc.server.nats.messages": 75,
+		"pitaya.buffer.cluster.rpc.server.nats.push":     100,
+		"pitaya.buffer.handler.localprocess":             20,
+		"pitaya.buffer.handler.remoteprocess":            20,
 		// the sum of this config among all the frontend servers should always be less than
-		// the sum of pitaya.buffer.cluster.rpc.server.messages, for covering the worst case scenario
-		// a single backend server should have the config pitaya.buffer.cluster.rpc.server.messages bigger
+		// the sum of pitaya.buffer.cluster.rpc.server.nats.messages, for covering the worst case scenario
+		// a single backend server should have the config pitaya.buffer.cluster.rpc.server.nats.messages bigger
 		// than the sum of the config pitaya.concurrency.handler.dispatch among all frontend servers
 		"pitaya.concurrency.handler.dispatch":                   25,
 		"pitaya.concurrency.remote.service":                     30,
@@ -74,6 +74,10 @@ func (c *Config) fillDefaultValues() {
 		"pitaya.cluster.sd.etcd.endpoints":                      "localhost:2379",
 		"pitaya.cluster.sd.etcd.prefix":                         "pitaya/",
 		"pitaya.cluster.sd.etcd.heartbeat.ttl":                  "60s",
+		"pitaya.cluster.sd.etcd.grantlease.timeout":             "60s",
+		"pitaya.cluster.sd.etcd.grantlease.maxretries":          15,
+		"pitaya.cluster.sd.etcd.grantlease.retryinterval":       "5s",
+		"pitaya.cluster.sd.etcd.revoke.timeout":                 "5s",
 		"pitaya.cluster.sd.etcd.heartbeat.log":                  false,
 		"pitaya.cluster.sd.etcd.syncservers.interval":           "120s",
 		"pitaya.modules.bindingstorage.etcd.endpoints":          "localhost:2379",
@@ -90,6 +94,7 @@ func (c *Config) fillDefaultValues() {
 		"pitaya.metrics.prometheus.port":                        9090,
 		"pitaya.metrics.prometheus.enabled":                     false,
 		"pitaya.metrics.tags":                                   map[string]string{},
+		"pitaya.defaultpipelines.structvalidation.enabled":      false,
 	}
 
 	for param := range defaultsMap {

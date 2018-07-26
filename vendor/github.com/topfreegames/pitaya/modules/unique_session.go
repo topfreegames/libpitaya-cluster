@@ -29,6 +29,7 @@ import (
 
 // UniqueSession module watches for sessions using the same UID and kicks them
 type UniqueSession struct {
+	Base
 	server    *cluster.Server
 	rpcClient cluster.RPCClient
 }
@@ -63,16 +64,5 @@ func (u *UniqueSession) Init() error {
 		err := u.rpcClient.BroadcastSessionBind(s.UID())
 		return err
 	})
-	return nil
-}
-
-// AfterInit runs after initialization tasks
-func (u *UniqueSession) AfterInit() {}
-
-// BeforeShutdown runs tasks before shutting down the binary module
-func (u *UniqueSession) BeforeShutdown() {}
-
-// Shutdown shutdowns the binary module
-func (u *UniqueSession) Shutdown() error {
 	return nil
 }

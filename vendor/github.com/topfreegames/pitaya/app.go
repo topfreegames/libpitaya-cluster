@@ -39,6 +39,7 @@ import (
 	"github.com/topfreegames/pitaya/config"
 	"github.com/topfreegames/pitaya/constants"
 	pcontext "github.com/topfreegames/pitaya/context"
+	"github.com/topfreegames/pitaya/defaultpipelines"
 	"github.com/topfreegames/pitaya/errors"
 	"github.com/topfreegames/pitaya/internal/codec"
 	"github.com/topfreegames/pitaya/internal/message"
@@ -136,7 +137,12 @@ func Configure(
 	app.serverMode = serverMode
 	app.server.Metadata = serverMetadata
 	app.messageEncoder = message.NewMessagesEncoder(app.config.GetBool("pitaya.handler.messages.compression"))
+	configureMetrics(serverType)
+	configureDefaultPipelines(app.config)
 	app.configured = true
+}
+
+func configureMetrics(serverType string) {
 	app.metricsReporters = make([]metrics.Reporter, 0)
 
 	defaultTags := app.config.GetStringMapString("pitaya.metrics.tags")
@@ -156,6 +162,12 @@ func Configure(
 			logger.Log.Info("successfully configured statsd metrics reporter")
 			AddMetricsReporter(metricsReporter)
 		}
+	}
+}
+
+func configureDefaultPipelines(config *config.Config) {
+	if config.GetBool("pitaya.defaultpipelines.structvalidation.enabled") {
+		BeforeHandler(defaultpipelines.StructValidatorInstance.Validate)
 	}
 }
 
@@ -254,6 +266,11 @@ func GetServersByType(t string) (map[string]*cluster.Server, error) {
 	return app.serviceDiscovery.GetServersByType(t)
 }
 
+// GetServers get all servers
+func GetServers() []*cluster.Server {
+	return app.serviceDiscovery.GetServers()
+}
+
 // AddMetricsReporter to be used
 func AddMetricsReporter(mr metrics.Reporter) {
 	app.metricsReporters = append(app.metricsReporters, mr)
@@ -265,6 +282,7 @@ func startDefaultSD() {
 	app.serviceDiscovery, err = cluster.NewEtcdServiceDiscovery(
 		app.config,
 		app.server,
+		app.dieChan,
 	)
 	if err != nil {
 		logger.Log.Fatalf("error starting cluster service discovery component: %s", err.Error())
@@ -332,9 +350,18 @@ func Start() {
 			app.serviceDiscovery.AddListener(app.rpcClient.(*cluster.GRPCClient))
 		}
 
-		RegisterModule(app.serviceDiscovery, "serviceDiscovery")
-		RegisterModule(app.rpcServer, "rpcServer")
-		RegisterModule(app.rpcClient, "rpcClient")
+		err := RegisterModuleBefore(app.serviceDiscovery, "serviceDiscovery")
+		if err != nil {
+			logger.Log.Fatal("failed to register service discovery module: %s", err.Error())
+		}
+		err = RegisterModuleBefore(app.rpcServer, "rpcServer")
+		if err != nil {
+			logger.Log.Fatal("failed to register rpc server module: %s", err.Error())
+		}
+		err = RegisterModuleBefore(app.rpcClient, "rpcClient")
+		if err != nil {
+			logger.Log.Fatal("failed to register rpc client module: %s", err.Error())
+		}
 
 		app.router.SetServiceDiscovery(app.serviceDiscovery)
 
@@ -475,6 +502,11 @@ func GetSessionFromCtx(ctx context.Context) *session.Session {
 	return ctx.Value(constants.SessionCtxKey).(*session.Session)
 }
 
+// GetDefaultLoggerFromCtx returns the default logger from the given context
+func GetDefaultLoggerFromCtx(ctx context.Context) logger.Logger {
+	return ctx.Value(constants.LoggerCtxKey).(logger.Logger)
+}
+
 // AddToPropagateCtx adds a key and value that will be propagated through RPC calls
 func AddToPropagateCtx(ctx context.Context, key string, val interface{}) context.Context {
 	return pcontext.AddToPropagateCtx(ctx, key, val)
@@ -489,4 +521,20 @@ func GetFromPropagateCtx(ctx context.Context, key string) interface{} {
 // The span context can be received directly or via an RPC call
 func ExtractSpan(ctx context.Context) (opentracing.SpanContext, error) {
 	return tracing.ExtractSpan(ctx)
+}
+
+// Documentation returns handler and remotes documentacion
+func Documentation(getPtrNames bool) (map[string]interface{}, error) {
+	handlerDocs, err := handlerService.Docs(getPtrNames)
+	if err != nil {
+		return nil, err
+	}
+	remoteDocs, err := remoteService.Docs(getPtrNames)
+	if err != nil {
+		return nil, err
+	}
+	return map[string]interface{}{
+		"handlers": handlerDocs,
+		"remotes":  remoteDocs,
+	}, nil
 }

@@ -37,29 +37,35 @@ import (
 )
 
 type etcdServiceDiscovery struct {
-	cli                 *clientv3.Client
-	config              *config.Config
-	syncServersInterval time.Duration
-	heartbeatTTL        time.Duration
-	logHeartbeat        bool
-	lastHeartbeatTime   time.Time
-	leaseID             clientv3.LeaseID
-	serverMapByType     sync.Map
-	serverMapByID       sync.Map
-	etcdEndpoints       []string
-	etcdPrefix          string
-	etcdDialTimeout     time.Duration
-	running             bool
-	server              *Server
-	stopChan            chan bool
-	lastSyncTime        time.Time
-	listeners           []SDListener
+	cli                  *clientv3.Client
+	config               *config.Config
+	syncServersInterval  time.Duration
+	heartbeatTTL         time.Duration
+	logHeartbeat         bool
+	lastHeartbeatTime    time.Time
+	leaseID              clientv3.LeaseID
+	serverMapByType      sync.Map
+	serverMapByID        sync.Map
+	etcdEndpoints        []string
+	etcdPrefix           string
+	etcdDialTimeout      time.Duration
+	running              bool
+	server               *Server
+	stopChan             chan bool
+	lastSyncTime         time.Time
+	listeners            []SDListener
+	revokeTimeout        time.Duration
+	grantLeaseTimeout    time.Duration
+	grantLeaseMaxRetries int
+	grantLeaseInterval   time.Duration
+	appDieChan           chan bool
 }
 
 // NewEtcdServiceDiscovery ctor
 func NewEtcdServiceDiscovery(
 	config *config.Config,
 	server *Server,
+	appDieChan chan bool,
 	cli ...*clientv3.Client,
 ) (ServiceDiscovery, error) {
 	var client *clientv3.Client
@@ -67,12 +73,13 @@ func NewEtcdServiceDiscovery(
 		client = cli[0]
 	}
 	sd := &etcdServiceDiscovery{
-		config:    config,
-		running:   false,
-		server:    server,
-		listeners: make([]SDListener, 0),
-		stopChan:  make(chan bool),
-		cli:       client,
+		config:     config,
+		running:    false,
+		server:     server,
+		listeners:  make([]SDListener, 0),
+		stopChan:   make(chan bool),
+		appDieChan: appDieChan,
+		cli:        client,
 	}
 
 	sd.configure()
@@ -87,36 +94,78 @@ func (sd *etcdServiceDiscovery) configure() {
 	sd.heartbeatTTL = sd.config.GetDuration("pitaya.cluster.sd.etcd.heartbeat.ttl")
 	sd.logHeartbeat = sd.config.GetBool("pitaya.cluster.sd.etcd.heartbeat.log")
 	sd.syncServersInterval = sd.config.GetDuration("pitaya.cluster.sd.etcd.syncservers.interval")
+	sd.revokeTimeout = sd.config.GetDuration("pitaya.cluster.sd.etcd.revoke.timeout")
+	sd.grantLeaseTimeout = sd.config.GetDuration("pitaya.cluster.sd.etcd.grantlease.timeout")
+	sd.grantLeaseMaxRetries = sd.config.GetInt("pitaya.cluster.sd.etcd.grantlease.maxretries")
+	sd.grantLeaseInterval = sd.config.GetDuration("pitaya.cluster.sd.etcd.grantlease.retryinterval")
 }
 
 func (sd *etcdServiceDiscovery) watchLeaseChan(c <-chan *clientv3.LeaseKeepAliveResponse) {
+	failedGrantLeaseAttempts := 0
 	for {
 		select {
 		case <-sd.stopChan:
 			return
-		case kaRes := <-c:
-			if kaRes == nil {
-				logger.Log.Warn("sd: error renewing etcd lease, rebootstrapping")
-				for {
-					err := sd.bootstrap()
-					if err != nil {
-						logger.Log.Warn("sd: error rebootstrapping lease, will retry in 5 seconds")
-						time.Sleep(5 * time.Second)
-						continue
-					} else {
+		case leaseKeepAliveResponse := <-c:
+			if leaseKeepAliveResponse != nil {
+				if sd.logHeartbeat {
+					logger.Log.Debugf("sd: etcd lease %x renewed", leaseKeepAliveResponse.ID)
+				}
+				failedGrantLeaseAttempts = 0
+				continue
+			}
+			logger.Log.Warn("sd: error renewing etcd lease, reconfiguring")
+			for {
+				err := sd.renewLease()
+				if err != nil {
+					failedGrantLeaseAttempts = failedGrantLeaseAttempts + 1
+					if err == constants.ErrEtcdGrantLeaseTimeout {
+						logger.Log.Warn("sd: timed out trying to grant etcd lease")
+						if sd.appDieChan != nil {
+							sd.appDieChan <- true
+						}
 						return
 					}
+					if failedGrantLeaseAttempts >= sd.grantLeaseMaxRetries {
+						logger.Log.Warn("sd: exceeded max attempts to renew etcd lease")
+						if sd.appDieChan != nil {
+							sd.appDieChan <- true
+						}
+						return
+					}
+					logger.Log.Warnf("sd: error granting etcd lease, will retry in %d seconds", uint64(sd.grantLeaseInterval.Seconds()))
+					time.Sleep(sd.grantLeaseInterval)
+					continue
 				}
-			} else {
-				if sd.logHeartbeat {
-					logger.Log.Debugf("sd: etcd lease %x renewed", kaRes.ID)
-				}
+				return
 			}
 		}
 	}
 }
 
-func (sd *etcdServiceDiscovery) bootstrapLease() error {
+// renewLease reestablishes connection with etcd
+func (sd *etcdServiceDiscovery) renewLease() error {
+	c := make(chan error)
+	go func() {
+		defer close(c)
+		logger.Log.Infof("waiting for etcd lease")
+		err := sd.grantLease()
+		if err != nil {
+			c <- err
+			return
+		}
+		err = sd.bootstrapServer(sd.server)
+		c <- err
+	}()
+	select {
+	case err := <-c:
+		return err
+	case <-time.After(sd.grantLeaseTimeout):
+		return constants.ErrEtcdGrantLeaseTimeout
+	}
+}
+
+func (sd *etcdServiceDiscovery) grantLease() error {
 	// grab lease
 	l, err := sd.cli.Grant(context.TODO(), int64(sd.heartbeatTTL.Seconds()))
 	if err != nil {
@@ -231,8 +280,18 @@ func (sd *etcdServiceDiscovery) GetServersByType(serverType string) (map[string]
 	return nil, constants.ErrNoServersAvailableOfType
 }
 
+// GetServers returns a slice with all the servers
+func (sd *etcdServiceDiscovery) GetServers() []*Server {
+	ret := make([]*Server, 0)
+	sd.serverMapByID.Range(func(k, v interface{}) bool {
+		ret = append(ret, v.(*Server))
+		return true
+	})
+	return ret
+}
+
 func (sd *etcdServiceDiscovery) bootstrap() error {
-	err := sd.bootstrapLease()
+	err := sd.grantLease()
 	if err != nil {
 		return err
 	}
@@ -241,6 +300,7 @@ func (sd *etcdServiceDiscovery) bootstrap() error {
 	if err != nil {
 		return err
 	}
+
 	return nil
 }
 
@@ -369,12 +429,26 @@ func (sd *etcdServiceDiscovery) SyncServers() error {
 func (sd *etcdServiceDiscovery) Shutdown() error {
 	sd.running = false
 	close(sd.stopChan)
+	return sd.revoke()
+}
 
-	_, err := sd.cli.Revoke(context.TODO(), sd.leaseID)
-	if err != nil {
-		return err
+// revoke prevents Pitaya from crashing when etcd is not available
+func (sd *etcdServiceDiscovery) revoke() error {
+	c := make(chan error)
+	defer close(c)
+	go func() {
+		logger.Log.Debug("waiting for etcd revoke")
+		_, err := sd.cli.Revoke(context.TODO(), sd.leaseID)
+		c <- err
+		logger.Log.Debug("finished waiting for etcd revoke")
+	}()
+	select {
+	case err := <-c:
+		return err // completed normally
+	case <-time.After(sd.revokeTimeout):
+		logger.Log.Warn("timed out waiting for etcd revoke")
+		return nil // timed out
 	}
-	return nil
 }
 
 func (sd *etcdServiceDiscovery) addServer(sv *Server) {

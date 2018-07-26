@@ -128,7 +128,7 @@ func (gs *GRPCClient) Send(uid string, d []byte) error {
 	return constants.ErrNotImplemented
 }
 
-// BroadcastSessionBind sends the binding information to other servers that may br interested in this info
+// BroadcastSessionBind sends the binding information to other servers that may be interested in this info
 func (gs *GRPCClient) BroadcastSessionBind(uid string) error {
 	if gs.bindingStorage == nil {
 		return constants.ErrNoBindingStorageModule
@@ -147,6 +147,29 @@ func (gs *GRPCClient) BroadcastSessionBind(uid string) error {
 		}
 	}
 	return nil
+}
+
+// SendKick sends a kick to an user
+func (gs *GRPCClient) SendKick(userID string, serverType string, kick *protos.KickMsg) error {
+	var svID string
+	var err error
+
+	if gs.bindingStorage == nil {
+		return constants.ErrNoBindingStorageModule
+	}
+
+	svID, err = gs.bindingStorage.GetUserFrontendID(userID, serverType)
+	if err != nil {
+		return err
+	}
+
+	if c, ok := gs.clientMap.Load(svID); ok {
+		ctxT, done := context.WithTimeout(context.Background(), gs.reqTimeout)
+		defer done()
+		_, err := c.(protos.PitayaClient).KickUser(ctxT, kick)
+		return err
+	}
+	return constants.ErrNoConnectionToServer
 }
 
 // SendPush sends a message to an user, if you dont know the serverID that the user is connected to, you need to set a BindingStorage when creating the client

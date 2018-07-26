@@ -74,8 +74,8 @@ namespace Protos {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public Request(Request other) : this() {
       type_ = other.type_;
-      Session = other.session_ != null ? other.Session.Clone() : null;
-      Msg = other.msg_ != null ? other.Msg.Clone() : null;
+      session_ = other.session_ != null ? other.session_.Clone() : null;
+      msg_ = other.msg_ != null ? other.msg_.Clone() : null;
       frontendID_ = other.frontendID_;
       metadata_ = other.metadata_;
       _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);

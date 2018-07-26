@@ -96,7 +96,7 @@ func getMsgType(msgTypeIface interface{}) (message.Type, error) {
 	return msgType, nil
 }
 
-func executeBeforePipeline(ctx context.Context, data []byte) ([]byte, error) {
+func executeBeforePipeline(ctx context.Context, data interface{}) (interface{}, error) {
 	var err error
 	res := data
 	if len(pipeline.BeforeHandler.Handlers) > 0 {
@@ -114,7 +114,7 @@ func executeBeforePipeline(ctx context.Context, data []byte) ([]byte, error) {
 	return res, nil
 }
 
-func executeAfterPipeline(ctx context.Context, ser serialize.Serializer, res []byte) []byte {
+func executeAfterPipeline(ctx context.Context, ser serialize.Serializer, res interface{}) interface{} {
 	var err error
 	ret := res
 	if len(pipeline.AfterHandler.Handlers) > 0 {
@@ -154,6 +154,8 @@ func processHandlerMessage(
 	remote bool,
 ) ([]byte, error) {
 	ctx = context.WithValue(ctx, constants.SessionCtxKey, session)
+	ctx = util.CtxWithDefaultLogger(ctx, rt.String(), session.UID())
+
 	h, err := getHandler(rt)
 	if err != nil {
 		return nil, e.NewError(err, e.ErrNotFoundCode)
@@ -170,13 +172,15 @@ func processHandlerMessage(
 		logger.Log.Warn(err.Error())
 	}
 
-	if data, err = executeBeforePipeline(ctx, data); err != nil {
-		return nil, err
-	}
-
+	// First unmarshal the handler arg that will be passed to
+	// both handler and pipeline functions
 	arg, err := unmarshalHandlerArg(h, serializer, data)
 	if err != nil {
 		return nil, e.NewError(err, e.ErrBadRequestCode)
+	}
+
+	if arg, err = executeBeforePipeline(ctx, arg); err != nil {
+		return nil, err
 	}
 
 	logger.Log.Debugf("SID=%d, Data=%s", session.ID(), data)
@@ -199,11 +203,11 @@ func processHandlerMessage(
 		resp = []byte("ack")
 	}
 
+	resp = executeAfterPipeline(ctx, serializer, resp)
 	ret, err := serializeReturn(serializer, resp)
 	if err != nil {
 		return nil, err
 	}
-	ret = executeAfterPipeline(ctx, serializer, ret)
 
 	return ret, nil
 }

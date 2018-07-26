@@ -32,6 +32,7 @@ import (
 	"github.com/topfreegames/pitaya/cluster"
 	"github.com/topfreegames/pitaya/component"
 	"github.com/topfreegames/pitaya/constants"
+	"github.com/topfreegames/pitaya/docgenerator"
 	e "github.com/topfreegames/pitaya/errors"
 	"github.com/topfreegames/pitaya/internal/codec"
 	"github.com/topfreegames/pitaya/internal/message"
@@ -166,6 +167,22 @@ func (r *RemoteService) PushToUser(ctx context.Context, push *protos.Push) (*pro
 		}
 		return &protos.Response{
 			Data: []byte("ack"),
+		}, nil
+	}
+	return nil, constants.ErrSessionNotFound
+}
+
+// KickUser sends a kick to user
+func (r *RemoteService) KickUser(ctx context.Context, kick *protos.KickMsg) (*protos.KickAnswer, error) {
+	logger.Log.Debugf("sending kick to user %s", kick.GetUserId())
+	s := session.GetSessionByUID(kick.GetUserId())
+	if s != nil {
+		err := s.Kick(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return &protos.KickAnswer{
+			Kicked: true,
 		}, nil
 	}
 	return nil, constants.ErrSessionNotFound
@@ -427,4 +444,12 @@ func (r *RemoteService) DumpServices() {
 	for name := range remotes {
 		logger.Log.Infof("registered remote %s", name)
 	}
+}
+
+// Docs returns documentation for remotes
+func (r *RemoteService) Docs(getPtrNames bool) (map[string]interface{}, error) {
+	if r == nil {
+		return map[string]interface{}{}, nil
+	}
+	return docgenerator.RemotesDocs(r.server.Type, r.services, getPtrNames)
 }

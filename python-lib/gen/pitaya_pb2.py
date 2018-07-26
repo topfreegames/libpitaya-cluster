@@ -7,7 +7,6 @@ from google.protobuf import descriptor as _descriptor
 from google.protobuf import message as _message
 from google.protobuf import reflection as _reflection
 from google.protobuf import symbol_database as _symbol_database
-from google.protobuf import descriptor_pb2
 # @@protoc_insertion_point(imports)
 
 _sym_db = _symbol_database.Default()
@@ -23,6 +22,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   name='pitaya.proto',
   package='protos',
   syntax='proto3',
+  serialized_options=None,
   serialized_pb=_b('\n\x0cpitaya.proto\x12\x06protos\x1a\rrequest.proto\x1a\x0eresponse.proto\x1a\npush.proto\x1a\nbind.proto2\x9f\x01\n\x06Pitaya\x12+\n\x04\x43\x61ll\x12\x0f.protos.Request\x1a\x10.protos.Response\"\x00\x12.\n\nPushToUser\x12\x0c.protos.Push\x1a\x10.protos.Response\"\x00\x12\x38\n\x11SessionBindRemote\x12\x0f.protos.BindMsg\x1a\x10.protos.Response\"\x00\x62\x06proto3')
   ,
   dependencies=[request__pb2.DESCRIPTOR,response__pb2.DESCRIPTOR,push__pb2.DESCRIPTOR,bind__pb2.DESCRIPTOR,])
@@ -38,7 +38,7 @@ _PITAYA = _descriptor.ServiceDescriptor(
   full_name='protos.Pitaya',
   file=DESCRIPTOR,
   index=0,
-  options=None,
+  serialized_options=None,
   serialized_start=80,
   serialized_end=239,
   methods=[
@@ -49,7 +49,7 @@ _PITAYA = _descriptor.ServiceDescriptor(
     containing_service=None,
     input_type=request__pb2._REQUEST,
     output_type=response__pb2._RESPONSE,
-    options=None,
+    serialized_options=None,
   ),
   _descriptor.MethodDescriptor(
     name='PushToUser',
@@ -58,7 +58,7 @@ _PITAYA = _descriptor.ServiceDescriptor(
     containing_service=None,
     input_type=push__pb2._PUSH,
     output_type=response__pb2._RESPONSE,
-    options=None,
+    serialized_options=None,
   ),
   _descriptor.MethodDescriptor(
     name='SessionBindRemote',
@@ -67,7 +67,7 @@ _PITAYA = _descriptor.ServiceDescriptor(
     containing_service=None,
     input_type=bind__pb2._BINDMSG,
     output_type=response__pb2._RESPONSE,
-    options=None,
+    serialized_options=None,
   ),
 ])
 _sym_db.RegisterServiceDescriptor(_PITAYA)

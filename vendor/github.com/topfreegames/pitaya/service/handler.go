@@ -34,6 +34,7 @@ import (
 	"github.com/topfreegames/pitaya/component"
 	"github.com/topfreegames/pitaya/constants"
 	pcontext "github.com/topfreegames/pitaya/context"
+	"github.com/topfreegames/pitaya/docgenerator"
 	e "github.com/topfreegames/pitaya/errors"
 	"github.com/topfreegames/pitaya/internal/codec"
 	"github.com/topfreegames/pitaya/internal/message"
@@ -113,7 +114,6 @@ func NewHandlerService(
 
 // Dispatch message to corresponding logic handler
 func (h *HandlerService) Dispatch(thread int) {
-	// close chLocalProcess & chCloseSession when application quits
 	// TODO: This timer is being stopped multiple times, it probably doesn't need to be stopped here
 	defer timer.GlobalTicker.Stop()
 
@@ -121,9 +121,11 @@ func (h *HandlerService) Dispatch(thread int) {
 		// Calls to remote servers block calls to local server
 		select {
 		case lm := <-h.chLocalProcess:
+			metrics.ReportMessageProcessDelayFromCtx(lm.ctx, h.metricsReporters, "local")
 			h.localProcess(lm.ctx, lm.agent, lm.route, lm.msg)
 
 		case rm := <-h.chRemoteProcess:
+			metrics.ReportMessageProcessDelayFromCtx(rm.ctx, h.metricsReporters, "remote")
 			h.remoteService.remoteProcess(rm.ctx, nil, rm.agent, rm.route, rm.msg)
 
 		case <-timer.GlobalTicker.C: // execute cron task
@@ -314,4 +316,12 @@ func (h *HandlerService) DumpServices() {
 	for name := range handlers {
 		logger.Log.Infof("registered handler %s, isRawArg: %s", name, handlers[name].IsRawArg)
 	}
+}
+
+// Docs returns documentation for handlers
+func (h *HandlerService) Docs(getPtrNames bool) (map[string]interface{}, error) {
+	if h == nil {
+		return map[string]interface{}{}, nil
+	}
+	return docgenerator.HandlersDocs(h.server.Type, h.services, getPtrNames)
 }
