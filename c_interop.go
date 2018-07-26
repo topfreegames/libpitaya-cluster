@@ -26,6 +26,12 @@ type CNatsRPCClientConfig C.struct_NatsRPCClientConfig
 // CNatsRPCServerConfig is the C nats rpc server config
 type CNatsRPCServerConfig C.struct_NatsRPCServerConfig
 
+// CGrpcRPCClientConfig is the C grpc rpc client config
+type CGrpcRPCClientConfig C.struct_GrpcRPCClientConfig
+
+// CGrpcRPCServerConfig is the C grpc rpc server config
+type CGrpcRPCServerConfig C.struct_GrpcRPCServerConfig
+
 // CRoute is the C route
 type CRoute C.struct_Route
 

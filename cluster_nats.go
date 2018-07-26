@@ -49,8 +49,7 @@ func setRPCNatsConfig(
 	cfg.Set("pitaya.cluster.rpc.server.nats.connect", C.GoString(rpcServerConfig.endpoint))
 	cfg.Set("pitaya.cluster.rpc.server.nats.maxreconnectionretries", int(rpcServerConfig.maxConnectionRetries))
 	cfg.Set("pitaya.buffer.cluster.rpc.server.messages", int(rpcServerConfig.messagesBufferSize))
-	// hack for stopping nats rpc server from processing messages
-	cfg.Set("pitaya.concurrency.remote.service", 0)
+	cfg.Set("pitaya.concurrency.remote.service", int(rpcServerConfig.rpcHandleWorkerNum))
 }
 
 func createNatsRPCModules(conf *config.Config, sv *cluster.Server, dieChan chan bool) error {

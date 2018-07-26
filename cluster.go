@@ -13,9 +13,7 @@ import (
 	"github.com/topfreegames/pitaya/protos"
 	"github.com/topfreegames/pitaya/router"
 	"github.com/topfreegames/pitaya/service"
-	"github.com/topfreegames/pitaya/tracing"
 	"github.com/topfreegames/pitaya/tracing/jaeger"
-	"github.com/topfreegames/pitaya/util"
 )
 
 /*
@@ -29,6 +27,7 @@ var (
 	remote      *service.RemoteService
 	rpcClient   cluster.RPCClient
 	rpcServer   cluster.RPCServer
+	pServer     *pitayaServer
 	sd          cluster.ServiceDiscovery
 	server      *cluster.Server
 	dieChan     chan bool
@@ -84,27 +83,6 @@ func replyWithError(reply string, err error) {
 	e := rpcClient.Send(reply, data)
 	if e != nil {
 		log.Errorf("failed to answer to rpc, err: %s\n", e.Error())
-	}
-}
-
-func handleIncomingMessages(chMsg chan *protos.Request) {
-	for msg := range chMsg {
-		reply := msg.GetMsg().GetReply()
-		ctx, err := util.GetContextFromRequest(msg, server.ID)
-		if err != nil {
-			log.Errorf("failed to get context from request: %s", err.Error())
-			replyWithError(reply, err)
-			continue
-		}
-		log.Debugf("processing incoming message with route: %s", msg.GetMsg().GetRoute())
-		ptr := bridgeRPCCb(msg)
-		data := *(*[]byte)(ptr)
-		err = rpcClient.Send(reply, data)
-		C.free((unsafe.Pointer)(ptr))
-		if err != nil {
-			log.Errorf("failed to answer to rpc, err: %s\n", err.Error())
-		}
-		tracing.FinishSpan(ctx, err)
 	}
 }
 
@@ -186,6 +164,9 @@ func Start() bool {
 		return false
 	}
 
+	pServer = &pitayaServer{}
+	rpcServer.SetPitayaServer(pServer)
+
 	if err := initModules(); err != nil {
 		log.Error(err.Error())
 		return false
@@ -194,13 +175,6 @@ func Start() bool {
 	if err := afterInitModules(); err != nil {
 		log.Error(err.Error())
 		return false
-	}
-
-	if sv, ok := rpcServer.(*cluster.NatsRPCServer); ok {
-		for i := 0; i < 10; i++ { // TODO: Get Value from rpcServerConfig.rpcHandlerWorkerNum
-			log.Debug("started handle rpc routine")
-			go handleIncomingMessages(sv.GetUnhandledRequestsChannel())
-		}
 	}
 
 	r := router.New()

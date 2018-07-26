@@ -33,6 +33,15 @@ struct NatsRPCServerConfig {
   int rpcHandleWorkerNum;
 };
 
+struct GrpcRPCClientConfig {
+  int requestTimeoutMs;
+  int dialTimeoutMs;
+};
+
+struct GrpcRPCServerConfig {
+  int port;
+};
+
 struct RPCReq {
   void* data;
   int dataLen;
