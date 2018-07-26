@@ -149,9 +149,25 @@ namespace Pitaya
         }
     }
 
+    public static void InitGrpc(SDConfig sdConfig, GrpcRPCClientConfig rpcClientConfig, GrpcRPCServerConfig rpcServerConfig, Server server) {
+        if (!InitServerInternal(server) || !SetSDEtcdInternal(sdConfig) || !SetRPCGrpcInternal(rpcClientConfig, rpcServerConfig) || !StartInternal()) {
+            throw new Exception("failed to initialize pitaya go module");
+        }
+    }
+
     public static void Init(SDConfig sdConfig, NatsRPCClientConfig rpcClientConfig, NatsRPCServerConfig rpcServerConfig, Server server) {
-      Logger.Info("initializing pitaya module");
+      Logger.Info("initializing pitaya module with nats");
       InitDefault(sdConfig, rpcClientConfig, rpcServerConfig, server);
+      SetRPCCbs();
+    }
+
+    public static void Init(SDConfig sdConfig, GrpcRPCClientConfig rpcClientConfig, GrpcRPCServerConfig rpcServerConfig, Server server) {
+      Logger.Info("initializing pitaya module with grpc");
+      InitGrpc(sdConfig, rpcClientConfig, rpcServerConfig, server);
+      SetRPCCbs();
+    }
+
+    public static void SetRPCCbs() {
       PitayaCluster.RPCCb rpcCbFunc = RPCCbFunc;
       IntPtr rpcCbFuncPtr = Marshal.GetFunctionPointerForDelegate (rpcCbFunc);
       // hack, inject pointer to cb function into Go code
@@ -173,6 +189,9 @@ namespace Pitaya
 
     [DllImport("libpitaya_cluster", CallingConvention = CallingConvention.Cdecl, EntryPoint= "SetRPCNats")]
       static extern bool SetRPCNatsInternal(NatsRPCClientConfig rpcClientConfig, NatsRPCServerConfig rpcServerConfig);
+
+    [DllImport("libpitaya_cluster", CallingConvention = CallingConvention.Cdecl, EntryPoint= "SetRPCGrpc")]
+      static extern bool SetRPCGrpcInternal(GrpcRPCClientConfig rpcClientConfig, GrpcRPCServerConfig rpcServerConfig);
 
     [DllImport("libpitaya_cluster", CallingConvention = CallingConvention.Cdecl, EntryPoint= "Start")]
       static extern bool StartInternal();

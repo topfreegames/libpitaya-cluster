@@ -23,6 +23,10 @@
 #   non-go = false
 #   go-tests = true
 #   unused-packages = true
+#
+[[constraint]]
+  branch = "master"
+  name = "github.com/topfreegames/pitaya"
 
 
 [prune]

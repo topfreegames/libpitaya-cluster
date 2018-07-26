@@ -34,8 +34,12 @@ struct NatsRPCServerConfig {
 };
 
 struct GrpcRPCClientConfig {
+  char* etcdEndpoints;
+  char* etcdPrefix;
   int requestTimeoutMs;
   int dialTimeoutMs;
+  int etcdDialTimeoutMs;
+  int etcdLeaseTTLS;
 };
 
 struct GrpcRPCServerConfig {
