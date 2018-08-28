@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="..\packages\NuGet.Build.Packaging.0.2.0\build\NuGet.Build.Packaging.props" Condition="Exists('..\packages\NuGet.Build.Packaging.0.2.0\build\NuGet.Build.Packaging.props')" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
@@ -10,6 +11,13 @@
     <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
     <ProductVersion>8.0.30703</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
+    <PackageId>pitaya-cluster</PackageId>
+    <PackageVersion>0.2.2</PackageVersion>
+    <Authors>TFG Co</Authors>
+    <Owners>TFG Co</Owners>
+    <Title>Pitaya Cluster</Title>
+    <Description>A library that makes it possible to create c# pitaya servers for receiving and sending rpcs</Description>
+    <PackOnBuild>true</PackOnBuild>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -33,6 +41,18 @@
     <Reference Include="Google.Protobuf">
       <HintPath>..\packages\protobuf.net35.3.5.1\lib\net35\Google.Protobuf.dll</HintPath>
     </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="..\..\out\libpitaya_cluster.so">
+      <Pack>true</Pack>
+      <PackagePath>\lib\native\libpitaya_cluster.so</PackagePath>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="..\..\out\libpitaya_cluster.dylib">
+      <Pack>true</Pack>
+      <PackagePath>\lib\native\libpitaya_cluster.bundle</PackagePath>
+    </Content>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -60,4 +80,5 @@
   <ItemGroup>
     <None Include="packages.config" />
   </ItemGroup>
+  <Import Project="..\packages\NuGet.Build.Packaging.0.2.0\build\NuGet.Build.Packaging.targets" Condition="Exists('..\packages\NuGet.Build.Packaging.0.2.0\build\NuGet.Build.Packaging.targets')" />
 </Project>
