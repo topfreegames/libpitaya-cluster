@@ -51,7 +51,7 @@ func setSdEtcdConfig(
 
 func createEtcdSdModule(conf *config.Config, sv *cluster.Server, dieChan chan bool) error {
 	var err error
-	sd, err = cluster.NewEtcdServiceDiscovery(conf, sv)
+	sd, err = cluster.NewEtcdServiceDiscovery(conf, sv, dieChan)
 	if err != nil {
 		log.Error(err.Error())
 		return err

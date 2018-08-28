@@ -25,13 +25,14 @@ namespace Protos {
       byte[] descriptorData = global::System.Convert.FromBase64String(
           string.Concat(
             "CgxwaXRheWEucHJvdG8SBnByb3RvcxoNcmVxdWVzdC5wcm90bxoOcmVzcG9u",
-            "c2UucHJvdG8aCnB1c2gucHJvdG8aCmJpbmQucHJvdG8ynwEKBlBpdGF5YRIr",
-            "CgRDYWxsEg8ucHJvdG9zLlJlcXVlc3QaEC5wcm90b3MuUmVzcG9uc2UiABIu",
-            "CgpQdXNoVG9Vc2VyEgwucHJvdG9zLlB1c2gaEC5wcm90b3MuUmVzcG9uc2Ui",
-            "ABI4ChFTZXNzaW9uQmluZFJlbW90ZRIPLnByb3Rvcy5CaW5kTXNnGhAucHJv",
-            "dG9zLlJlc3BvbnNlIgBiBnByb3RvMw=="));
+            "c2UucHJvdG8aCnB1c2gucHJvdG8aCmJpbmQucHJvdG8aCmtpY2sucHJvdG8y",
+            "0gEKBlBpdGF5YRIrCgRDYWxsEg8ucHJvdG9zLlJlcXVlc3QaEC5wcm90b3Mu",
+            "UmVzcG9uc2UiABIuCgpQdXNoVG9Vc2VyEgwucHJvdG9zLlB1c2gaEC5wcm90",
+            "b3MuUmVzcG9uc2UiABI4ChFTZXNzaW9uQmluZFJlbW90ZRIPLnByb3Rvcy5C",
+            "aW5kTXNnGhAucHJvdG9zLlJlc3BvbnNlIgASMQoIS2lja1VzZXISDy5wcm90",
+            "b3MuS2lja01zZxoSLnByb3Rvcy5LaWNrQW5zd2VyIgBiBnByb3RvMw=="));
       descriptor = pbr::FileDescriptor.FromGeneratedCode(descriptorData,
-          new pbr::FileDescriptor[] { global::Protos.RequestReflection.Descriptor, global::Protos.ResponseReflection.Descriptor, global::Protos.PushReflection.Descriptor, global::Protos.BindReflection.Descriptor, },
+          new pbr::FileDescriptor[] { global::Protos.RequestReflection.Descriptor, global::Protos.ResponseReflection.Descriptor, global::Protos.PushReflection.Descriptor, global::Protos.BindReflection.Descriptor, global::Protos.KickReflection.Descriptor, },
           new pbr::GeneratedClrTypeInfo(null, null));
     }
     #endregion

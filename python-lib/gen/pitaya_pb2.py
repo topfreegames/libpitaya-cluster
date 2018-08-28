@@ -16,6 +16,7 @@ import request_pb2 as request__pb2
 import response_pb2 as response__pb2
 import push_pb2 as push__pb2
 import bind_pb2 as bind__pb2
+import kick_pb2 as kick__pb2
 
 
 DESCRIPTOR = _descriptor.FileDescriptor(
@@ -23,9 +24,9 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='protos',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n\x0cpitaya.proto\x12\x06protos\x1a\rrequest.proto\x1a\x0eresponse.proto\x1a\npush.proto\x1a\nbind.proto2\x9f\x01\n\x06Pitaya\x12+\n\x04\x43\x61ll\x12\x0f.protos.Request\x1a\x10.protos.Response\"\x00\x12.\n\nPushToUser\x12\x0c.protos.Push\x1a\x10.protos.Response\"\x00\x12\x38\n\x11SessionBindRemote\x12\x0f.protos.BindMsg\x1a\x10.protos.Response\"\x00\x62\x06proto3')
+  serialized_pb=_b('\n\x0cpitaya.proto\x12\x06protos\x1a\rrequest.proto\x1a\x0eresponse.proto\x1a\npush.proto\x1a\nbind.proto\x1a\nkick.proto2\xd2\x01\n\x06Pitaya\x12+\n\x04\x43\x61ll\x12\x0f.protos.Request\x1a\x10.protos.Response\"\x00\x12.\n\nPushToUser\x12\x0c.protos.Push\x1a\x10.protos.Response\"\x00\x12\x38\n\x11SessionBindRemote\x12\x0f.protos.BindMsg\x1a\x10.protos.Response\"\x00\x12\x31\n\x08KickUser\x12\x0f.protos.KickMsg\x1a\x12.protos.KickAnswer\"\x00\x62\x06proto3')
   ,
-  dependencies=[request__pb2.DESCRIPTOR,response__pb2.DESCRIPTOR,push__pb2.DESCRIPTOR,bind__pb2.DESCRIPTOR,])
+  dependencies=[request__pb2.DESCRIPTOR,response__pb2.DESCRIPTOR,push__pb2.DESCRIPTOR,bind__pb2.DESCRIPTOR,kick__pb2.DESCRIPTOR,])
 
 
 
@@ -39,8 +40,8 @@ _PITAYA = _descriptor.ServiceDescriptor(
   file=DESCRIPTOR,
   index=0,
   serialized_options=None,
-  serialized_start=80,
-  serialized_end=239,
+  serialized_start=92,
+  serialized_end=302,
   methods=[
   _descriptor.MethodDescriptor(
     name='Call',
@@ -67,6 +68,15 @@ _PITAYA = _descriptor.ServiceDescriptor(
     containing_service=None,
     input_type=bind__pb2._BINDMSG,
     output_type=response__pb2._RESPONSE,
+    serialized_options=None,
+  ),
+  _descriptor.MethodDescriptor(
+    name='KickUser',
+    full_name='protos.Pitaya.KickUser',
+    index=3,
+    containing_service=None,
+    input_type=kick__pb2._KICKMSG,
+    output_type=kick__pb2._KICKANSWER,
     serialized_options=None,
   ),
 ])

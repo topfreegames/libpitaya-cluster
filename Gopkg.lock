@@ -332,7 +332,7 @@
     "util/compression",
   ]
   pruneopts = "UT"
-  revision = "313c91f1a23409b9d24cdd9f3e3b2ff2d249b42b"
+  revision = "146bc285b9b4e9cd9e89613c4e80864f6dd7b792"
 
 [[projects]]
   digest = "1:104a2d7446f4628e4663d7c029b18da1aad4313735de775f37b6e7720b1d0aa7"

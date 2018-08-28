@@ -46,3 +46,7 @@ func (r *pitayaServer) PushToUser(ctx context.Context, push *protos.Push) (*prot
 func (r *pitayaServer) SessionBindRemote(ctx context.Context, bind *protos.BindMsg) (*protos.Response, error) {
 	return nil, fmt.Errorf("Not implemented")
 }
+
+func (r *pitayaServer) KickUser(ctx context.Context, in *protos.KickMsg) (*protos.KickAnswer, error) {
+	return nil, fmt.Errorf("Not implemented")
+}
