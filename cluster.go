@@ -221,16 +221,18 @@ func shutdownModules() error {
 
 //export Shutdown
 func Shutdown() bool {
-	if err := beforeShutdownModules(); err != nil {
-		log.Error(err.Error())
-		return false
+	if initialized {
+		if err := beforeShutdownModules(); err != nil {
+			log.Error(err.Error())
+			return false
+		}
+		if err := shutdownModules(); err != nil {
+			log.Error(err.Error())
+			return false
+		}
+		log.Info("pitaya-cluster go lib shutdown complete")
+		return true
 	}
-	if err := shutdownModules(); err != nil {
-		log.Error(err.Error())
-		return false
-	}
-	log.Info("pitaya-cluster go lib shutdown complete")
-	return true
 }
 
 func wait(dieChan chan bool) {
