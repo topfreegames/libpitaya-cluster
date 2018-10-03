@@ -233,6 +233,7 @@ func Shutdown() bool {
 		log.Info("pitaya-cluster go lib shutdown complete")
 		return true
 	}
+	return false
 }
 
 func wait(dieChan chan bool) {
