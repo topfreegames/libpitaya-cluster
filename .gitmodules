@@ -1,3 +1,9 @@
 [submodule "protos"]
 	path = pitaya-protos
 	url = https://github.com/topfreegames/pitaya-protos.git
+[submodule "cpp-lib/deps/grpc"]
+	path = cpp-lib/deps/grpc
+	url = https://github.com/grpc/grpc
+[submodule "cpp-lib/deps/etcd-cpp-apiv3"]
+	path = cpp-lib/deps/etcd-cpp-apiv3
+	url = https://github.com/leohahn/etcd-cpp-apiv3

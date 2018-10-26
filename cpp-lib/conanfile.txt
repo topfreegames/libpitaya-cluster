@@ -1,0 +1,6 @@
+[requires]
+cnats/1.8.0@tfg-tools/testing
+
+[generators]
+cmake
+cmake_paths
