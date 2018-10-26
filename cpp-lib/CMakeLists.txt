@@ -7,9 +7,9 @@ if(EXISTS ${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
     conan_basic_setup(TARGETS NO_OUTPUT_DIRS)
 endif()
 
-if(EXISTS ${CMAKE_BINARY_DIR}/conan_paths.cmake)
-    include(${CMAKE_BINARY_DIR}/conan_paths.cmake)
-endif()
+#if(EXISTS ${CMAKE_BINARY_DIR}/conan_paths.cmake)
+#include(${CMAKE_BINARY_DIR}/conan_paths.cmake)
+#endif()
 
 add_subdirectory(deps/grpc EXCLUDE_FROM_ALL)
 add_subdirectory(deps/etcd-cpp-apiv3 EXCLUDE_FROM_ALL)
