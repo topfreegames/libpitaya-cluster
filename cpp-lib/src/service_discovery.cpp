@@ -1,5 +1,4 @@
 #include "service_discovery.h"
-#include <nats/nats.h>
 #include <cpprest/json.h>
 #include "string_utils.h"
 
@@ -14,8 +13,9 @@ namespace json = web::json;
 
 using std::placeholders::_1;
 using namespace std::chrono_literals;
+using namespace pitaya;
 
-static string ServerAsJson(const service_discovery::Server &server);
+static string ServerAsJson(const Server &server);
 
 service_discovery::ServiceDiscovery::ServiceDiscovery(unique_ptr<Server> server, const string &address)
 : _server(std::move(server))
@@ -145,7 +145,7 @@ service_discovery::ServiceDiscovery::Configure()
 // ======================================================
 
 static string
-ServerAsJson(const service_discovery::Server &server)
+ServerAsJson(const Server &server)
 {
     json::value obj;
     obj.object();
