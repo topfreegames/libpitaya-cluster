@@ -17,7 +17,11 @@ add_library(pitaya_cluster SHARED
     src/nats_rpc_server.cpp
     src/string_utils.cpp
     src/string_utils.h
-    include/sync_map.h)
+    include/sync_map.h
+    # Include protobuf-c
+    deps/protobuf-c/protobuf-c/protobuf-c.c
+    deps/protobuf-c/protobuf-c/protobuf-c.h
+    )
 
 add_library(pitaya::pitaya_cluster ALIAS pitaya_cluster)
 
