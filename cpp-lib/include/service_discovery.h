@@ -13,6 +13,9 @@
 
 namespace service_discovery {
 
+    using ServerId = std::string;
+    using ServerType = std::string;
+
     struct Listener {
         std::function<void(pitaya::Server*)> addServer;
         std::function<void(pitaya::Server*)> removeServer;
@@ -29,6 +32,8 @@ namespace service_discovery {
         void Configure();
         void OnWatch(etcd::Response res);
         void SyncServers();
+        void AddServer(std::shared_ptr<pitaya::Server> server);
+        std::shared_ptr<pitaya::Server> GetServerFromEtcd(const std::string &serverId, const std::string &serverType);
 
         etcdv3::V3Status BootstrapServer(const pitaya::Server &server);
         etcdv3::V3Status AddServerToEtcd(const pitaya::Server &server);
@@ -42,6 +47,7 @@ namespace service_discovery {
         etcd::Watcher _watcher;
 
         SyncMap<ServerId, std::shared_ptr<pitaya::Server>> _serversById;
+        SyncMap<ServerType, std::unordered_map<std::string, std::shared_ptr<pitaya::Server>>> _serversByType;
 
         std::vector<Listener> _listeners;
 

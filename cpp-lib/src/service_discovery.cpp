@@ -3,6 +3,7 @@
 #include "string_utils.h"
 
 using std::string;
+using std::vector;
 using std::unique_ptr;
 using std::shared_ptr;
 using std::cout;
@@ -15,14 +16,17 @@ using std::placeholders::_1;
 using namespace std::chrono_literals;
 using namespace pitaya;
 
+// Helper functions
 static string ServerAsJson(const Server &server);
+static std::shared_ptr<pitaya::Server> ParseServer(const string &jsonStr);
+static string GetServerKey(const string &serverId, const string &serverType);
 
 service_discovery::ServiceDiscovery::ServiceDiscovery(unique_ptr<Server> server, const string &address)
 : _server(std::move(server))
 , _client(address)
 , _watcher(address, "pitaya", std::bind(&ServiceDiscovery::OnWatch, this, _1))
-, _leaseId(0)
 , _heartbeatTTL(60s)
+, _leaseId(0)
 {
 //    auto response_task = _client.get("pitaya/servers/connector/48f99e38-ba01-4e35-a4f7-22023026d198");
     auto response_task = _client.ls("pitaya/servers");
@@ -55,7 +59,7 @@ service_discovery::ServiceDiscovery::Init()
 void
 service_discovery::ServiceDiscovery::OnWatch(etcd::Response res)
 {
-    
+    cout << "OnWatch CALLED!" << endl;
 }
 
 int64_t
@@ -90,7 +94,7 @@ service_discovery::ServiceDiscovery::BootstrapServer(const Server &server)
 etcdv3::V3Status
 service_discovery::ServiceDiscovery::AddServerToEtcd(const Server &server)
 {
-    etcd::Response res = _client.set(_etcdPrefix + server.GetKey(), ServerAsJson(server),  _leaseId).get();
+    etcd::Response res = _client.set(_etcdPrefix + GetServerKey(server.id, server.type), ServerAsJson(server),  _leaseId).get();
     return res.status;
 }
 
@@ -109,6 +113,51 @@ ParseEtcdKey(const string &key, string &serverType, string &serverId)
 }
 
 void
+service_discovery::ServiceDiscovery::AddServer(std::shared_ptr<Server> server)
+{
+//    if _, loaded := sd.serverMapByID.LoadOrStore(sv.ID, sv); !loaded {
+//        mapSvByType, ok := sd.serverMapByType.Load(sv.Type)
+//        if !ok {
+//            mapSvByType = make(map[string]*Server)
+//            sd.serverMapByType.Store(sv.Type, mapSvByType)
+//        }
+//        mapSvByType.(map[string]*Server)[sv.ID] = sv
+//        if sv.ID != sd.server.ID {
+//            sd.notifyListeners(ADD, sv)
+//        }
+//    }
+    std::lock_guard<decltype(_serversById)> lock(_serversById);
+    if (_serversById[server->id] == nullptr) {
+        _serversById[server->id] = server;
+        _serversByType[server->type][server->id] = server;
+        if (server->id != _server->id) {
+        }
+    }
+}
+
+std::shared_ptr<pitaya::Server>
+service_discovery::ServiceDiscovery::GetServerFromEtcd(const std::string &serverId, const std::string &serverType)
+{
+    auto serverKey = GetServerKey(serverId, serverType);
+
+    try {
+        etcd::Response res = _client.get(serverKey).get();
+
+        if (!res.is_ok()) {
+            cerr << "Failed to get key from server:" << "\n";
+            if (!res.status.etcd_is_ok()) cerr << "Etcd: " << res.status.etcd_error_message << "\n";
+            if (!res.status.grpc_is_ok()) cerr << "gRPC: " << res.status.grpc_error_message << "\n";
+            return nullptr;
+        }
+
+        return ParseServer(res.value.value);
+    } catch (const std::exception &exc) {
+        cerr << "Error in communication with server: " << exc.what() << "\n";
+        return nullptr;
+    }
+}
+
+void
 service_discovery::ServiceDiscovery::SyncServers()
 {
     etcd::Response res = _client.ls("pitaya").get();
@@ -117,12 +166,37 @@ service_discovery::ServiceDiscovery::SyncServers()
         return;
     }
 
+    vector<string> allIds;
+
     for (size_t i = 0; i < res.keys.size(); ++i) {
         // 1. Parse key
+        string serverType, serverId;
+        bool ok = ParseEtcdKey(res.keys[i], serverType, serverId);
+
+        if (!ok) {
+            cerr << "Failed to parse etcd key " << res.keys[i] << endl;
+        }
+
+        allIds.push_back(serverId);
+
+        {
+            std::lock_guard<decltype(_serversById)> lock(_serversById);
+            if (_serversById[serverId] == nullptr) {
+                cout << "Loading info from missing server: " << serverType << "/" << serverId << "\n";
+                auto server = GetServerFromEtcd(serverId, serverType);
+                if (!server) {
+                    cerr << "Error getting server from etcd: " << serverId << "\n";
+                    continue;
+                }
+                AddServer(std::move(server));
+            }
+        }
+
         string svType = res.keys[i];
         string svId = res.keys[i];
 
         cout << res.keys[i] << " = " << res.values[i].value << endl;
+
     }
 }
 
@@ -157,3 +231,41 @@ ServerAsJson(const Server &server)
     return obj.serialize();
 }
 
+static std::shared_ptr<pitaya::Server>
+ParseServer(const string &jsonStr)
+{
+    auto server = std::make_shared<pitaya::Server>();
+
+    json::value jsonSrv;
+    jsonSrv.parse(jsonStr);
+
+    if (!jsonSrv.is_object()) {
+        cerr << "Server json is not an object" << "\n";
+        return nullptr;
+    }
+
+    if (jsonSrv["frontend"].is_boolean()) {
+        server->frontend = jsonSrv["frontend"].as_bool();
+    }
+    if (jsonSrv["type"].is_string()) {
+        server->type = jsonSrv["type"].as_string();
+    }
+    if (jsonSrv["id"].is_string()) {
+        server->id = jsonSrv["id"].as_string();
+    }
+    if (jsonSrv["metadata"].is_string()) {
+        server->metadata = jsonSrv["metadata"].as_string();
+    }
+    if (jsonSrv["hostname"].is_string()) {
+        server->hostname = jsonSrv["hostname"].as_string();
+    }
+
+    return server;
+}
+
+static string
+GetServerKey(const string &serverId, const string &serverType)
+{
+    // TODO: Add fmt library to improve this code.
+    return std::string("servers") + std::string("/") + serverType + std::string("/") + serverId;
+}
