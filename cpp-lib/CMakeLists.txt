@@ -15,8 +15,8 @@ add_subdirectory(deps/grpc EXCLUDE_FROM_ALL)
 add_subdirectory(deps/etcd-cpp-apiv3 EXCLUDE_FROM_ALL)
 
 add_library(pitaya_cluster SHARED
-    include/pitaya_cluster.h
-    src/pitaya_cluster.cpp)
+    include/service_discovery.h
+    src/service_discovery.cpp)
 
 add_library(pitaya::pitaya_cluster ALIAS pitaya_cluster)
 
@@ -41,6 +41,6 @@ target_link_libraries(pitaya_cluster
 # ===============================
 
 add_executable(main
-    src/main.cpp)
+    src/pitaya_cluster.cpp)
 
 target_link_libraries(main PRIVATE pitaya_cluster)
