@@ -21,7 +21,7 @@ static string ServerAsJson(const Server &server);
 static std::shared_ptr<pitaya::Server> ParseServer(const string &jsonStr);
 static string GetServerKey(const string &serverId, const string &serverType);
 
-service_discovery::ServiceDiscovery::ServiceDiscovery(unique_ptr<Server> server, const string &address)
+service_discovery::ServiceDiscovery::ServiceDiscovery(shared_ptr<Server> server, const string &address)
 : _server(std::move(server))
 , _client(address)
 , _watcher(address, "pitaya", std::bind(&ServiceDiscovery::OnWatch, this, _1))

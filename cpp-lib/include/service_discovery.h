@@ -23,7 +23,7 @@ namespace service_discovery {
 
     class ServiceDiscovery {
     public:
-        ServiceDiscovery(std::unique_ptr<pitaya::Server> server, const std::string &address);
+        ServiceDiscovery(std::shared_ptr<pitaya::Server> server, const std::string &address);
 
         void Init();
         void AddListener(const Listener &listener);
@@ -41,7 +41,7 @@ namespace service_discovery {
         int64_t CreateLease();
 
     private:
-        std::unique_ptr<pitaya::Server> _server;
+        std::shared_ptr<pitaya::Server> _server;
 
         etcd::Client _client;
         etcd::Watcher _watcher;

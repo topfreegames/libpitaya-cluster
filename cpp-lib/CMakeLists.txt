@@ -10,18 +10,26 @@ endif()
 add_subdirectory(deps/grpc EXCLUDE_FROM_ALL)
 add_subdirectory(deps/etcd-cpp-apiv3 EXCLUDE_FROM_ALL)
 
+file(GLOB protobuf_files
+  "include/protos/*"
+  )
+
 add_library(pitaya_cluster SHARED
     include/service_discovery.h
     include/pitaya_nats.h
     src/service_discovery.cpp
     src/nats_rpc_server.cpp
+    src/nats_rpc_client.cpp
     src/string_utils.cpp
+    src/pitaya_utils.cpp
     src/string_utils.h
     include/sync_map.h
     # Include protobuf-c
     deps/protobuf-c/protobuf-c/protobuf-c.c
     deps/protobuf-c/protobuf-c/protobuf-c.h
+    ${protobuf_files}
     )
+
 
 add_library(pitaya::pitaya_cluster ALIAS pitaya_cluster)
 
