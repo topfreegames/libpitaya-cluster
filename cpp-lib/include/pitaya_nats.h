@@ -5,6 +5,7 @@
 #include "nats/nats.h"
 #include "pitaya.h"
 #include "protos/response.pb.h"
+#include "protos/request.pb.h"
 
 namespace pitaya_nats {
     struct NATSConfig
@@ -22,9 +23,13 @@ namespace pitaya_nats {
 
     class NATSRPCServer{
         public:
-            NATSRPCServer(std::shared_ptr<pitaya::Server> server, std::shared_ptr<NATSConfig> config);
+            NATSRPCServer(
+                std::shared_ptr<pitaya::Server> server,
+                std::shared_ptr<NATSConfig> config,
+                rpc_handler_func handler);
 
         private:
+            static rpc_handler_func handler;
             natsConnection *nc = NULL;
             natsSubscription *sub = NULL;
             static void handleMsg(natsConnection *nc, natsSubscription *sub, natsMsg *msg, void *closure);

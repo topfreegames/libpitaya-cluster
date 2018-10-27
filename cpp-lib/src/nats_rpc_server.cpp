@@ -12,8 +12,12 @@ using std::cout;
 using namespace pitaya;
 
 // TODO: configure rpc server
-pitaya_nats::NATSRPCServer::NATSRPCServer(std::shared_ptr<Server> server, std::shared_ptr<pitaya_nats::NATSConfig> config)
+// TODO: check handler
+rpc_handler_func pitaya_nats::NATSRPCServer::handler;
+
+pitaya_nats::NATSRPCServer::NATSRPCServer(std::shared_ptr<Server> server, std::shared_ptr<pitaya_nats::NATSConfig> config, rpc_handler_func handler_func)
 {
+    handler = handler_func;
     natsStatus s;
     s = natsConnection_ConnectTo(&nc, config->nats_addr.c_str());
     if (s == NATS_OK) {
@@ -28,7 +32,6 @@ pitaya_nats::NATSRPCServer::NATSRPCServer(std::shared_ptr<Server> server, std::s
 }
 
 void pitaya_nats::NATSRPCServer::handleMsg(natsConnection *nc, natsSubscription *sub, natsMsg *msg, void *closure){
-    // Prints the message, using the message getters:
     auto req = std::unique_ptr<protos::Request>(new protos::Request());
     auto reply = natsMsg_GetReply(msg);
     bool decoded = req->ParseFromArray(
@@ -37,17 +40,8 @@ void pitaya_nats::NATSRPCServer::handleMsg(natsConnection *nc, natsSubscription 
         cout << "unable to decode msg from nats" << std::endl; 
         return;
     }
-    auto rpc_req = std::unique_ptr<pitaya::RPCReq>(new pitaya::RPCReq());
-    rpc_req->data = req->msg().data().c_str();
-    rpc_req->data_len = req->msg().data().length();
-    rpc_req->route = req->msg().route().c_str();
-    cout << "request with route:" << rpc_req->route <<
-    " data_len:" << rpc_req->data_len << std::endl;
 
-    //TODO call callback, get res
-
-    auto res = std::unique_ptr<protos::Response>(new protos::Response());
-    res->set_data("ok!");
+    auto res = handler(std::move(req));
 
     size_t size = res->ByteSizeLong();
     void *buffer = malloc(size);

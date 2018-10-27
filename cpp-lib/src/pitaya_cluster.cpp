@@ -12,10 +12,17 @@ using namespace pitaya_nats;
 using namespace pitaya;
 using service_discovery::ServiceDiscovery;
 
-std::unique_ptr<ServiceDiscovery> gServiceDiscovery;
-std::unique_ptr<NATSRPCServer> nats_rpc_server;
-std::unique_ptr<NATSRPCClient> nats_rpc_client;
+unique_ptr<ServiceDiscovery> gServiceDiscovery;
+unique_ptr<NATSRPCServer> nats_rpc_server;
+unique_ptr<NATSRPCClient> nats_rpc_client;
 int x;
+
+shared_ptr<protos::Response> rpc_handler(unique_ptr<protos::Request> req){
+    cout << "rpc handler called with route: " << req->msg().route() << endl;
+    auto res = std::make_shared<protos::Response>();
+    res->set_data("ok!");
+    return std::move(res);
+}
 
 int main()
 {
@@ -27,7 +34,7 @@ int main()
     );
     try{
         nats_rpc_server = unique_ptr<NATSRPCServer>(
-            new NATSRPCServer(server, nats_config));
+            new NATSRPCServer(server, nats_config, rpc_handler));
         nats_rpc_client = unique_ptr<NATSRPCClient>(
             new NATSRPCClient(server, nats_config));
 
