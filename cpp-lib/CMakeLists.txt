@@ -17,10 +17,12 @@ file(GLOB protobuf_files
 add_library(pitaya_cluster SHARED
     include/service_discovery.h
     include/pitaya_nats.h
+    include/cluster.h
     src/service_discovery.cpp
     src/nats_rpc_server.cpp
     src/nats_rpc_client.cpp
     src/string_utils.cpp
+    src/cluster.cpp
     src/pitaya_utils.cpp
     src/string_utils.h
     include/sync_map.h

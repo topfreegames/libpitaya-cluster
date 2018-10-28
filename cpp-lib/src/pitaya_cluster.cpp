@@ -52,7 +52,7 @@ int main()
             req->SerializeToArray(buffer, size);
             ///// FINISH
 
-            auto res = nats_rpc_client->Call(server, "bla.ble.bli", (const char *)buffer, size);
+            auto res = nats_rpc_client->Call(server, std::move(req));
             if (res->has_error()){
                 cout << "received error:" << res->error().msg() << endl;
             } else{

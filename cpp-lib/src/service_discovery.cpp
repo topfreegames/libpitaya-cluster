@@ -135,6 +135,11 @@ service_discovery::ServiceDiscovery::AddServer(std::shared_ptr<Server> server)
     }
 }
 
+std::shared_ptr<pitaya::Server> service_discovery::ServiceDiscovery::GetServerByID(const string& id){
+    std::lock_guard<decltype(_serversById)> lock(_serversById);
+    return _serversById[id];
+}
+
 std::shared_ptr<pitaya::Server>
 service_discovery::ServiceDiscovery::GetServerFromEtcd(const std::string &serverId, const std::string &serverType)
 {

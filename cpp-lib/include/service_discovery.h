@@ -27,6 +27,7 @@ namespace service_discovery {
 
         void Init();
         void AddListener(const Listener &listener);
+        std::shared_ptr<pitaya::Server> GetServerByID(const string& id);
 
     private:
         void Configure();

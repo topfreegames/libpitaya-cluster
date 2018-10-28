@@ -20,19 +20,11 @@ pitaya_nats::NATSRPCClient::NATSRPCClient(std::shared_ptr<Server> server, std::s
     }
 }
 
-std::shared_ptr<protos::Response> pitaya_nats::NATSRPCClient::Call(std::shared_ptr<pitaya::Server> target, const string &route, const char * msg, const int msg_size){
+std::shared_ptr<protos::Response> pitaya_nats::NATSRPCClient::Call(std::shared_ptr<pitaya::Server> target, std::unique_ptr<protos::Request> req){
     natsMsg *reply = NULL;
     natsStatus s;
     auto topic = GetTopicForServer(std::move(target));
 
-    auto p_msg = new protos::Msg();
-    p_msg->set_route(route);
-    p_msg->set_data(msg);
-    p_msg->set_type(protos::MsgType::MsgRequest);
-
-    auto req = std::unique_ptr<protos::Request>(new protos::Request);
-    req->set_type(protos::RPCType::User);
-    req->set_allocated_msg(p_msg);
     size_t size = req->ByteSizeLong();
     void *buffer = malloc(size);
     req->SerializeToArray(buffer, size);
@@ -43,6 +35,7 @@ std::shared_ptr<protos::Response> pitaya_nats::NATSRPCClient::Call(std::shared_p
     if (s != NATS_OK){
         auto err = new protos::Error();
         if (s == NATS_TIMEOUT){
+            // TODO const codes in separate file
             err->set_code("PIT-504");
             err->set_msg("nats timeout");
         } else{
