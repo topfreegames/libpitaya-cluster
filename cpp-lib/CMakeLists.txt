@@ -18,6 +18,7 @@ add_library(pitaya_cluster SHARED
     include/service_discovery.h
     include/pitaya_nats.h
     include/cluster.h
+    include/pitaya.h
     src/service_discovery.cpp
     src/nats_rpc_server.cpp
     src/nats_rpc_client.cpp

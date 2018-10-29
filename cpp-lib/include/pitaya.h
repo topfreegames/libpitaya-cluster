@@ -7,10 +7,10 @@
 
 typedef std::function<std::shared_ptr<protos::Response>(std::unique_ptr<protos::Request>)> rpc_handler_func;
 using ServerId = std::string;
-using std::string;
 
 namespace pitaya
 {
+
 struct Server
 {
     std::string id;
@@ -39,16 +39,16 @@ struct RPCReq{
 
 class PitayaException: public std::exception {
     public:
-    PitayaException(const string &msg): msg(msg){}
+    PitayaException(const std::string &msg): msg(msg){}
 
     virtual const char *what() const throw()
     {
         return msg.c_str();
     }
-    const string msg;
+    const std::string msg;
 };
 
-string GetTopicForServer(std::shared_ptr<Server> server);
+std::string GetTopicForServer(std::shared_ptr<Server> server);
 
 } // namespace pitaya
 #endif
