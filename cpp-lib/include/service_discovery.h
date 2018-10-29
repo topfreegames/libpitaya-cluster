@@ -26,6 +26,7 @@ namespace service_discovery {
         ServiceDiscovery(std::shared_ptr<pitaya::Server> server, const std::string &address);
 
         std::shared_ptr<pitaya::Server> GetServerById(const std::string& id);
+        std::vector<std::shared_ptr<pitaya::Server>> GetServersByType(const std::string &type);
 
     private:
         etcdv3::V3Status Init();

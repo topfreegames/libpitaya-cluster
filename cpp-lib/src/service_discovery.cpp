@@ -183,7 +183,23 @@ service_discovery::ServiceDiscovery::GetServerById(const string &id)
     return _serversById[id];
 }
 
-shared_ptr<pitaya::Server>
+vector<shared_ptr<Server>>
+service_discovery::ServiceDiscovery::GetServersByType(const std::string &type)
+{
+    std::lock_guard<decltype(_serversByType)> lock(_serversByType);
+    vector<shared_ptr<Server>> servers;
+
+    if (_serversByType.Find(type) != _serversByType.end()) {
+        const auto &svMap = _serversByType[type];
+        for (const auto &pair : svMap) {
+            servers.push_back(pair.second);
+        }
+    }
+
+    return servers;
+}
+
+shared_ptr<Server>
 service_discovery::ServiceDiscovery::GetServerFromEtcd(const std::string &serverId, const std::string &serverType)
 {
     auto serverKey = fmt::format("{}/{}", _etcdPrefix, GetServerKey(serverId, serverType));
