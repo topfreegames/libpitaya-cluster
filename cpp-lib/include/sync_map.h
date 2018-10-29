@@ -30,6 +30,12 @@ public:
         return it;
     }
 
+    typename std::unordered_map<K, V>::iterator FindWithLock(const K &key)
+    {
+        std::lock_guard<decltype(*this)> lock(*this);
+        return Find(key);
+    }
+
     void Erase(const K &key)
     {
         _map.erase(key);

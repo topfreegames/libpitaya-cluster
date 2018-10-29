@@ -28,7 +28,8 @@ service_discovery::ServiceDiscovery::ServiceDiscovery(shared_ptr<Server> server,
 : _log(spdlog::stdout_color_mt("service_discovery"))
 , _server(std::move(server))
 , _client(address)
-, _watcher(address, "pitaya/servers", std::bind(&ServiceDiscovery::OnWatch, this, _1))
+, _etcdPrefix("pitaya/servers")
+, _watcher(address, _etcdPrefix, std::bind(&ServiceDiscovery::OnWatch, this, _1))
 , _heartbeatTTL(60s)
 , _leaseId(0)
 {
@@ -160,7 +161,7 @@ service_discovery::ServiceDiscovery::BootstrapServer(const Server &server)
 etcdv3::V3Status
 service_discovery::ServiceDiscovery::AddServerToEtcd(const Server &server)
 {
-    string key = _etcdPrefix + "/" + GetServerKey(server.id, server.type);
+    string key = fmt::format("{}/{}", _etcdPrefix, GetServerKey(server.id, server.type));
     etcd::Response res = _client.set(key, ServerAsJson(server),  _leaseId).get();
     return res.status;
 }
@@ -185,7 +186,7 @@ service_discovery::ServiceDiscovery::GetServerById(const string &id)
 shared_ptr<pitaya::Server>
 service_discovery::ServiceDiscovery::GetServerFromEtcd(const std::string &serverId, const std::string &serverType)
 {
-    auto serverKey = GetServerKey(serverId, serverType);
+    auto serverKey = fmt::format("{}/{}", _etcdPrefix, GetServerKey(serverId, serverType));
 
     try {
         etcd::Response res = _client.get(serverKey).get();
@@ -197,7 +198,7 @@ service_discovery::ServiceDiscovery::GetServerFromEtcd(const std::string &server
             } else {
                 info = res.status.etcd_error_message;
             }
-            _log->error("Failed to get key from server: {}", info);
+            _log->error("Failed to get key {} from server: {}", serverKey, info);
             return nullptr;
         }
 
@@ -211,7 +212,7 @@ service_discovery::ServiceDiscovery::GetServerFromEtcd(const std::string &server
 void
 service_discovery::ServiceDiscovery::SyncServers()
 {
-    etcd::Response res = _client.ls("pitaya").get();
+    etcd::Response res = _client.ls(_etcdPrefix).get();
     if (!res.is_ok()) {
         _log->error("Error synchronizing servers");
         return;
@@ -230,17 +231,15 @@ service_discovery::ServiceDiscovery::SyncServers()
 
         allIds.push_back(serverId);
 
-        {
-            std::lock_guard<decltype(_serversById)> lock(_serversById);
-            if (_serversById[serverId] == nullptr) {
-                _log->info("Loading info from missing server: {}/{}", serverType, serverId);
-                auto server = GetServerFromEtcd(serverId, serverType);
-                if (!server) {
-                    _log->error("Error getting server from etcd: {}", serverId);
-                    continue;
-                }
-                AddServer(std::move(server));
+        if (_serversById.FindWithLock(serverId) == _serversById.end()) {
+            _log->info("Loading info from missing server: {}/{}", serverType, serverId);
+            auto server = GetServerFromEtcd(serverId, serverType);
+            if (!server) {
+                _log->error("Error getting server from etcd: {}", serverId);
+                continue;
             }
+
+            AddServer(std::move(server));
         }
     }
 
@@ -297,7 +296,6 @@ service_discovery::ServiceDiscovery::Configure()
     _syncServersInterval = 2s;
     _heartbeatTTL = 1s;
     _logHeartbeat = true;
-    _etcdPrefix = "pitaya";
 //    _etcdDialTimeout = seconds{5};
     _revokeTimeout = 10s;
     _grantLeaseTimeout = 60s;
@@ -356,7 +354,7 @@ service_discovery::ServiceDiscovery::ParseServer(const string &jsonStr)
 static string
 GetServerKey(const string &serverId, const string &serverType)
 {
-    return fmt::format("servers/{}/{}", serverType, serverId);
+    return fmt::format("{}/{}", serverType, serverId);
 }
 
 bool
