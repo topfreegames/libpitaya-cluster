@@ -27,6 +27,8 @@ add_library(pitaya_cluster SHARED
     src/pitaya_utils.cpp
     src/string_utils.h
     include/sync_map.h
+    include/lease_keep_alive.h
+    src/lease_keep_alive.cpp
     # Include protobuf-c
     deps/protobuf-c/protobuf-c/protobuf-c.c
     deps/protobuf-c/protobuf-c/protobuf-c.h

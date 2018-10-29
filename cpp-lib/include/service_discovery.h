@@ -10,6 +10,7 @@
 #include <etcd/Watcher.hpp>
 #include "sync_map.h"
 #include "pitaya.h"
+#include "lease_keep_alive.h"
 #include "spdlog/spdlog.h"
 
 namespace service_discovery {
@@ -24,9 +25,10 @@ namespace service_discovery {
     class ServiceDiscovery {
     public:
         ServiceDiscovery(std::shared_ptr<pitaya::Server> server, const std::string &address);
+        ~ServiceDiscovery();
 
         std::shared_ptr<pitaya::Server> GetServerById(const std::string& id);
-        std::vector<std::shared_ptr<pitaya::Server>> GetServersByType(const std::string &type);
+        std::vector<std::shared_ptr<pitaya::Server>> GetServersByType(const ServerType &type);
 
     private:
         etcdv3::V3Status Init();
@@ -34,7 +36,8 @@ namespace service_discovery {
         void OnWatch(etcd::Response res);
         void SyncServers();
         void AddServer(std::shared_ptr<pitaya::Server> server);
-        void NotifyListeners(Action action, const pitaya::Server *server);
+        void PrintServers();
+        void PrintServer(const pitaya::Server &server);
 
         std::shared_ptr<pitaya::Server> GetServerFromEtcd(const std::string &serverId, const std::string &serverType);
 
@@ -45,15 +48,13 @@ namespace service_discovery {
 
         void DeleteLocalInvalidServers(const std::vector<std::string> &actualServers);
         void DeleteServer(const std::string &serverId);
-        void PrintServers();
 
         std::shared_ptr<pitaya::Server> ParseServer(const std::string &jsonStr);
         bool ParseEtcdKey(const std::string &key, std::string &serverType, std::string &serverId);
 
-        int64_t CreateLease();
-
     private:
         std::shared_ptr<spdlog::logger> _log;
+        std::string _etcdPrefix;
 
         std::shared_ptr<pitaya::Server> _server;
         etcd::Client _client;
@@ -63,14 +64,12 @@ namespace service_discovery {
         SyncMap<ServerType, std::unordered_map<std::string, std::shared_ptr<pitaya::Server>>> _serversByType;
 
         // Configuration member values
+        LeaseKeepAlive _leaseKeepAlive;
         std::chrono::seconds _syncServersInterval;
         std::chrono::seconds _heartbeatTTL;
         bool _logHeartbeat;
         std::chrono::time_point<std::chrono::system_clock> _lastHeartbeatTime;
         int64_t _leaseId;
-        std::vector<std::string> _etcdEndpoints;
-        std::string _etcdPrefix;
-//        std::chrono::seconds _etcdDialTimeout;
         bool _running;
         std::chrono::time_point<std::chrono::system_clock> _lastSyncTime;
         std::chrono::seconds _revokeTimeout;

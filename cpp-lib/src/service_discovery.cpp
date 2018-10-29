@@ -3,6 +3,7 @@
 #include "string_utils.h"
 #include <algorithm>
 #include "spdlog/sinks/stdout_color_sinks.h"
+#include "lease_keep_alive.h"
 
 using std::string;
 using std::vector;
@@ -20,19 +21,21 @@ using namespace std::chrono_literals;
 using namespace pitaya;
 
 // Helper functions
-static void PrintServer(const Server &server);
 static string ServerAsJson(const Server &server);
 static string GetServerKey(const string &serverId, const string &serverType);
 
 service_discovery::ServiceDiscovery::ServiceDiscovery(shared_ptr<Server> server, const string &address)
 : _log(spdlog::stdout_color_mt("service_discovery"))
+, _etcdPrefix("pitaya/servers")
 , _server(std::move(server))
 , _client(address)
-, _etcdPrefix("pitaya/servers")
 , _watcher(address, _etcdPrefix, std::bind(&ServiceDiscovery::OnWatch, this, _1))
+, _leaseKeepAlive(_client)
 , _heartbeatTTL(60s)
 , _leaseId(0)
 {
+    _log->set_level(spdlog::level::debug);
+
     Configure();
     etcdv3::V3Status status = Init();
     if (!status.is_ok()) {
@@ -42,6 +45,12 @@ service_discovery::ServiceDiscovery::ServiceDiscovery(shared_ptr<Server> server,
             throw PitayaException("etcd init error: " + status.etcd_error_message);
         }
     }
+}
+
+service_discovery::ServiceDiscovery::~ServiceDiscovery()
+{
+    _log->info("Terminating");
+    _leaseKeepAlive.Stop();
 }
 
 etcdv3::V3Status
@@ -91,25 +100,6 @@ service_discovery::ServiceDiscovery::OnWatch(etcd::Response res)
         _log->info("Server {} deleted", serverId);
         PrintServers();
     }
-
-    cout << "Watch\n";
-    cout << "Key: " << res.value.key << "\n";
-    cout << "val: " << res.value.value << "\n";
-    cout << "action: " << res.action << "\n";
-}
-
-int64_t
-service_discovery::ServiceDiscovery::CreateLease()
-{
-    etcd::Response res = _client.leasegrant(_heartbeatTTL.count()).get();
-
-    if (!res.is_ok()) {
-        _log->error("leasegrant() failed!");
-        return -1;
-    }
-
-    // TODO: Keep lease alive by renewing the lease every X seconds (do this in a thread or async channel)
-    return res.value.lease_id;
 }
 
 etcdv3::V3Status
@@ -136,9 +126,8 @@ service_discovery::ServiceDiscovery::GrantLease()
     _leaseId = res.value.lease_id;
     _log->info("Got lease id: {}", _leaseId);
 
-    //
-    // TODO, FIXME: Add KeepAlive here
-    //
+    _leaseKeepAlive.SetLeaseId(_leaseId);
+    _leaseKeepAlive.Start();
 
     return std::move(res.status);
 }
@@ -310,7 +299,6 @@ void
 service_discovery::ServiceDiscovery::Configure()
 {
     _syncServersInterval = 2s;
-    _heartbeatTTL = 1s;
     _logHeartbeat = true;
 //    _etcdDialTimeout = seconds{5};
     _revokeTimeout = 10s;
@@ -387,12 +375,12 @@ service_discovery::ServiceDiscovery::ParseEtcdKey(const string &key, string &ser
     return true;
 }
 
-static void
-PrintServer(const Server &server)
+void
+service_discovery::ServiceDiscovery::PrintServer(const Server &server)
 {
-    cout << "Server: " << GetServerKey(server.id, server.type) << "\n";
-    cout << "  - hostname: " << server.hostname << "\n";
-    cout << "  - frontend: " << server.frontend << "\n";
-    cout << "  - metadata: " << server.metadata << "\n";
+    _log->debug("Server: {}", GetServerKey(server.id, server.type));
+    _log->debug("  - hostname: {}", server.hostname);
+    _log->debug("  - frontend: {}", server.frontend);
+    _log->debug("  - metadata: {}", server.metadata);
 }
 
