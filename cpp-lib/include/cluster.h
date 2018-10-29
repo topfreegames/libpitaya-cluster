@@ -7,6 +7,8 @@
 #include "protos/response.pb.h"
 #include "protos/request.pb.h"
 #include <google/protobuf/message_lite.h>
+#include "spdlog/spdlog.h"
+#include "spdlog/sinks/stdout_color_sinks.h"
 
 using google::protobuf::MessageLite;
 
@@ -32,6 +34,7 @@ namespace pitaya
         : nats_config(std::move(nats_config))
         , server(std::move(server))
         , rpc_server_handler_func(rpc_server_handler_func)
+        , _log(spdlog::stdout_color_mt("cluster"))
         {}
 
         bool Init();
@@ -39,6 +42,7 @@ namespace pitaya
         std::unique_ptr<PitayaError> RPC(const std::string& route, std::shared_ptr<MessageLite> arg, std::shared_ptr<MessageLite> ret);
 
     private:
+        std::shared_ptr<spdlog::logger> _log;
         std::shared_ptr<pitaya_nats::NATSConfig> nats_config = NULL;
         std::shared_ptr<Server> server = NULL;
         std::unique_ptr<service_discovery::ServiceDiscovery> sd = NULL;

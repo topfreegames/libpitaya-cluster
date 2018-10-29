@@ -18,7 +18,7 @@ bool pitaya::Cluster::Init(){
         );
         return true;
     } catch(PitayaException* e){
-        cout << "error initializing cluster: " << e->what() << endl;
+        _log->error("error initializing cluster: {}", e->what());
         return false;
     }
 }

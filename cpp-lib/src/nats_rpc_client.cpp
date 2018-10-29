@@ -5,6 +5,7 @@
 #include "pitaya.h"
 #include <string>
 #include <iostream>
+#include "spdlog/sinks/stdout_color_sinks.h"
 
 using std::string;
 using namespace pitaya;
@@ -12,9 +13,22 @@ using namespace pitaya;
 pitaya_nats::NATSRPCClient::NATSRPCClient(std::shared_ptr<Server> server, std::shared_ptr<pitaya_nats::NATSConfig> config)
 : nc(nullptr)
 , sub(nullptr)
+, _log(spdlog::stdout_color_mt("nats_rpc_client"))
 , timeout_ms(config->request_timeout_ms)
 {
-    natsStatus s = natsConnection_ConnectTo(&nc, config->nats_addr.c_str());
+    natsOptions * opts;
+    auto s = natsOptions_Create(&opts);
+    if (s != NATS_OK) {
+        throw PitayaException("error configuring nats server;");
+    }
+    natsOptions_SetTimeout(opts, config->connection_timeout_ms);
+    natsOptions_SetMaxReconnect(opts, config->max_reconnection_attempts);
+    natsOptions_SetClosedCB(opts, closed_cb, this);
+    natsOptions_SetDisconnectedCB(opts, disconnected_cb, this);
+    natsOptions_SetReconnectedCB(opts, reconnected_cb, this);
+    natsOptions_SetURL(opts, config->nats_addr.c_str());
+
+    s = natsConnection_Connect(&nc, opts);
     if (s != NATS_OK) {
         throw PitayaException("unable to initialize nats server");
     }
@@ -53,4 +67,20 @@ std::shared_ptr<protos::Response> pitaya_nats::NATSRPCClient::Call(std::shared_p
     natsMsg_Destroy(reply);
 
     return res;
+}
+
+void pitaya_nats::NATSRPCClient::disconnected_cb(natsConnection *nc, void *closure){
+    auto instance = (NATSRPCClient*) closure;
+    instance->_log->error("nats disconnected! will try to reconnect...");
+}
+
+void pitaya_nats::NATSRPCClient::reconnected_cb(natsConnection *nc, void *closure){
+    auto instance = (NATSRPCClient*) closure;
+    instance->_log->error("nats reconnected!");
+}
+
+void pitaya_nats::NATSRPCClient::closed_cb(natsConnection *nc, void *closure){
+    auto instance = (NATSRPCClient*) closure;
+    instance->_log->error("failed all nats reconnection attempts!");
+    // TODO: exit server here, but need to do this gracefully
 }
