@@ -10,45 +10,48 @@
 #include "spdlog/spdlog.h"
 #include "spdlog/sinks/stdout_color_sinks.h"
 
-using google::protobuf::MessageLite;
-
 namespace pitaya
 {
 
-    struct PitayaError{
+    struct PitayaError {
         std::string code;
         std::string msg;
 
-        PitayaError(const std::string& code, const std::string& msg):
-        code(code), msg(msg){};
+        PitayaError(const std::string& code, const std::string& msg)
+        : code(code), msg(msg)
+        {}
     };
 
-    class Cluster
-    {
+    class Cluster {
     public:
         Cluster(
-            std::shared_ptr<pitaya_nats::NATSConfig> nats_config,
+            pitaya_nats::NATSConfig &&nats_config,
             std::shared_ptr<Server> server,
             rpc_handler_func rpc_server_handler_func
         )
-        : nats_config(std::move(nats_config))
+        : _log(spdlog::stdout_color_mt("cluster"))
+        , nats_config(std::move(nats_config))
         , server(std::move(server))
         , rpc_server_handler_func(rpc_server_handler_func)
-        , _log(spdlog::stdout_color_mt("cluster"))
         {}
 
         bool Init();
-        std::unique_ptr<PitayaError> RPC(const std::string& server_id, const std::string& route, std::shared_ptr<MessageLite> arg, std::shared_ptr<MessageLite> ret);
-        std::unique_ptr<PitayaError> RPC(const std::string& route, std::shared_ptr<MessageLite> arg, std::shared_ptr<MessageLite> ret);
+        std::unique_ptr<PitayaError> RPC(const std::string& server_id,
+                                         const std::string& route,
+                                         std::shared_ptr<google::protobuf::MessageLite> arg,
+                                         std::shared_ptr<google::protobuf::MessageLite> ret);
+        std::unique_ptr<PitayaError> RPC(const std::string& route,
+                                         std::shared_ptr<google::protobuf::MessageLite> arg,
+                                         std::shared_ptr<google::protobuf::MessageLite> ret);
 
     private:
         std::shared_ptr<spdlog::logger> _log;
-        std::shared_ptr<pitaya_nats::NATSConfig> nats_config = NULL;
+        pitaya_nats::NATSConfig nats_config;
         std::shared_ptr<Server> server = NULL;
-        std::unique_ptr<service_discovery::ServiceDiscovery> sd = NULL;
-        std::unique_ptr<pitaya_nats::NATSRPCServer> rpc_sv = NULL;
-        std::unique_ptr<pitaya_nats::NATSRPCClient> rpc_client = NULL;
-        rpc_handler_func rpc_server_handler_func = NULL;
+        std::unique_ptr<service_discovery::ServiceDiscovery> sd;
+        std::unique_ptr<pitaya_nats::NATSRPCServer> rpc_sv;
+        std::unique_ptr<pitaya_nats::NATSRPCClient> rpc_client;
+        rpc_handler_func rpc_server_handler_func = nullptr;
     };
 
 } // namespace pitaya

@@ -5,11 +5,11 @@
 #include "protos/request.pb.h"
 #include "protos/response.pb.h"
 
-typedef std::function<std::shared_ptr<protos::Response>(std::unique_ptr<protos::Request>)> rpc_handler_func;
 using ServerId = std::string;
 
 namespace pitaya
 {
+using rpc_handler_func = std::function<std::shared_ptr<protos::Response>(std::unique_ptr<protos::Request>)>;
 
 struct Server
 {

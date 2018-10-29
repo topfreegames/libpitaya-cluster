@@ -7,6 +7,8 @@ using namespace pitaya_nats;
 using namespace service_discovery;
 using namespace std;
 
+using google::protobuf::MessageLite;
+
 bool pitaya::Cluster::Init(){
     try{
         rpc_sv = unique_ptr<NATSRPCServer>(

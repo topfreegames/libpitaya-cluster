@@ -27,8 +27,8 @@ namespace pitaya_nats
             , const int max_reconnection_attempts
             , const int max_pending_msgs)
             : nats_addr(addr)
-            , request_timeout_ms(request_timeout_ms)
             , connection_timeout_ms(connection_timeout_ms)
+            , request_timeout_ms(request_timeout_ms)
             , max_reconnection_attempts(max_reconnection_attempts)
             , max_pending_msgs(max_pending_msgs)
         {
@@ -40,13 +40,13 @@ namespace pitaya_nats
     public:
         NATSRPCServer(
             std::shared_ptr<pitaya::Server> server,
-            std::shared_ptr<NATSConfig> config,
-            rpc_handler_func handler);
+            const NATSConfig &config,
+            pitaya::rpc_handler_func handler);
 
     private:
         void print_sub_status(natsSubscription* sub);
         std::shared_ptr<spdlog::logger> _log;
-        static rpc_handler_func handler;
+        static pitaya::rpc_handler_func handler;
         natsConnection *nc = NULL;
         natsSubscription *sub = NULL;
         static void handle_msg(natsConnection *nc, natsSubscription *sub, natsMsg *msg, void *closure);
@@ -59,7 +59,7 @@ namespace pitaya_nats
     class NATSRPCClient
     {
     public:
-        NATSRPCClient(std::shared_ptr<pitaya::Server> server, std::shared_ptr<NATSConfig> config);
+        NATSRPCClient(std::shared_ptr<pitaya::Server> server, const NATSConfig &config);
         std::shared_ptr<protos::Response> Call(std::shared_ptr<pitaya::Server> target, std::unique_ptr<protos::Request> req);
 
     private:

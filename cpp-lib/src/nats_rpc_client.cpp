@@ -10,23 +10,23 @@
 using std::string;
 using namespace pitaya;
 
-pitaya_nats::NATSRPCClient::NATSRPCClient(std::shared_ptr<Server> server, std::shared_ptr<pitaya_nats::NATSConfig> config)
-: nc(nullptr)
+pitaya_nats::NATSRPCClient::NATSRPCClient(std::shared_ptr<Server> server, const pitaya_nats::NATSConfig &config)
+: _log(spdlog::stdout_color_mt("nats_rpc_client"))
+, nc(nullptr)
 , sub(nullptr)
-, _log(spdlog::stdout_color_mt("nats_rpc_client"))
-, timeout_ms(config->request_timeout_ms)
+, timeout_ms(config.request_timeout_ms)
 {
     natsOptions * opts;
     auto s = natsOptions_Create(&opts);
     if (s != NATS_OK) {
         throw PitayaException("error configuring nats server;");
     }
-    natsOptions_SetTimeout(opts, config->connection_timeout_ms);
-    natsOptions_SetMaxReconnect(opts, config->max_reconnection_attempts);
+    natsOptions_SetTimeout(opts, config.connection_timeout_ms);
+    natsOptions_SetMaxReconnect(opts, config.max_reconnection_attempts);
     natsOptions_SetClosedCB(opts, closed_cb, this);
     natsOptions_SetDisconnectedCB(opts, disconnected_cb, this);
     natsOptions_SetReconnectedCB(opts, reconnected_cb, this);
-    natsOptions_SetURL(opts, config->nats_addr.c_str());
+    natsOptions_SetURL(opts, config.nats_addr.c_str());
 
     s = natsConnection_Connect(&nc, opts);
     if (s != NATS_OK) {

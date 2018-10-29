@@ -29,8 +29,7 @@ rpc_handler(unique_ptr<protos::Request> req)
 int main()
 {
     auto server = make_shared<Server>(Server("someid", "sometype"));
-    auto nats_config = make_shared<NATSConfig>(NATSConfig(
-        "nats://localhost:4222", 1000, 3000, 3, 100));
+    NATSConfig nats_config("nats://localhost:4222", 1000, 3000, 3, 100);
 
     try {
         gServiceDiscovery = std::unique_ptr<ServiceDiscovery>(
