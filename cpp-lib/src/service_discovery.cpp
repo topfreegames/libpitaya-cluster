@@ -1,6 +1,7 @@
 #include "service_discovery.h"
 #include <cpprest/json.h>
 #include "string_utils.h"
+#include <algorithm>
 
 using std::string;
 using std::vector;
@@ -10,6 +11,7 @@ using std::cout;
 using std::cerr;
 using std::endl;
 using std::chrono::seconds;
+namespace chrono = std::chrono;
 namespace json = web::json;
 
 using std::placeholders::_1;
@@ -17,6 +19,7 @@ using namespace std::chrono_literals;
 using namespace pitaya;
 
 // Helper functions
+static bool ParseEtcdKey(const string &key, string &serverType, string &serverId);
 static string ServerAsJson(const Server &server);
 static std::shared_ptr<pitaya::Server> ParseServer(const string &jsonStr);
 static string GetServerKey(const string &serverId, const string &serverType);
@@ -41,12 +44,6 @@ service_discovery::ServiceDiscovery::ServiceDiscovery(shared_ptr<Server> server,
     }
 
     Configure();
-}
-
-void
-service_discovery::ServiceDiscovery::AddListener(const Listener &listener)
-{
-    _listeners.push_back(listener);
 }
 
 void
@@ -77,6 +74,37 @@ service_discovery::ServiceDiscovery::CreateLease()
 }
 
 etcdv3::V3Status
+service_discovery::ServiceDiscovery::Bootstrap()
+{
+    etcdv3::V3Status status;
+
+    status = GrantLease();
+    if (!status.is_ok()) {
+        return status;
+    }
+
+    return BootstrapServer(*_server.get());
+}
+
+etcdv3::V3Status
+service_discovery::ServiceDiscovery::GrantLease()
+{
+    etcd::Response res = _client.leasegrant(_heartbeatTTL.count()).get();
+    if (!res.is_ok()) {
+        return res.status;
+    }
+
+    _leaseId = res.value.lease_id;
+    cout << "Got lease id: " << _leaseId << "\n";
+
+    //
+    // TODO, FIXME: Add KeepAlive here
+    //
+
+    return std::move(res.status);
+}
+
+etcdv3::V3Status
 service_discovery::ServiceDiscovery::BootstrapServer(const Server &server)
 {
     etcdv3::V3Status status;
@@ -98,49 +126,24 @@ service_discovery::ServiceDiscovery::AddServerToEtcd(const Server &server)
     return res.status;
 }
 
-static bool
-ParseEtcdKey(const string &key, string &serverType, string &serverId)
-{
-    auto comps = string_utils::Split(key, '/');
-    if (comps.size() != 3) {
-        cerr << "Error parsing etcd key " << key << "(server name can't contain /)" << endl;
-        return false;
-    }
-
-    serverType = comps[1];
-    serverId = comps[2];
-    return true;
-}
-
 void
-service_discovery::ServiceDiscovery::AddServer(std::shared_ptr<Server> server)
+service_discovery::ServiceDiscovery::AddServer(shared_ptr<Server> server)
 {
-//    if _, loaded := sd.serverMapByID.LoadOrStore(sv.ID, sv); !loaded {
-//        mapSvByType, ok := sd.serverMapByType.Load(sv.Type)
-//        if !ok {
-//            mapSvByType = make(map[string]*Server)
-//            sd.serverMapByType.Store(sv.Type, mapSvByType)
-//        }
-//        mapSvByType.(map[string]*Server)[sv.ID] = sv
-//        if sv.ID != sd.server.ID {
-//            sd.notifyListeners(ADD, sv)
-//        }
-//    }
     std::lock_guard<decltype(_serversById)> lock(_serversById);
     if (_serversById[server->id] == nullptr) {
         _serversById[server->id] = server;
         _serversByType[server->type][server->id] = server;
-        if (server->id != _server->id) {
-        }
     }
 }
 
-std::shared_ptr<pitaya::Server> service_discovery::ServiceDiscovery::GetServerByID(const string& id){
+shared_ptr<pitaya::Server>
+service_discovery::ServiceDiscovery::GetServerById(const string &id)
+{
     std::lock_guard<decltype(_serversById)> lock(_serversById);
     return _serversById[id];
 }
 
-std::shared_ptr<pitaya::Server>
+shared_ptr<pitaya::Server>
 service_discovery::ServiceDiscovery::GetServerFromEtcd(const std::string &serverId, const std::string &serverType)
 {
     auto serverKey = GetServerKey(serverId, serverType);
@@ -199,9 +202,53 @@ service_discovery::ServiceDiscovery::SyncServers()
 
         string svType = res.keys[i];
         string svId = res.keys[i];
-
         cout << res.keys[i] << " = " << res.values[i].value << endl;
+    }
 
+    DeleteLocalInvalidServers(std::move(allIds));
+
+    PrintServers();
+    _lastSyncTime = chrono::system_clock::now();
+}
+
+void
+service_discovery::ServiceDiscovery::PrintServers()
+{
+    std::lock_guard<decltype(_serversByType)> lock(_serversByType);
+    for (const auto &typePair : _serversByType) {
+        cout << "type: " << typePair.first << ", servers:\n";
+        for (const auto &svPair : typePair.second) {
+            cout << svPair.first << " -> " << svPair.second << "\n";
+        }
+    }
+}
+
+void
+service_discovery::ServiceDiscovery::DeleteServer(const string &serverId)
+{
+    // NOTE(lhahn): DeleteServer assumes that the resources are already locked.
+    if (_serversById.Find(serverId) != _serversById.end()) {
+        shared_ptr<Server> server = _serversById[serverId];
+        _serversById.Erase(serverId);
+        if (_serversByType.Find(server->type) != _serversByType.end()) {
+            auto &serverMap = _serversByType[server->type];
+            serverMap.erase(server->id);
+        }
+    }
+}
+
+void
+service_discovery::ServiceDiscovery::DeleteLocalInvalidServers(const vector<string> &actualServers)
+{
+    // NOTE(lhahn): Both maps are locked, since we do not want to have them possibly in an inconsistent state.
+    std::lock_guard<decltype(_serversById)> serversByIdLock(_serversById);
+    std::lock_guard<decltype(_serversByType)> serversByTypeLock(_serversByType);
+
+    for (const auto &pair : _serversById) {
+        if (std::find(actualServers.begin(), actualServers.end(), pair.first) == actualServers.end()) {
+            cout << "WARN: Deleting invalid local server " << pair.first << endl;
+            DeleteServer(pair.first);
+        }
     }
 }
 
@@ -236,7 +283,7 @@ ServerAsJson(const Server &server)
     return obj.serialize();
 }
 
-static std::shared_ptr<pitaya::Server>
+static shared_ptr<pitaya::Server>
 ParseServer(const string &jsonStr)
 {
     auto server = std::make_shared<pitaya::Server>();
@@ -274,3 +321,18 @@ GetServerKey(const string &serverId, const string &serverType)
     // TODO: Add fmt library to improve this code.
     return std::string("servers") + std::string("/") + serverType + std::string("/") + serverId;
 }
+
+static bool
+ParseEtcdKey(const string &key, string &serverType, string &serverId)
+{
+    auto comps = string_utils::Split(key, '/');
+    if (comps.size() != 3) {
+        cerr << "Error parsing etcd key " << key << "(server name can't contain /)" << endl;
+        return false;
+    }
+
+    serverType = comps[1];
+    serverId = comps[2];
+    return true;
+}
+

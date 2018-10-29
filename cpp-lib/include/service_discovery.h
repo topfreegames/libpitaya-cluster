@@ -16,9 +16,8 @@ namespace service_discovery {
     using ServerId = std::string;
     using ServerType = std::string;
 
-    struct Listener {
-        std::function<void(pitaya::Server*)> addServer;
-        std::function<void(pitaya::Server*)> removeServer;
+    enum class Action {
+        Add, Remove
     };
 
     class ServiceDiscovery {
@@ -26,18 +25,26 @@ namespace service_discovery {
         ServiceDiscovery(std::shared_ptr<pitaya::Server> server, const std::string &address);
 
         void Init();
-        void AddListener(const Listener &listener);
-        std::shared_ptr<pitaya::Server> GetServerByID(const string& id);
+
+        std::shared_ptr<pitaya::Server> GetServerById(const std::string& id);
 
     private:
         void Configure();
         void OnWatch(etcd::Response res);
         void SyncServers();
         void AddServer(std::shared_ptr<pitaya::Server> server);
+        void NotifyListeners(Action action, const pitaya::Server *server);
+
         std::shared_ptr<pitaya::Server> GetServerFromEtcd(const std::string &serverId, const std::string &serverType);
 
+        etcdv3::V3Status Bootstrap();
         etcdv3::V3Status BootstrapServer(const pitaya::Server &server);
         etcdv3::V3Status AddServerToEtcd(const pitaya::Server &server);
+        etcdv3::V3Status GrantLease();
+
+        void DeleteLocalInvalidServers(const std::vector<std::string> &actualServers);
+        void DeleteServer(const std::string &serverId);
+        void PrintServers();
 
         int64_t CreateLease();
 
@@ -49,8 +56,6 @@ namespace service_discovery {
 
         SyncMap<ServerId, std::shared_ptr<pitaya::Server>> _serversById;
         SyncMap<ServerType, std::unordered_map<std::string, std::shared_ptr<pitaya::Server>>> _serversByType;
-
-        std::vector<Listener> _listeners;
 
         // Configuration member values
         std::chrono::seconds _syncServersInterval;

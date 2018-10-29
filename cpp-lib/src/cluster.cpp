@@ -29,12 +29,12 @@ std::unique_ptr<pitaya::PitayaError> pitaya::Cluster::RPC(const string& route, s
 }
 
 std::unique_ptr<pitaya::PitayaError> pitaya::Cluster::RPC(const string& server_id, const string& route, std::shared_ptr<MessageLite> arg, std::shared_ptr<MessageLite> ret){
-    auto sv = sd->GetServerByID(server_id);
+    auto sv = sd->GetServerById(server_id);
     if (sv == nullptr){
         // TODO better error code with constants somewhere
         auto err = std::unique_ptr<pitaya::PitayaError>(new pitaya::PitayaError(
             "PIT-404", "server not found"));
-        return std::move(err);
+        return err;
     }
     auto msg = new protos::Msg();
     msg->set_type(protos::MsgType::MsgRequest);
@@ -53,14 +53,14 @@ std::unique_ptr<pitaya::PitayaError> pitaya::Cluster::RPC(const string& server_i
     if(res->has_error()){
         auto err = std::unique_ptr<pitaya::PitayaError>(new pitaya::PitayaError(
             res->error().code(), res->error().msg()));
-        return std::move(err);
+        return err;
     }
 
     auto parsed = ret->ParseFromString(res->data());
     if(!parsed){
         auto err = std::unique_ptr<pitaya::PitayaError>(new pitaya::PitayaError(
             "PIT-500", "error parsing protobuf"));
-        return std::move(err);
+        return err;
     }
 
     free(buffer);
