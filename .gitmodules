@@ -10,3 +10,6 @@
 [submodule "cpp-lib/deps/protobuf-c"]
 	path = cpp-lib/deps/protobuf-c
 	url = https://github.com/protobuf-c/protobuf-c
+[submodule "cpp-lib/deps/spdlog"]
+	path = cpp-lib/deps/spdlog
+	url = https://github.com/gabime/spdlog

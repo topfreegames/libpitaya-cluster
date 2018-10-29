@@ -10,6 +10,7 @@
 #include <etcd/Watcher.hpp>
 #include "sync_map.h"
 #include "pitaya.h"
+#include "spdlog/spdlog.h"
 
 namespace service_discovery {
 
@@ -45,11 +46,15 @@ namespace service_discovery {
         void DeleteServer(const std::string &serverId);
         void PrintServers();
 
+        std::shared_ptr<pitaya::Server> ParseServer(const std::string &jsonStr);
+        bool ParseEtcdKey(const std::string &key, std::string &serverType, std::string &serverId);
+
         int64_t CreateLease();
 
     private:
-        std::shared_ptr<pitaya::Server> _server;
+        std::shared_ptr<spdlog::logger> _log;
 
+        std::shared_ptr<pitaya::Server> _server;
         etcd::Client _client;
         etcd::Watcher _watcher;
 

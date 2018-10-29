@@ -2,6 +2,7 @@
 #include <cpprest/json.h>
 #include "string_utils.h"
 #include <algorithm>
+#include "spdlog/sinks/stdout_color_sinks.h"
 
 using std::string;
 using std::vector;
@@ -19,13 +20,13 @@ using namespace std::chrono_literals;
 using namespace pitaya;
 
 // Helper functions
-static bool ParseEtcdKey(const string &key, string &serverType, string &serverId);
+static void PrintServer(const Server &server);
 static string ServerAsJson(const Server &server);
-static std::shared_ptr<pitaya::Server> ParseServer(const string &jsonStr);
 static string GetServerKey(const string &serverId, const string &serverType);
 
 service_discovery::ServiceDiscovery::ServiceDiscovery(shared_ptr<Server> server, const string &address)
-: _server(std::move(server))
+: _log(spdlog::stdout_color_mt("service_discovery"))
+, _server(std::move(server))
 , _client(address)
 , _watcher(address, "pitaya/servers", std::bind(&ServiceDiscovery::OnWatch, this, _1))
 , _heartbeatTTL(60s)
@@ -64,36 +65,36 @@ void
 service_discovery::ServiceDiscovery::OnWatch(etcd::Response res)
 {
     if (!res.is_ok()) {
-        cerr << "OnWatch: Is NOT ok" << endl;
+        _log->error("OnWatch error");
         return;
     }
 
     if (res.action == "create") {
         auto server = ParseServer(res.value.value);
         if (server == nullptr) {
-            cerr << "Error parsing server: " << res.value.value << "\n";
+            _log->error("Error parsing server: {}", res.value.value);
             return;
         }
 
         AddServer(std::move(server));
-        cout << "Server " << res.value.key << " added\n";
+        _log->info("Server {} added", res.value.key);
         PrintServers();
     } else if (res.action == "delete") {
         string serverType, serverId;
         if (!ParseEtcdKey(res.value.key, serverType, serverId)) {
-            cerr << "Failed to parse key from etcd: " << res.value.key << "\n";
+            _log->error("Failed to parse key from etcd: {}", res.value.key);
             return;
         }
 
         DeleteServer(serverId);
-        cout << "Server " << serverId << " deleted\n";
+        _log->info("Server {} deleted", serverId);
         PrintServers();
     }
 
     cout << "Watch\n";
-    cout << "Key: " << res.value.key;
-    cout << "val: " << res.value.value;
-    cout << "action: " << res.action;
+    cout << "Key: " << res.value.key << "\n";
+    cout << "val: " << res.value.value << "\n";
+    cout << "action: " << res.action << "\n";
 }
 
 int64_t
@@ -102,7 +103,7 @@ service_discovery::ServiceDiscovery::CreateLease()
     etcd::Response res = _client.leasegrant(_heartbeatTTL.count()).get();
 
     if (!res.is_ok()) {
-        cerr << "leasegrant() failed!" << endl;
+        _log->error("leasegrant() failed!");
         return -1;
     }
 
@@ -132,7 +133,7 @@ service_discovery::ServiceDiscovery::GrantLease()
     }
 
     _leaseId = res.value.lease_id;
-    cout << "Got lease id: " << _leaseId << "\n";
+    _log->info("Got lease id: {}", _leaseId);
 
     //
     // TODO, FIXME: Add KeepAlive here
@@ -190,15 +191,19 @@ service_discovery::ServiceDiscovery::GetServerFromEtcd(const std::string &server
         etcd::Response res = _client.get(serverKey).get();
 
         if (!res.is_ok()) {
-            cerr << "Failed to get key from server:" << "\n";
-            if (!res.status.etcd_is_ok()) cerr << "Etcd: " << res.status.etcd_error_message << "\n";
-            if (!res.status.grpc_is_ok()) cerr << "gRPC: " << res.status.grpc_error_message << "\n";
+            string info;
+            if (res.status.etcd_error_code == etcdv3::StatusCode::UNDERLYING_GRPC_ERROR) {
+                info = res.status.grpc_error_message;
+            } else {
+                info = res.status.etcd_error_message;
+            }
+            _log->error("Failed to get key from server: {}", info);
             return nullptr;
         }
 
         return ParseServer(res.value.value);
     } catch (const std::exception &exc) {
-        cerr << "Error in communication with server: " << exc.what() << "\n";
+        _log->error("Error in communication with server: {}", exc.what());
         return nullptr;
     }
 }
@@ -208,7 +213,7 @@ service_discovery::ServiceDiscovery::SyncServers()
 {
     etcd::Response res = _client.ls("pitaya").get();
     if (!res.is_ok()) {
-        cerr << "Error synchronizing servers" << endl;
+        _log->error("Error synchronizing servers");
         return;
     }
 
@@ -220,7 +225,7 @@ service_discovery::ServiceDiscovery::SyncServers()
         bool ok = ParseEtcdKey(res.keys[i], serverType, serverId);
 
         if (!ok) {
-            cerr << "Failed to parse etcd key " << res.keys[i] << endl;
+            _log->error("Failed to parse etcd key {}", res.keys[i]);
         }
 
         allIds.push_back(serverId);
@@ -228,19 +233,15 @@ service_discovery::ServiceDiscovery::SyncServers()
         {
             std::lock_guard<decltype(_serversById)> lock(_serversById);
             if (_serversById[serverId] == nullptr) {
-                cout << "Loading info from missing server: " << serverType << "/" << serverId << "\n";
+                _log->info("Loading info from missing server: {}/{}", serverType, serverId);
                 auto server = GetServerFromEtcd(serverId, serverType);
                 if (!server) {
-                    cerr << "Error getting server from etcd: " << serverId << "\n";
+                    _log->error("Error getting server from etcd: {}", serverId);
                     continue;
                 }
                 AddServer(std::move(server));
             }
         }
-
-        string svType = res.keys[i];
-        string svId = res.keys[i];
-        cout << res.keys[i] << " = " << res.values[i].value << endl;
     }
 
     DeleteLocalInvalidServers(std::move(allIds));
@@ -254,9 +255,9 @@ service_discovery::ServiceDiscovery::PrintServers()
 {
     std::lock_guard<decltype(_serversByType)> lock(_serversByType);
     for (const auto &typePair : _serversByType) {
-        cout << "type: " << typePair.first << ", servers:\n";
+        _log->info("Type: {}, Servers:", typePair.first);
         for (const auto &svPair : typePair.second) {
-            cout << svPair.first << " -> " << svPair.second << "\n";
+            PrintServer(*svPair.second.get());
         }
     }
 }
@@ -284,7 +285,7 @@ service_discovery::ServiceDiscovery::DeleteLocalInvalidServers(const vector<stri
 
     for (const auto &pair : _serversById) {
         if (std::find(actualServers.begin(), actualServers.end(), pair.first) == actualServers.end()) {
-            cout << "WARN: Deleting invalid local server " << pair.first << endl;
+            _log->warn("Deleting invalid local server {}", pair.first);
             DeleteServer(pair.first);
         }
     }
@@ -321,16 +322,15 @@ ServerAsJson(const Server &server)
     return obj.serialize();
 }
 
-static shared_ptr<pitaya::Server>
-ParseServer(const string &jsonStr)
+shared_ptr<pitaya::Server>
+service_discovery::ServiceDiscovery::ParseServer(const string &jsonStr)
 {
     auto server = std::make_shared<pitaya::Server>();
 
-    json::value jsonSrv;
-    jsonSrv.parse(jsonStr);
+    auto jsonSrv = json::value::parse(jsonStr);
 
     if (!jsonSrv.is_object()) {
-        cerr << "Server json is not an object" << "\n";
+        _log->error("Server json is not an object {}", jsonStr);
         return nullptr;
     }
 
@@ -356,21 +356,29 @@ ParseServer(const string &jsonStr)
 static string
 GetServerKey(const string &serverId, const string &serverType)
 {
-    // TODO: Add fmt library to improve this code.
-    return std::string("servers") + std::string("/") + serverType + std::string("/") + serverId;
+    return fmt::format("servers/{}/{}", serverType, serverId);
 }
 
-static bool
-ParseEtcdKey(const string &key, string &serverType, string &serverId)
+bool
+service_discovery::ServiceDiscovery::ParseEtcdKey(const string &key, string &serverType, string &serverId)
 {
     auto comps = string_utils::Split(key, '/');
-    if (comps.size() != 3) {
-        cerr << "Error parsing etcd key " << key << "(server name can't contain /)" << endl;
+    if (comps.size() != 4) {
+        _log->error("Error parsing etcd key {} (server name can't contain /)", key);
         return false;
     }
 
-    serverType = comps[1];
-    serverId = comps[2];
+    serverType = comps[2];
+    serverId = comps[3];
     return true;
+}
+
+static void
+PrintServer(const Server &server)
+{
+    cout << "Server: " << GetServerKey(server.id, server.type) << "\n";
+    cout << "  - hostname: " << server.hostname << "\n";
+    cout << "  - frontend: " << server.frontend << "\n";
+    cout << "  - metadata: " << server.metadata << "\n";
 }
 

@@ -33,7 +33,6 @@ add_library(pitaya_cluster SHARED
     ${protobuf_files}
     )
 
-
 add_library(pitaya::pitaya_cluster ALIAS pitaya_cluster)
 
 set_target_properties(pitaya_cluster
@@ -42,7 +41,9 @@ set_target_properties(pitaya_cluster
 
 target_include_directories(pitaya_cluster
   PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
+    $<BUILD_INTERFACE:
+        ${CMAKE_SOURCE_DIR}/include
+        ${CMAKE_SOURCE_DIR}/deps/spdlog/include>
     $<INSTALL_INTERFACE:include>
   PRIVATE
     src)
