@@ -17,11 +17,13 @@ unique_ptr<NATSRPCServer> nats_rpc_server;
 unique_ptr<NATSRPCClient> nats_rpc_client;
 int x;
 
-shared_ptr<protos::Response> rpc_handler(unique_ptr<protos::Request> req){
+shared_ptr<protos::Response>
+rpc_handler(unique_ptr<protos::Request> req)
+{
     cout << "rpc handler called with route: " << req->msg().route() << endl;
     auto res = std::make_shared<protos::Response>();
     res->set_data("ok!");
-    return std::move(res);
+    return res;
 }
 
 int main()
@@ -32,7 +34,8 @@ int main()
     gServiceDiscovery = std::unique_ptr<ServiceDiscovery>(
         new ServiceDiscovery(server, "http://127.0.0.1:4001")
     );
-    try{
+
+    try {
         nats_rpc_server = unique_ptr<NATSRPCServer>(
             new NATSRPCServer(server, nats_config, rpc_handler));
         nats_rpc_client = unique_ptr<NATSRPCClient>(

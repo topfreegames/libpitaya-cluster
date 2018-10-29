@@ -16,7 +16,7 @@ pitaya_nats::NATSRPCClient::NATSRPCClient(std::shared_ptr<Server> server, std::s
 {
     natsStatus s = natsConnection_ConnectTo(&nc, config->nats_addr.c_str());
     if (s != NATS_OK) {
-        throw new PitayaException("unable to initialize nats server");
+        throw PitayaException("unable to initialize nats server");
     }
 }
 

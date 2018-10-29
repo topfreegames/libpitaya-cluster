@@ -31,26 +31,33 @@ service_discovery::ServiceDiscovery::ServiceDiscovery(shared_ptr<Server> server,
 , _heartbeatTTL(60s)
 , _leaseId(0)
 {
-//    auto response_task = _client.get("pitaya/servers/connector/48f99e38-ba01-4e35-a4f7-22023026d198");
-    auto response_task = _client.ls("pitaya/servers");
-    auto resp = response_task.get();
-    if (resp.is_ok()) {
-        for (size_t i = 0; i < resp.keys.size(); ++i) {
-            cout << resp.keys[i] << " = " << resp.values[i].value << endl;
-        }
-//        cout << resp.value.value << std::endl;
-    } else {
-        cout << "Error getting key: " << resp.status.etcd_error_message << endl;
-    }
-
     Configure();
+    etcdv3::V3Status status = Init();
+    if (!status.is_ok()) {
+        if (status.etcd_error_code == etcdv3::StatusCode::UNDERLYING_GRPC_ERROR) {
+            throw PitayaException("gRPC init error: " + status.grpc_error_message);
+        } else {
+            throw PitayaException("etcd init error: " + status.etcd_error_message);
+        }
+    }
 }
 
-void
+etcdv3::V3Status
 service_discovery::ServiceDiscovery::Init()
 {
     _running = true;
-//    CreateLease();
+
+    etcdv3::V3Status status;
+
+    status = Bootstrap();
+    if (!status.is_ok()) {
+        return status;
+    }
+
+    //
+    // TODO: Create a new ticker to manually call SyncServers
+    //
+    return status;
 }
 
 void
@@ -122,7 +129,8 @@ service_discovery::ServiceDiscovery::BootstrapServer(const Server &server)
 etcdv3::V3Status
 service_discovery::ServiceDiscovery::AddServerToEtcd(const Server &server)
 {
-    etcd::Response res = _client.set(_etcdPrefix + GetServerKey(server.id, server.type), ServerAsJson(server),  _leaseId).get();
+    string key = _etcdPrefix + GetServerKey(server.id, server.type);
+    etcd::Response res = _client.set(key, ServerAsJson(server),  _leaseId).get();
     return res.status;
 }
 

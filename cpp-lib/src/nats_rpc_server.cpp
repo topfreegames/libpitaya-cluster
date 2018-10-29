@@ -29,7 +29,7 @@ pitaya_nats::NATSRPCServer::NATSRPCServer(std::shared_ptr<Server> server, std::s
     if (s == NATS_OK){
         cout << "nats configured!" << std::endl;
     } else {
-        throw new PitayaException("unable to initialize nats server");
+        throw PitayaException("unable to initialize nats server");
     }
 }
 

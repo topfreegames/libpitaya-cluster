@@ -24,11 +24,10 @@ namespace service_discovery {
     public:
         ServiceDiscovery(std::shared_ptr<pitaya::Server> server, const std::string &address);
 
-        void Init();
-
         std::shared_ptr<pitaya::Server> GetServerById(const std::string& id);
 
     private:
+        etcdv3::V3Status Init();
         void Configure();
         void OnWatch(etcd::Response res);
         void SyncServers();
