@@ -16,23 +16,24 @@ namespace pitaya_nats {
         int reconnection_retries;
         int request_timeout_ms;
 
-        NATSConfig(const std::string &addr, const int &request_timeout_ms): 
-        nats_addr(addr),
-        request_timeout_ms(request_timeout_ms) {};
+        NATSConfig(const std::string &addr, const int request_timeout_ms)
+        : nats_addr(addr)
+        , request_timeout_ms(request_timeout_ms)
+        {}
     };
 
-    class NATSRPCServer{
-        public:
-            NATSRPCServer(
-                std::shared_ptr<pitaya::Server> server,
-                std::shared_ptr<NATSConfig> config,
-                rpc_handler_func handler);
+    class NATSRPCServer {
+    public:
+        NATSRPCServer(
+            std::shared_ptr<pitaya::Server> server,
+            std::shared_ptr<NATSConfig> config,
+            rpc_handler_func handler);
 
-        private:
-            static rpc_handler_func handler;
-            natsConnection *nc = NULL;
-            natsSubscription *sub = NULL;
-            static void handleMsg(natsConnection *nc, natsSubscription *sub, natsMsg *msg, void *closure);
+    private:
+        static rpc_handler_func handler;
+        natsConnection *nc = NULL;
+        natsSubscription *sub = NULL;
+        static void handleMsg(natsConnection *nc, natsSubscription *sub, natsMsg *msg, void *closure);
     };
 
     class NATSRPCClient{
@@ -41,8 +42,8 @@ namespace pitaya_nats {
             std::shared_ptr<protos::Response> Call(std::shared_ptr<pitaya::Server> target, std::unique_ptr<protos::Request> req);
 
         private:
-            natsConnection *nc = NULL;
-            natsSubscription *sub = NULL;
+            natsConnection *nc;
+            natsSubscription *sub;
             int timeout_ms;
     };
 } // namespace nats

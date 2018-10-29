@@ -16,6 +16,8 @@ using namespace pitaya;
 rpc_handler_func pitaya_nats::NATSRPCServer::handler;
 
 pitaya_nats::NATSRPCServer::NATSRPCServer(std::shared_ptr<Server> server, std::shared_ptr<pitaya_nats::NATSConfig> config, rpc_handler_func handler_func)
+: nc(nullptr)
+, sub(nullptr)
 {
     handler = handler_func;
     natsStatus s;
