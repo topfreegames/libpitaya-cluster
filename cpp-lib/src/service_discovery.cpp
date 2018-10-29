@@ -27,7 +27,7 @@ static string GetServerKey(const string &serverId, const string &serverType);
 service_discovery::ServiceDiscovery::ServiceDiscovery(shared_ptr<Server> server, const string &address)
 : _server(std::move(server))
 , _client(address)
-, _watcher(address, "pitaya", std::bind(&ServiceDiscovery::OnWatch, this, _1))
+, _watcher(address, "pitaya/servers", std::bind(&ServiceDiscovery::OnWatch, this, _1))
 , _heartbeatTTL(60s)
 , _leaseId(0)
 {
@@ -63,7 +63,37 @@ service_discovery::ServiceDiscovery::Init()
 void
 service_discovery::ServiceDiscovery::OnWatch(etcd::Response res)
 {
-    cout << "OnWatch CALLED!" << endl;
+    if (!res.is_ok()) {
+        cerr << "OnWatch: Is NOT ok" << endl;
+        return;
+    }
+
+    if (res.action == "create") {
+        auto server = ParseServer(res.value.value);
+        if (server == nullptr) {
+            cerr << "Error parsing server: " << res.value.value << "\n";
+            return;
+        }
+
+        AddServer(std::move(server));
+        cout << "Server " << res.value.key << " added\n";
+        PrintServers();
+    } else if (res.action == "delete") {
+        string serverType, serverId;
+        if (!ParseEtcdKey(res.value.key, serverType, serverId)) {
+            cerr << "Failed to parse key from etcd: " << res.value.key << "\n";
+            return;
+        }
+
+        DeleteServer(serverId);
+        cout << "Server " << serverId << " deleted\n";
+        PrintServers();
+    }
+
+    cout << "Watch\n";
+    cout << "Key: " << res.value.key;
+    cout << "val: " << res.value.value;
+    cout << "action: " << res.action;
 }
 
 int64_t
@@ -129,7 +159,7 @@ service_discovery::ServiceDiscovery::BootstrapServer(const Server &server)
 etcdv3::V3Status
 service_discovery::ServiceDiscovery::AddServerToEtcd(const Server &server)
 {
-    string key = _etcdPrefix + GetServerKey(server.id, server.type);
+    string key = _etcdPrefix + "/" + GetServerKey(server.id, server.type);
     etcd::Response res = _client.set(key, ServerAsJson(server),  _leaseId).get();
     return res.status;
 }

@@ -38,10 +38,10 @@ struct RPCReq{
 };
 
 class PitayaException: public std::exception {
-    public:
+public:
     PitayaException(const std::string &msg): msg(msg){}
 
-    virtual const char *what() const throw()
+    const char *what() const throw()
     {
         return msg.c_str();
     }

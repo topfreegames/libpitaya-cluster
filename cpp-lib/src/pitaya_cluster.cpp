@@ -31,11 +31,11 @@ int main()
     auto server = make_shared<Server>(Server("someid", "sometype"));
     auto nats_config = make_shared<NATSConfig>(NATSConfig("nats://localhost:4222", 1000));
 
-    gServiceDiscovery = std::unique_ptr<ServiceDiscovery>(
-        new ServiceDiscovery(server, "http://127.0.0.1:4001")
-    );
-
     try {
+        gServiceDiscovery = std::unique_ptr<ServiceDiscovery>(
+            new ServiceDiscovery(server, "http://127.0.0.1:4001")
+        );
+
         nats_rpc_server = unique_ptr<NATSRPCServer>(
             new NATSRPCServer(server, nats_config, rpc_handler));
         nats_rpc_client = unique_ptr<NATSRPCClient>(
@@ -62,8 +62,8 @@ int main()
                 cout << "received answer: " << res->data() << endl;
             }
         }
-    } catch (PitayaException* e){
-        cout << e->what() << endl;
+    } catch (const PitayaException &e){
+        cout << e.what() << endl;
     }
 
     cout << "enter a key to exit..." << endl;
