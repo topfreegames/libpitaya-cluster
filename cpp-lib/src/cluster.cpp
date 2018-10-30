@@ -26,8 +26,24 @@ bool pitaya::Cluster::Init(){
 }
 
 std::unique_ptr<pitaya::PitayaError> pitaya::Cluster::RPC(const string& route, std::shared_ptr<MessageLite> arg, std::shared_ptr<MessageLite> ret){
-    //return RPC();
-    return NULL;
+    try{
+        auto r = pitaya::Route(route);
+        auto sv_type = r.server_type;
+        auto servers = sd->GetServersByType(sv_type);
+        if(servers.size() < 1){
+            auto err = std::unique_ptr<pitaya::PitayaError>(new pitaya::PitayaError(
+                "PIT-404", "no servers found for route: " + route
+            ));
+            return err;
+        }
+        shared_ptr<pitaya::Server> sv = pitaya::RandomServer(servers);
+        return RPC(sv->id, route, arg, ret);
+    } catch(PitayaException* e){
+        auto err = std::unique_ptr<pitaya::PitayaError>(new pitaya::PitayaError(
+            "PIT-500", e->what()
+        ));
+        return err;
+    }
 }
 
 std::unique_ptr<pitaya::PitayaError> pitaya::Cluster::RPC(const string& server_id, const string& route, std::shared_ptr<MessageLite> arg, std::shared_ptr<MessageLite> ret){

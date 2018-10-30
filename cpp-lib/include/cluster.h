@@ -25,12 +25,12 @@ namespace pitaya
     class Cluster {
     public:
         Cluster(
-            pitaya_nats::NATSConfig &&nats_config,
+            pitaya_nats::NATSConfig &nats_config,
             std::shared_ptr<Server> server,
             rpc_handler_func rpc_server_handler_func
         )
         : _log(spdlog::stdout_color_mt("cluster"))
-        , nats_config(std::move(nats_config))
+        , nats_config(nats_config)
         , server(std::move(server))
         , rpc_server_handler_func(rpc_server_handler_func)
         {}

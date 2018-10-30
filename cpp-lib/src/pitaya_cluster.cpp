@@ -4,6 +4,7 @@
 #include "protos/msg.pb.h"
 #include "protos/request.pb.h"
 #include <pitaya.h>
+#include <cluster.h>
 #include <pitaya_nats.h>
 #include <exception>
 
@@ -22,7 +23,11 @@ rpc_handler(unique_ptr<protos::Request> req)
 {
     cout << "rpc handler called with route: " << req->msg().route() << endl;
     auto res = std::make_shared<protos::Response>();
-    res->set_data("ok!");
+    auto res2 = protos::Response();
+    res2.set_data("ok!");
+    std::string serialized;
+    res2.SerializeToString(&serialized);
+    res->set_data(serialized);
     return res;
 }
 
@@ -32,32 +37,33 @@ int main()
     NATSConfig nats_config("nats://localhost:4222", 1000, 3000, 3, 100);
 
     try {
-        gServiceDiscovery = std::unique_ptr<ServiceDiscovery>(
-            new ServiceDiscovery(server, "http://127.0.0.1:4001")
-        );
+        auto pit_cluster = unique_ptr<pitaya::Cluster>(new pitaya::Cluster(
+            nats_config,
+            server,
+            rpc_handler
+        ));
 
-        nats_rpc_server = unique_ptr<NATSRPCServer>(
-            new NATSRPCServer(server, nats_config, rpc_handler));
-        nats_rpc_client = unique_ptr<NATSRPCClient>(
-            new NATSRPCClient(server, nats_config));
-
-        // TODO refactor route
+        bool init_res = pit_cluster->Init();
+        if(!init_res){
+            throw pitaya::PitayaException("error initializing pitaya cluster");
+        }
         {
             ////// INIT
             auto msg = new protos::Msg();
             msg->set_data("helloww");
             msg->set_route("someroute");
             /////
-            auto req = std::unique_ptr<protos::Request>(new protos::Request());
+            auto req = std::make_shared<protos::Request>();
             req->set_allocated_msg(msg);
             size_t size = req->ByteSizeLong(); 
             void *buffer = malloc(size);
             req->SerializeToArray(buffer, size);
             ///// FINISH
+            auto res = std::make_shared<protos::Response>();
 
-            auto res = nats_rpc_client->Call(server, std::move(req));
-            if (res->has_error()){
-                cout << "received error:" << res->error().msg() << endl;
+            auto err = pit_cluster->RPC("sometype.bla.ble", req, res);
+            if (err != nullptr){
+                cout << "received error:" << err->msg << endl;
             } else{
                 cout << "received answer: " << res->data() << endl;
             }

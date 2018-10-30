@@ -16,6 +16,7 @@ pitaya_nats::NATSRPCClient::NATSRPCClient(std::shared_ptr<Server> server, const 
 , sub(nullptr)
 , timeout_ms(config.request_timeout_ms)
 {
+    _log->set_level(spdlog::level::debug);
     natsOptions * opts;
     auto s = natsOptions_Create(&opts);
     if (s != NATS_OK) {
@@ -31,6 +32,8 @@ pitaya_nats::NATSRPCClient::NATSRPCClient(std::shared_ptr<Server> server, const 
     s = natsConnection_Connect(&nc, opts);
     if (s != NATS_OK) {
         throw PitayaException("unable to initialize nats server");
+    } else {
+        _log->info("nats rpc client configured!");
     }
 }
 

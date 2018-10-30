@@ -18,6 +18,7 @@ pitaya_nats::NATSRPCServer::NATSRPCServer(std::shared_ptr<Server> server, const 
 , sub(nullptr)
 , _log(spdlog::stdout_color_mt("nats_rpc_server"))
 {
+    _log->set_level(spdlog::level::debug);
     natsOptions * opts;
     auto s = natsOptions_Create(&opts);
     if (s != NATS_OK) {

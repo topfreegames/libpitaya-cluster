@@ -4,51 +4,77 @@
 #import <string>
 #include "protos/request.pb.h"
 #include "protos/response.pb.h"
+#include <boost/algorithm/string.hpp>
 
 using ServerId = std::string;
 
 namespace pitaya
 {
-using rpc_handler_func = std::function<std::shared_ptr<protos::Response>(std::unique_ptr<protos::Request>)>;
+    using rpc_handler_func = std::function<std::shared_ptr<protos::Response>(std::unique_ptr<protos::Request>)>;
 
-struct Server
-{
-    std::string id;
-    std::string type;
-    std::string metadata;
-    std::string hostname;
-    bool frontend;
 
-    Server(){};
-    Server(const std::string &id, const std::string &type):
-    id(id),
-    type(type){};
+    class PitayaException: public std::exception {
+    public:
+        PitayaException(const std::string &msg): msg(msg){}
 
-    std::string GetKey() const
+        const char *what() const throw()
+        {
+            return msg.c_str();
+        }
+        const std::string msg;
+    };
+
+
+    struct Route
     {
-        // TODO: Add fmt library to improve this code.
-        return std::string("servers") + std::string("/") + type + std::string("/") + id;
-    }
-};
+        std::string server_type;
+        std::string handler;
+        std::string method;
 
-struct RPCReq{
-    const char * data;
-    int data_len;
-    const char * route;
-};
+        Route(const std::string& sv_type, const std::string& handler, const std::string& method):
+        server_type(sv_type)
+        , handler(handler)
+        , method(method){};
 
-class PitayaException: public std::exception {
-public:
-    PitayaException(const std::string &msg): msg(msg){}
+        Route(const std::string& route_str){
+            std::vector<std::string> strs;
+            boost::split(strs, route_str, boost::is_any_of("."));
+            if (strs.size() < 3){
+                throw PitayaException("error parsing route");
+            }
+            server_type = strs[0];
+            handler = strs[1];
+            method = strs[2];
+        };
+    };
 
-    const char *what() const throw()
+    struct Server
     {
-        return msg.c_str();
-    }
-    const std::string msg;
-};
+        std::string id;
+        std::string type;
+        std::string metadata;
+        std::string hostname;
+        bool frontend;
 
-std::string GetTopicForServer(std::shared_ptr<Server> server);
+        Server(){};
+        Server(const std::string &id, const std::string &type):
+        id(id),
+        type(type){};
 
+        std::string GetKey() const
+        {
+            // TODO: Add fmt library to improve this code.
+            return std::string("servers") + std::string("/") + type + std::string("/") + id;
+        }
+    };
+
+    struct RPCReq{
+        const char * data;
+        int data_len;
+        const char * route;
+    };
+
+    std::string GetTopicForServer(std::shared_ptr<Server> server);
+    std::shared_ptr<Server> RandomServer(std::vector<std::shared_ptr<Server> > vec);
 } // namespace pitaya
 #endif
