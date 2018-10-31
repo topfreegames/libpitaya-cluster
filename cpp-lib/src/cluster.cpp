@@ -36,8 +36,8 @@ std::unique_ptr<pitaya::PitayaError> pitaya::Cluster::RPC(const string& route, s
             ));
             return err;
         }
-        shared_ptr<pitaya::Server> sv = pitaya::RandomServer(servers);
-        return RPC(sv->id, route, arg, ret);
+        pitaya::Server sv = pitaya::RandomServer(servers);
+        return RPC(sv.id, route, arg, ret);
     } catch(PitayaException* e){
         auto err = std::unique_ptr<pitaya::PitayaError>(new pitaya::PitayaError(
             "PIT-500", e->what()
@@ -48,7 +48,7 @@ std::unique_ptr<pitaya::PitayaError> pitaya::Cluster::RPC(const string& route, s
 
 std::unique_ptr<pitaya::PitayaError> pitaya::Cluster::RPC(const string& server_id, const string& route, std::shared_ptr<MessageLite> arg, std::shared_ptr<MessageLite> ret){
     auto sv = sd->GetServerById(server_id);
-    if (sv == nullptr){
+    if (!sv) {
         // TODO better error code with constants somewhere
         auto err = std::unique_ptr<pitaya::PitayaError>(new pitaya::PitayaError(
             "PIT-404", "server not found"));
@@ -67,7 +67,7 @@ std::unique_ptr<pitaya::PitayaError> pitaya::Cluster::RPC(const string& server_i
     req->set_type(protos::RPCType::User);
     req->set_allocated_msg(msg);
 
-    auto res = rpc_client->Call(sv, std::move(req));
+    auto res = rpc_client->Call(sv.value(), std::move(req));
     if(res->has_error()){
         auto err = std::unique_ptr<pitaya::PitayaError>(new pitaya::PitayaError(
             res->error().code(), res->error().msg()));

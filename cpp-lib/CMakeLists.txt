@@ -16,10 +16,13 @@ file(GLOB protobuf_files
 
 add_library(pitaya_cluster SHARED
     include/service_discovery.h
+    include/service_discovery_worker.h
     include/pitaya_nats.h
     include/cluster.h
     include/pitaya.h
+    include/semaphore.h
     src/service_discovery.cpp
+    src/service_discovery_worker.cpp
     src/nats_rpc_server.cpp
     src/nats_rpc_client.cpp
     src/string_utils.cpp
@@ -27,6 +30,7 @@ add_library(pitaya_cluster SHARED
     src/pitaya_utils.cpp
     src/string_utils.h
     include/sync_map.h
+    include/sync_deque.h
     include/lease_keep_alive.h
     src/lease_keep_alive.cpp
     # Include protobuf-c
@@ -39,7 +43,7 @@ add_library(pitaya::pitaya_cluster ALIAS pitaya_cluster)
 
 set_target_properties(pitaya_cluster
   PROPERTIES
-    CXX_STANDARD 14)
+    CXX_STANDARD 17)
 
 target_include_directories(pitaya_cluster
   PUBLIC

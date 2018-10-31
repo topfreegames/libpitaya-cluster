@@ -33,13 +33,13 @@ rpc_handler(unique_ptr<protos::Request> req)
 
 int main()
 {
-    auto server = make_shared<Server>(Server("someid", "sometype"));
+    Server server("someid", "sometype");
     NATSConfig nats_config("nats://localhost:4222", 1000, 3000, 3, 100);
 
     try {
         auto pit_cluster = unique_ptr<pitaya::Cluster>(new pitaya::Cluster(
             nats_config,
-            server,
+            std::move(server),
             rpc_handler
         ));
 
@@ -68,10 +68,13 @@ int main()
                 cout << "received answer: " << res->data() << endl;
             }
         }
+
+        cout << "enter a key to exit..." << endl;
+        cin >> x;
     } catch (const PitayaException &e){
         cout << e.what() << endl;
-    }
 
-    cout << "enter a key to exit..." << endl;
-    cin >> x;
+        cout << "enter a key to exit..." << endl;
+        cin >> x;
+    }
 }

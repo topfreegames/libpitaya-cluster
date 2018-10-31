@@ -14,16 +14,19 @@ service_discovery::LeaseKeepAlive::LeaseKeepAlive(etcd::Client &client)
     _log->set_level(spdlog::level::debug);
 }
 
-void
+pplx::task<service_discovery::LeaseKeepAliveStatus>
 service_discovery::LeaseKeepAlive::Start()
 {
     if (_leaseId == -1) {
         _log->error("lease id is -1, not starting.");
-        return;
+        return pplx::task_from_result(LeaseKeepAliveStatus::Fail);
     }
 
+    _donePromise = std::promise<void>();
+    _doneFuture = _donePromise.get_future();
+
     _log->info("Starting LeaseKeepAlive");
-    _runFuture = std::async(std::launch::async, &LeaseKeepAlive::TickWrapper, this);
+    return pplx::create_task(std::bind(&LeaseKeepAlive::TickWrapper, this));
 }
 
 void
@@ -33,10 +36,10 @@ service_discovery::LeaseKeepAlive::Stop()
     _donePromise.set_value();
 }
 
-void
+service_discovery::LeaseKeepAliveStatus
 service_discovery::LeaseKeepAlive::TickWrapper()
 {
-    _log->info("Thread started");
+    _log->info("Thread started: lease id: {}", _leaseId);
 
     auto status = std::future_status::timeout;
     while (status != std::future_status::ready) {
@@ -44,21 +47,24 @@ service_discovery::LeaseKeepAlive::TickWrapper()
         auto res = _client.lease_keep_alive(_leaseId).get();
         if (!res.is_ok()) {
             _log->error("Failed to renew lease, stopping");
-            break;
+            _leaseId = -1;
+            return LeaseKeepAliveStatus::Fail;
         }
 
         if (res.value.ttl < 1) {
             _log->info("Received TTL of {} seconds, stopping", res.value.ttl);
-            break;
+            _leaseId = -1;
+            return LeaseKeepAliveStatus::Fail;
         }
 
         auto waitFor = seconds{static_cast<int>(res.value.ttl/3.0f)};
 
-        _log->debug("Lease renewed for {} seconds, waiting {} for renew", res.value.ttl, waitFor.count());
+        _log->debug("Lease {} renewed for {} seconds, waiting {} for renew", _leaseId, res.value.ttl, waitFor.count());
 
         status = _doneFuture.wait_for(waitFor);
     }
     _log->info("Stopped.");
+    return LeaseKeepAliveStatus::Ok;
 }
 
 void

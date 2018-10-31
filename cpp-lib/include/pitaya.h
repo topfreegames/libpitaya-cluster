@@ -6,12 +6,9 @@
 #include "protos/response.pb.h"
 #include <boost/algorithm/string.hpp>
 
-using ServerId = std::string;
-
 namespace pitaya
 {
     using rpc_handler_func = std::function<std::shared_ptr<protos::Response>(std::unique_ptr<protos::Request>)>;
-
 
     class PitayaException: public std::exception {
     public:
@@ -21,6 +18,8 @@ namespace pitaya
         {
             return msg.c_str();
         }
+
+    private:
         const std::string msg;
     };
 
@@ -56,25 +55,21 @@ namespace pitaya
         std::string hostname;
         bool frontend;
 
-        Server(){};
-        Server(const std::string &id, const std::string &type):
-        id(id),
-        type(type){};
-
-        std::string GetKey() const
-        {
-            // TODO: Add fmt library to improve this code.
-            return std::string("servers") + std::string("/") + type + std::string("/") + id;
-        }
+        Server(){}
+        Server(const std::string &id, const std::string &type)
+        : id(id)
+        , type(type)
+        , frontend(false)
+        {}
     };
 
-    struct RPCReq{
+    struct RPCReq {
         const char * data;
         int data_len;
         const char * route;
     };
 
-    std::string GetTopicForServer(std::shared_ptr<Server> server);
-    std::shared_ptr<Server> RandomServer(std::vector<std::shared_ptr<Server> > vec);
+    std::string GetTopicForServer(const Server &server);
+    Server RandomServer(const std::vector<Server> &vec);
 } // namespace pitaya
 #endif

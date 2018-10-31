@@ -26,7 +26,7 @@ namespace pitaya
     public:
         Cluster(
             pitaya_nats::NATSConfig &nats_config,
-            std::shared_ptr<Server> server,
+            Server server,
             rpc_handler_func rpc_server_handler_func
         )
         : _log(spdlog::stdout_color_mt("cluster"))
@@ -47,7 +47,7 @@ namespace pitaya
     private:
         std::shared_ptr<spdlog::logger> _log;
         pitaya_nats::NATSConfig nats_config;
-        std::shared_ptr<Server> server = NULL;
+        Server server;
         std::unique_ptr<service_discovery::ServiceDiscovery> sd;
         std::unique_ptr<pitaya_nats::NATSRPCServer> rpc_sv;
         std::unique_ptr<pitaya_nats::NATSRPCClient> rpc_client;

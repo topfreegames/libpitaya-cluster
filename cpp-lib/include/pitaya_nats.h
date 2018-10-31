@@ -39,7 +39,7 @@ namespace pitaya_nats
     {
     public:
         NATSRPCServer(
-            std::shared_ptr<pitaya::Server> server,
+            const pitaya::Server &server,
             const NATSConfig &config,
             pitaya::rpc_handler_func handler);
 
@@ -59,8 +59,8 @@ namespace pitaya_nats
     class NATSRPCClient
     {
     public:
-        NATSRPCClient(std::shared_ptr<pitaya::Server> server, const NATSConfig &config);
-        std::shared_ptr<protos::Response> Call(std::shared_ptr<pitaya::Server> target, std::unique_ptr<protos::Request> req);
+        NATSRPCClient(const pitaya::Server &server, const NATSConfig &config);
+        std::shared_ptr<protos::Response> Call(const pitaya::Server &target, std::unique_ptr<protos::Request> req);
 
     private:
         std::shared_ptr<spdlog::logger> _log;

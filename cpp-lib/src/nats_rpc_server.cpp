@@ -13,7 +13,7 @@ using namespace pitaya;
 
 rpc_handler_func pitaya_nats::NATSRPCServer::handler;
 
-pitaya_nats::NATSRPCServer::NATSRPCServer(std::shared_ptr<Server> server, const pitaya_nats::NATSConfig &config, rpc_handler_func handler_func)
+pitaya_nats::NATSRPCServer::NATSRPCServer(const Server &server, const pitaya_nats::NATSConfig &config, rpc_handler_func handler_func)
 : nc(nullptr)
 , sub(nullptr)
 , _log(spdlog::stdout_color_mt("nats_rpc_server"))

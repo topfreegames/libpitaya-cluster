@@ -10,7 +10,7 @@
 using std::string;
 using namespace pitaya;
 
-pitaya_nats::NATSRPCClient::NATSRPCClient(std::shared_ptr<Server> server, const pitaya_nats::NATSConfig &config)
+pitaya_nats::NATSRPCClient::NATSRPCClient(const Server &server, const pitaya_nats::NATSConfig &config)
 : _log(spdlog::stdout_color_mt("nats_rpc_client"))
 , nc(nullptr)
 , sub(nullptr)
@@ -37,9 +37,9 @@ pitaya_nats::NATSRPCClient::NATSRPCClient(std::shared_ptr<Server> server, const 
     }
 }
 
-std::shared_ptr<protos::Response> pitaya_nats::NATSRPCClient::Call(std::shared_ptr<pitaya::Server> target, std::unique_ptr<protos::Request> req)
+std::shared_ptr<protos::Response> pitaya_nats::NATSRPCClient::Call(const pitaya::Server &target, std::unique_ptr<protos::Request> req)
 {
-    auto topic = GetTopicForServer(std::move(target));
+    auto topic = GetTopicForServer(target);
 
     size_t size = req->ByteSizeLong();
     std::vector<uint8_t> buffer;

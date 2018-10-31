@@ -5,20 +5,22 @@
 #include <future>
 #include <functional>
 #include <etcd/Client.hpp>
+#include <pplx/pplxtasks.h>
 #include "spdlog/spdlog.h"
 
 namespace service_discovery {
 
+    enum class LeaseKeepAliveStatus { Ok, Fail };
+
     class LeaseKeepAlive {
     public:
         LeaseKeepAlive(etcd::Client &client);
-        void Start();
+        pplx::task<LeaseKeepAliveStatus> Start();
         void Stop();
         void SetLeaseId(int64_t leaseId);
 
     private:
-        void TickWrapper();
-        void TickFunction();
+        LeaseKeepAliveStatus TickWrapper();
 
     private:
         std::shared_ptr<spdlog::logger> _log;
@@ -26,7 +28,7 @@ namespace service_discovery {
         int64_t _leaseId;
         std::promise<void> _donePromise;
         std::shared_future<void> _doneFuture;
-        std::future<void> _runFuture;
+        pplx::task<LeaseKeepAliveStatus> _runTask;
     };
 
 } // namespace service_discovery
