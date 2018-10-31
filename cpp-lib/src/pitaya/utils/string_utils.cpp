@@ -1,12 +1,13 @@
-#include "string_utils.h"
+#include "pitaya/utils/string_utils.h"
 
 #include <sstream>
 
-using std::vector;
 using std::string;
+using std::vector;
 
 template<typename Out>
-void DoSplit(const std::string &s, char delim, Out result)
+void
+DoSplit(const std::string& s, char delim, Out result)
 {
     std::stringstream ss(s);
     std::string item;
@@ -16,7 +17,7 @@ void DoSplit(const std::string &s, char delim, Out result)
 }
 
 vector<string>
-string_utils::Split(const string &str, char delim)
+string_utils::Split(const string& str, char delim)
 {
     vector<string> elems;
     DoSplit(str, delim, std::back_inserter(elems));

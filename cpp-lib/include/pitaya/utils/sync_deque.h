@@ -1,25 +1,23 @@
-#ifndef SYNC_DEQUE_H
-#define SYNC_DEQUE_H
+#ifndef PITAYA_UTILS_SYNC_DEQUE_H
+#define PITAYA_UTILS_SYNC_DEQUE_H
 
 #include <deque>
 #include <mutex>
 
+namespace pitaya {
+namespace utils {
+
 template<typename T>
-class SyncDeque {
+class SyncDeque
+{
 public:
     // BasicLockable interface for usage with std::lock_guard
     void lock() { _mutex.lock(); }
     void unlock() { _mutex.unlock(); }
 
-    void PushBack(T val)
-    {
-        _deque.push_back(val);
-    }
+    void PushBack(T val) { _deque.push_back(val); }
 
-    void Clear()
-    {
-        _deque.clear();
-    }
+    void Clear() { _deque.clear(); }
 
     T PopFront()
     {
@@ -28,14 +26,14 @@ public:
         return val;
     }
 
-    bool Empty() const
-    {
-        return _deque.empty();
-    }
+    bool Empty() const { return _deque.empty(); }
 
 private:
     std::deque<T> _deque;
     std::mutex _mutex;
 };
 
-#endif // SYNC_DEQUE_H
+}
+}
+
+#endif // PITAYA_UTILS_SYNC_DEQUE_H

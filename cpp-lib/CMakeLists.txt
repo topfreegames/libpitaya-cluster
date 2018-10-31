@@ -15,26 +15,28 @@ file(GLOB protobuf_files
   )
 
 add_library(pitaya_cluster SHARED
-    include/service_discovery.h
-    include/service_discovery_worker.h
-    include/pitaya_nats.h
-    include/cluster.h
     include/pitaya.h
-    include/semaphore.h
-    include/ticker.h
-    src/service_discovery.cpp
-    src/service_discovery_worker.cpp
-    src/nats_rpc_server.cpp
-    src/nats_rpc_client.cpp
-    src/string_utils.cpp
-    src/cluster.cpp
-    src/pitaya_utils.cpp
-    src/string_utils.h
-    src/ticker.cpp
-    include/sync_map.h
-    include/sync_deque.h
-    include/lease_keep_alive.h
-    src/lease_keep_alive.cpp
+    include/pitaya/service_discovery.h
+    include/pitaya/service_discovery/worker.h
+    include/pitaya/nats/rpc_client.h
+    include/pitaya/nats/rpc_server.h
+    include/pitaya/nats/config.h
+    include/pitaya/cluster.h
+    include/pitaya/utils/semaphore.h
+    include/pitaya/utils/ticker.h
+    include/pitaya/utils/sync_map.h
+    include/pitaya/utils/sync_deque.h
+    include/pitaya/service_discovery/lease_keep_alive.h
+    src/pitaya/service_discovery.cpp
+    src/pitaya/service_discovery/worker.cpp
+    src/pitaya/nats/rpc_server.cpp
+    src/pitaya/nats/rpc_client.cpp
+    src/pitaya/utils/string_utils.cpp
+    src/pitaya/cluster.cpp
+    src/pitaya/utils.cpp
+    src/pitaya/utils/string_utils.h
+    src/pitaya/utils/ticker.cpp
+    src/pitaya/service_discovery/lease_keep_alive.cpp
     # Include protobuf-c
     deps/protobuf-c/protobuf-c/protobuf-c.c
     deps/protobuf-c/protobuf-c/protobuf-c.h

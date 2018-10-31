@@ -1,22 +1,26 @@
-#ifndef TICKER_H
-#define TICKER_H
+#ifndef PITAYA_UTILS_TICKER_H
+#define PITAYA_UTILS_TICKER_H
 
 #include <chrono>
-#include <future>
 #include <functional>
+#include <future>
 
-class Ticker {
+namespace pitaya {
+namespace utils {
+
+class Ticker
+{
 public:
     template<typename DurationType>
     Ticker(DurationType interval, std::function<void()> cb)
-    : _tickInterval(std::chrono::duration_cast<std::chrono::milliseconds>(interval))
-    , _callback(cb)
+        : _tickInterval(std::chrono::duration_cast<std::chrono::milliseconds>(interval))
+        , _callback(cb)
     {}
 
     void Start();
     void Stop();
 
-    Ticker &operator=(const Ticker &) = delete;
+    Ticker& operator=(const Ticker&) = delete;
     Ticker(const Ticker&) = delete;
 
 private:
@@ -29,4 +33,7 @@ private:
     std::future<void> _doneFuture;
 };
 
-#endif // TICKER_H
+}
+}
+
+#endif // PITAYA_UTILS_TICKER_H

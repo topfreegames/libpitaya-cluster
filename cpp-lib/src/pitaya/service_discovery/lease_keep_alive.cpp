@@ -1,21 +1,24 @@
-#include "lease_keep_alive.h"
+#include "pitaya/service_discovery/lease_keep_alive.h"
 #include "spdlog/sinks/stdout_color_sinks.h"
 #include <chrono>
 
 using std::chrono::seconds;
 
-service_discovery::LeaseKeepAlive::LeaseKeepAlive(etcd::Client &client)
-: _log(spdlog::get("service_discovery")->clone("lease_keep_alive"))
-, _client(client)
-, _leaseId(-1)
-, _donePromise()
-, _doneFuture(_donePromise.get_future())
+namespace pitaya {
+namespace service_discovery {
+
+LeaseKeepAlive::LeaseKeepAlive(etcd::Client& client)
+    : _log(spdlog::get("service_discovery")->clone("lease_keep_alive"))
+    , _client(client)
+    , _leaseId(-1)
+    , _donePromise()
+    , _doneFuture(_donePromise.get_future())
 {
     _log->set_level(spdlog::level::debug);
 }
 
 pplx::task<service_discovery::LeaseKeepAliveStatus>
-service_discovery::LeaseKeepAlive::Start()
+LeaseKeepAlive::Start()
 {
     if (_leaseId == -1) {
         _log->error("lease id is -1, not starting.");
@@ -30,14 +33,14 @@ service_discovery::LeaseKeepAlive::Start()
 }
 
 void
-service_discovery::LeaseKeepAlive::Stop()
+LeaseKeepAlive::Stop()
 {
     _log->info("Stopping");
     _donePromise.set_value();
 }
 
-service_discovery::LeaseKeepAliveStatus
-service_discovery::LeaseKeepAlive::TickWrapper()
+LeaseKeepAliveStatus
+LeaseKeepAlive::TickWrapper()
 {
     _log->info("Thread started: lease id: {}", _leaseId);
 
@@ -57,9 +60,12 @@ service_discovery::LeaseKeepAlive::TickWrapper()
             return LeaseKeepAliveStatus::Fail;
         }
 
-        auto waitFor = seconds{static_cast<int>(res.value.ttl/3.0f)};
+        auto waitFor = seconds{ static_cast<int>(res.value.ttl / 3.0f) };
 
-        _log->debug("Lease {} renewed for {} seconds, waiting {} for renew", _leaseId, res.value.ttl, waitFor.count());
+        _log->debug("Lease {} renewed for {} seconds, waiting {} for renew",
+                    _leaseId,
+                    res.value.ttl,
+                    waitFor.count());
 
         status = _doneFuture.wait_for(waitFor);
     }
@@ -68,7 +74,10 @@ service_discovery::LeaseKeepAlive::TickWrapper()
 }
 
 void
-service_discovery::LeaseKeepAlive::SetLeaseId(int64_t leaseId)
+LeaseKeepAlive::SetLeaseId(int64_t leaseId)
 {
     _leaseId = leaseId;
+}
+
+}
 }

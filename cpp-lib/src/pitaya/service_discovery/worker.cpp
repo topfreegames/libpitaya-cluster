@@ -1,5 +1,5 @@
-#include "service_discovery_worker.h"
-#include "string_utils.h"
+#include "pitaya/service_discovery/worker.h"
+#include "pitaya/utils/string_utils.h"
 #include <cpprest/json.h>
 #include <sstream>
 
@@ -11,26 +11,29 @@ using namespace std::chrono_literals;
 using namespace pitaya;
 namespace json = web::json;
 
-static string ServerAsJson(const Server &server);
-static string GetServerKey(const std::string &serverId, const std::string &serverType);
+namespace pitaya {
+namespace service_discovery {
 
-service_discovery::ServiceDiscoveryWorker::ServiceDiscoveryWorker(const string &address, const string &etcdPrefix, pitaya::Server server)
-: _server(std::move(server))
-, _client(address)
-, _watcher(address, _etcdPrefix, std::bind(&ServiceDiscoveryWorker::OnWatch, this, _1))
-, _etcdPrefix(etcdPrefix)
-, _leaseTTL(60s)
-, _leaseKeepAlive(_client)
-, _numKeepAliveRetriesLeft(3)
-, _syncServersInterval(20s)
-, _syncServersTicker(_syncServersInterval, std::bind(&ServiceDiscoveryWorker::SyncServers, this))
+static string ServerAsJson(const Server& server);
+static string GetServerKey(const std::string& serverId, const std::string& serverType);
+
+Worker::Worker(const string& address, const string& etcdPrefix, pitaya::Server server)
+    : _server(std::move(server))
+    , _client(address)
+    , _watcher(address, _etcdPrefix, std::bind(&Worker::OnWatch, this, _1))
+    , _etcdPrefix(etcdPrefix)
+    , _leaseTTL(60s)
+    , _leaseKeepAlive(_client)
+    , _numKeepAliveRetriesLeft(3)
+    , _syncServersInterval(20s)
+    , _syncServersTicker(_syncServersInterval, std::bind(&Worker::SyncServers, this))
 {
     _log = spdlog::get("service_discovery")->clone("service_discovery_worker");
     _log->set_level(spdlog::level::debug);
-    _workerThread = std::thread(&ServiceDiscoveryWorker::StartThread, this);
+    _workerThread = std::thread(&Worker::StartThread, this);
 }
 
-service_discovery::ServiceDiscoveryWorker::~ServiceDiscoveryWorker()
+Worker::~Worker()
 {
     {
         std::lock_guard<decltype(_jobQueue)> lock(_jobQueue);
@@ -47,7 +50,7 @@ service_discovery::ServiceDiscoveryWorker::~ServiceDiscoveryWorker()
 }
 
 void
-service_discovery::ServiceDiscoveryWorker::StartThread()
+Worker::StartThread()
 {
     _log->info("Thread started");
 
@@ -74,7 +77,8 @@ service_discovery::ServiceDiscoveryWorker::StartThread()
         JobInfo info = _jobQueue.PopFront();
         switch (info) {
             case JobInfo::EtcdReconnectionFailure:
-                _log->error("Reconnection failure, {} retries left!", _numKeepAliveRetriesLeft);
+                _log->error("Reconnection failure, {} retries left!",
+                            _numKeepAliveRetriesLeft);
 
                 if (_numKeepAliveRetriesLeft <= 0) {
                     throw std::runtime_error("Failed reconnection to etcd");
@@ -98,7 +102,7 @@ service_discovery::ServiceDiscoveryWorker::StartThread()
 }
 
 etcdv3::V3Status
-service_discovery::ServiceDiscoveryWorker::Init()
+Worker::Init()
 {
     auto status = Bootstrap();
     if (!status.is_ok()) {
@@ -111,7 +115,7 @@ service_discovery::ServiceDiscoveryWorker::Init()
 }
 
 etcdv3::V3Status
-service_discovery::ServiceDiscoveryWorker::Bootstrap()
+Worker::Bootstrap()
 {
     auto status = GrantLease();
 
@@ -123,7 +127,7 @@ service_discovery::ServiceDiscoveryWorker::Bootstrap()
 }
 
 etcdv3::V3Status
-service_discovery::ServiceDiscoveryWorker::GrantLease()
+Worker::GrantLease()
 {
     etcd::Response res = _client.leasegrant(_leaseTTL.count()).get();
     if (!res.is_ok()) {
@@ -152,7 +156,7 @@ service_discovery::ServiceDiscoveryWorker::GrantLease()
 }
 
 etcdv3::V3Status
-service_discovery::ServiceDiscoveryWorker::BootstrapServer(const Server &server)
+Worker::BootstrapServer(const Server& server)
 {
     etcdv3::V3Status status;
 
@@ -167,15 +171,15 @@ service_discovery::ServiceDiscoveryWorker::BootstrapServer(const Server &server)
 }
 
 etcdv3::V3Status
-service_discovery::ServiceDiscoveryWorker::AddServerToEtcd(const Server &server)
+Worker::AddServerToEtcd(const Server& server)
 {
     string key = fmt::format("{}/{}", _etcdPrefix, GetServerKey(server.id, server.type));
-    etcd::Response res = _client.set(key, ServerAsJson(server),  _leaseId).get();
+    etcd::Response res = _client.set(key, ServerAsJson(server), _leaseId).get();
     return res.status;
 }
 
 void
-service_discovery::ServiceDiscoveryWorker::AddServer(const Server &server)
+Worker::AddServer(const Server& server)
 {
     std::lock_guard<decltype(_serversById)> lock(_serversById);
     if (_serversById.Find(server.id) == _serversById.end()) {
@@ -185,7 +189,7 @@ service_discovery::ServiceDiscoveryWorker::AddServer(const Server &server)
 }
 
 void
-service_discovery::ServiceDiscoveryWorker::SyncServers()
+Worker::SyncServers()
 {
     _log->debug("Will synchronize servers");
 
@@ -226,9 +230,10 @@ service_discovery::ServiceDiscoveryWorker::SyncServers()
 }
 
 optional<pitaya::Server>
-service_discovery::ServiceDiscoveryWorker::GetServerFromEtcd(const std::string &serverId, const std::string &serverType)
+Worker::GetServerFromEtcd(const std::string& serverId, const std::string& serverType)
 {
-    auto serverKey = fmt::format("{}/{}", _etcdPrefix, GetServerKey(serverId, serverType));
+    auto serverKey =
+        fmt::format("{}/{}", _etcdPrefix, GetServerKey(serverId, serverType));
 
     try {
         etcd::Response res = _client.get(serverKey).get();
@@ -245,57 +250,57 @@ service_discovery::ServiceDiscoveryWorker::GetServerFromEtcd(const std::string &
         }
 
         return ParseServer(res.value.value);
-    } catch (const std::exception &exc) {
+    } catch (const std::exception& exc) {
         _log->error("Error in communication with server: {}", exc.what());
         return optional<Server>();
     }
 }
 
 void
-service_discovery::ServiceDiscoveryWorker::DeleteLocalInvalidServers(const vector<string> &actualServers)
+Worker::DeleteLocalInvalidServers(const vector<string>& actualServers)
 {
-    // NOTE(lhahn): Both maps are locked, since we do not want to have them possibly in an inconsistent state.
+    // NOTE(lhahn): Both maps are locked, since we do not want to have them
+    // possibly in an inconsistent state.
     std::lock_guard<decltype(_serversById)> serversByIdLock(_serversById);
     std::lock_guard<decltype(_serversByType)> serversByTypeLock(_serversByType);
 
-    for (const auto &pair : _serversById) {
-        if (std::find(actualServers.begin(), actualServers.end(), pair.first) == actualServers.end()) {
+    for (const auto& pair : _serversById) {
+        if (std::find(actualServers.begin(), actualServers.end(), pair.first) ==
+            actualServers.end()) {
             _log->warn("Deleting invalid local server {}", pair.first);
             DeleteServer(pair.first);
         }
     }
 }
 
-
 void
-service_discovery::ServiceDiscoveryWorker::PrintServers()
+Worker::PrintServers()
 {
     std::lock_guard<decltype(_serversByType)> lock(_serversByType);
-    for (const auto &typePair : _serversByType) {
+    for (const auto& typePair : _serversByType) {
         _log->info("Type: {}, Servers:", typePair.first);
-        for (const auto &svPair : typePair.second) {
+        for (const auto& svPair : typePair.second) {
             PrintServer(svPair.second);
         }
     }
 }
 
 void
-service_discovery::ServiceDiscoveryWorker::DeleteServer(const string &serverId)
+Worker::DeleteServer(const string& serverId)
 {
     // NOTE(lhahn): DeleteServer assumes that the resources are already locked.
     if (_serversById.Find(serverId) != _serversById.end()) {
         Server server = _serversById[serverId];
         _serversById.Erase(serverId);
         if (_serversByType.Find(server.type) != _serversByType.end()) {
-            auto &serverMap = _serversByType[server.type];
+            auto& serverMap = _serversByType[server.type];
             serverMap.erase(server.id);
         }
     }
 }
 
-
 optional<pitaya::Server>
-service_discovery::ServiceDiscoveryWorker::GetServerById(const std::string &id)
+Worker::GetServerById(const std::string& id)
 {
     std::lock_guard<decltype(_serversById)> lock(_serversById);
     if (_serversById.Find(id) == _serversById.end()) {
@@ -306,14 +311,14 @@ service_discovery::ServiceDiscoveryWorker::GetServerById(const std::string &id)
 }
 
 std::vector<pitaya::Server>
-service_discovery::ServiceDiscoveryWorker::GetServersByType(const std::string &type)
+Worker::GetServersByType(const std::string& type)
 {
     std::lock_guard<decltype(_serversByType)> lock(_serversByType);
     vector<Server> servers;
 
     if (_serversByType.Find(type) != _serversByType.end()) {
-        const auto &svMap = _serversByType[type];
-        for (const auto &pair : svMap) {
+        const auto& svMap = _serversByType[type];
+        for (const auto& pair : svMap) {
             servers.push_back(pair.second);
         }
     }
@@ -322,7 +327,7 @@ service_discovery::ServiceDiscoveryWorker::GetServersByType(const std::string &t
 }
 
 void
-service_discovery::ServiceDiscoveryWorker::OnWatch(etcd::Response res)
+Worker::OnWatch(etcd::Response res)
 {
     std::stringstream ss;
     ss << std::this_thread::get_id();
@@ -361,13 +366,13 @@ service_discovery::ServiceDiscoveryWorker::OnWatch(etcd::Response res)
 }
 
 static string
-GetServerKey(const std::string &serverId, const std::string &serverType)
+GetServerKey(const std::string& serverId, const std::string& serverType)
 {
     return fmt::format("{}/{}", serverType, serverId);
 }
 
 bool
-service_discovery::ServiceDiscoveryWorker::ParseEtcdKey(const string &key, string &serverType, string &serverId)
+Worker::ParseEtcdKey(const string& key, string& serverType, string& serverId)
 {
     auto comps = string_utils::Split(key, '/');
     if (comps.size() != 4) {
@@ -385,7 +390,7 @@ service_discovery::ServiceDiscoveryWorker::ParseEtcdKey(const string &key, strin
 // ======================================================
 
 void
-service_discovery::ServiceDiscoveryWorker::PrintServer(const Server &server)
+Worker::PrintServer(const Server& server)
 {
     _log->debug("Server: {}", GetServerKey(server.id, server.type));
     _log->debug("  - hostname: {}", server.hostname);
@@ -394,7 +399,7 @@ service_discovery::ServiceDiscoveryWorker::PrintServer(const Server &server)
 }
 
 static string
-ServerAsJson(const Server &server)
+ServerAsJson(const Server& server)
 {
     json::value obj;
     obj.object();
@@ -407,7 +412,7 @@ ServerAsJson(const Server &server)
 }
 
 optional<Server>
-service_discovery::ServiceDiscoveryWorker::ParseServer(const string &jsonStr)
+Worker::ParseServer(const string& jsonStr)
 {
     auto jsonSrv = json::value::parse(jsonStr);
 
@@ -437,3 +442,5 @@ service_discovery::ServiceDiscoveryWorker::ParseServer(const string &jsonStr)
     return server;
 }
 
+}
+}

@@ -1,4 +1,7 @@
-#include "ticker.h"
+#include "pitaya/utils/ticker.h"
+
+namespace pitaya {
+namespace utils {
 
 void
 Ticker::Start()
@@ -24,4 +27,7 @@ Ticker::TickWrapper()
             _callback();
         }
     }
+}
+
+}
 }

@@ -1,17 +1,16 @@
-#include <iostream>
-#include <memory>
-#include <service_discovery.h>
+#include "pitaya.h"
+#include "pitaya/cluster.h"
+#include "pitaya/service_discovery.h"
 #include "protos/msg.pb.h"
 #include "protos/request.pb.h"
-#include <pitaya.h>
-#include <cluster.h>
-#include <pitaya_nats.h>
 #include <exception>
+#include <iostream>
+#include <memory>
 
 using namespace std;
-using namespace pitaya_nats;
 using namespace pitaya;
-using service_discovery::ServiceDiscovery;
+using namespace pitaya::nats;
+using pitaya::service_discovery::ServiceDiscovery;
 
 unique_ptr<ServiceDiscovery> gServiceDiscovery;
 unique_ptr<NATSRPCServer> nats_rpc_server;
@@ -31,20 +30,18 @@ rpc_handler(unique_ptr<protos::Request> req)
     return res;
 }
 
-int main()
+int
+main()
 {
     Server server("someid", "sometype");
     NATSConfig nats_config("nats://localhost:4222", 1000, 3000, 3, 100);
 
     try {
-        auto pit_cluster = unique_ptr<pitaya::Cluster>(new pitaya::Cluster(
-            nats_config,
-            std::move(server),
-            rpc_handler
-        ));
+        auto pit_cluster = unique_ptr<pitaya::Cluster>(
+            new pitaya::Cluster(nats_config, std::move(server), rpc_handler));
 
         bool init_res = pit_cluster->Init();
-        if(!init_res){
+        if (!init_res) {
             throw pitaya::PitayaException("error initializing pitaya cluster");
         }
         {
@@ -55,23 +52,23 @@ int main()
             /////
             auto req = std::make_shared<protos::Request>();
             req->set_allocated_msg(msg);
-            size_t size = req->ByteSizeLong(); 
-            void *buffer = malloc(size);
+            size_t size = req->ByteSizeLong();
+            void* buffer = malloc(size);
             req->SerializeToArray(buffer, size);
             ///// FINISH
             auto res = std::make_shared<protos::Response>();
 
             auto err = pit_cluster->RPC("sometype.bla.ble", req, res);
-            if (err != nullptr){
+            if (err != nullptr) {
                 cout << "received error:" << err->msg << endl;
-            } else{
+            } else {
                 cout << "received answer: " << res->data() << endl;
             }
         }
 
         cout << "enter a key to exit..." << endl;
         cin >> x;
-    } catch (const PitayaException &e){
+    } catch (const PitayaException& e) {
         cout << e.what() << endl;
 
         cout << "enter a key to exit..." << endl;
