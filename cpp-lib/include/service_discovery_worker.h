@@ -14,6 +14,7 @@
 #include <boost/optional.hpp>
 #include <pplx/pplxtasks.h>
 #include "lease_keep_alive.h"
+#include "ticker.h"
 
 namespace service_discovery {
 
@@ -63,7 +64,8 @@ namespace service_discovery {
         LeaseKeepAlive _leaseKeepAlive;
         int _numKeepAliveRetriesLeft;
 
-        std::chrono::time_point<std::chrono::system_clock> _lastSyncTime;
+        std::chrono::seconds _syncServersInterval;
+        Ticker _syncServersTicker;
 
         thread_utils::Semaphore _semaphore;
         SyncDeque<JobInfo> _jobQueue;

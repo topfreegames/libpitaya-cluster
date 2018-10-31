@@ -21,6 +21,7 @@ add_library(pitaya_cluster SHARED
     include/cluster.h
     include/pitaya.h
     include/semaphore.h
+    include/ticker.h
     src/service_discovery.cpp
     src/service_discovery_worker.cpp
     src/nats_rpc_server.cpp
@@ -29,6 +30,7 @@ add_library(pitaya_cluster SHARED
     src/cluster.cpp
     src/pitaya_utils.cpp
     src/string_utils.h
+    src/ticker.cpp
     include/sync_map.h
     include/sync_deque.h
     include/lease_keep_alive.h

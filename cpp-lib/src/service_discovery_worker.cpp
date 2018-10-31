@@ -22,6 +22,8 @@ service_discovery::ServiceDiscoveryWorker::ServiceDiscoveryWorker(const string &
 , _leaseTTL(60s)
 , _leaseKeepAlive(_client)
 , _numKeepAliveRetriesLeft(3)
+, _syncServersInterval(20s)
+, _syncServersTicker(_syncServersInterval, std::bind(&ServiceDiscoveryWorker::SyncServers, this))
 {
     _log = spdlog::get("service_discovery")->clone("service_discovery_worker");
     _log->set_level(spdlog::level::debug);
@@ -41,6 +43,7 @@ service_discovery::ServiceDiscoveryWorker::~ServiceDiscoveryWorker()
     }
 
     _leaseKeepAlive.Stop();
+    _syncServersTicker.Start();
 }
 
 void
@@ -102,9 +105,8 @@ service_discovery::ServiceDiscoveryWorker::Init()
         return status;
     }
 
-    //
-    // TODO: Create a new ticker to manually call SyncServers
-    //
+    _syncServersTicker.Start();
+
     return status;
 }
 
@@ -185,6 +187,8 @@ service_discovery::ServiceDiscoveryWorker::AddServer(const Server &server)
 void
 service_discovery::ServiceDiscoveryWorker::SyncServers()
 {
+    _log->debug("Will synchronize servers");
+
     etcd::Response res = _client.ls(_etcdPrefix).get();
     if (!res.is_ok()) {
         _log->error("Error synchronizing servers");
@@ -217,7 +221,8 @@ service_discovery::ServiceDiscoveryWorker::SyncServers()
 
     DeleteLocalInvalidServers(std::move(allIds));
     PrintServers();
-    _lastSyncTime = std::chrono::system_clock::now();
+
+    _log->debug("Servers synchronized");
 }
 
 optional<pitaya::Server>
