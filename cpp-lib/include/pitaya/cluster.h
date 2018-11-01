@@ -40,6 +40,11 @@ public:
 
     void Shutdown();
 
+    service_discovery::ServiceDiscovery &GetServiceDiscovery()
+    {
+        return *_sd.get();
+    }
+
     std::unique_ptr<PitayaError> RPC(const std::string& serverId,
                                      const std::string& route,
                                      std::shared_ptr<google::protobuf::MessageLite> arg,

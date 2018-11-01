@@ -3,6 +3,7 @@
 #include "pitaya/nats/rpc_server.h"
 #include "spdlog/logger.h"
 #include "spdlog/sinks/stdout_color_sinks.h"
+#include <boost/optional.hpp>
 
 using namespace std;
 using namespace pitaya;
@@ -67,6 +68,20 @@ rpc_cb(protos::Request req)
     return res;
 }
 
+static const char *
+ConvertToCString(const std::string& str)
+{
+    char *cString = reinterpret_cast<char*>(std::calloc(str.size(), 1));
+    std::memcpy(cString, str.data(), str.size());
+    return cString;
+}
+
+static void
+FreeCString(const char *str)
+{
+    std::free((void*)str);
+}
+
 extern "C"
 {
 
@@ -93,5 +108,35 @@ extern "C"
         return pitaya::Cluster::Instance().Initialize(std::move(nats_cfg), server, rpc_cb);
     }
 
-    void tfg_pitc_Terminate() {}
+    CServer* tfg_pitc_GetServerById(const char *serverId)
+    {
+        auto maybeServer = pitaya::Cluster::Instance().GetServiceDiscovery().GetServerById(serverId);
+
+        if (maybeServer) {
+            pitaya::Server server = maybeServer.value();
+            CServer* cs = reinterpret_cast<CServer*>(malloc(sizeof(CServer)));
+            cs->frontend = server.frontend;
+            cs->hostname = ConvertToCString(server.hostname);
+            cs->id = ConvertToCString(server.id);
+            cs->type = ConvertToCString(server.type);
+            cs->metadata = ConvertToCString(server.metadata);
+            return cs;
+        }
+
+        return NULL;
+    }
+
+    void tfg_pitc_FreeServer(CServer *cServer)
+    {
+        FreeCString(cServer->id);
+        FreeCString(cServer->type);
+        FreeCString(cServer->metadata);
+        FreeCString(cServer->hostname);
+        free(cServer);
+    }
+
+    void tfg_pitc_Shutdown()
+    {
+        pitaya::Cluster::Instance().Shutdown();
+    }
 }
