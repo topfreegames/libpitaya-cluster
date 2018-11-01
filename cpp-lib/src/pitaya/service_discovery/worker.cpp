@@ -51,7 +51,6 @@ Worker::Shutdown()
     if (_workerThread.joinable()) {
         _workerThread.join();
     }
-    _log->debug("Thread joined, exiting");
 }
 
 void
