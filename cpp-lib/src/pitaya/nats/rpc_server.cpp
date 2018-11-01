@@ -59,19 +59,19 @@ NATSRPCServer::handle_msg(natsConnection* nc, natsSubscription* sub, natsMsg* ms
 
     instance->print_sub_status(sub);
 
-    auto req = std::unique_ptr<protos::Request>(new protos::Request());
+    auto req = protos::Request();
     auto reply = natsMsg_GetReply(msg);
-    bool decoded = req->ParseFromArray(natsMsg_GetData(msg), natsMsg_GetDataLength(msg));
+    bool decoded = req.ParseFromArray(natsMsg_GetData(msg), natsMsg_GetDataLength(msg));
     if (!decoded) {
         instance->_log->error("unable to decode msg from nats");
         return;
     }
 
-    auto res = handler(std::move(req));
+    protos::Response res = handler(req);
 
-    size_t size = res->ByteSizeLong();
+    size_t size = res.ByteSizeLong();
     void* buffer = malloc(size);
-    res->SerializeToArray(buffer, size);
+    res.SerializeToArray(buffer, size);
 
     natsConnection_Publish(nc, reply, buffer, size);
 

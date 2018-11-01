@@ -16,16 +16,16 @@ using pitaya::service_discovery::ServiceDiscovery;
 
 int x;
 
-shared_ptr<protos::Response>
-rpc_handler(unique_ptr<protos::Request> req)
+protos::Response
+rpc_handler(protos::Request req)
 {
-    cout << "rpc handler called with route: " << req->msg().route() << endl;
-    auto res = std::make_shared<protos::Response>();
+    cout << "rpc handler called with route: " << req.msg().route() << endl;
+    auto res = protos::Response();
     auto res2 = protos::Response();
     res2.set_data("ok!");
     std::string serialized;
     res2.SerializeToString(&serialized);
-    res->set_data(serialized);
+    res.set_data(serialized);
     return res;
 }
 

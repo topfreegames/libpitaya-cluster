@@ -7,8 +7,7 @@
 #import <string>
 
 namespace pitaya {
-using RPCHandlerFunc =
-    std::function<std::shared_ptr<protos::Response>(std::unique_ptr<protos::Request>)>;
+using RPCHandlerFunc = std::function<protos::Response(protos::Request)>;
 
 class PitayaException : public std::exception
 {
@@ -56,6 +55,17 @@ struct Server
     bool frontend;
 
     Server() {}
+    Server(const std::string& id,
+           const std::string& type,
+           const std::string& metadata,
+           const std::string& hostname,
+           bool frontend)
+        : id(id)
+        , type(type)
+        , metadata(metadata)
+        , hostname(hostname)
+        , frontend(frontend)
+    {}
     Server(const std::string& id, const std::string& type)
         : id(id)
         , type(type)
@@ -63,11 +73,5 @@ struct Server
     {}
 };
 
-struct RPCReq
-{
-    const char* data;
-    int data_len;
-    const char* route;
-};
 } // namespace pitaya
 #endif

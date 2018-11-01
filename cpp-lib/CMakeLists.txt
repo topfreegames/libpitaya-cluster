@@ -34,6 +34,7 @@ add_library(pitaya_cluster SHARED
     src/pitaya/utils/string_utils.cpp
     src/pitaya/cluster.cpp
     src/pitaya/utils.cpp
+    src/pitaya/c_wrapper.cpp
     src/pitaya/utils/string_utils.h
     src/pitaya/utils/ticker.cpp
     src/pitaya/service_discovery/lease_keep_alive.cpp

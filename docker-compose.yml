@@ -8,3 +8,4 @@ services:
     image: appcelerator/etcd
     ports:
       - 2379:2379
+      - 4001:4001
