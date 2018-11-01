@@ -69,7 +69,7 @@ main()
         cout << e.what() << endl;
     }
 
-    //    cin >> x;
+    cin >> x;
     pitaya::Cluster::Instance().Shutdown();
     cout << "Shutdown finished!" << endl;
 }

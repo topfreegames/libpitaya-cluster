@@ -50,12 +50,14 @@ private:
     void DeleteServer(const std::string& serverId);
     bool ParseEtcdKey(const std::string& key, std::string& serverType, std::string& serverId);
     void PrintServer(const pitaya::Server& server);
+    void RevokeLease();
     boost::optional<pitaya::Server> GetServerFromEtcd(const std::string& serverId,
                                                       const std::string& serverType);
     void DeleteLocalInvalidServers(const std::vector<std::string>& actualServers);
     boost::optional<pitaya::Server> ParseServer(const std::string& jsonStr);
 
 private:
+    bool _workerExiting;
     std::string _etcdPrefix;
     pitaya::Server _server;
     etcd::Client _client;

@@ -2,6 +2,7 @@
 #include "pitaya/utils/string_utils.h"
 #include <cpprest/json.h>
 #include <sstream>
+#include <assert.h>
 
 using boost::optional;
 using std::string;
@@ -18,7 +19,8 @@ static string ServerAsJson(const Server& server);
 static string GetServerKey(const std::string& serverId, const std::string& serverType);
 
 Worker::Worker(const string& address, const string& etcdPrefix, pitaya::Server server)
-    : _etcdPrefix(etcdPrefix)
+    : _workerExiting(false)
+    , _etcdPrefix(etcdPrefix)
     , _server(std::move(server))
     , _client(address)
     , _watcher(address, _etcdPrefix, std::bind(&Worker::OnWatch, this, _1))
@@ -98,6 +100,8 @@ Worker::StartThread()
 
                 break;
             case JobInfo::Shutdown:
+                _workerExiting = true;
+                RevokeLease();
                 _leaseKeepAlive.Stop();
                 _syncServersTicker.Stop();
                 // TODO: revoke lease
@@ -282,6 +286,15 @@ Worker::DeleteLocalInvalidServers(const vector<string>& actualServers)
 }
 
 void
+Worker::RevokeLease()
+{
+    _log->debug("Revoking lease");
+    etcd::Response res = _client.lease_revoke(_leaseId).get();
+    assert(res.is_ok() && "result should always be ok when revoking lease id");
+    _log->debug("Lease revoked successfuly");
+}
+
+void
 Worker::PrintServers()
 {
     std::lock_guard<decltype(_serversByType)> lock(_serversByType);
@@ -337,10 +350,10 @@ Worker::GetServersByType(const std::string& type)
 void
 Worker::OnWatch(etcd::Response res)
 {
-    std::stringstream ss;
-    ss << std::this_thread::get_id();
-    uint64_t threadId = std::stoull(ss.str());
-    _log->info("OnWatch called on thread: {}", threadId);
+    if (_workerExiting) {
+        _log->debug("Worker is exiting, ignoring OnWatch call");
+        return;
+    }
 
     if (!res.is_ok()) {
         _log->error("OnWatch error");
