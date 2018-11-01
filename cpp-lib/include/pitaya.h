@@ -7,8 +7,8 @@
 #import <string>
 
 namespace pitaya {
-using rpc_handler_func = std::function<std::shared_ptr<protos::Response>(
-    std::unique_ptr<protos::Request>)>;
+using RPCHandlerFunc =
+    std::function<std::shared_ptr<protos::Response>(std::unique_ptr<protos::Request>)>;
 
 class PitayaException : public std::exception
 {
@@ -29,9 +29,7 @@ struct Route
     std::string handler;
     std::string method;
 
-    Route(const std::string& sv_type,
-          const std::string& handler,
-          const std::string& method)
+    Route(const std::string& sv_type, const std::string& handler, const std::string& method)
         : server_type(sv_type)
         , handler(handler)
         , method(method){};

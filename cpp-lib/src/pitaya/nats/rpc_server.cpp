@@ -15,14 +15,14 @@ using namespace pitaya;
 namespace pitaya {
 namespace nats {
 
-rpc_handler_func NATSRPCServer::handler;
+RPCHandlerFunc NATSRPCServer::handler;
 
 NATSRPCServer::NATSRPCServer(const Server& server,
                              const NATSConfig& config,
-                             rpc_handler_func handler_func)
-    : nc(nullptr)
+                             RPCHandlerFunc handler_func)
+    : _log(spdlog::stdout_color_mt("nats_rpc_server"))
+    , nc(nullptr)
     , sub(nullptr)
-    , _log(spdlog::stdout_color_mt("nats_rpc_server"))
 {
     _log->set_level(spdlog::level::debug);
     natsOptions* opts;
@@ -30,23 +30,20 @@ NATSRPCServer::NATSRPCServer(const Server& server,
     if (s != NATS_OK) {
         throw PitayaException("error configuring nats server;");
     }
-    natsOptions_SetTimeout(opts, config.connection_timeout_ms);
-    natsOptions_SetMaxReconnect(opts, config.max_reconnection_attempts);
-    natsOptions_SetMaxPendingMsgs(opts, config.max_pending_msgs);
+    natsOptions_SetTimeout(opts, config.connectionTimeoutMs);
+    natsOptions_SetMaxReconnect(opts, config.maxReconnectionAttempts);
+    natsOptions_SetMaxPendingMsgs(opts, config.maxPendingMsgs);
     natsOptions_SetClosedCB(opts, closed_cb, this);
     natsOptions_SetDisconnectedCB(opts, disconnected_cb, this);
     natsOptions_SetReconnectedCB(opts, reconnected_cb, this);
     natsOptions_SetErrorHandler(opts, err_handler, this);
-    natsOptions_SetURL(opts, config.nats_addr.c_str());
+    natsOptions_SetURL(opts, config.natsAddr.c_str());
 
     handler = handler_func;
     s = natsConnection_Connect(&nc, opts);
     if (s == NATS_OK) {
-        s = natsConnection_Subscribe(&sub,
-                                     nc,
-                                     utils::GetTopicForServer(std::move(server)).c_str(),
-                                     handle_msg,
-                                     this);
+        s = natsConnection_Subscribe(
+            &sub, nc, utils::GetTopicForServer(std::move(server)).c_str(), handle_msg, this);
     }
     if (s == NATS_OK) {
         _log->info("nats rpc server configured!");
@@ -56,10 +53,7 @@ NATSRPCServer::NATSRPCServer(const Server& server,
 }
 
 void
-NATSRPCServer::handle_msg(natsConnection* nc,
-                          natsSubscription* sub,
-                          natsMsg* msg,
-                          void* closure)
+NATSRPCServer::handle_msg(natsConnection* nc, natsSubscription* sub, natsMsg* msg, void* closure)
 {
     auto instance = (NATSRPCServer*)closure;
 
@@ -99,12 +93,11 @@ NATSRPCServer::print_sub_status(natsSubscription* subscription)
                                        nullptr,
                                        &delivered_msgs,
                                        &dropped_msgs);
-    _log->debug(
-        "nats server status: pending:{}, max_pending:{}, delivered:{}, dropped:{}",
-        pending_msgs,
-        max_pending_msgs,
-        delivered_msgs,
-        dropped_msgs);
+    _log->debug("nats server status: pending:{}, max_pending:{}, delivered:{}, dropped:{}",
+                pending_msgs,
+                max_pending_msgs,
+                delivered_msgs,
+                dropped_msgs);
 }
 
 void

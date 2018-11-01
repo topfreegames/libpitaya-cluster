@@ -10,22 +10,29 @@ struct NATSConfig
 {
     // TODO make more nats configs in both client and server
     // like buffer size, connection retries, etc
-    std::string nats_addr;
-    int64_t connection_timeout_ms;
-    int request_timeout_ms;
-    int max_reconnection_attempts;
-    int max_pending_msgs;
+    std::string natsAddr;
+    int64_t connectionTimeoutMs;
+    int requestTimeoutMs;
+    int maxReconnectionAttempts;
+    int maxPendingMsgs;
 
     NATSConfig(const std::string& addr,
-               const int request_timeout_ms,
-               const int64_t connection_timeout_ms,
-               const int max_reconnection_attempts,
-               const int max_pending_msgs)
-        : nats_addr(addr)
-        , connection_timeout_ms(connection_timeout_ms)
-        , request_timeout_ms(request_timeout_ms)
-        , max_reconnection_attempts(max_reconnection_attempts)
-        , max_pending_msgs(max_pending_msgs)
+               const int requestTimeoutMs,
+               const int64_t connectionTimeoutMs,
+               const int maxReconnectionAttempts,
+               const int maxPendingMsgs)
+        : natsAddr(addr)
+        , connectionTimeoutMs(connectionTimeoutMs)
+        , requestTimeoutMs(requestTimeoutMs)
+        , maxReconnectionAttempts(maxReconnectionAttempts)
+        , maxPendingMsgs(maxPendingMsgs)
+    {}
+
+    NATSConfig()
+        : connectionTimeoutMs(-1)
+        , requestTimeoutMs(-1)
+        , maxReconnectionAttempts(3)
+        , maxPendingMsgs(100)
     {}
 };
 

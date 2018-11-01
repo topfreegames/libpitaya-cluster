@@ -8,13 +8,14 @@ Ticker::Start()
 {
     _donePromise = std::promise<void>();
     _doneFuture = _donePromise.get_future();
-    std::async(std::launch::async, &Ticker::TickWrapper, this);
+    _runFuture = std::async(std::launch::async, &Ticker::TickWrapper, this);
 }
 
 void
 Ticker::Stop()
 {
     _donePromise.set_value();
+    _runFuture.wait();
 }
 
 void

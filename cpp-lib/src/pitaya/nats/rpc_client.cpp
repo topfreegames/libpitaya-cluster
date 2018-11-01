@@ -1,8 +1,8 @@
 #include "pitaya/nats/rpc_client.h"
 #include "nats/nats.h"
 #include "pitaya.h"
-#include "pitaya/utils.h"
 #include "pitaya/nats/config.h"
+#include "pitaya/utils.h"
 #include "protos/request.pb.h"
 #include "protos/response.pb.h"
 #include "spdlog/sinks/stdout_color_sinks.h"
@@ -19,7 +19,7 @@ NATSRPCClient::NATSRPCClient(const Server& server, const NATSConfig& config)
     : _log(spdlog::stdout_color_mt("nats_rpc_client"))
     , nc(nullptr)
     , sub(nullptr)
-    , timeout_ms(config.request_timeout_ms)
+    , timeout_ms(config.requestTimeoutMs)
 {
     _log->set_level(spdlog::level::debug);
     natsOptions* opts;
@@ -27,12 +27,12 @@ NATSRPCClient::NATSRPCClient(const Server& server, const NATSConfig& config)
     if (s != NATS_OK) {
         throw PitayaException("error configuring nats server;");
     }
-    natsOptions_SetTimeout(opts, config.connection_timeout_ms);
-    natsOptions_SetMaxReconnect(opts, config.max_reconnection_attempts);
+    natsOptions_SetTimeout(opts, config.connectionTimeoutMs);
+    natsOptions_SetMaxReconnect(opts, config.maxReconnectionAttempts);
     natsOptions_SetClosedCB(opts, closed_cb, this);
     natsOptions_SetDisconnectedCB(opts, disconnected_cb, this);
     natsOptions_SetReconnectedCB(opts, reconnected_cb, this);
-    natsOptions_SetURL(opts, config.nats_addr.c_str());
+    natsOptions_SetURL(opts, config.natsAddr.c_str());
 
     s = natsConnection_Connect(&nc, opts);
     if (s != NATS_OK) {
@@ -54,8 +54,8 @@ NATSRPCClient::Call(const pitaya::Server& target, std::unique_ptr<protos::Reques
     req->SerializeToArray(buffer.data(), size);
 
     natsMsg* reply = nullptr;
-    natsStatus s = natsConnection_Request(
-        &reply, nc, topic.c_str(), buffer.data(), size, timeout_ms);
+    natsStatus s =
+        natsConnection_Request(&reply, nc, topic.c_str(), buffer.data(), size, timeout_ms);
     auto res = std::make_shared<protos::Response>();
 
     if (s != NATS_OK) {

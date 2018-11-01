@@ -23,20 +23,20 @@ enum class JobInfo
 {
     EtcdReconnectionFailure,
     WatchError,
+    Shutdown,
 };
 
 class Worker
 {
 public:
-    Worker(const std::string& etcdAddress,
-           const std::string& etcdPrefix,
-           pitaya::Server server);
+    Worker(const std::string& etcdAddress, const std::string& etcdPrefix, pitaya::Server server);
     ~Worker();
 
     boost::optional<pitaya::Server> GetServerById(const std::string& id);
     std::vector<pitaya::Server> GetServersByType(const std::string& type);
 
 private:
+    void Shutdown();
     void StartThread();
     void OnWatch(etcd::Response res);
     etcdv3::V3Status Init();
@@ -48,9 +48,7 @@ private:
     void SyncServers();
     void PrintServers();
     void DeleteServer(const std::string& serverId);
-    bool ParseEtcdKey(const std::string& key,
-                      std::string& serverType,
-                      std::string& serverId);
+    bool ParseEtcdKey(const std::string& key, std::string& serverType, std::string& serverId);
     void PrintServer(const pitaya::Server& server);
     boost::optional<pitaya::Server> GetServerFromEtcd(const std::string& serverId,
                                                       const std::string& serverType);
@@ -58,10 +56,10 @@ private:
     boost::optional<pitaya::Server> ParseServer(const std::string& jsonStr);
 
 private:
+    std::string _etcdPrefix;
     pitaya::Server _server;
     etcd::Client _client;
     etcd::Watcher _watcher;
-    std::string _etcdPrefix;
     int64_t _leaseId;
     std::shared_ptr<spdlog::logger> _log;
     std::thread _workerThread;
@@ -76,8 +74,7 @@ private:
     utils::Semaphore _semaphore;
     utils::SyncDeque<JobInfo> _jobQueue;
     utils::SyncMap<std::string, pitaya::Server> _serversById;
-    utils::SyncMap<std::string, std::unordered_map<std::string, pitaya::Server>>
-        _serversByType;
+    utils::SyncMap<std::string, std::unordered_map<std::string, pitaya::Server>> _serversByType;
 };
 
 }

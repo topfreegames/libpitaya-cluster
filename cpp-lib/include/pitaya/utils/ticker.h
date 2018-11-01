@@ -31,6 +31,7 @@ private:
     std::function<void()> _callback;
     std::promise<void> _donePromise;
     std::future<void> _doneFuture;
+    std::future<void> _runFuture;
 };
 
 }

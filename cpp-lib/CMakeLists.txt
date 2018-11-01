@@ -47,7 +47,7 @@ add_library(pitaya::pitaya_cluster ALIAS pitaya_cluster)
 
 set_target_properties(pitaya_cluster
   PROPERTIES
-    CXX_STANDARD 17)
+    CXX_STANDARD 14)
 
 target_include_directories(pitaya_cluster
   PUBLIC

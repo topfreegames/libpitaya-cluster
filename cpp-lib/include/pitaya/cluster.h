@@ -4,6 +4,7 @@
 #include "pitaya.h"
 #include "pitaya/nats/config.h"
 #include "pitaya/nats/rpc_client.h"
+#include "pitaya/nats/rpc_server.h"
 #include "pitaya/service_discovery.h"
 #include "protos/request.pb.h"
 #include "protos/response.pb.h"
@@ -27,18 +28,19 @@ struct PitayaError
 class Cluster
 {
 public:
-    Cluster(pitaya::nats::NATSConfig& nats_config,
-            Server server,
-            rpc_handler_func rpc_server_handler_func)
-        : _log(spdlog::stdout_color_mt("cluster"))
-        , nats_config(nats_config)
-        , server(std::move(server))
-        , rpc_server_handler_func(rpc_server_handler_func)
-    {}
+    static Cluster& Instance()
+    {
+        static Cluster c;
+        return c;
+    }
 
-    bool Init();
+    bool Initialize(pitaya::nats::NATSConfig&& natsConfig,
+                    Server server,
+                    RPCHandlerFunc rpcServerHandlerFunc);
 
-    std::unique_ptr<PitayaError> RPC(const std::string& server_id,
+    void Shutdown();
+
+    std::unique_ptr<PitayaError> RPC(const std::string& serverId,
                                      const std::string& route,
                                      std::shared_ptr<google::protobuf::MessageLite> arg,
                                      std::shared_ptr<google::protobuf::MessageLite> ret);
@@ -48,13 +50,16 @@ public:
                                      std::shared_ptr<google::protobuf::MessageLite> ret);
 
 private:
+    Cluster() = default;
+
+private:
     std::shared_ptr<spdlog::logger> _log;
-    pitaya::nats::NATSConfig nats_config;
-    Server server;
-    std::unique_ptr<service_discovery::ServiceDiscovery> sd;
-    std::unique_ptr<nats::NATSRPCServer> rpc_sv;
-    std::unique_ptr<nats::NATSRPCClient> rpc_client;
-    rpc_handler_func rpc_server_handler_func;
+    pitaya::nats::NATSConfig _natsConfig;
+    Server _server;
+    std::unique_ptr<service_discovery::ServiceDiscovery> _sd;
+    std::unique_ptr<nats::NATSRPCServer> _rpcSv;
+    std::unique_ptr<nats::NATSRPCClient> _rpcClient;
+    RPCHandlerFunc _rpcServerHandlerFunc;
 };
 
 } // namespace pitaya

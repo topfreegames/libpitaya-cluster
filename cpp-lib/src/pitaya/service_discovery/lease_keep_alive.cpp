@@ -29,7 +29,8 @@ LeaseKeepAlive::Start()
     _doneFuture = _donePromise.get_future();
 
     _log->info("Starting LeaseKeepAlive");
-    return pplx::create_task(std::bind(&LeaseKeepAlive::TickWrapper, this));
+    _runTask = pplx::create_task(std::bind(&LeaseKeepAlive::TickWrapper, this));
+    return _runTask;
 }
 
 void
@@ -37,6 +38,7 @@ LeaseKeepAlive::Stop()
 {
     _log->info("Stopping");
     _donePromise.set_value();
+    _runTask.wait();
 }
 
 LeaseKeepAliveStatus
@@ -47,6 +49,7 @@ LeaseKeepAlive::TickWrapper()
     auto status = std::future_status::timeout;
     while (status != std::future_status::ready) {
         _log->debug("Renewing lease");
+
         auto res = _client.lease_keep_alive(_leaseId).get();
         if (!res.is_ok()) {
             _log->error("Failed to renew lease, stopping");

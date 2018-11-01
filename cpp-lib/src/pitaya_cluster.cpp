@@ -3,18 +3,17 @@
 #include "pitaya/service_discovery.h"
 #include "protos/msg.pb.h"
 #include "protos/request.pb.h"
+#include <chrono>
 #include <exception>
 #include <iostream>
 #include <memory>
+#include <thread>
 
 using namespace std;
 using namespace pitaya;
 using namespace pitaya::nats;
 using pitaya::service_discovery::ServiceDiscovery;
 
-unique_ptr<ServiceDiscovery> gServiceDiscovery;
-unique_ptr<NATSRPCServer> nats_rpc_server;
-unique_ptr<NATSRPCClient> nats_rpc_client;
 int x;
 
 shared_ptr<protos::Response>
@@ -30,17 +29,17 @@ rpc_handler(unique_ptr<protos::Request> req)
     return res;
 }
 
+
 int
 main()
 {
     Server server("someid", "sometype");
     NATSConfig nats_config("nats://localhost:4222", 1000, 3000, 3, 100);
 
-    try {
-        auto pit_cluster = unique_ptr<pitaya::Cluster>(
-            new pitaya::Cluster(nats_config, std::move(server), rpc_handler));
+    bool init_res = pitaya::Cluster::Instance().Initialize(
+        std::move(nats_config), std::move(server), rpc_handler);
 
-        bool init_res = pit_cluster->Init();
+    try {
         if (!init_res) {
             throw pitaya::PitayaException("error initializing pitaya cluster");
         }
@@ -58,7 +57,7 @@ main()
             ///// FINISH
             auto res = std::make_shared<protos::Response>();
 
-            auto err = pit_cluster->RPC("sometype.bla.ble", req, res);
+            auto err = pitaya::Cluster::Instance().RPC("sometype.bla.ble", req, res);
             if (err != nullptr) {
                 cout << "received error:" << err->msg << endl;
             } else {
@@ -66,12 +65,11 @@ main()
             }
         }
 
-        cout << "enter a key to exit..." << endl;
-        cin >> x;
     } catch (const PitayaException& e) {
         cout << e.what() << endl;
-
-        cout << "enter a key to exit..." << endl;
-        cin >> x;
     }
+
+    //    cin >> x;
+    pitaya::Cluster::Instance().Shutdown();
+    cout << "Shutdown finished!" << endl;
 }

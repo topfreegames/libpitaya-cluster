@@ -18,10 +18,10 @@ static string ServerAsJson(const Server& server);
 static string GetServerKey(const std::string& serverId, const std::string& serverType);
 
 Worker::Worker(const string& address, const string& etcdPrefix, pitaya::Server server)
-    : _server(std::move(server))
+    : _etcdPrefix(etcdPrefix)
+    , _server(std::move(server))
     , _client(address)
     , _watcher(address, _etcdPrefix, std::bind(&Worker::OnWatch, this, _1))
-    , _etcdPrefix(etcdPrefix)
     , _leaseTTL(60s)
     , _leaseKeepAlive(_client)
     , _numKeepAliveRetriesLeft(3)
@@ -35,18 +35,23 @@ Worker::Worker(const string& address, const string& etcdPrefix, pitaya::Server s
 
 Worker::~Worker()
 {
+    Shutdown();
+}
+
+void
+Worker::Shutdown()
+{
+    _log->info("Will shutdown");
     {
         std::lock_guard<decltype(_jobQueue)> lock(_jobQueue);
-        _jobQueue.Clear();
+        _jobQueue.PushBack(JobInfo::Shutdown);
         _semaphore.Notify();
     }
 
     if (_workerThread.joinable()) {
         _workerThread.join();
     }
-
-    _leaseKeepAlive.Stop();
-    _syncServersTicker.Start();
+    _log->debug("Thread joined, exiting");
 }
 
 void
@@ -57,7 +62,7 @@ Worker::StartThread()
     auto status = Init();
 
     if (!status.is_ok()) {
-        if (status.etcd_error_code == etcdv3::StatusCode::UNDERLYING_GRPC_ERROR) {
+        if (status.etcd_error_code == etcd::StatusCode::UNDERLYING_GRPC_ERROR) {
             throw PitayaException("gRPC init error: " + status.grpc_error_message);
         } else {
             throw PitayaException("etcd init error: " + status.etcd_error_message);
@@ -70,15 +75,14 @@ Worker::StartThread()
         std::lock_guard<decltype(_jobQueue)> lock(_jobQueue);
 
         if (_jobQueue.Empty()) {
-            _log->info("Exiting loop");
-            break;
+            _log->warn("Job queue empty, ignoring");
+            continue;
         }
 
         JobInfo info = _jobQueue.PopFront();
         switch (info) {
             case JobInfo::EtcdReconnectionFailure:
-                _log->error("Reconnection failure, {} retries left!",
-                            _numKeepAliveRetriesLeft);
+                _log->error("Reconnection failure, {} retries left!", _numKeepAliveRetriesLeft);
 
                 if (_numKeepAliveRetriesLeft <= 0) {
                     throw std::runtime_error("Failed reconnection to etcd");
@@ -94,6 +98,12 @@ Worker::StartThread()
                 }
 
                 break;
+            case JobInfo::Shutdown:
+                _leaseKeepAlive.Stop();
+                _syncServersTicker.Stop();
+                // TODO: revoke lease
+                _log->info("Exiting loop");
+                return;
             case JobInfo::WatchError:
                 _log->error("Watch error");
                 break;
@@ -232,15 +242,14 @@ Worker::SyncServers()
 optional<pitaya::Server>
 Worker::GetServerFromEtcd(const std::string& serverId, const std::string& serverType)
 {
-    auto serverKey =
-        fmt::format("{}/{}", _etcdPrefix, GetServerKey(serverId, serverType));
+    auto serverKey = fmt::format("{}/{}", _etcdPrefix, GetServerKey(serverId, serverType));
 
     try {
         etcd::Response res = _client.get(serverKey).get();
 
         if (!res.is_ok()) {
             string info;
-            if (res.status.etcd_error_code == etcdv3::StatusCode::UNDERLYING_GRPC_ERROR) {
+            if (res.status.etcd_error_code == etcd::StatusCode::UNDERLYING_GRPC_ERROR) {
                 info = res.status.grpc_error_message;
             } else {
                 info = res.status.etcd_error_message;

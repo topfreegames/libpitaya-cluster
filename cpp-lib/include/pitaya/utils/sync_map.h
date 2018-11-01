@@ -39,10 +39,7 @@ public:
     // Make type iterable with range-based for loop.
     typename std::unordered_map<K, V>::iterator begin() { return _map.begin(); }
     typename std::unordered_map<K, V>::iterator end() { return _map.end(); }
-    typename std::unordered_map<K, V>::const_iterator cbegin() const
-    {
-        return _map.cbegin();
-    }
+    typename std::unordered_map<K, V>::const_iterator cbegin() const { return _map.cbegin(); }
     typename std::unordered_map<K, V>::const_iterator cend() const { return _map.cend(); }
 
 private:

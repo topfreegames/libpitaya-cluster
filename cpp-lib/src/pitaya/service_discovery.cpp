@@ -24,11 +24,14 @@ namespace pitaya {
 namespace service_discovery {
 
 // Helper functions
-ServiceDiscovery::ServiceDiscovery(Server server,
-                                                      const string& address)
+ServiceDiscovery::ServiceDiscovery(const Server& server, const string& address)
     : _log(spdlog::stdout_color_mt("service_discovery"))
-    , _worker(address, "pitaya/servers", std::move(server))
+    , _worker(address, "pitaya/servers", server)
 {
+    if (server.id.empty() || server.type.empty()) {
+        throw PitayaException("Server id and type cannot be empty");
+    }
+
     _log->set_level(spdlog::level::debug);
 }
 
