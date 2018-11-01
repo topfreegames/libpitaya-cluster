@@ -68,16 +68,16 @@ rpc_cb(protos::Request req)
     return res;
 }
 
-static const char *
+static const char*
 ConvertToCString(const std::string& str)
 {
-    char *cString = reinterpret_cast<char*>(std::calloc(str.size(), 1));
+    char* cString = reinterpret_cast<char*>(std::calloc(str.size(), 1));
     std::memcpy(cString, str.data(), str.size());
     return cString;
 }
 
 static void
-FreeCString(const char *str)
+FreeCString(const char* str)
 {
     std::free((void*)str);
 }
@@ -108,9 +108,10 @@ extern "C"
         return pitaya::Cluster::Instance().Initialize(std::move(nats_cfg), server, rpc_cb);
     }
 
-    CServer* tfg_pitc_GetServerById(const char *serverId)
+    CServer* tfg_pitc_GetServerById(const char* serverId)
     {
-        auto maybeServer = pitaya::Cluster::Instance().GetServiceDiscovery().GetServerById(serverId);
+        auto maybeServer =
+            pitaya::Cluster::Instance().GetServiceDiscovery().GetServerById(serverId);
 
         if (maybeServer) {
             pitaya::Server server = maybeServer.value();
@@ -126,7 +127,7 @@ extern "C"
         return NULL;
     }
 
-    void tfg_pitc_FreeServer(CServer *cServer)
+    void tfg_pitc_FreeServer(CServer* cServer)
     {
         FreeCString(cServer->id);
         FreeCString(cServer->type);
@@ -135,8 +136,5 @@ extern "C"
         free(cServer);
     }
 
-    void tfg_pitc_Shutdown()
-    {
-        pitaya::Cluster::Instance().Shutdown();
-    }
+    void tfg_pitc_Shutdown() { pitaya::Cluster::Instance().Shutdown(); }
 }

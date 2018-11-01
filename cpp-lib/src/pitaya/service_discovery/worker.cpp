@@ -1,8 +1,8 @@
 #include "pitaya/service_discovery/worker.h"
 #include "pitaya/utils/string_utils.h"
+#include <assert.h>
 #include <cpprest/json.h>
 #include <sstream>
-#include <assert.h>
 
 using boost::optional;
 using std::string;
