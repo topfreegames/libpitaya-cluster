@@ -1,6 +1,8 @@
 #include "pitaya.h"
 #include "pitaya/cluster.h"
 #include "pitaya/nats/rpc_server.h"
+#include "spdlog/logger.h"
+#include "spdlog/sinks/stdout_color_sinks.h"
 
 using namespace std;
 using namespace pitaya;
@@ -38,13 +40,30 @@ struct RPCRes
 };
 
 typedef RPCRes* (*rpc_pinvoke_cb)(RPCReq*);
-
-rpc_pinvoke_cb pinvoke_cb;
+static rpc_pinvoke_cb pinvoke_cb;
+static std::shared_ptr<spdlog::logger> logger = spdlog::stdout_color_mt("c_wrapper");
 
 protos::Response
 rpc_cb(protos::Request req)
 {
     protos::Response res;
+
+    RPCReq c_req;
+    c_req.data = (void*)req.msg().data().data();
+    c_req.data_len = req.msg().data().size();
+    c_req.route = req.msg().route().c_str();
+    auto pinvoke_res = pinvoke_cb(&c_req);
+
+    bool success = res.ParseFromArray(pinvoke_res->data, pinvoke_res->data_len);
+    if (!success) {
+        auto err = new protos::Error();
+        err->set_code("PIT-500");
+        err->set_msg("pinvoke failed");
+        res.set_allocated_error(err);
+    }
+    // TODO hacky, OMG :O - do stress testing to see if this will leak memory
+    free(pinvoke_res->data);
+    free(pinvoke_res);
     return res;
 }
 
@@ -67,7 +86,7 @@ extern "C"
 
         pinvoke_cb = cb;
         if (pinvoke_cb == NULL) {
-            // TODO: logging
+            logger->error("pinvoke callback not set!");
             return false;
         }
         // get configs

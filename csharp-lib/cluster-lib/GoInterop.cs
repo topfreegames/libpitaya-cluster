@@ -77,6 +77,11 @@ namespace Pitaya
       }
       return new Route(res[0], res[1], res[2]);
     }
+
+    public override string ToString()
+    {
+      return string.Format("{0}.{1}.{2}", svType, service, method);
+    }
   }
 
   [StructLayout(LayoutKind.Sequential)]

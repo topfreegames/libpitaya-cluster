@@ -109,7 +109,7 @@ Cluster::RPC(const string& server_id,
     }
 
     free(buffer);
-    return NULL;
+    return nullptr;
 }
 
 }

@@ -72,7 +72,7 @@ NATSRPCClient::Call(const pitaya::Server& target, std::unique_ptr<protos::Reques
         }
         res->set_allocated_error(err);
     } else {
-        res->set_data(natsMsg_GetData(reply));
+        res->ParseFromArray(natsMsg_GetData(reply), natsMsg_GetDataLength(reply));
     }
 
     natsMsg_Destroy(reply);

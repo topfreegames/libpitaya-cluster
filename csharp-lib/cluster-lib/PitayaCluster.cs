@@ -13,26 +13,26 @@ namespace Pitaya
     public delegate IntPtr RPCCb(IntPtr req);
     public delegate string RemoteNameFunc(string methodName);
 
-    //    private static Dictionary<string, RemoteMethod> remotesDict = new Dictionary<string, RemoteMethod>();
-    //
-    //    public static Protos.Response GetErrorResponse(string code, string msg)
-    //    {
-    //      var response = new Protos.Response();
-    //      response.Error = new Protos.Error();
-    //      response.Error.Code = code;
-    //      response.Error.Msg = msg;
-    //      return response;
-    //    }
-    //
-    //    public static byte[] ProtoMessageToByteArray(IMessage msg)
-    //    {
-    //      var mem = new MemoryStream();
-    //      var o = new CodedOutputStream(mem);
-    //      msg.WriteTo(o);
-    //      o.Flush();
-    //      mem.Close();
-    //      return mem.ToArray();
-    //    }
+    private static Dictionary<string, RemoteMethod> remotesDict = new Dictionary<string, RemoteMethod>();
+
+    public static Protos.Response GetErrorResponse(string code, string msg)
+    {
+      var response = new Protos.Response();
+      response.Error = new Protos.Error();
+      response.Error.Code = code;
+      response.Error.Msg = msg;
+      return response;
+    }
+
+    public static byte[] ProtoMessageToByteArray(IMessage msg)
+    {
+      var mem = new MemoryStream();
+      var o = new CodedOutputStream(mem);
+      msg.WriteTo(o);
+      o.Flush();
+      mem.Close();
+      return mem.ToArray();
+    }
     //
     //    public static Server GetServer(string id)
     //    {
@@ -56,71 +56,87 @@ namespace Pitaya
     //      }
     //    }
     //
-    //    public static void RegisterRemote(BaseRemote remote)
-    //    {
-    //      string className = remote.GetType().Name.ToLower();
-    //      RegisterRemote(remote, className, Utils.DefaultRemoteNameFunc);
-    //    }
-    //
-    //    public static void RegisterRemote(BaseRemote remote, string name)
-    //    {
-    //      RegisterRemote(remote, name, Utils.DefaultRemoteNameFunc);
-    //    }
-    //
-    //    public static void RegisterRemote(BaseRemote remote, string name, RemoteNameFunc remoteNameFunc)
-    //    {
-    //      Dictionary<string, RemoteMethod> m = remote.getRemotesMap();
-    //      foreach (KeyValuePair<string, RemoteMethod> kvp in m)
-    //      {
-    //        var rn = remoteNameFunc(kvp.Key);
-    //        var remoteName = String.Format("{0}.{1}", name, rn);
-    //        if (remotesDict.ContainsKey(remoteName))
-    //        {
-    //          throw new Exception(String.Format("tried to register same remote twice! remote name: {0}", remoteName));
-    //        }
-    //        Logger.Info("registering remote {0}", remoteName);
-    //        remotesDict[remoteName] = kvp.Value;
-    //      }
-    //    }
-    //
+    public static void RegisterRemote(BaseRemote remote)
+    {
+      string className = remote.GetType().Name.ToLower();
+      RegisterRemote(remote, className, Utils.DefaultRemoteNameFunc);
+    }
+
+    public static void RegisterRemote(BaseRemote remote, string name)
+    {
+      RegisterRemote(remote, name, Utils.DefaultRemoteNameFunc);
+    }
+
+    public static void RegisterRemote(BaseRemote remote, string name, RemoteNameFunc remoteNameFunc)
+    {
+      Dictionary<string, RemoteMethod> m = remote.getRemotesMap();
+      foreach (KeyValuePair<string, RemoteMethod> kvp in m)
+      {
+        var rn = remoteNameFunc(kvp.Key);
+        var remoteName = String.Format("{0}.{1}", name, rn);
+        if (remotesDict.ContainsKey(remoteName))
+        {
+          throw new Exception(String.Format("tried to register same remote twice! remote name: {0}", remoteName));
+        }
+        Logger.Info("registering remote {0}", remoteName);
+        remotesDict[remoteName] = kvp.Value;
+      }
+    }
+
+    private static IntPtr ByteArrayToIntPtr(byte[] data)
+    {
+      IntPtr ptr = Marshal.AllocHGlobal(data.Length);
+      Marshal.Copy(data, 0, ptr, data.Length);
+      return ptr;
+    }
+
     //    // TODO can we make this faster with some delegate-fu?
-    //    private static IntPtr RPCCbFunc(RPCReq req)
-    //    {
-    //      byte[] data = req.getReqData();
-    //      Route route = Route.fromString(req.route);
-    //      Logger.Debug("called with route: " + route + " and data: " + Encoding.UTF8.GetString(data));
-    //      var response = new Protos.Response();
-    //      string remoteName = String.Format("{0}.{1}", route.service, route.method);
-    //      IntPtr pnt = Marshal.AllocHGlobal(Marshal.SizeOf(new GoSlice()));
-    //      if (!remotesDict.ContainsKey(remoteName))
-    //      {
-    //        response = GetErrorResponse("PIT-404", String.Format("remote not found! remote name: {0}", remoteName));
-    //        byte[] resBytes = ProtoMessageToByteArray(response);
-    //        Marshal.StructureToPtr(GoSlice.fromSlice<byte>(resBytes), pnt, false);
-    //        return pnt;
-    //      }
-    //      RemoteMethod remote = remotesDict[remoteName];
-    //      Logger.Debug(String.Format("found delegate: {0}", remote));
-    //      try
-    //      {
-    //        var arg = (IMessage)Activator.CreateInstance(remote.argType);
-    //        arg.MergeFrom(new CodedInputStream(data));
-    //        // invoke is slow :/
-    //        var ans = (IMessage)remote.method.Invoke(remote.obj, new object[] { arg });
-    //        byte[] ansBytes = ProtoMessageToByteArray(ans);
-    //        response.Data = ByteString.CopyFrom(ansBytes);
-    //        byte[] resBytes = ProtoMessageToByteArray(response);
-    //        Marshal.StructureToPtr(GoSlice.fromSlice<byte>(resBytes), pnt, false);
-    //        return pnt;
-    //      }
-    //      catch (Exception e)
-    //      {
-    //        response = GetErrorResponse("PIT-500", e.Message);
-    //        byte[] resBytes = ProtoMessageToByteArray(response);
-    //        Marshal.StructureToPtr(GoSlice.fromSlice<byte>(resBytes), pnt, false);
-    //        return pnt;
-    //      }
-    //    }
+    private static IntPtr RPCCbFunc(IntPtr reqPtr)
+    {
+      var req = (RPCReq)Marshal.PtrToStructure(reqPtr, typeof(RPCReq));
+      byte[] data = req.getReqData();
+      Route route = Route.fromString(req.route);
+      Logger.Debug("called with route: " + route.ToString() + " and data: " + Encoding.UTF8.GetString(data));
+      string remoteName = String.Format("{0}.{1}", route.service, route.method);
+      var response = new Protos.Response();
+
+      var res = new RPCRes();
+      IntPtr pnt = Marshal.AllocHGlobal(Marshal.SizeOf(res));
+      if (!remotesDict.ContainsKey(remoteName))
+      {
+        response = GetErrorResponse("PIT-404", String.Format("remote not found! remote name: {0}", remoteName));
+        byte[] responseBytes = ProtoMessageToByteArray(response);
+        res.data = ByteArrayToIntPtr(responseBytes);
+        res.dataLen = responseBytes.Length;
+        Marshal.StructureToPtr(res, pnt, false);
+        return pnt;
+      }
+      RemoteMethod remote = remotesDict[remoteName];
+      Logger.Debug(String.Format("found delegate: {0}", remote));
+      try
+      {
+        var arg = (IMessage)Activator.CreateInstance(remote.argType);
+        arg.MergeFrom(new CodedInputStream(data));
+        // invoke is slow :/
+        var ans = (IMessage)remote.method.Invoke(remote.obj, new object[] { arg });
+        byte[] ansBytes = ProtoMessageToByteArray(ans);
+        response.Data = ByteString.CopyFrom(ansBytes);
+        byte[] responseBytes = ProtoMessageToByteArray(response);
+        res.data = ByteArrayToIntPtr(responseBytes);
+        res.dataLen = responseBytes.Length;
+        Marshal.StructureToPtr(res, pnt, false);
+        return pnt;
+      }
+      catch (Exception e)
+      {
+        response = GetErrorResponse("PIT-500", e.Message);
+        byte[] responseBytes = ProtoMessageToByteArray(response);
+        res.data = ByteArrayToIntPtr(responseBytes);
+        res.dataLen = responseBytes.Length;
+        Marshal.StructureToPtr(res, pnt, false);
+        return pnt;
+      }
+    }
     //
     //    private static T GetProtoMessageFromResponse<T>(RPCRes rpcRes)
     //    {
@@ -237,10 +253,6 @@ namespace Pitaya
     //
     //    [DllImport("libpitaya_cluster", CallingConvention = CallingConvention.Cdecl, EntryPoint = "SetRPCCallback")]
     //    static extern void SetRPCCallbackInternal(IntPtr funcPtr);
-    private static IntPtr RPCCbFunc(IntPtr req)
-    {
-      return IntPtr.Zero;
-    }
 
     public static bool InitDefault(SDConfig sdConfig, NatsConfig natsCfg, Server server)
     {

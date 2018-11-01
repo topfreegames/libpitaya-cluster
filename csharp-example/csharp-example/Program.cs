@@ -48,11 +48,11 @@ namespace PitayaCSharpExample
       //
       //      PitayaCluster.ConfigureJaeger(1.0, GoString.fromString("test-svc"));
       //
-      //      TestRemote tr = new TestRemote();
-      //      PitayaCluster.RegisterRemote(tr);
+      TestRemote tr = new TestRemote();
+      PitayaCluster.RegisterRemote(tr);
       //
       //      // prevent from closing
-      //      Console.ReadKey();
+      Console.ReadKey();
       //
       //      Server sv = PitayaCluster.GetServer(serverId);
       //      Logger.Info("got server with id: {0}", sv.id);
