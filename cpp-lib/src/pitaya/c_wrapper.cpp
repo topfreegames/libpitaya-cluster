@@ -63,8 +63,7 @@ extern "C"
                                          nc->max_reconnection_attempts,
                                          nc->max_pending_msgs);
 
-        Server server =
-            Server(sv->id, sv->type, sv->metadata, sv->hostname, sv->frontend);
+        Server server = Server(sv->id, sv->type, sv->metadata, sv->hostname, sv->frontend);
 
         pinvoke_cb = cb;
         if (pinvoke_cb == NULL) {
@@ -72,7 +71,7 @@ extern "C"
             return false;
         }
         // get configs
-        return pitaya::Cluster::Instance().Init(nats_cfg, server, rpc_cb);
+        return pitaya::Cluster::Instance().Initialize(std::move(nats_cfg), server, rpc_cb);
     }
 
     void tfg_pitc_Terminate() {}

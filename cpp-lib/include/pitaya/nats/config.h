@@ -16,8 +16,6 @@ struct NATSConfig
     int maxReconnectionAttempts;
     int maxPendingMsgs;
 
-    NATSConfig(){};
-
     NATSConfig(const std::string& addr,
                const int requestTimeoutMs,
                const int64_t connectionTimeoutMs,
