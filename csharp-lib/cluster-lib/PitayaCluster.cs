@@ -275,8 +275,33 @@ namespace Pitaya
       return InitDefault(sdConfig, natsCfg, server);
     }
 
+    public static void Shutdown()
+    {
+      ShutdownInternal();
+    }
+
+    public static Nullable<Pitaya.Server> GetServerById(string serverId)
+    {
+      IntPtr serverPtr = GetServerByIdInternal(serverId);
+
+      if (serverPtr == IntPtr.Zero)
+      {
+        Logger.Error("There are no servers with id " + serverId);
+        return null;
+      }
+
+      var server = (Pitaya.Server)Marshal.PtrToStructure(serverPtr, typeof(Pitaya.Server));
+      return server;
+    }
+
     [DllImport("libpitaya_cluster", CallingConvention = CallingConvention.Cdecl, EntryPoint = "tfg_pitc_Initialize")]
     static extern bool InitializeInternal(IntPtr server, IntPtr natsCfg, IntPtr cbPtr);
+
+    [DllImport("libpitaya_cluster", CallingConvention = CallingConvention.Cdecl, EntryPoint = "tfg_pitc_Shutdown")]
+    static extern void ShutdownInternal();
+
+    [DllImport("libpitaya_cluster", CallingConvention = CallingConvention.Cdecl, EntryPoint = "tfg_pitc_GetServerById")]
+    static extern IntPtr GetServerByIdInternal(string serverId);
 
   }
 }
