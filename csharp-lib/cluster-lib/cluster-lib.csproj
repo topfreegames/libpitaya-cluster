@@ -5,6 +5,7 @@
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{5C59D55E-F293-48C3-B95E-758F7EF403C4}</ProjectGuid>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <OutputType>Library</OutputType>
     <RootNamespace>clusterlib</RootNamespace>
     <AssemblyName>cluster-lib</AssemblyName>

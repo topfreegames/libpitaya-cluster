@@ -77,7 +77,7 @@ namespace Pitaya
       this.method = method;
     }
 
-    public static Route fromString(string r)
+    public static Route FromString(string r)
     {
       string[] res = r.Split(new string[] { "." }, StringSplitOptions.None);
       if (res.Length < 3)

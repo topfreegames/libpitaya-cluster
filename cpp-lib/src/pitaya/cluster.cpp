@@ -17,6 +17,7 @@ Cluster::Initialize(nats::NATSConfig&& natsConfig,
                     RPCHandlerFunc rpcServerHandlerFunc)
 {
     _log = spdlog::stdout_color_mt("cluster");
+    _log->set_level(spdlog::level::debug);
     _natsConfig = std::move(natsConfig);
     _server = std::move(server);
     _rpcServerHandlerFunc = rpcServerHandlerFunc;
@@ -75,6 +76,7 @@ Cluster::RPC(const string& server_id,
              std::shared_ptr<MessageLite> arg,
              std::shared_ptr<MessageLite> ret)
 {
+    _log->debug("Calling RPC on server {}", server_id);
     auto sv = _sd->GetServerById(server_id);
     if (!sv) {
         // TODO better error code with constants somewhere
@@ -97,10 +99,13 @@ Cluster::RPC(const string& server_id,
 
     auto res = _rpcClient->Call(sv.value(), std::move(req));
     if (res->has_error()) {
+        _log->debug("Received error calling client rpc: {}", res->error().msg());
         auto err = std::unique_ptr<pitaya::PitayaError>(
             new pitaya::PitayaError(res->error().code(), res->error().msg()));
         return err;
     }
+
+    _log->debug("Successfuly called rpc: {}", res->data());
 
     auto parsed = ret->ParseFromString(res->data());
     if (!parsed) {

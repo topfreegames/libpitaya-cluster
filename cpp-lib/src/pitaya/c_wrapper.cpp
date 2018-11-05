@@ -119,7 +119,7 @@ struct RPCCallResult
 
 typedef MemoryBuffer* (*RpcPinvokeCb)(RPCReq*);
 static RpcPinvokeCb gPinvokeCb;
-static std::shared_ptr<spdlog::logger> gLogger = spdlog::stdout_color_mt("c_wrapper");
+static std::shared_ptr<spdlog::logger> gLogger;
 static void (*gSignalHandler)() = nullptr;
 
 void
@@ -164,6 +164,9 @@ extern "C"
 
     bool tfg_pitc_Initialize(CServer* sv, CNATSConfig* nc, RpcPinvokeCb cb)
     {
+        gLogger = spdlog::stdout_color_mt("c_wrapper");
+        gLogger->set_level(spdlog::level::debug);
+
         NATSConfig natsCfg = NATSConfig(nc->addr,
                                         nc->request_timeout_ms,
                                         nc->connection_timeout_ms,
@@ -209,11 +212,11 @@ extern "C"
                                const char* route,
                                void* data,
                                int dataSize,
-                               MemoryBuffer* outBuf)
+                               MemoryBuffer** outBuf)
     {
-        assert(serverId);
-        assert(route);
-        assert(data);
+        assert(serverId && "server id should not be null");
+        assert(route && "route should not be null");
+        assert((data || (!data && dataSize == 0)) && "data len should be 0 if data is null");
 
         auto msg = new protos::Msg();
         msg->set_data(std::string(reinterpret_cast<char*>(data), dataSize));
@@ -228,24 +231,38 @@ extern "C"
         req->SerializeToArray(buffer.data(), req->ByteSizeLong());
 
         auto res = std::make_shared<protos::Response>();
-        auto err = pitaya::Cluster::Instance().RPC(serverId, route, req, res);
+
+        auto err = (strlen(serverId) == 0)
+                       ? pitaya::Cluster::Instance().RPC(route, req, res)
+                       : pitaya::Cluster::Instance().RPC(serverId, route, req, res);
 
         if (err) {
             gLogger->error("received error on RPC: {}", err->msg);
             return new CPitayaError(err->code, err->msg);
         }
 
-        uint8_t* bin = new uint8_t[res->data().size()];
-        std::memcpy(bin, res->data().data(), res->data().size());
+        size_t size = res->ByteSizeLong();
+        uint8_t* bin = new uint8_t[size];
 
-        outBuf->size = res->data().size();
-        outBuf->data = bin;
+        if (!res->SerializeToArray(bin, size)) {
+            gLogger->error("Error serializing RPC response");
+            // TODO: what should be done here?
+            return nullptr;
+        }
+
+        *outBuf = new MemoryBuffer;
+        (*outBuf)->size = size;
+        (*outBuf)->data = bin;
+
+        gLogger->debug("RPC data length is {}", (*outBuf)->size);
+        gLogger->debug("RPC data is {}", (char*)(*outBuf)->data);
         return nullptr;
     }
 
-    void tfg_pitc_FreeMemoryBuffer(MemoryBuffer* mb)
+    void tfg_pitc_FreeMemoryBuffer(MemoryBuffer* buf)
     {
-        delete[] reinterpret_cast<uint8_t*>(mb->data);
+        delete[] reinterpret_cast<uint8_t*>(buf->data);
+        delete buf;
     }
 
     void tfg_pitc_FreePitayaError(PitayaError* err) { delete err; }

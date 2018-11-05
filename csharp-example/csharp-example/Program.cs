@@ -56,8 +56,15 @@ namespace PitayaCSharpExample
       //
       TestRemote tr = new TestRemote();
       PitayaCluster.RegisterRemote(tr);
+
+      System.Threading.Thread.Sleep(1000);
+
+      var res = PitayaCluster.Rpc<Protos.RPCRes>(Route.FromString("csharp.testremote.remote"), null);
+
+      Console.WriteLine($"Code: {res.Code}");
+      Console.WriteLine($"Msg: {res.Msg}");
       //
-      //      // prevent from closing
+      //      // prevent from closin
 
       // PitayaCluster.RPC();
 
