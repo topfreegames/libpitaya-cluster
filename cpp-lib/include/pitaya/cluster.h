@@ -2,6 +2,7 @@
 #define PITAYA_CLUSTER_H
 
 #include "pitaya.h"
+#include "pitaya/cluster/log_options.h"
 #include "pitaya/nats/config.h"
 #include "pitaya/nats/rpc_client.h"
 #include "pitaya/nats/rpc_server.h"
@@ -34,7 +35,8 @@ public:
         return c;
     }
 
-    bool Initialize(pitaya::nats::NATSConfig&& natsConfig,
+    bool Initialize(nats::NATSConfig&& natsConfig,
+                    const cluster::LogOptions& logOpts,
                     Server server,
                     RPCHandlerFunc rpcServerHandlerFunc);
 
@@ -56,6 +58,7 @@ private:
 
 private:
     std::shared_ptr<spdlog::logger> _log;
+    cluster::LogOptions _logOpts;
     pitaya::nats::NATSConfig _natsConfig;
     Server _server;
     std::unique_ptr<service_discovery::ServiceDiscovery> _sd;

@@ -18,10 +18,12 @@ add_library(pitaya_cluster SHARED
     include/pitaya.h
     include/pitaya/service_discovery.h
     include/pitaya/service_discovery/worker.h
+    include/pitaya/service_discovery/log_options.h
     include/pitaya/nats/rpc_client.h
     include/pitaya/nats/rpc_server.h
     include/pitaya/nats/config.h
     include/pitaya/cluster.h
+    include/pitaya/cluster/log_options.h
     include/pitaya/utils/semaphore.h
     include/pitaya/utils/ticker.h
     include/pitaya/utils/sync_map.h

@@ -1,5 +1,6 @@
 #include "pitaya.h"
 #include "pitaya/cluster.h"
+#include "pitaya/cluster/log_options.h"
 #include "pitaya/service_discovery.h"
 #include "protos/msg.pb.h"
 #include "protos/request.pb.h"
@@ -35,8 +36,10 @@ main()
     Server server("someid", "sometype");
     NATSConfig nats_config("nats://localhost:4222", 1000, 3000, 3, 100);
 
+    cluster::LogOptions logOpts;
+
     bool init_res = pitaya::Cluster::Instance().Initialize(
-        std::move(nats_config), std::move(server), rpc_handler);
+        std::move(nats_config), logOpts, std::move(server), rpc_handler);
 
     try {
         if (!init_res) {

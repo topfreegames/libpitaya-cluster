@@ -371,6 +371,7 @@ Worker::OnWatch(etcd::Response res)
         }
 
         AddServer(std::move(server.value()));
+
         _log->info("Server {} added", res.value.key);
         PrintServers();
     } else if (res.action == "delete") {
@@ -386,11 +387,9 @@ Worker::OnWatch(etcd::Response res)
     }
 }
 
-static string
-GetServerKey(const std::string& serverId, const std::string& serverType)
-{
-    return fmt::format("{}/{}", serverType, serverId);
-}
+// ======================================================
+// Utility functions
+// ======================================================
 
 bool
 Worker::ParseEtcdKey(const string& key, string& serverType, string& serverId)
@@ -406,17 +405,22 @@ Worker::ParseEtcdKey(const string& key, string& serverType, string& serverId)
     return true;
 }
 
-// ======================================================
-// Utility functions
-// ======================================================
+static string
+GetServerKey(const std::string& serverId, const std::string& serverType)
+{
+    return fmt::format("{}/{}", serverType, serverId);
+}
 
 void
 Worker::PrintServer(const Server& server)
 {
+    bool printServerDetails = false;
     _log->debug("Server: {}", GetServerKey(server.id, server.type));
-    _log->debug("  - hostname: {}", server.hostname);
-    _log->debug("  - frontend: {}", server.frontend);
-    _log->debug("  - metadata: {}", server.metadata);
+    if (printServerDetails) {
+        _log->debug("  - hostname: {}", server.hostname);
+        _log->debug("  - frontend: {}", server.frontend);
+        _log->debug("  - metadata: {}", server.metadata);
+    }
 }
 
 static string

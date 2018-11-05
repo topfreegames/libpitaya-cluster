@@ -12,6 +12,7 @@ namespace pitaya {
 
 bool
 Cluster::Initialize(nats::NATSConfig&& natsConfig,
+                    const cluster::LogOptions& logOpts,
                     Server server,
                     RPCHandlerFunc rpcServerHandlerFunc)
 {
