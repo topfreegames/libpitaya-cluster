@@ -10,13 +10,40 @@ using namespace std;
 using namespace pitaya;
 using pitaya::nats::NATSConfig;
 
+static char*
+ConvertToCString(const std::string& str)
+{
+    char* cString = new char[str.size()+1]();
+    std::memcpy(cString, str.data(), str.size());
+    return cString;
+}
+
 struct CServer
 {
-    const char* id = nullptr;
-    const char* type = nullptr;
-    const char* metadata = nullptr;
-    const char* hostname = nullptr;
+    char* id = nullptr;
+    char* type = nullptr;
+    char* metadata = nullptr;
+    char* hostname = nullptr;
     bool frontend = false;
+
+    ~CServer()
+    {
+        delete[] id;
+        delete[] type;
+        delete[] metadata;
+        delete[] hostname;
+    }
+
+    static CServer* FromPitayaServer(const pitaya::Server& pServer)
+    {
+        auto server = new CServer;
+        server->id = ConvertToCString(pServer.id);
+        server->type = ConvertToCString(pServer.type);
+        server->metadata = ConvertToCString(pServer.metadata);
+        server->hostname = ConvertToCString(pServer.hostname);
+        server->frontend = pServer.frontend;
+        return server;
+    }
 };
 
 struct CPitayaError
@@ -26,11 +53,8 @@ struct CPitayaError
 
     CPitayaError(const std::string& codeStr, const std::string& msgStr)
     {
-        code = new char[codeStr.size() + 1]();
-        std::memcpy(code, codeStr.data(), codeStr.size());
-
-        msg = new char[msgStr.size() + 1]();
-        std::memcpy(msg, msgStr.data(), msgStr.size());
+        code = ConvertToCString(codeStr);
+        msg = ConvertToCString(msgStr);
     }
 
     ~CPitayaError()
@@ -122,14 +146,6 @@ RpcCallback(protos::Request req)
     return res;
 }
 
-static const char*
-ConvertToCString(const std::string& str)
-{
-    char* cString = reinterpret_cast<char*>(std::calloc(str.size(), 1));
-    std::memcpy(cString, str.data(), str.size());
-    return cString;
-}
-
 extern "C"
 {
 
@@ -161,27 +177,18 @@ extern "C"
         auto maybeServer =
             pitaya::Cluster::Instance().GetServiceDiscovery().GetServerById(serverId);
 
-        if (maybeServer) {
-            pitaya::Server server = maybeServer.value();
-            CServer* cs = reinterpret_cast<CServer*>(malloc(sizeof(CServer)));
-            cs->frontend = server.frontend;
-            cs->hostname = ConvertToCString(server.hostname);
-            cs->id = ConvertToCString(server.id);
-            cs->type = ConvertToCString(server.type);
-            cs->metadata = ConvertToCString(server.metadata);
-            return cs;
+        if (!maybeServer) {
+            return nullptr;
         }
 
-        return nullptr;
+        pitaya::Server server = maybeServer.value();
+        auto cs = CServer::FromPitayaServer(server);
+        return cs;
     }
 
     void tfg_pitc_FreeServer(CServer* cServer)
     {
-        std::free((void*)cServer->id);
-        std::free((void*)cServer->type);
-        std::free((void*)cServer->metadata);
-        std::free((void*)cServer->hostname);
-        std::free((void*)cServer);
+        delete cServer;
     }
 
     void tfg_pitc_Shutdown() { pitaya::Cluster::Instance().Shutdown(); }
