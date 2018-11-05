@@ -125,10 +125,8 @@ static void (*gSignalHandler)() = nullptr;
 void
 OnSignal(int signum)
 {
-    gLogger->error("OIQWJDOIQJWDOIJQWOIDJQOWIJDOIQWJDOIQJWDOIJQWODIJQWOIDJOQWIJOIQWJDOIJQWDOIJQWOID"
-                   "JQOWIJDOQWIJDOQWIJD");
     if (gSignalHandler) {
-        gLogger->info("Calling c# signal handler");
+        gLogger->info("Calling signal handler");
         gSignalHandler();
     }
 }
@@ -250,10 +248,7 @@ extern "C"
         delete[] reinterpret_cast<uint8_t*>(mb->data);
     }
 
-    void tfg_pitc_FreePitayaError(PitayaError* err)
-    {
-        delete err;
-    }
+    void tfg_pitc_FreePitayaError(PitayaError* err) { delete err; }
 
     void tfg_pitc_OnSignal(void (*signalHandler)())
     {

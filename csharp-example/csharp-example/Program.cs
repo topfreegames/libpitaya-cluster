@@ -25,6 +25,12 @@ namespace PitayaCSharpExample
 
       NatsConfig nc = new NatsConfig("127.0.0.1:4222", 2000, 1000, 3, 100);
 
+      PitayaCluster.onSignalEvent += () =>
+      {
+        PitayaCluster.Shutdown();
+        Environment.Exit(0);
+      };
+
       bool initStatus = PitayaCluster.Init(sdConfig, nc, sv);
       if (!initStatus)
       {
