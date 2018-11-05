@@ -291,7 +291,16 @@ namespace Pitaya
       }
 
       var server = (Pitaya.Server)Marshal.PtrToStructure(serverPtr, typeof(Pitaya.Server));
+      FreeServerInternal(serverPtr);
       return server;
+    }
+
+    public static Pitaya.RpcResult Rpc(string serverId, string route, string data)
+    {
+      IntPtr rpcResultPtr = RpcInternal(serverId, route, data);
+      var res = (Pitaya.RpcResult)Marshal.PtrToStructure(rpcResultPtr, typeof(Pitaya.RpcResult));
+      FreeRpcResultInternal(rpcResultPtr);
+      return res;
     }
 
     [DllImport("libpitaya_cluster", CallingConvention = CallingConvention.Cdecl, EntryPoint = "tfg_pitc_Initialize")]
@@ -303,5 +312,13 @@ namespace Pitaya
     [DllImport("libpitaya_cluster", CallingConvention = CallingConvention.Cdecl, EntryPoint = "tfg_pitc_GetServerById")]
     static extern IntPtr GetServerByIdInternal(string serverId);
 
+    [DllImport("libpitaya_cluster", CallingConvention = CallingConvention.Cdecl, EntryPoint = "tfg_pitc_FreeServer")]
+    static extern void FreeServerInternal(IntPtr serverPtr);
+
+    [DllImport("libpitaya_cluster", CallingConvention = CallingConvention.Cdecl, EntryPoint = "tfg_pitc_RPC")]
+    static extern IntPtr RpcInternal(string serverId, string route, string data);
+
+    [DllImport("libpitaya_cluster", CallingConvention = CallingConvention.Cdecl, EntryPoint = "tfg_pitc_FreeRpcResult")]
+    static extern void FreeRpcResultInternal(IntPtr ptr);
   }
 }

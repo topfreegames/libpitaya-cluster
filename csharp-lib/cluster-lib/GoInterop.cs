@@ -29,6 +29,29 @@ namespace Pitaya
   }
 
   [StructLayout(LayoutKind.Sequential)]
+  public class Error
+  {
+    [MarshalAs(UnmanagedType.LPStr)]
+    public string code;
+    [MarshalAs(UnmanagedType.LPStr)]
+    public string msg;
+  }
+
+  [StructLayout(LayoutKind.Sequential)]
+  public struct RpcResult
+  {
+    [MarshalAs(UnmanagedType.LPStr)]
+    public string data;
+    [MarshalAs(UnmanagedType.LPStruct)]
+    public Error error;
+
+    public bool Ok()
+    {
+      return error == null;
+    }
+  }
+
+  [StructLayout(LayoutKind.Sequential)]
   public struct SDConfig
   {
     [MarshalAs(UnmanagedType.LPStr)]
