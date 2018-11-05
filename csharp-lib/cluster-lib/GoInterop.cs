@@ -38,20 +38,6 @@ namespace Pitaya
   }
 
   [StructLayout(LayoutKind.Sequential)]
-  public struct RpcResult
-  {
-    [MarshalAs(UnmanagedType.LPStr)]
-    public string data;
-    [MarshalAs(UnmanagedType.LPStruct)]
-    public Error error;
-
-    public bool Ok()
-    {
-      return error == null;
-    }
-  }
-
-  [StructLayout(LayoutKind.Sequential)]
   public struct SDConfig
   {
     [MarshalAs(UnmanagedType.LPStr)]
@@ -110,29 +96,28 @@ namespace Pitaya
   [StructLayout(LayoutKind.Sequential)]
   public struct RPCReq
   {
-    public IntPtr data;
-    public int dataLen;
+    [MarshalAs(UnmanagedType.LPStruct)]
+    public MemoryBuffer buffer;
+
     [MarshalAs(UnmanagedType.LPStr)]
     public string route;
 
-    public byte[] getReqData()
+    public byte[] GetReqData()
     {
-      byte[] data = new byte[this.dataLen];
-      Marshal.Copy(this.data, data, 0, this.dataLen);
-      return data;
+      return buffer.GetData();
     }
   }
 
   [StructLayout(LayoutKind.Sequential)]
-  public struct RPCRes
+  public struct MemoryBuffer
   {
     public IntPtr data;
-    public int dataLen;
+    public int size;
 
-    public byte[] getResData()
+    public byte[] GetData()
     {
-      byte[] data = new byte[this.dataLen];
-      Marshal.Copy(this.data, data, 0, this.dataLen);
+      byte[] data = new byte[this.size];
+      Marshal.Copy(this.data, data, 0, this.size);
       return data;
     }
   }

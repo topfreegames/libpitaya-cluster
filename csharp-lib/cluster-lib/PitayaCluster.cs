@@ -13,6 +13,8 @@ namespace Pitaya
     public delegate IntPtr RPCCb(IntPtr req);
     public delegate string RemoteNameFunc(string methodName);
 
+    public delegate void OnSignalFunc();
+
     private static Dictionary<string, RemoteMethod> remotesDict = new Dictionary<string, RemoteMethod>();
 
     public static Protos.Response GetErrorResponse(string code, string msg)
@@ -90,24 +92,24 @@ namespace Pitaya
       return ptr;
     }
 
-    //    // TODO can we make this faster with some delegate-fu?
+    // TODO can we make this faster with some delegate-fu?
     private static IntPtr RPCCbFunc(IntPtr reqPtr)
     {
       var req = (RPCReq)Marshal.PtrToStructure(reqPtr, typeof(RPCReq));
-      byte[] data = req.getReqData();
+      byte[] data = req.GetReqData();
       Route route = Route.fromString(req.route);
       Logger.Debug("called with route: " + route.ToString() + " and data: " + Encoding.UTF8.GetString(data));
       string remoteName = String.Format("{0}.{1}", route.service, route.method);
       var response = new Protos.Response();
 
-      var res = new RPCRes();
+      var res = new MemoryBuffer();
       IntPtr pnt = Marshal.AllocHGlobal(Marshal.SizeOf(res));
       if (!remotesDict.ContainsKey(remoteName))
       {
         response = GetErrorResponse("PIT-404", String.Format("remote not found! remote name: {0}", remoteName));
         byte[] responseBytes = ProtoMessageToByteArray(response);
         res.data = ByteArrayToIntPtr(responseBytes);
-        res.dataLen = responseBytes.Length;
+        res.size = responseBytes.Length;
         Marshal.StructureToPtr(res, pnt, false);
         return pnt;
       }
@@ -123,7 +125,7 @@ namespace Pitaya
         response.Data = ByteString.CopyFrom(ansBytes);
         byte[] responseBytes = ProtoMessageToByteArray(response);
         res.data = ByteArrayToIntPtr(responseBytes);
-        res.dataLen = responseBytes.Length;
+        res.size = responseBytes.Length;
         Marshal.StructureToPtr(res, pnt, false);
         return pnt;
       }
@@ -132,47 +134,22 @@ namespace Pitaya
         response = GetErrorResponse("PIT-500", e.Message);
         byte[] responseBytes = ProtoMessageToByteArray(response);
         res.data = ByteArrayToIntPtr(responseBytes);
-        res.dataLen = responseBytes.Length;
+        res.size = responseBytes.Length;
         Marshal.StructureToPtr(res, pnt, false);
         return pnt;
       }
     }
-    //
-    //    private static T GetProtoMessageFromResponse<T>(RPCRes rpcRes)
-    //    {
-    //      byte[] resData = rpcRes.getResData();
-    //      var response = new Protos.Response();
-    //      response.MergeFrom(new CodedInputStream(resData));
-    //      var res = (IMessage)Activator.CreateInstance(typeof(T));
-    //      res.MergeFrom(new CodedInputStream(response.Data.ToByteArray()));
-    //      Logger.Debug("getProtoMsgFromResponse: got this res {0}", res);
-    //
-    //      return (T)res;
-    //    }
-    //
-    //    public static T RPC<T>(string serverId, Route route, IMessage msg)
-    //    {
-    //      byte[] data = ProtoMessageToByteArray(msg);
-    //      var ret = new RPCRes();
-    //      IntPtr pnt = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(RPCRes)));
-    //      try
-    //      {
-    //        Marshal.StructureToPtr(ret, pnt, false);
-    //        bool success = SendRPC(GoString.fromString(serverId), route, GoSlice.fromSlice<byte>(data), pnt);
-    //        if (success)
-    //        {
-    //          ret = (RPCRes)Marshal.PtrToStructure(pnt, typeof(RPCRes));
-    //          T protoRet = GetProtoMessageFromResponse<T>(ret);
-    //          FreeRPCRes(pnt);
-    //          return protoRet;
-    //        }
-    //        throw new Exception("RPC call failed!");
-    //      }
-    //      finally
-    //      {
-    //        Marshal.FreeHGlobal(pnt);
-    //      }
-    //    }
+
+    private static T GetProtoMessageFromMemoryBuffer<T>(MemoryBuffer rpcRes)
+    {
+      byte[] resData = rpcRes.GetData();
+      var response = new Protos.Response();
+      response.MergeFrom(new CodedInputStream(resData));
+      var res = (IMessage)Activator.CreateInstance(typeof(T));
+      res.MergeFrom(new CodedInputStream(response.Data.ToByteArray()));
+      Logger.Debug("getProtoMsgFromResponse: got this res {0}", res);
+      return (T)res;
+    }
     //
     //    public static T RPC<T>(Route route, IMessage msg)
     //    {
@@ -254,6 +231,13 @@ namespace Pitaya
     //    [DllImport("libpitaya_cluster", CallingConvention = CallingConvention.Cdecl, EntryPoint = "SetRPCCallback")]
     //    static extern void SetRPCCallbackInternal(IntPtr funcPtr);
 
+    private static void OnSignal()
+    {
+      Logger.Info("================================================");
+      Logger.Info("Recevied SIGNAL FROM C++ :D");
+      Logger.Info("================================================");
+    }
+
     public static bool InitDefault(SDConfig sdConfig, NatsConfig natsCfg, Server server)
     {
       IntPtr sdCfgPtr = new StructWrapper(sdConfig);
@@ -262,13 +246,13 @@ namespace Pitaya
 
       PitayaCluster.RPCCb rpcCbFunc = RPCCbFunc;
       IntPtr rpcCbFuncPtr = Marshal.GetFunctionPointerForDelegate(rpcCbFunc);
+      OnSignalInternal(OnSignal);
       return InitializeInternal(serverPtr, natsCfgPtr, rpcCbFuncPtr);
       //if (!InitServerInternal(server) || !SetSDEtcdInternal(sdConfig) || !SetRPCNatsInternal(rpcClientConfig, rpcServerConfig) || !StartInternal())
       //{
       //  throw new Exception("failed to initialize pitaya go module");
       //}
     }
-
 
     public static bool Init(SDConfig sdConfig, NatsConfig natsCfg, Server server)
     {
@@ -295,13 +279,40 @@ namespace Pitaya
       return server;
     }
 
-    public static Pitaya.RpcResult Rpc(string serverId, string route, string data)
+    public static T RPC<T>(string serverId, Route route, IMessage msg)
     {
-      IntPtr rpcResultPtr = RpcInternal(serverId, route, data);
-      var res = (Pitaya.RpcResult)Marshal.PtrToStructure(rpcResultPtr, typeof(Pitaya.RpcResult));
-      FreeRpcResultInternal(rpcResultPtr);
-      return res;
+      byte[] data = ProtoMessageToByteArray(msg);
+      var memBuf = new MemoryBuffer();
+      IntPtr ptr = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(MemoryBuffer)));
+
+      try
+      {
+        Marshal.StructureToPtr(memBuf, ptr, false);
+        IntPtr pitayaErr = RPCInternal(serverId, route.ToString(), data, data.Length, out ptr);
+
+        if (pitayaErr != IntPtr.Zero) // error
+        {
+          var err = (Pitaya.Error)Marshal.PtrToStructure(pitayaErr, typeof(Pitaya.Error));
+          FreePitayaErrorInternal(pitayaErr);
+          throw new Exception(string.Format("RPC call failed: ({0}: {1})", err.code, err.msg));
+        }
+
+        memBuf = (MemoryBuffer)Marshal.PtrToStructure(ptr, typeof(MemoryBuffer));
+        T protoRet = GetProtoMessageFromMemoryBuffer<T>(memBuf);
+        FreeMemoryBufferInternal(ptr);
+        return protoRet;
+      }
+      finally
+      {
+        Marshal.FreeHGlobal(ptr);
+      }
     }
+
+    public static T RPC<T>(Route route, IMessage msg)
+    {
+      return RPC<T>("", route, msg);
+    }
+    
 
     [DllImport("libpitaya_cluster", CallingConvention = CallingConvention.Cdecl, EntryPoint = "tfg_pitc_Initialize")]
     static extern bool InitializeInternal(IntPtr server, IntPtr natsCfg, IntPtr cbPtr);
@@ -316,9 +327,15 @@ namespace Pitaya
     static extern void FreeServerInternal(IntPtr serverPtr);
 
     [DllImport("libpitaya_cluster", CallingConvention = CallingConvention.Cdecl, EntryPoint = "tfg_pitc_RPC")]
-    static extern IntPtr RpcInternal(string serverId, string route, string data);
+    static extern IntPtr RPCInternal(string serverId, string route, byte[] data, int dataSize, out IntPtr buffer);
 
-    [DllImport("libpitaya_cluster", CallingConvention = CallingConvention.Cdecl, EntryPoint = "tfg_pitc_FreeRpcResult")]
-    static extern void FreeRpcResultInternal(IntPtr ptr);
+    [DllImport("libpitaya_cluster", CallingConvention = CallingConvention.Cdecl, EntryPoint = "tfg_pitc_FreeMemoryBuffer")]
+    static extern void FreeMemoryBufferInternal(IntPtr ptr);
+
+    [DllImport("libpitaya_cluster", CallingConvention = CallingConvention.Cdecl, EntryPoint = "tfg_pitc_OnSignal")]
+    static extern void OnSignalInternal(OnSignalFunc ptr);
+
+    [DllImport("libpitaya_cluster", CallingConvention = CallingConvention.Cdecl, EntryPoint = "tfg_pitc_FreePitayaError")]
+    static extern void FreePitayaErrorInternal(IntPtr ptr);
   }
 }

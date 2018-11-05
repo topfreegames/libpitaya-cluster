@@ -13,7 +13,7 @@ using pitaya::nats::NATSConfig;
 static char*
 ConvertToCString(const std::string& str)
 {
-    char* cString = new char[str.size()+1]();
+    char* cString = new char[str.size() + 1]();
     std::memcpy(cString, str.data(), str.size());
     return cString;
 }
@@ -73,35 +73,34 @@ struct CNATSConfig
     int max_pending_msgs;
 };
 
-struct RPCReq
+struct MemoryBuffer
 {
     void* data;
-    int data_len;
+    int size;
+};
+
+struct RPCReq
+{
+    MemoryBuffer buffer;
     const char* route;
 };
 
-struct RPCRes
-{
-    void* data;
-    int data_len;
-};
-
-struct RpcResult
+struct RPCCallResult
 {
     char* data;
     CPitayaError* error;
 
-    static RpcResult* Error(const std::string& code, const std::string& msg)
+    static RPCCallResult* Error(const std::string& code, const std::string& msg)
     {
-        auto res = new RpcResult;
+        auto res = new RPCCallResult;
         res->data = nullptr;
         res->error = new CPitayaError(code, msg);
         return res;
     }
 
-    static RpcResult* Data(const std::string& data)
+    static RPCCallResult* Data(const std::string& data)
     {
-        auto res = new RpcResult;
+        auto res = new RPCCallResult;
         res->data = nullptr;
         res->error = nullptr;
 
@@ -111,16 +110,28 @@ struct RpcResult
         return res;
     }
 
-    ~RpcResult()
+    ~RPCCallResult()
     {
         delete[] data;
         delete error;
     }
 };
 
-typedef RPCRes* (*RpcPinvokeCb)(RPCReq*);
+typedef MemoryBuffer* (*RpcPinvokeCb)(RPCReq*);
 static RpcPinvokeCb gPinvokeCb;
 static std::shared_ptr<spdlog::logger> gLogger = spdlog::stdout_color_mt("c_wrapper");
+static void (*gSignalHandler)() = nullptr;
+
+void
+OnSignal(int signum)
+{
+    gLogger->error("OIQWJDOIQJWDOIJQWOIDJQOWIJDOIQWJDOIQJWDOIJQWODIJQWOIDJOQWIJOIQWJDOIJQWDOIJQWOID"
+                   "JQOWIJDOQWIJDOQWIJD");
+    if (gSignalHandler) {
+        gLogger->info("Calling c# signal handler");
+        gSignalHandler();
+    }
+}
 
 protos::Response
 RpcCallback(protos::Request req)
@@ -128,12 +139,12 @@ RpcCallback(protos::Request req)
     protos::Response res;
 
     RPCReq cReq;
-    cReq.data = (void*)req.msg().data().data();
-    cReq.data_len = req.msg().data().size();
+    cReq.buffer.data = (void*)req.msg().data().data();
+    cReq.buffer.size = req.msg().data().size();
     cReq.route = req.msg().route().c_str();
-    auto pinvokeRes = gPinvokeCb(&cReq);
+    auto memBuf = gPinvokeCb(&cReq);
 
-    bool success = res.ParseFromArray(pinvokeRes->data, pinvokeRes->data_len);
+    bool success = res.ParseFromArray(memBuf->data, memBuf->size);
     if (!success) {
         auto err = new protos::Error();
         err->set_code("PIT-500");
@@ -141,8 +152,8 @@ RpcCallback(protos::Request req)
         res.set_allocated_error(err);
     }
     // TODO hacky, OMG :O - do stress testing to see if this will leak memory
-    free(pinvokeRes->data);
-    free(pinvokeRes);
+    free(memBuf->data);
+    free(memBuf);
     return res;
 }
 
@@ -168,8 +179,14 @@ extern "C"
             gLogger->error("pinvoke callback not set!");
             return false;
         }
+
+        pitaya::cluster::LogOptions logOpts;
+        logOpts.serviceDiscovery.logLeaseKeepAlive = true;
+        logOpts.serviceDiscovery.logServerDetails = false;
+
         // get configs
-        return pitaya::Cluster::Instance().Initialize(std::move(natsCfg), server, RpcCallback);
+        return pitaya::Cluster::Instance().Initialize(
+            std::move(natsCfg), logOpts, server, RpcCallback);
     }
 
     CServer* tfg_pitc_GetServerById(const char* serverId)
@@ -186,21 +203,22 @@ extern "C"
         return cs;
     }
 
-    void tfg_pitc_FreeServer(CServer* cServer)
-    {
-        delete cServer;
-    }
+    void tfg_pitc_FreeServer(CServer* cServer) { delete cServer; }
 
     void tfg_pitc_Shutdown() { pitaya::Cluster::Instance().Shutdown(); }
 
-    RpcResult* tfg_pitc_RPC(const char* serverId, const char* route, const char* data)
+    CPitayaError* tfg_pitc_RPC(const char* serverId,
+                               const char* route,
+                               void* data,
+                               int dataSize,
+                               MemoryBuffer* outBuf)
     {
         assert(serverId);
         assert(route);
         assert(data);
 
         auto msg = new protos::Msg();
-        msg->set_data(data);
+        msg->set_data(std::string(reinterpret_cast<char*>(data), dataSize));
         msg->set_route(route);
 
         auto req = std::make_shared<protos::Request>();
@@ -215,12 +233,34 @@ extern "C"
         auto err = pitaya::Cluster::Instance().RPC(serverId, route, req, res);
 
         if (err) {
-            gLogger->error("received error on RPC: {} ", err->msg);
-            return RpcResult::Error(err->code, err->msg);
+            gLogger->error("received error on RPC: {}", err->msg);
+            return new CPitayaError(err->code, err->msg);
         }
 
-        return RpcResult::Data(res->data());
+        uint8_t* bin = new uint8_t[res->data().size()];
+        std::memcpy(bin, res->data().data(), res->data().size());
+
+        outBuf->size = res->data().size();
+        outBuf->data = bin;
+        return nullptr;
     }
 
-    void tfg_pitc_FreeRpcResult(RpcResult* res) { delete res; }
+    void tfg_pitc_FreeMemoryBuffer(MemoryBuffer* mb)
+    {
+        delete[] reinterpret_cast<uint8_t*>(mb->data);
+    }
+
+    void tfg_pitc_FreePitayaError(PitayaError* err)
+    {
+        delete err;
+    }
+
+    void tfg_pitc_OnSignal(void (*signalHandler)())
+    {
+        gLogger->info("Adding signal handler");
+        gSignalHandler = signalHandler;
+        signal(SIGINT, OnSignal);
+        signal(SIGTERM, OnSignal);
+        signal(SIGKILL, OnSignal);
+    }
 }
