@@ -37,6 +37,8 @@ main()
     NATSConfig nats_config("nats://localhost:4222", 1000, 3000, 3, 100);
 
     cluster::LogOptions logOpts;
+    logOpts.serviceDiscovery.logLeaseKeepAlive = false;
+    logOpts.serviceDiscovery.logServerDetails = false;
 
     bool init_res = pitaya::Cluster::Instance().Initialize(
         std::move(nats_config), logOpts, std::move(server), rpc_handler);
@@ -61,7 +63,7 @@ main()
 
             // TODO initialize should block while not sd not initialized
             sleep(1);
-            auto err = pitaya::Cluster::Instance().RPC("csharp.testremote.remot", req, res);
+            auto err = pitaya::Cluster::Instance().RPC("csharp.testremote.remote", req, res);
             if (err != nullptr) {
                 cout << "received error:" << err->msg << endl;
             } else {

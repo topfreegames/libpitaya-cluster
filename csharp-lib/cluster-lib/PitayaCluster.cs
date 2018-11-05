@@ -236,6 +236,8 @@ namespace Pitaya
       Logger.Info("================================================");
       Logger.Info("Recevied SIGNAL FROM C++ :D");
       Logger.Info("================================================");
+      Shutdown();
+      System.Environment.Exit(0);
     }
 
     public static bool InitDefault(SDConfig sdConfig, NatsConfig natsCfg, Server server)
@@ -248,10 +250,6 @@ namespace Pitaya
       IntPtr rpcCbFuncPtr = Marshal.GetFunctionPointerForDelegate(rpcCbFunc);
       OnSignalInternal(OnSignal);
       return InitializeInternal(serverPtr, natsCfgPtr, rpcCbFuncPtr);
-      //if (!InitServerInternal(server) || !SetSDEtcdInternal(sdConfig) || !SetRPCNatsInternal(rpcClientConfig, rpcServerConfig) || !StartInternal())
-      //{
-      //  throw new Exception("failed to initialize pitaya go module");
-      //}
     }
 
     public static bool Init(SDConfig sdConfig, NatsConfig natsCfg, Server server)

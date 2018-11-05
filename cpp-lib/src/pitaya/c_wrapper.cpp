@@ -181,7 +181,7 @@ extern "C"
         }
 
         pitaya::cluster::LogOptions logOpts;
-        logOpts.serviceDiscovery.logLeaseKeepAlive = true;
+        logOpts.serviceDiscovery.logLeaseKeepAlive = false;
         logOpts.serviceDiscovery.logServerDetails = false;
 
         // get configs

@@ -5,7 +5,7 @@ namespace PitayaCSharpExample
 {
   class TestRemote : BaseRemote
   {
-    public Protos.RPCRes remote(Protos.RPCMsg msg){
+    public Protos.RPCRes remote(Protos.RPCMsg msg) {
       Protos.RPCRes response = new Protos.RPCRes();
       response.Msg = String.Format("hello from csharp :) {0}", System.Guid.NewGuid().ToString());
       response.Code = 200;

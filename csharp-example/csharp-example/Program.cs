@@ -52,6 +52,9 @@ namespace PitayaCSharpExample
       PitayaCluster.RegisterRemote(tr);
       //
       //      // prevent from closing
+
+      // PitayaCluster.RPC();
+
       Console.ReadKey();
       //
       //      Server sv = PitayaCluster.GetServer(serverId);
@@ -71,7 +74,7 @@ namespace PitayaCSharpExample
       //      }
       //
       //      Console.ReadKey();
-      //      PitayaCluster.Shutdown();
+      // PitayaCluster.Shutdown();
       //    }
       //  }
     }
