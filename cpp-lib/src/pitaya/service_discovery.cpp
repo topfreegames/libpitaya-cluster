@@ -32,6 +32,7 @@ ServiceDiscovery::ServiceDiscovery(const Server& server, const string& address)
         throw PitayaException("Server id and type cannot be empty");
     }
 
+    _worker.WaitUntilInitialized();
     _log->set_level(spdlog::level::debug);
 }
 

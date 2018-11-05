@@ -70,6 +70,9 @@ Worker::StartThread()
         }
     }
 
+    // Notify main thread that the worker is initialized.
+    _initPromise.set_value();
+
     for (;;) {
         _semaphore.Wait();
 
@@ -385,6 +388,12 @@ Worker::OnWatch(etcd::Response res)
         _log->info("Server {} deleted", serverId);
         PrintServers();
     }
+}
+
+void
+Worker::WaitUntilInitialized()
+{
+    _initPromise.get_future().wait();
 }
 
 // ======================================================

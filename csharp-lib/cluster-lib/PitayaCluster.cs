@@ -102,14 +102,10 @@ namespace Pitaya
 
       try
       {
-        Logger.Debug("AHA 1");
         var arg = (IMessage)Activator.CreateInstance(remote.argType);
-        Logger.Debug("AHA 2");
         arg.MergeFrom(new CodedInputStream(data));
-        Logger.Debug("AHA 3");
         // invoke is slow :/
         var ans = (IMessage)remote.method.Invoke(remote.obj, new object[] { arg });
-        Logger.Debug("AHA 4");
         byte[] ansBytes = ProtoMessageToByteArray(ans);
         response.Data = ByteString.CopyFrom(ansBytes);
         byte[] responseBytes = ProtoMessageToByteArray(response);

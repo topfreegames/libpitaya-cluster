@@ -61,8 +61,6 @@ main()
             ///// FINISH
             auto res = std::make_shared<protos::Response>();
 
-            // TODO initialize should block while not sd not initialized
-            sleep(1);
             auto err = pitaya::Cluster::Instance().RPC("csharp.testremote.remote", req, res);
             if (err != nullptr) {
                 cout << "received error:" << err->msg << endl;

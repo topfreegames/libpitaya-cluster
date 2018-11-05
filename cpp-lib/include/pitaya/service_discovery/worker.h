@@ -34,6 +34,7 @@ public:
 
     boost::optional<pitaya::Server> GetServerById(const std::string& id);
     std::vector<pitaya::Server> GetServersByType(const std::string& type);
+    void WaitUntilInitialized();
 
 private:
     void Shutdown();
@@ -58,6 +59,8 @@ private:
 
 private:
     bool _workerExiting;
+
+    std::promise<void> _initPromise;
     std::string _etcdPrefix;
     pitaya::Server _server;
     etcd::Client _client;
