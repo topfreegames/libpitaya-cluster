@@ -2,13 +2,16 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="8f0646a9-6f8a-418d-b60b-d7b517c98754" name="Default Changelist" comment="">
+      <change afterPath="$PROJECT_DIR$/../csharp-lib/cluster-lib/PitayaException.cs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../cpp-lib/deps/grpc" beforeDir="false" afterPath="$PROJECT_DIR$/../cpp-lib/deps/grpc" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../cpp-lib/include/pitaya/service_discovery.h" beforeDir="false" afterPath="$PROJECT_DIR$/../cpp-lib/include/pitaya/service_discovery.h" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../cpp-lib/src/pitaya/c_wrapper.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../cpp-lib/src/pitaya/c_wrapper.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../cpp-lib/src/pitaya/service_discovery.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../cpp-lib/src/pitaya/service_discovery.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../cpp-lib/src/pitaya/service_discovery/worker.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../cpp-lib/src/pitaya/service_discovery/worker.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../csharp-example/.idea/.idea.csharp-example/.idea/contentModel.xml" beforeDir="false" afterPath="$PROJECT_DIR$/../csharp-example/.idea/.idea.csharp-example/.idea/contentModel.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../csharp-example/csharp-example/Program.cs" beforeDir="false" afterPath="$PROJECT_DIR$/../csharp-example/csharp-example/Program.cs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../csharp-lib/cluster-lib/GoInterop.cs" beforeDir="false" afterPath="$PROJECT_DIR$/../csharp-lib/cluster-lib/GoInterop.cs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../csharp-lib/cluster-lib/PitayaCluster.cs" beforeDir="false" afterPath="$PROJECT_DIR$/../csharp-lib/cluster-lib/PitayaCluster.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../csharp-lib/cluster-lib/cluster-lib.csproj" beforeDir="false" afterPath="$PROJECT_DIR$/../csharp-lib/cluster-lib/cluster-lib.csproj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/.idea.unity-example/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.unity-example/.idea/workspace.xml" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -20,6 +23,7 @@
     <session id="151444795">
       <usages-collector id="statistics.lifecycle.project">
         <counts>
+          <entry key="project.closed" value="1" />
           <entry key="project.open.time.1" value="1" />
           <entry key="project.opened" value="1" />
         </counts>
@@ -139,12 +143,12 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1541459736845</updated>
-      <workItem from="1541459738146" duration="3290000" />
+      <workItem from="1541459738146" duration="3401000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="3290000" />
+    <option name="totallyTimeSpent" value="3401000" />
   </component>
   <component name="TodoView">
     <todo-panel id="selected-file">
@@ -157,7 +161,6 @@
   </component>
   <component name="ToolWindowManager">
     <frame x="0" y="23" width="1680" height="973" extended-state="6" />
-    <editor active="true" />
     <layout>
       <window_info id="Favorites" side_tool="true" />
       <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.24969475" />

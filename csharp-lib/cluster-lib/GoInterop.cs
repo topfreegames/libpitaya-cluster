@@ -45,17 +45,20 @@ namespace Pitaya
     [MarshalAs(UnmanagedType.LPStr)]
     public string etcdPrefix;
     public int heartbeatTTLSec;
-    public bool logHeartbeat;
-    public bool logServerSync;
-    public bool logServerDetails;
+    public int logHeartbeat;
+    public int logServerSync;
+    public int logServerDetails;
     public int syncServersIntervalSec;
 
-    public SDConfig(string endpoints, string etcdPrefix, int heartbeatTTLSec, bool logHeartbeat, int syncServersIntervalSec)
+    public SDConfig(string endpoints, string etcdPrefix, int heartbeatTTLSec, bool logHeartbeat,
+                    bool logServerSync, bool logServerDetails, int syncServersIntervalSec)
     {
       this.endpoints = endpoints;
       this.etcdPrefix = etcdPrefix;
       this.heartbeatTTLSec = heartbeatTTLSec;
-      this.logHeartbeat = logHeartbeat;
+      this.logHeartbeat = Convert.ToInt32(logHeartbeat);
+      this.logServerSync = Convert.ToInt32(logServerSync);
+      this.logServerDetails = Convert.ToInt32(logServerDetails);
       this.syncServersIntervalSec = syncServersIntervalSec;
     }
   }

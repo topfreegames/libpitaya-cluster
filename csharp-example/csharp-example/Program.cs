@@ -13,10 +13,16 @@ namespace PitayaCSharpExample
 
       string serverId = System.Guid.NewGuid().ToString();
 
-      SDConfig sdConfig = new SDConfig("127.0.0.1:2379", 30, "pitaya/", 30, true, 60);
+      var sdConfig = new SDConfig(
+        endpoints: "http://127.0.0.1:4001",
+        etcdPrefix: "pitaya/",
+        heartbeatTTLSec: 60,
+        logHeartbeat: true,
+        logServerSync: true,
+        logServerDetails: false,
+        syncServersIntervalSec: 30);
 
-
-      Server sv = new Server(
+      var sv = new Server(
          serverId,
          "csharp",
          "{\"ip\":\"127.0.0.1\"}",
@@ -25,33 +31,38 @@ namespace PitayaCSharpExample
 
       NatsConfig nc = new NatsConfig("127.0.0.1:4222", 2000, 1000, 3, 100);
 
-      PitayaCluster.onSignalEvent += () =>
-      {
-        PitayaCluster.Shutdown();
-        Environment.Exit(0);
-      };
+      PitayaCluster cluster = null;
 
-      bool initStatus = PitayaCluster.Init(sdConfig, nc, sv);
-      if (!initStatus)
+      PitayaCluster.AddSignalHandler(() =>
       {
-        throw new Exception("failed to initialize pitaya lib :/");
+        if (cluster != null)
+        {
+          cluster.Dispose();
+        }
+        Environment.Exit(0);
+      });
+
+      try
+      {
+        cluster = new PitayaCluster(sdConfig, nc, sv);
+      }
+      catch (PitayaException exc)
+      {
+        Logger.Error("Failed to create cluster: {0}", exc.Message);
+        Environment.Exit(1);
       }
 
       Logger.Info("pitaya lib initialized successfully :)");
 
       TestRemote tr = new TestRemote();
-      PitayaCluster.RegisterRemote(tr);
+      cluster.RegisterRemote(tr);
 
       System.Threading.Thread.Sleep(1000);
 
-      var res = PitayaCluster.Rpc<Protos.RPCRes>(Route.FromString("csharp.testremote.remote"), null);
+      var res = cluster.Rpc<Protos.RPCRes>(Route.FromString("csharp.testremote.remote"), null);
 
       Console.WriteLine($"Code: {res.Code}");
       Console.WriteLine($"Msg: {res.Msg}");
-      //
-      //      // prevent from closin
-
-      // PitayaCluster.RPC();
 
       Console.ReadKey();
       //

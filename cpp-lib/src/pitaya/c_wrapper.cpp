@@ -94,14 +94,31 @@ struct CPitayaError
     }
 };
 
+struct MemoryBuffer
+{
+    void* data;
+    int size;
+};
+
+struct RPCReq
+{
+    MemoryBuffer buffer;
+    const char* route;
+};
+
+typedef MemoryBuffer* (*RpcPinvokeCb)(RPCReq*);
+static RpcPinvokeCb gPinvokeCb;
+static std::shared_ptr<spdlog::logger> gLogger;
+static void (*gSignalHandler)() = nullptr;
+
 struct CSDConfig
 {
     const char* endpoints;
     const char* etcdPrefix;
     int heartbeatTTLSec;
-    bool logHeartbeat;
-    bool logServerSync;
-    bool logServerDetails;
+    int logHeartbeat;
+    int logServerSync;
+    int logServerDetails;
     int syncServersIntervalSec;
 
     service_discovery::Config ToConfig()
@@ -126,55 +143,6 @@ struct CNATSConfig
     int max_reconnection_attempts;
     int max_pending_msgs;
 };
-
-struct MemoryBuffer
-{
-    void* data;
-    int size;
-};
-
-struct RPCReq
-{
-    MemoryBuffer buffer;
-    const char* route;
-};
-
-struct RPCCallResult
-{
-    char* data;
-    CPitayaError* error;
-
-    static RPCCallResult* Error(const std::string& code, const std::string& msg)
-    {
-        auto res = new RPCCallResult;
-        res->data = nullptr;
-        res->error = new CPitayaError(code, msg);
-        return res;
-    }
-
-    static RPCCallResult* Data(const std::string& data)
-    {
-        auto res = new RPCCallResult;
-        res->data = nullptr;
-        res->error = nullptr;
-
-        res->data = new char[data.size() + 1]();
-        std::memcpy(res->data, data.data(), data.size());
-
-        return res;
-    }
-
-    ~RPCCallResult()
-    {
-        delete[] data;
-        delete error;
-    }
-};
-
-typedef MemoryBuffer* (*RpcPinvokeCb)(RPCReq*);
-static RpcPinvokeCb gPinvokeCb;
-static std::shared_ptr<spdlog::logger> gLogger;
-static void (*gSignalHandler)() = nullptr;
 
 void
 OnSignal(int signum)
@@ -252,7 +220,6 @@ extern "C"
             return nullptr;
         }
 
-        // get configs
         try {
             auto cluster = new pitaya::Cluster(
                sdConfig->ToConfig(), std::move(natsCfg), server, RpcCallback, "c_wrapper");
@@ -348,7 +315,9 @@ extern "C"
 
     void tfg_pitc_OnSignal(void (*signalHandler)())
     {
-        gLogger->info("Adding signal handler");
+        if (gLogger) {
+            gLogger->info("Adding signal handler");
+        }
         gSignalHandler = signalHandler;
         signal(SIGINT, OnSignal);
         signal(SIGTERM, OnSignal);

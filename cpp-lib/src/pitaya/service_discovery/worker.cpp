@@ -19,6 +19,7 @@ static string ServerAsJson(const Server& server);
 static string GetServerKey(const std::string& serverId, const std::string& serverType);
 
 Worker::Worker(const Config& config, pitaya::Server server)
+try
     : _config(config)
     , _workerExiting(false)
     , _server(std::move(server))
@@ -30,7 +31,12 @@ Worker::Worker(const Config& config, pitaya::Server server)
 {
     _log = spdlog::get("service_discovery")->clone("service_discovery_worker");
     _log->set_level(spdlog::level::debug);
+    _log->debug("Will synchronize servers every {} seconds", _config.syncServersIntervalSec.count());
     _workerThread = std::thread(&Worker::StartThread, this);
+}
+catch (const etcd::watch_error& exc)
+{
+    throw PitayaException(fmt::format("Failed to initialize ServiceDiscovery watcher: {}", exc.what()));
 }
 
 Worker::~Worker()
