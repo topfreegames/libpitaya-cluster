@@ -263,13 +263,13 @@ Worker::GetServerFromEtcd(const std::string& serverId, const std::string& server
                 info = res.status.etcd_error_message;
             }
             _log->error("Failed to get key {} from server: {}", serverKey, info);
-            return optional<Server>();
+            return boost::none;
         }
 
         return ParseServer(res.value.value);
     } catch (const std::exception& exc) {
         _log->error("Error in communication with server: {}", exc.what());
-        return optional<Server>();
+        return boost::none;
     }
 }
 
@@ -454,7 +454,7 @@ Worker::ParseServer(const string& jsonStr)
 
     if (!jsonSrv.is_object()) {
         _log->error("Server json is not an object {}", jsonStr);
-        return optional<Server>();
+        return boost::none;
     }
 
     auto server = optional<Server>(Server());

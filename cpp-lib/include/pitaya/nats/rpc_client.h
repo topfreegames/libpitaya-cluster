@@ -18,8 +18,7 @@ public:
     NATSRPCClient(const pitaya::Server& server,
                   const NATSConfig& config,
                   const char* loggerName = nullptr);
-    std::shared_ptr<protos::Response> Call(const pitaya::Server& target,
-                                           const protos::Request& req);
+    protos::Response Call(const pitaya::Server& target, const protos::Request& req);
 
 private:
     std::shared_ptr<spdlog::logger> _log;

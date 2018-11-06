@@ -4,6 +4,7 @@
 
 using namespace pitaya;
 using namespace std;
+using boost::optional;
 
 using google::protobuf::MessageLite;
 
@@ -31,7 +32,7 @@ Cluster::Cluster(service_discovery::Config&& sdConfig,
     _log->info("Cluster correctly initialized");
 }
 
-std::unique_ptr<pitaya::PitayaError>
+optional<PitayaError>
 Cluster::RPC(const string& route, const MessageLite& arg, MessageLite& ret)
 {
     try {
@@ -39,29 +40,23 @@ Cluster::RPC(const string& route, const MessageLite& arg, MessageLite& ret)
         auto sv_type = r.server_type;
         auto servers = _sd->GetServersByType(sv_type);
         if (servers.size() < 1) {
-            auto err = std::unique_ptr<pitaya::PitayaError>(
-                new pitaya::PitayaError("PIT-404", "no servers found for route: " + route));
-            return err;
+            return pitaya::PitayaError("PIT-404", "no servers found for route: " + route);
         }
         pitaya::Server sv = pitaya::utils::RandomServer(servers);
         return RPC(sv.id, route, arg, ret);
     } catch (PitayaException* e) {
-        auto err =
-            std::unique_ptr<pitaya::PitayaError>(new pitaya::PitayaError("PIT-500", e->what()));
-        return err;
+        return pitaya::PitayaError("PIT-500", e->what());
     }
 }
 
-std::unique_ptr<PitayaError>
+optional<PitayaError>
 Cluster::RPC(const string& server_id, const string& route, const MessageLite& arg, MessageLite& ret)
 {
     _log->debug("Calling RPC on server {}", server_id);
     auto sv = _sd->GetServerById(server_id);
     if (!sv) {
         // TODO better error code with constants somewhere
-        auto err = std::unique_ptr<pitaya::PitayaError>(
-            new pitaya::PitayaError("PIT-404", "server not found"));
-        return err;
+        return pitaya::PitayaError("PIT-404", "server not found");
     }
     auto msg = new protos::Msg();
     msg->set_type(protos::MsgType::MsgRequest);
@@ -76,23 +71,19 @@ Cluster::RPC(const string& server_id, const string& route, const MessageLite& ar
     req.set_allocated_msg(msg);
 
     auto res = _rpcClient->Call(sv.value(), req);
-    if (res->has_error()) {
-        _log->debug("Received error calling client rpc: {}", res->error().msg());
-        auto err = std::unique_ptr<pitaya::PitayaError>(
-            new pitaya::PitayaError(res->error().code(), res->error().msg()));
-        return err;
+    if (res.has_error()) {
+        _log->debug("Received error calling client rpc: {}", res.error().msg());
+        return pitaya::PitayaError(res.error().code(), res.error().msg());
     }
 
-    _log->debug("Successfuly called rpc: {}", res->data());
+    _log->debug("Successfuly called rpc: {}", res.data());
 
-    auto parsed = ret.ParseFromString(res->data());
+    auto parsed = ret.ParseFromString(res.data());
     if (!parsed) {
-        auto err = std::unique_ptr<pitaya::PitayaError>(
-            new pitaya::PitayaError("PIT-500", "error parsing protobuf"));
-        return err;
+        return pitaya::PitayaError("PIT-500", "error parsing protobuf");
     }
 
-    return nullptr;
+    return boost::none;
 }
 
 } // namespace pitaya

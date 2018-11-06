@@ -10,6 +10,7 @@
 #include "protos/response.pb.h"
 #include "spdlog/sinks/stdout_color_sinks.h"
 #include "spdlog/spdlog.h"
+#include <boost/optional.hpp>
 #include <google/protobuf/message_lite.h>
 
 namespace pitaya {
@@ -36,12 +37,12 @@ public:
 
     service_discovery::ServiceDiscovery& GetServiceDiscovery() { return *_sd.get(); }
 
-    std::unique_ptr<PitayaError> RPC(const std::string& serverId,
+    boost::optional<PitayaError> RPC(const std::string& serverId,
                                      const std::string& route,
                                      const google::protobuf::MessageLite& arg,
                                      google::protobuf::MessageLite& ret);
 
-    std::unique_ptr<PitayaError> RPC(const std::string& route,
+    boost::optional<PitayaError> RPC(const std::string& route,
                                      const google::protobuf::MessageLite& arg,
                                      google::protobuf::MessageLite& ret);
 

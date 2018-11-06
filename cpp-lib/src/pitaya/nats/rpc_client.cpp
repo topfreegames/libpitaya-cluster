@@ -42,7 +42,7 @@ NATSRPCClient::NATSRPCClient(const Server& server, const NATSConfig& config, con
     }
 }
 
-std::shared_ptr<protos::Response>
+protos::Response
 NATSRPCClient::Call(const pitaya::Server& target, const protos::Request& req)
 {
     auto topic = utils::GetTopicForServer(target);
@@ -53,7 +53,7 @@ NATSRPCClient::Call(const pitaya::Server& target, const protos::Request& req)
     natsMsg* reply = nullptr;
     natsStatus s =
         natsConnection_Request(&reply, nc, topic.c_str(), buffer.data(), buffer.size(), timeout_ms);
-    auto res = std::make_shared<protos::Response>();
+    protos::Response res;
 
     if (s != NATS_OK) {
         auto err = new protos::Error();
@@ -65,9 +65,9 @@ NATSRPCClient::Call(const pitaya::Server& target, const protos::Request& req)
             err->set_code("PIT-500");
             err->set_msg("nats error");
         }
-        res->set_allocated_error(err);
+        res.set_allocated_error(err);
     } else {
-        res->ParseFromArray(natsMsg_GetData(reply), natsMsg_GetDataLength(reply));
+        res.ParseFromArray(natsMsg_GetData(reply), natsMsg_GetDataLength(reply));
     }
 
     natsMsg_Destroy(reply);

@@ -57,8 +57,8 @@ main()
             protos::Response res;
 
             auto err = cluster.RPC("csharp.testremote.remote", req, res);
-            if (err != nullptr) {
-                cout << "received error:" << err->msg << endl;
+            if (err) {
+                cout << "received error:" << err.value().msg << endl;
             } else {
                 cout << "received answer: " << res.data() << endl;
             }
