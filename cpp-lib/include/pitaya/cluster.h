@@ -51,8 +51,8 @@ private:
     pitaya::nats::NATSConfig _natsConfig;
     Server _server;
     std::unique_ptr<service_discovery::ServiceDiscovery> _sd;
-    std::unique_ptr<nats::NATSRPCServer> _rpcSv;
-    std::unique_ptr<nats::NATSRPCClient> _rpcClient;
+    std::unique_ptr<nats::RPCServer> _rpcSv;
+    std::unique_ptr<nats::RPCClient> _rpcClient;
     RPCHandlerFunc _rpcServerHandlerFunc;
 };
 

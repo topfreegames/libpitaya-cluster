@@ -15,16 +15,16 @@ using namespace pitaya;
 namespace pitaya {
 namespace nats {
 
-RPCHandlerFunc NATSRPCServer::handler;
+RPCHandlerFunc RPCServer::handler;
 
-NATSRPCServer::NATSRPCServer(const Server& server,
-                             const NATSConfig& config,
-                             RPCHandlerFunc handler_func,
-                             const char* loggerName)
+RPCServer::RPCServer(const Server& server,
+                     const NATSConfig& config,
+                     RPCHandlerFunc handlerFunc,
+                     const char* loggerName)
     : _log(loggerName ? spdlog::get(loggerName)->clone("nats_rpc_server")
                       : spdlog::stdout_color_mt("nats_rpc_server"))
-    , nc(nullptr)
-    , sub(nullptr)
+    , _nc(nullptr)
+    , _sub(nullptr)
 {
     _log->set_level(spdlog::level::debug);
     natsOptions* opts;
@@ -35,17 +35,17 @@ NATSRPCServer::NATSRPCServer(const Server& server,
     natsOptions_SetTimeout(opts, config.connectionTimeoutMs);
     natsOptions_SetMaxReconnect(opts, config.maxReconnectionAttempts);
     natsOptions_SetMaxPendingMsgs(opts, config.maxPendingMsgs);
-    natsOptions_SetClosedCB(opts, closed_cb, this);
-    natsOptions_SetDisconnectedCB(opts, disconnected_cb, this);
-    natsOptions_SetReconnectedCB(opts, reconnected_cb, this);
-    natsOptions_SetErrorHandler(opts, err_handler, this);
+    natsOptions_SetClosedCB(opts, ClosedCb, this);
+    natsOptions_SetDisconnectedCB(opts, DisconnectedCb, this);
+    natsOptions_SetReconnectedCB(opts, ReconnectedCb, this);
+    natsOptions_SetErrorHandler(opts, ErrHandler, this);
     natsOptions_SetURL(opts, config.natsAddr.c_str());
 
-    handler = handler_func;
-    s = natsConnection_Connect(&nc, opts);
+    handler = handlerFunc;
+    s = natsConnection_Connect(&_nc, opts);
     if (s == NATS_OK) {
         s = natsConnection_Subscribe(
-            &sub, nc, utils::GetTopicForServer(server).c_str(), handle_msg, this);
+            &_sub, _nc, utils::GetTopicForServer(server).c_str(), HandleMsg, this);
     }
     if (s == NATS_OK) {
         _log->info("nats rpc server configured!");
@@ -55,11 +55,11 @@ NATSRPCServer::NATSRPCServer(const Server& server,
 }
 
 void
-NATSRPCServer::handle_msg(natsConnection* nc, natsSubscription* sub, natsMsg* msg, void* closure)
+RPCServer::HandleMsg(natsConnection* nc, natsSubscription* sub, natsMsg* msg, void* closure)
 {
-    auto instance = reinterpret_cast<NATSRPCServer*>(closure);
+    auto instance = reinterpret_cast<RPCServer*>(closure);
 
-    instance->print_sub_status(sub);
+    instance->PrintSubStatus(sub);
 
     auto req = protos::Request();
     auto reply = natsMsg_GetReply(msg);
@@ -79,33 +79,33 @@ NATSRPCServer::handle_msg(natsConnection* nc, natsSubscription* sub, natsMsg* ms
 }
 
 void
-NATSRPCServer::print_sub_status(natsSubscription* subscription)
+RPCServer::PrintSubStatus(natsSubscription* subscription)
 {
-    int pending_msgs;
-    int max_pending_msgs;
-    int64_t delivered_msgs;
-    int64_t dropped_msgs;
+    int pendingMsgs;
+    int maxPendingMsgs;
+    int64_t deliveredMsgs;
+    int64_t droppedMsgs;
     auto s = natsSubscription_GetStats(subscription,
-                                       &pending_msgs,
+                                       &pendingMsgs,
                                        nullptr,
-                                       &max_pending_msgs,
+                                       &maxPendingMsgs,
                                        nullptr,
-                                       &delivered_msgs,
-                                       &dropped_msgs);
+                                       &deliveredMsgs,
+                                       &droppedMsgs);
     _log->debug("nats server status: pending:{}, max_pending:{}, delivered:{}, dropped:{}",
-                pending_msgs,
-                max_pending_msgs,
-                delivered_msgs,
-                dropped_msgs);
+                pendingMsgs,
+                maxPendingMsgs,
+                deliveredMsgs,
+                droppedMsgs);
 }
 
 void
-NATSRPCServer::err_handler(natsConnection* nc,
-                           natsSubscription* subscription,
-                           natsStatus err,
-                           void* closure)
+RPCServer::ErrHandler(natsConnection* nc,
+                      natsSubscription* subscription,
+                      natsStatus err,
+                      void* closure)
 {
-    auto instance = (NATSRPCServer*)closure;
+    auto instance = (RPCServer*)closure;
     if (err == NATS_SLOW_CONSUMER) {
         instance->_log->error("nats runtime error: slow consumer");
     } else {
@@ -114,23 +114,23 @@ NATSRPCServer::err_handler(natsConnection* nc,
 }
 
 void
-NATSRPCServer::disconnected_cb(natsConnection* nc, void* closure)
+RPCServer::DisconnectedCb(natsConnection* nc, void* closure)
 {
-    auto instance = reinterpret_cast<NATSRPCServer*>(closure);
+    auto instance = reinterpret_cast<RPCServer*>(closure);
     instance->_log->error("nats disconnected! will try to reconnect...");
 }
 
 void
-NATSRPCServer::reconnected_cb(natsConnection* nc, void* closure)
+RPCServer::ReconnectedCb(natsConnection* nc, void* closure)
 {
-    auto instance = reinterpret_cast<NATSRPCServer*>(closure);
+    auto instance = reinterpret_cast<RPCServer*>(closure);
     instance->_log->error("nats reconnected!");
 }
 
 void
-NATSRPCServer::closed_cb(natsConnection* nc, void* closure)
+RPCServer::ClosedCb(natsConnection* nc, void* closure)
 {
-    auto instance = reinterpret_cast<NATSRPCServer*>(closure);
+    auto instance = reinterpret_cast<RPCServer*>(closure);
     instance->_log->error("failed all nats reconnection attempts!");
     // TODO: exit server here, but need to do this gracefully
 }

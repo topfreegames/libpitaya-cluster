@@ -138,10 +138,10 @@ struct CSDConfig
 struct CNATSConfig
 {
     const char* addr;
-    int64_t connection_timeout_ms;
-    int request_timeout_ms;
-    int max_reconnection_attempts;
-    int max_pending_msgs;
+    int64_t connectionTimeoutMs;
+    int requestTimeoutMs;
+    int maxReconnectionAttempts;
+    int maxPendingMsgs;
 };
 
 void
@@ -207,10 +207,10 @@ extern "C"
         gLogger = CreateLogger(logHandler);
 
         NATSConfig natsCfg = NATSConfig(nc->addr,
-                                        nc->request_timeout_ms,
-                                        nc->connection_timeout_ms,
-                                        nc->max_reconnection_attempts,
-                                        nc->max_pending_msgs);
+                                        nc->requestTimeoutMs,
+                                        nc->connectionTimeoutMs,
+                                        nc->maxReconnectionAttempts,
+                                        nc->maxPendingMsgs);
 
         Server server(sv->id, sv->type, sv->metadata, sv->hostname, sv->frontend);
 

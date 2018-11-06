@@ -15,11 +15,11 @@ using namespace pitaya;
 namespace pitaya {
 namespace nats {
 
-NATSRPCClient::NATSRPCClient(const Server& server, const NATSConfig& config, const char* loggerName)
+RPCClient::RPCClient(const Server& server, const NATSConfig& config, const char* loggerName)
     : _log(loggerName ? spdlog::get(loggerName)->clone("nats_rpc_client")
                       : spdlog::stdout_color_mt("nats_rpc_client"))
-    , nc(nullptr)
-    , timeout_ms(config.requestTimeoutMs)
+    , _nc(nullptr)
+    , _timeoutMs(config.requestTimeoutMs)
 {
     _log->set_level(spdlog::level::debug);
     natsOptions* opts;
@@ -29,12 +29,12 @@ NATSRPCClient::NATSRPCClient(const Server& server, const NATSConfig& config, con
     }
     natsOptions_SetTimeout(opts, config.connectionTimeoutMs);
     natsOptions_SetMaxReconnect(opts, config.maxReconnectionAttempts);
-    natsOptions_SetClosedCB(opts, closed_cb, this);
-    natsOptions_SetDisconnectedCB(opts, disconnected_cb, this);
-    natsOptions_SetReconnectedCB(opts, reconnected_cb, this);
+    natsOptions_SetClosedCB(opts, ClosedCb, this);
+    natsOptions_SetDisconnectedCB(opts, DisconnectedCb, this);
+    natsOptions_SetReconnectedCB(opts, ReconnectedCb, this);
     natsOptions_SetURL(opts, config.natsAddr.c_str());
 
-    s = natsConnection_Connect(&nc, opts);
+    s = natsConnection_Connect(&_nc, opts);
     if (s != NATS_OK) {
         throw PitayaException("unable to initialize nats server");
     } else {
@@ -43,7 +43,7 @@ NATSRPCClient::NATSRPCClient(const Server& server, const NATSConfig& config, con
 }
 
 protos::Response
-NATSRPCClient::Call(const pitaya::Server& target, const protos::Request& req)
+RPCClient::Call(const pitaya::Server& target, const protos::Request& req)
 {
     auto topic = utils::GetTopicForServer(target);
 
@@ -51,8 +51,8 @@ NATSRPCClient::Call(const pitaya::Server& target, const protos::Request& req)
     req.SerializeToArray(buffer.data(), buffer.size());
 
     natsMsg* reply = nullptr;
-    natsStatus s =
-        natsConnection_Request(&reply, nc, topic.c_str(), buffer.data(), buffer.size(), timeout_ms);
+    natsStatus s = natsConnection_Request(
+        &reply, _nc, topic.c_str(), buffer.data(), buffer.size(), _timeoutMs);
     protos::Response res;
 
     if (s != NATS_OK) {
@@ -75,23 +75,23 @@ NATSRPCClient::Call(const pitaya::Server& target, const protos::Request& req)
 }
 
 void
-NATSRPCClient::disconnected_cb(natsConnection* nc, void* closure)
+RPCClient::DisconnectedCb(natsConnection* nc, void* closure)
 {
-    auto instance = (NATSRPCClient*)closure;
+    auto instance = reinterpret_cast<RPCClient*>(closure);
     instance->_log->error("nats disconnected! will try to reconnect...");
 }
 
 void
-NATSRPCClient::reconnected_cb(natsConnection* nc, void* closure)
+RPCClient::ReconnectedCb(natsConnection* nc, void* closure)
 {
-    auto instance = (NATSRPCClient*)closure;
+    auto instance = reinterpret_cast<RPCClient*>(closure);
     instance->_log->error("nats reconnected!");
 }
 
 void
-NATSRPCClient::closed_cb(natsConnection* nc, void* closure)
+RPCClient::ClosedCb(natsConnection* nc, void* closure)
 {
-    auto instance = (NATSRPCClient*)closure;
+    auto instance = reinterpret_cast<RPCClient*>(closure);
     instance->_log->error("failed all nats reconnection attempts!");
     // TODO: exit server here, but need to do this gracefully
 }

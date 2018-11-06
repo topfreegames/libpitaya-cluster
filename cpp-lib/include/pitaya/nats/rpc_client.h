@@ -12,24 +12,24 @@
 namespace pitaya {
 namespace nats {
 
-class NATSRPCClient
+class RPCClient
 {
 public:
-    NATSRPCClient(const pitaya::Server& server,
-                  const NATSConfig& config,
-                  const char* loggerName = nullptr);
+    RPCClient(const pitaya::Server& server,
+              const NATSConfig& config,
+              const char* loggerName = nullptr);
     protos::Response Call(const pitaya::Server& target, const protos::Request& req);
 
 private:
     std::shared_ptr<spdlog::logger> _log;
-    natsConnection* nc;
-    int timeout_ms;
-    static void closed_cb(natsConnection* nc,
-                          void* closure); // called when all reconnection requests failed
-    static void disconnected_cb(natsConnection* nc,
-                                void* closure); // called when the connection is lost
-    static void reconnected_cb(natsConnection* nc,
-                               void* closure); // called when the connection is repaired
+    natsConnection* _nc;
+    int _timeoutMs;
+    static void ClosedCb(natsConnection* nc,
+                         void* closure); // called when all reconnection requests failed
+    static void DisconnectedCb(natsConnection* nc,
+                               void* closure); // called when the connection is lost
+    static void ReconnectedCb(natsConnection* nc,
+                              void* closure); // called when the connection is repaired
 };
 
 } // namespace nats

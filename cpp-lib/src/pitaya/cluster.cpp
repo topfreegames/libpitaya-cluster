@@ -23,9 +23,9 @@ Cluster::Cluster(service_discovery::Config&& sdConfig,
     _server = std::move(server);
     _rpcServerHandlerFunc = rpcServerHandlerFunc;
 
-    _rpcSv = unique_ptr<nats::NATSRPCServer>(
-        new nats::NATSRPCServer(_server, _natsConfig, _rpcServerHandlerFunc));
-    _rpcClient = unique_ptr<nats::NATSRPCClient>(new nats::NATSRPCClient(_server, _natsConfig));
+    _rpcSv = unique_ptr<nats::RPCServer>(
+        new nats::RPCServer(_server, _natsConfig, _rpcServerHandlerFunc));
+    _rpcClient = unique_ptr<nats::RPCClient>(new nats::RPCClient(_server, _natsConfig));
     _sd = std::unique_ptr<service_discovery::ServiceDiscovery>(
         new service_discovery::ServiceDiscovery(std::move(sdConfig), _server));
 
