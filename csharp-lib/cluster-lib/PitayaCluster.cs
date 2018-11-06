@@ -151,9 +151,7 @@ namespace Pitaya
 
     private static void OnSignal()
     {
-      Logger.Info("================================================");
-      Logger.Info("Recevied SIGNAL FROM C++ :D");
-      Logger.Info("================================================");
+      Logger.Info("Invoking signal handler");
       onSignalEvent?.Invoke();
     }
 
@@ -179,7 +177,9 @@ namespace Pitaya
 
     public void Dispose()
     {
-      DestroyClusterInternal(_clusterPtr);
+      if (_clusterPtr != IntPtr.Zero)
+        DestroyClusterInternal(_clusterPtr);
+      _clusterPtr = IntPtr.Zero;
     }
 
     public Server? GetServerById(string serverId)

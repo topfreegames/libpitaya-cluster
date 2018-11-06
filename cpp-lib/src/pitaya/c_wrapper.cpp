@@ -249,6 +249,7 @@ extern "C"
     void tfg_pitc_DestroyCluster(ClusterPtr ptr)
     {
         delete reinterpret_cast<pitaya::Cluster*>(ptr);
+        gLogger->info("Cluster destroyed");
     }
 
     CPitayaError* tfg_pitc_RPC(ClusterPtr ptr,

@@ -37,9 +37,12 @@ namespace PitayaCSharpExample
       {
         if (cluster != null)
         {
+          Logger.Info("Calling dispose on cluster");
           cluster.Dispose();
+          cluster = null;
         }
-        Environment.Exit(0);
+        Logger.Info("Exiting program");
+        Environment.Exit(1);
       });
 
       try
