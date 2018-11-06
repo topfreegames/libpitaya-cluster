@@ -1,6 +1,5 @@
 #include "pitaya.h"
 #include "pitaya/cluster.h"
-#include "pitaya/cluster/log_options.h"
 #include "pitaya/service_discovery.h"
 #include "protos/msg.pb.h"
 #include "protos/request.pb.h"
@@ -36,17 +35,14 @@ main()
     Server server("someid", "sometype");
     NATSConfig nats_config("nats://localhost:4222", 1000, 3000, 3, 100);
 
-    cluster::LogOptions logOpts;
-    logOpts.serviceDiscovery.logLeaseKeepAlive = false;
-    logOpts.serviceDiscovery.logServerDetails = false;
+    service_discovery::Config sdConfig;
+    sdConfig.endpoints = "http://127.0.0.1:4001";
+    sdConfig.etcdPrefix = "pitaya/servers";
 
-    bool init_res = pitaya::Cluster::Instance().Initialize(
-        std::move(nats_config), logOpts, std::move(server), rpc_handler);
 
     try {
-        if (!init_res) {
-            throw pitaya::PitayaException("error initializing pitaya cluster");
-        }
+        Cluster cluster(std::move(sdConfig), std::move(nats_config), std::move(server), rpc_handler);
+
         {
             ////// INIT
             auto msg = new protos::Msg();
@@ -61,7 +57,7 @@ main()
             ///// FINISH
             auto res = std::make_shared<protos::Response>();
 
-            auto err = pitaya::Cluster::Instance().RPC("csharp.testremote.remote", req, res);
+            auto err = cluster.RPC("csharp.testremote.remote", req, res);
             if (err != nullptr) {
                 cout << "received error:" << err->msg << endl;
             } else {
@@ -69,11 +65,9 @@ main()
             }
         }
 
+        cin >> x;
     } catch (const PitayaException& e) {
         cout << e.what() << endl;
+        cin >> x;
     }
-
-    cin >> x;
-    pitaya::Cluster::Instance().Shutdown();
-    cout << "Shutdown finished!" << endl;
 }

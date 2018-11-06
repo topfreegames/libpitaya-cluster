@@ -39,21 +39,6 @@ namespace PitayaCSharpExample
 
       Logger.Info("pitaya lib initialized successfully :)");
 
-      //      GrpcRPCClientConfig grpcClientConfig = new GrpcRPCClientConfig(5000, 5000, "127.0.0.1:2379", "pitaya/");
-      //      GrpcRPCServerConfig grpcServerConfig = new GrpcRPCServerConfig(5340);
-      //      PitayaCluster.Init(
-      //        sdConfig,
-      //        grpcClientConfig,
-      //        grpcServerConfig,
-      //        new Server(
-      //          serverId,
-      //          "csharp",
-      //          "{\"ip\":\"127.0.0.1\",\"grpc-host\":\"127.0.0.1\",\"grpc-port\":\"5340\"}",
-      //          false)
-      //      );
-      //
-      //      PitayaCluster.ConfigureJaeger(1.0, GoString.fromString("test-svc"));
-      //
       TestRemote tr = new TestRemote();
       PitayaCluster.RegisterRemote(tr);
 

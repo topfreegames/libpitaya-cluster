@@ -42,17 +42,17 @@ namespace Pitaya
   {
     [MarshalAs(UnmanagedType.LPStr)]
     public string endpoints;
-    public int etcdDialTimeoutSec;
     [MarshalAs(UnmanagedType.LPStr)]
     public string etcdPrefix;
     public int heartbeatTTLSec;
     public bool logHeartbeat;
+    public bool logServerSync;
+    public bool logServerDetails;
     public int syncServersIntervalSec;
 
-    public SDConfig(string endpoints, int etcdDialTimeoutSec, string etcdPrefix, int heartbeatTTLSec, bool logHeartbeat, int syncServersIntervalSec)
+    public SDConfig(string endpoints, string etcdPrefix, int heartbeatTTLSec, bool logHeartbeat, int syncServersIntervalSec)
     {
       this.endpoints = endpoints;
-      this.etcdDialTimeoutSec = etcdDialTimeoutSec;
       this.etcdPrefix = etcdPrefix;
       this.heartbeatTTLSec = heartbeatTTLSec;
       this.logHeartbeat = logHeartbeat;

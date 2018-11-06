@@ -2,20 +2,18 @@
 #include "pitaya/utils.h"
 #include "protos/msg.pb.h"
 
-using namespace pitaya::nats;
-using namespace pitaya::service_discovery;
+using namespace pitaya;
 using namespace std;
 
 using google::protobuf::MessageLite;
 
 namespace pitaya {
 
-bool
-Cluster::Initialize(nats::NATSConfig&& natsConfig,
-                    const cluster::LogOptions& logOpts,
-                    Server server,
-                    RPCHandlerFunc rpcServerHandlerFunc,
-                    const char* loggerName)
+Cluster::Cluster(service_discovery::Config&& sdConfig,
+                 nats::NATSConfig&& natsConfig,
+                 Server server,
+                 RPCHandlerFunc rpcServerHandlerFunc,
+                 const char* loggerName)
 {
     _log =
         loggerName ? spdlog::get(loggerName)->clone("cluster") : spdlog::stdout_color_mt("cluster");
@@ -24,31 +22,13 @@ Cluster::Initialize(nats::NATSConfig&& natsConfig,
     _server = std::move(server);
     _rpcServerHandlerFunc = rpcServerHandlerFunc;
 
-    try {
-        _rpcSv = unique_ptr<nats::NATSRPCServer>(
-            new nats::NATSRPCServer(_server, _natsConfig, _rpcServerHandlerFunc));
-        _rpcClient = unique_ptr<NATSRPCClient>(new NATSRPCClient(_server, _natsConfig));
-        _sd = std::unique_ptr<ServiceDiscovery>(
-            new ServiceDiscovery(_server, "http://127.0.0.1:4001"));
+    _rpcSv = unique_ptr<nats::NATSRPCServer>(
+        new nats::NATSRPCServer(_server, _natsConfig, _rpcServerHandlerFunc));
+    _rpcClient = unique_ptr<nats::NATSRPCClient>(new nats::NATSRPCClient(_server, _natsConfig));
+    _sd = std::unique_ptr<service_discovery::ServiceDiscovery>(
+           new service_discovery::ServiceDiscovery(std::move(sdConfig), _server));
 
-        _log->info("Cluster correctly initialized");
-        return true;
-    } catch (PitayaException* e) {
-        _log->error("error initializing cluster: {}", e->what());
-        return false;
-    }
-}
-
-void
-Cluster::Shutdown()
-{
-    _log->info("Shutting cluster down");
-    // Free all pointers
-    _sd.reset();
-    _rpcSv.reset();
-    _rpcClient.reset();
-    _rpcServerHandlerFunc = nullptr;
-    _log.reset();
+    _log->info("Cluster correctly initialized");
 }
 
 std::unique_ptr<pitaya::PitayaError>

@@ -18,17 +18,15 @@ namespace service_discovery {
 static string ServerAsJson(const Server& server);
 static string GetServerKey(const std::string& serverId, const std::string& serverType);
 
-Worker::Worker(const string& address, const string& etcdPrefix, pitaya::Server server)
-    : _workerExiting(false)
-    , _etcdPrefix(etcdPrefix)
+Worker::Worker(const Config& config, pitaya::Server server)
+    : _config(config)
+    , _workerExiting(false)
     , _server(std::move(server))
-    , _client(address)
-    , _watcher(address, _etcdPrefix, std::bind(&Worker::OnWatch, this, _1))
-    , _leaseTTL(60s)
+    , _client(config.endpoints)
+    , _watcher(config.endpoints, config.etcdPrefix, std::bind(&Worker::OnWatch, this, _1))
     , _leaseKeepAlive(_client)
     , _numKeepAliveRetriesLeft(3)
-    , _syncServersInterval(20s)
-    , _syncServersTicker(_syncServersInterval, std::bind(&Worker::SyncServers, this))
+    , _syncServersTicker(config.syncServersIntervalSec, std::bind(&Worker::SyncServers, this))
 {
     _log = spdlog::get("service_discovery")->clone("service_discovery_worker");
     _log->set_level(spdlog::level::debug);
@@ -145,7 +143,7 @@ Worker::Bootstrap()
 etcdv3::V3Status
 Worker::GrantLease()
 {
-    etcd::Response res = _client.leasegrant(_leaseTTL.count()).get();
+    etcd::Response res = _client.leasegrant(_config.heartbeatTTLSec.count()).get();
     if (!res.is_ok()) {
         return res.status;
     }
@@ -189,7 +187,7 @@ Worker::BootstrapServer(const Server& server)
 etcdv3::V3Status
 Worker::AddServerToEtcd(const Server& server)
 {
-    string key = fmt::format("{}/{}", _etcdPrefix, GetServerKey(server.id, server.type));
+    string key = fmt::format("{}/{}", _config.etcdPrefix, GetServerKey(server.id, server.type));
     etcd::Response res = _client.set(key, ServerAsJson(server), _leaseId).get();
     return res.status;
 }
@@ -209,7 +207,7 @@ Worker::SyncServers()
 {
     _log->debug("Will synchronize servers");
 
-    etcd::Response res = _client.ls(_etcdPrefix).get();
+    etcd::Response res = _client.ls(_config.etcdPrefix).get();
     if (!res.is_ok()) {
         _log->error("Error synchronizing servers");
         return;
@@ -248,7 +246,7 @@ Worker::SyncServers()
 optional<pitaya::Server>
 Worker::GetServerFromEtcd(const std::string& serverId, const std::string& serverType)
 {
-    auto serverKey = fmt::format("{}/{}", _etcdPrefix, GetServerKey(serverId, serverType));
+    auto serverKey = fmt::format("{}/{}", _config.etcdPrefix, GetServerKey(serverId, serverType));
 
     try {
         etcd::Response res = _client.get(serverKey).get();

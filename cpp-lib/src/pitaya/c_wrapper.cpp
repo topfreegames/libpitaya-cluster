@@ -4,6 +4,7 @@
 #include "spdlog/logger.h"
 #include "spdlog/sinks/base_sink.h"
 #include "spdlog/sinks/stdout_color_sinks.h"
+#include <chrono>
 #include <assert.h>
 #include <boost/optional.hpp>
 
@@ -90,6 +91,30 @@ struct CPitayaError
     {
         delete[] code;
         delete[] msg;
+    }
+};
+
+struct CSDConfig
+{
+    const char* endpoints;
+    const char* etcdPrefix;
+    int heartbeatTTLSec;
+    bool logHeartbeat;
+    bool logServerSync;
+    bool logServerDetails;
+    int syncServersIntervalSec;
+
+    service_discovery::Config ToConfig()
+    {
+        service_discovery::Config config;
+        config.endpoints = std::string(endpoints);
+        config.etcdPrefix = std::string(etcdPrefix);
+        config.heartbeatTTLSec = std::chrono::seconds(heartbeatTTLSec);
+        config.logHeartbeat = logHeartbeat;
+        config.logServerSync = logServerSync;
+        config.logServerDetails = logServerDetails;
+        config.syncServersIntervalSec = std::chrono::seconds(syncServersIntervalSec);
+        return config;
     }
 };
 
@@ -200,13 +225,16 @@ CreateLogger(void (*logHandler)(const char*))
     return logger;
 }
 
+using ClusterPtr = void*;
+
 extern "C"
 {
 
-    bool tfg_pitc_Initialize(CServer* sv,
-                             CNATSConfig* nc,
-                             RpcPinvokeCb cb,
-                             void (*logHandler)(const char*))
+    ClusterPtr tfg_pitc_NewCluster(CServer* sv,
+                                   CSDConfig* sdConfig,
+                                   CNATSConfig* nc,
+                                   RpcPinvokeCb cb,
+                                   void (*logHandler)(const char*))
     {
         gLogger = CreateLogger(logHandler);
 
@@ -221,22 +249,24 @@ extern "C"
         gPinvokeCb = cb;
         if (gPinvokeCb == nullptr) {
             gLogger->error("pinvoke callback not set!");
-            return false;
+            return nullptr;
         }
 
-        pitaya::cluster::LogOptions logOpts;
-        logOpts.serviceDiscovery.logLeaseKeepAlive = false;
-        logOpts.serviceDiscovery.logServerDetails = false;
-
         // get configs
-        return pitaya::Cluster::Instance().Initialize(
-            std::move(natsCfg), logOpts, server, RpcCallback, "c_wrapper");
+        try {
+            auto cluster = new pitaya::Cluster(
+               sdConfig->ToConfig(), std::move(natsCfg), server, RpcCallback, "c_wrapper");
+            return reinterpret_cast<ClusterPtr>(cluster);
+        } catch (const PitayaException& exc) {
+            gLogger->error("Failed to create cluster instance: {}", exc.what());
+            return nullptr;
+        }
     }
 
-    CServer* tfg_pitc_GetServerById(const char* serverId)
+    CServer* tfg_pitc_GetServerById(ClusterPtr ptr, const char* serverId)
     {
-        auto maybeServer =
-            pitaya::Cluster::Instance().GetServiceDiscovery().GetServerById(serverId);
+        auto cluster = reinterpret_cast<pitaya::Cluster*>(ptr);
+        auto maybeServer = cluster->GetServiceDiscovery().GetServerById(serverId);
 
         if (!maybeServer) {
             return nullptr;
@@ -249,9 +279,13 @@ extern "C"
 
     void tfg_pitc_FreeServer(CServer* cServer) { delete cServer; }
 
-    void tfg_pitc_Shutdown() { pitaya::Cluster::Instance().Shutdown(); }
+    void tfg_pitc_DestroyCluster(ClusterPtr ptr)
+    {
+        delete reinterpret_cast<pitaya::Cluster*>(ptr);
+    }
 
-    CPitayaError* tfg_pitc_RPC(const char* serverId,
+    CPitayaError* tfg_pitc_RPC(ClusterPtr ptr,
+                               const char* serverId,
                                const char* route,
                                void* data,
                                int dataSize,
@@ -260,6 +294,8 @@ extern "C"
         assert(serverId && "server id should not be null");
         assert(route && "route should not be null");
         assert((data || (!data && dataSize == 0)) && "data len should be 0 if data is null");
+
+        auto cluster = reinterpret_cast<pitaya::Cluster*>(ptr);
 
         auto msg = new protos::Msg();
         msg->set_data(std::string(reinterpret_cast<char*>(data), dataSize));
@@ -276,8 +312,8 @@ extern "C"
         auto res = std::make_shared<protos::Response>();
 
         auto err = (strlen(serverId) == 0)
-                       ? pitaya::Cluster::Instance().RPC(route, req, res)
-                       : pitaya::Cluster::Instance().RPC(serverId, route, req, res);
+                       ? cluster->RPC(route, req, res)
+                       : cluster->RPC(serverId, route, req, res);
 
         if (err) {
             gLogger->error("received error on RPC: {}", err->msg);

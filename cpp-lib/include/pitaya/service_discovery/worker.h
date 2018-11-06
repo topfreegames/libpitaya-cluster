@@ -7,6 +7,7 @@
 #include "pitaya/utils/sync_deque.h"
 #include "pitaya/utils/sync_map.h"
 #include "pitaya/utils/ticker.h"
+#include "pitaya/service_discovery/config.h"
 #include "spdlog/spdlog.h"
 #include <boost/optional.hpp>
 #include <chrono>
@@ -29,7 +30,7 @@ enum class JobInfo
 class Worker
 {
 public:
-    Worker(const std::string& etcdAddress, const std::string& etcdPrefix, pitaya::Server server);
+    Worker(const Config& config, pitaya::Server server);
     ~Worker();
 
     boost::optional<pitaya::Server> GetServerById(const std::string& id);
@@ -58,10 +59,10 @@ private:
     boost::optional<pitaya::Server> ParseServer(const std::string& jsonStr);
 
 private:
+    Config _config;
     bool _workerExiting;
 
     std::promise<void> _initPromise;
-    std::string _etcdPrefix;
     pitaya::Server _server;
     etcd::Client _client;
     etcd::Watcher _watcher;
@@ -69,11 +70,9 @@ private:
     std::shared_ptr<spdlog::logger> _log;
     std::thread _workerThread;
 
-    std::chrono::seconds _leaseTTL;
     LeaseKeepAlive _leaseKeepAlive;
     int _numKeepAliveRetriesLeft;
 
-    std::chrono::seconds _syncServersInterval;
     utils::Ticker _syncServersTicker;
 
     utils::Semaphore _semaphore;

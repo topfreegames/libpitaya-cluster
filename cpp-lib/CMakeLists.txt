@@ -27,16 +27,15 @@ add_library(pitaya_cluster ${LIB_TYPE}
     include/pitaya.h
     include/pitaya/service_discovery.h
     include/pitaya/service_discovery/worker.h
-    include/pitaya/service_discovery/log_options.h
     include/pitaya/nats/rpc_client.h
     include/pitaya/nats/rpc_server.h
     include/pitaya/nats/config.h
     include/pitaya/cluster.h
-    include/pitaya/cluster/log_options.h
     include/pitaya/utils/semaphore.h
     include/pitaya/utils/ticker.h
     include/pitaya/utils/sync_map.h
     include/pitaya/utils/sync_deque.h
+    include/pitaya/service_discovery/config.h
     include/pitaya/service_discovery/lease_keep_alive.h
     src/pitaya/service_discovery.cpp
     src/pitaya/service_discovery/worker.cpp

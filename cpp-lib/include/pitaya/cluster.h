@@ -2,7 +2,6 @@
 #define PITAYA_CLUSTER_H
 
 #include "pitaya.h"
-#include "pitaya/cluster/log_options.h"
 #include "pitaya/nats/config.h"
 #include "pitaya/nats/rpc_client.h"
 #include "pitaya/nats/rpc_server.h"
@@ -29,19 +28,11 @@ struct PitayaError
 class Cluster
 {
 public:
-    static Cluster& Instance()
-    {
-        static Cluster c;
-        return c;
-    }
-
-    bool Initialize(nats::NATSConfig&& natsConfig,
-                    const cluster::LogOptions& logOpts,
-                    Server server,
-                    RPCHandlerFunc rpcServerHandlerFunc,
-                    const char* loggerName = nullptr);
-
-    void Shutdown();
+    Cluster(service_discovery::Config&& sdConfig,
+            nats::NATSConfig&& natsConfig,
+            Server server,
+            RPCHandlerFunc rpcServerHandlerFunc,
+            const char* loggerName = nullptr);
 
     service_discovery::ServiceDiscovery& GetServiceDiscovery() { return *_sd.get(); }
 
@@ -55,11 +46,7 @@ public:
                                      std::shared_ptr<google::protobuf::MessageLite> ret);
 
 private:
-    Cluster() = default;
-
-private:
     std::shared_ptr<spdlog::logger> _log;
-    cluster::LogOptions _logOpts;
     pitaya::nats::NATSConfig _natsConfig;
     Server _server;
     std::unique_ptr<service_discovery::ServiceDiscovery> _sd;

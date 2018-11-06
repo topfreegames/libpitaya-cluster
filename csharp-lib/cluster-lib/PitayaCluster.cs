@@ -157,7 +157,7 @@ namespace Pitaya
       PitayaCluster.RPCCb rpcCbFunc = RPCCbFunc;
       IntPtr rpcCbFuncPtr = Marshal.GetFunctionPointerForDelegate(rpcCbFunc);
       IntPtr logFuncPtr = logHandler != null ? Marshal.GetFunctionPointerForDelegate(logHandler) : IntPtr.Zero;
-      bool success = InitializeInternal(serverPtr, natsCfgPtr, rpcCbFuncPtr, logFuncPtr);
+      bool success = InitializeInternal(serverPtr, sdCfgPtr, natsCfgPtr, rpcCbFuncPtr, logFuncPtr);
       OnSignalInternal(OnSignal);
       return success;
     }
@@ -221,7 +221,7 @@ namespace Pitaya
 
 
     [DllImport("libpitaya_cluster", CallingConvention = CallingConvention.Cdecl, EntryPoint = "tfg_pitc_Initialize")]
-    private static extern bool InitializeInternal(IntPtr server, IntPtr natsCfg, IntPtr cbPtr, IntPtr logHandler);
+    private static extern unsafe bool InitializeInternal(IntPtr server, IntPtr sdConfig, IntPtr natsCfg, IntPtr cbPtr, IntPtr logHandler);
 
     [DllImport("libpitaya_cluster", CallingConvention = CallingConvention.Cdecl, EntryPoint = "tfg_pitc_Shutdown")]
     private static extern void ShutdownInternal();
