@@ -19,7 +19,6 @@ NATSRPCClient::NATSRPCClient(const Server& server, const NATSConfig& config, con
     : _log(loggerName ? spdlog::get(loggerName)->clone("nats_rpc_client")
                       : spdlog::stdout_color_mt("nats_rpc_client"))
     , nc(nullptr)
-//    , sub(nullptr)
     , timeout_ms(config.requestTimeoutMs)
 {
     _log->set_level(spdlog::level::debug);
@@ -44,12 +43,12 @@ NATSRPCClient::NATSRPCClient(const Server& server, const NATSConfig& config, con
 }
 
 std::shared_ptr<protos::Response>
-NATSRPCClient::Call(const pitaya::Server& target, std::unique_ptr<protos::Request> req)
+NATSRPCClient::Call(const pitaya::Server& target, const protos::Request& req)
 {
     auto topic = utils::GetTopicForServer(target);
 
-    std::vector<uint8_t> buffer(req->ByteSizeLong());
-    req->SerializeToArray(buffer.data(), buffer.size());
+    std::vector<uint8_t> buffer(req.ByteSizeLong());
+    req.SerializeToArray(buffer.data(), buffer.size());
 
     natsMsg* reply = nullptr;
     natsStatus s =

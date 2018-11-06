@@ -32,9 +32,7 @@ Cluster::Cluster(service_discovery::Config&& sdConfig,
 }
 
 std::unique_ptr<pitaya::PitayaError>
-Cluster::RPC(const string& route,
-             std::shared_ptr<MessageLite> arg,
-             std::shared_ptr<MessageLite> ret)
+Cluster::RPC(const string& route, const MessageLite& arg, MessageLite& ret)
 {
     try {
         auto r = pitaya::Route(route);
@@ -55,10 +53,7 @@ Cluster::RPC(const string& route,
 }
 
 std::unique_ptr<PitayaError>
-Cluster::RPC(const string& server_id,
-             const string& route,
-             std::shared_ptr<MessageLite> arg,
-             std::shared_ptr<MessageLite> ret)
+Cluster::RPC(const string& server_id, const string& route, const MessageLite& arg, MessageLite& ret)
 {
     _log->debug("Calling RPC on server {}", server_id);
     auto sv = _sd->GetServerById(server_id);
@@ -72,15 +67,15 @@ Cluster::RPC(const string& server_id,
     msg->set_type(protos::MsgType::MsgRequest);
     msg->set_route(route.c_str());
 
-    std::vector<uint8_t> buffer(arg->ByteSizeLong());
-    arg->SerializeToArray(buffer.data(), buffer.size());
+    std::vector<uint8_t> buffer(arg.ByteSizeLong());
+    arg.SerializeToArray(buffer.data(), buffer.size());
     msg->set_data(std::string((char*)buffer.data(), buffer.size()));
 
-    auto req = std::unique_ptr<protos::Request>(new protos::Request());
-    req->set_type(protos::RPCType::User);
-    req->set_allocated_msg(msg);
+    protos::Request req;
+    req.set_type(protos::RPCType::User);
+    req.set_allocated_msg(msg);
 
-    auto res = _rpcClient->Call(sv.value(), std::move(req));
+    auto res = _rpcClient->Call(sv.value(), req);
     if (res->has_error()) {
         _log->debug("Received error calling client rpc: {}", res->error().msg());
         auto err = std::unique_ptr<pitaya::PitayaError>(
@@ -90,7 +85,7 @@ Cluster::RPC(const string& server_id,
 
     _log->debug("Successfuly called rpc: {}", res->data());
 
-    auto parsed = ret->ParseFromString(res->data());
+    auto parsed = ret.ParseFromString(res->data());
     if (!parsed) {
         auto err = std::unique_ptr<pitaya::PitayaError>(
             new pitaya::PitayaError("PIT-500", "error parsing protobuf"));

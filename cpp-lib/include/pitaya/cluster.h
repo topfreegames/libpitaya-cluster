@@ -38,12 +38,12 @@ public:
 
     std::unique_ptr<PitayaError> RPC(const std::string& serverId,
                                      const std::string& route,
-                                     std::shared_ptr<google::protobuf::MessageLite> arg,
-                                     std::shared_ptr<google::protobuf::MessageLite> ret);
+                                     const google::protobuf::MessageLite& arg,
+                                     google::protobuf::MessageLite& ret);
 
     std::unique_ptr<PitayaError> RPC(const std::string& route,
-                                     std::shared_ptr<google::protobuf::MessageLite> arg,
-                                     std::shared_ptr<google::protobuf::MessageLite> ret);
+                                     const google::protobuf::MessageLite& arg,
+                                     google::protobuf::MessageLite& ret);
 
 private:
     std::shared_ptr<spdlog::logger> _log;

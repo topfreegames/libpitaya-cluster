@@ -269,15 +269,15 @@ extern "C"
         msg->set_data(std::string(reinterpret_cast<char*>(data), dataSize));
         msg->set_route(route);
 
-        auto req = std::make_shared<protos::Request>();
-        req->set_allocated_msg(msg);
+        protos::Request req;
+        req.set_allocated_msg(msg);
 
         std::vector<uint8_t> buffer;
-        buffer.resize(req->ByteSizeLong());
+        buffer.resize(req.ByteSizeLong());
 
-        req->SerializeToArray(buffer.data(), req->ByteSizeLong());
+        req.SerializeToArray(buffer.data(), req.ByteSizeLong());
 
-        auto res = std::make_shared<protos::Response>();
+        protos::Response res;
 
         auto err = (strlen(serverId) == 0) ? cluster->RPC(route, req, res)
                                            : cluster->RPC(serverId, route, req, res);
@@ -287,10 +287,10 @@ extern "C"
             return new CPitayaError(err->code, err->msg);
         }
 
-        size_t size = res->ByteSizeLong();
+        size_t size = res.ByteSizeLong();
         uint8_t* bin = new uint8_t[size];
 
-        if (!res->SerializeToArray(bin, size)) {
+        if (!res.SerializeToArray(bin, size)) {
             gLogger->error("Error serializing RPC response");
             // TODO: what should be done here?
             return nullptr;

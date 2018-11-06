@@ -19,12 +19,11 @@ public:
                   const NATSConfig& config,
                   const char* loggerName = nullptr);
     std::shared_ptr<protos::Response> Call(const pitaya::Server& target,
-                                           std::unique_ptr<protos::Request> req);
+                                           const protos::Request& req);
 
 private:
     std::shared_ptr<spdlog::logger> _log;
     natsConnection* nc;
-//    natsSubscription* sub;
     int timeout_ms;
     static void closed_cb(natsConnection* nc,
                           void* closure); // called when all reconnection requests failed

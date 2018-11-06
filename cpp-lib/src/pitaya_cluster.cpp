@@ -49,19 +49,18 @@ main()
             msg->set_data("helloww");
             msg->set_route("someroute");
             /////
-            auto req = std::make_shared<protos::Request>();
-            req->set_allocated_msg(msg);
-            size_t size = req->ByteSizeLong();
-            void* buffer = malloc(size);
-            req->SerializeToArray(buffer, size);
+            protos::Request req;
+            req.set_allocated_msg(msg);
+            std::vector<uint8_t> buffer(req.ByteSizeLong());
+            req.SerializeToArray(buffer.data(), buffer.size());
             ///// FINISH
-            auto res = std::make_shared<protos::Response>();
+            protos::Response res;
 
             auto err = cluster.RPC("csharp.testremote.remote", req, res);
             if (err != nullptr) {
                 cout << "received error:" << err->msg << endl;
             } else {
-                cout << "received answer: " << res->data() << endl;
+                cout << "received answer: " << res.data() << endl;
             }
         }
 
