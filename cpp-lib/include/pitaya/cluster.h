@@ -38,7 +38,8 @@ public:
     bool Initialize(nats::NATSConfig&& natsConfig,
                     const cluster::LogOptions& logOpts,
                     Server server,
-                    RPCHandlerFunc rpcServerHandlerFunc);
+                    RPCHandlerFunc rpcServerHandlerFunc,
+                    const char* loggerName = nullptr);
 
     void Shutdown();
 

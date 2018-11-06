@@ -15,6 +15,8 @@ namespace Pitaya
 
     public delegate void OnSignalFunc();
 
+    public delegate void LogHandler(string msg);
+
     private static Dictionary<string, RemoteMethod> remotesDict = new Dictionary<string, RemoteMethod>();
 
     public static Action onSignalEvent;
@@ -146,7 +148,7 @@ namespace Pitaya
         onSignalEvent();
     }
 
-    public static bool InitDefault(SDConfig sdConfig, NatsConfig natsCfg, Server server)
+    public static bool InitDefault(SDConfig sdConfig, NatsConfig natsCfg, Server server, LogHandler logHandler = null)
     {
       IntPtr sdCfgPtr = new StructWrapper(sdConfig);
       IntPtr natsCfgPtr = new StructWrapper(natsCfg);
@@ -154,14 +156,15 @@ namespace Pitaya
 
       PitayaCluster.RPCCb rpcCbFunc = RPCCbFunc;
       IntPtr rpcCbFuncPtr = Marshal.GetFunctionPointerForDelegate(rpcCbFunc);
-      bool success = InitializeInternal(serverPtr, natsCfgPtr, rpcCbFuncPtr);
+      IntPtr logFuncPtr = logHandler != null ? Marshal.GetFunctionPointerForDelegate(logHandler) : IntPtr.Zero;
+      bool success = InitializeInternal(serverPtr, natsCfgPtr, rpcCbFuncPtr, logFuncPtr);
       OnSignalInternal(OnSignal);
       return success;
     }
 
-    public static bool Init(SDConfig sdConfig, NatsConfig natsCfg, Server server)
+    public static bool Init(SDConfig sdConfig, NatsConfig natsCfg, Server server, LogHandler handler = null)
     {
-      return InitDefault(sdConfig, natsCfg, server);
+      return InitDefault(sdConfig, natsCfg, server, handler);
     }
 
     public static void Shutdown()
@@ -218,7 +221,7 @@ namespace Pitaya
 
 
     [DllImport("libpitaya_cluster", CallingConvention = CallingConvention.Cdecl, EntryPoint = "tfg_pitc_Initialize")]
-    private static extern bool InitializeInternal(IntPtr server, IntPtr natsCfg, IntPtr cbPtr);
+    private static extern bool InitializeInternal(IntPtr server, IntPtr natsCfg, IntPtr cbPtr, IntPtr logHandler);
 
     [DllImport("libpitaya_cluster", CallingConvention = CallingConvention.Cdecl, EntryPoint = "tfg_pitc_Shutdown")]
     private static extern void ShutdownInternal();

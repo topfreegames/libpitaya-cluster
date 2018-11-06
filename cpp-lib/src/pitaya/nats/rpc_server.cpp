@@ -19,8 +19,10 @@ RPCHandlerFunc NATSRPCServer::handler;
 
 NATSRPCServer::NATSRPCServer(const Server& server,
                              const NATSConfig& config,
-                             RPCHandlerFunc handler_func)
-    : _log(spdlog::stdout_color_mt("nats_rpc_server"))
+                             RPCHandlerFunc handler_func,
+                             const char* loggerName)
+    : _log(loggerName ? spdlog::get(loggerName)->clone("nats_rpc_server")
+                      : spdlog::stdout_color_mt("nats_rpc_server"))
     , nc(nullptr)
     , sub(nullptr)
 {

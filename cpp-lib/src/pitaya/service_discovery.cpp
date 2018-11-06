@@ -24,8 +24,11 @@ namespace pitaya {
 namespace service_discovery {
 
 // Helper functions
-ServiceDiscovery::ServiceDiscovery(const Server& server, const string& address)
-    : _log(spdlog::stdout_color_mt("service_discovery"))
+ServiceDiscovery::ServiceDiscovery(const Server& server,
+                                   const string& address,
+                                   const char* loggerName)
+    : _log(loggerName ? spdlog::get(loggerName)->clone("service_discovery")
+                      : spdlog::stdout_color_mt("service_discovery"))
     , _worker(address, "pitaya/servers", server)
 {
     if (server.id.empty() || server.type.empty()) {

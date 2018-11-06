@@ -2,6 +2,7 @@
 using UnityEngine.UI;
 using Pitaya;
 using System;
+using AOT;
 
 public class LibPitayaExample : MonoBehaviour {
 
@@ -11,56 +12,77 @@ public class LibPitayaExample : MonoBehaviour {
 
 	public InputField inputRPC;
 
+	[MonoPInvokeCallback(typeof(PitayaCluster.LogHandler))]
+	private static void LogFunction(string msg)
+	{
+		Debug.Log(msg);
+	}
+
     void InitButtonClicked()
     {
+	    Debug.Log("Init button clicked!");
+
         Pitaya.Logger.SetLevel(LogLevel.DEBUG);
         Console.WriteLine("c# prog running");
 
-        SDConfig sdConfig = new SDConfig("127.0.0.1:2379", 30, "pitaya/", 30, true, 60);
-        NatsRPCClientConfig rpcClientConfig = new NatsRPCClientConfig("nats://localhost:4222", 10, 5000);
-        // TODO does it makes sense to give freedom to set reconnectionRetries and messagesBufferSize?
-        NatsRPCServerConfig rpcServerConfig = new NatsRPCServerConfig("nats://localhost:4222", 10, 75);
+	    string serverId = Guid.NewGuid().ToString();
 
-        PitayaCluster.Init(
-          sdConfig,
-          rpcClientConfig,
-          rpcServerConfig,
-          new Server(
-            System.Guid.NewGuid().ToString(),
-            "unity",
-            "{\"ip\":\"127.0.0.1\"}",
-            false)
-        );
+	    var sdConfig = new SDConfig("127.0.0.1:2379", 30, "pitaya/", 30, true, 60);
 
-        TestRemote tr = new TestRemote();
-        PitayaCluster.RegisterRemote(tr);
+	    var sv = new Server(
+		    serverId,
+		    "csharp",
+		    "{\"ip\":\"127.0.0.1\"}",
+		    "localhost",
+		    false);
+
+	    NatsConfig nc = new NatsConfig("127.0.0.1:4222", 2000, 1000, 3, 100);
+
+	    PitayaCluster.onSignalEvent += () =>
+	    {
+		    PitayaCluster.Shutdown();
+		    Environment.Exit(0);
+	    };
+
+	    bool initStatus = PitayaCluster.Init(sdConfig, nc, sv, LogFunction);
+	    if (!initStatus)
+	    {
+		    throw new Exception("failed to initialize pitaya lib :/");
+	    }
+
+	    Pitaya.Logger.Info("pitaya lib initialized successfully :)");
+
+	    var tr = new TestRemote();
+	    PitayaCluster.RegisterRemote(tr);
 
     }
 
-	void SendRPCButtonClicked(){
-        string text = inputRPC.text;
-
-        Protos.RPCMsg msg = new Protos.RPCMsg();
-        msg.Msg = text;
-        try
+	void SendRPCButtonClicked()
+	{
+		var msg = new Protos.RPCMsg {Msg = inputRPC.text};
+		try
         {
-            Protos.RPCRes res = PitayaCluster.RPC<Protos.RPCRes>(Pitaya.Route.fromString("connector.testremote.test"), msg);
-            Debug.Log(String.Format("received rpc res: {0}", res.Msg));
-        } catch (Exception e){
+            var res = PitayaCluster.Rpc<Protos.RPCRes>(Route.FromString("connector.testremote.test"), msg);
+            Debug.Log($"received rpc res: {res.Msg}");
+        }
+		catch (Exception e)
+		{
             Debug.Log(e.Message);
         }
     }
+
 	// Use this for initialization
-	void Start () {
+	void Start ()
+	{
 		Button btnInit = initButton.GetComponent<Button>();
 		btnInit.onClick.AddListener(InitButtonClicked);
 
 		Button btnSendRpc = sendRPCButton.GetComponent<Button>();
 		btnSendRpc.onClick.AddListener(SendRPCButtonClicked);
 	}
-	
+
 	// Update is called once per frame
 	void Update () {
-		
+
 	}
 }

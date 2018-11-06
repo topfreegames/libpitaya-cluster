@@ -14,9 +14,11 @@ bool
 Cluster::Initialize(nats::NATSConfig&& natsConfig,
                     const cluster::LogOptions& logOpts,
                     Server server,
-                    RPCHandlerFunc rpcServerHandlerFunc)
+                    RPCHandlerFunc rpcServerHandlerFunc,
+                    const char* loggerName)
 {
-    _log = spdlog::stdout_color_mt("cluster");
+    _log =
+        loggerName ? spdlog::get(loggerName)->clone("cluster") : spdlog::stdout_color_mt("cluster");
     _log->set_level(spdlog::level::debug);
     _natsConfig = std::move(natsConfig);
     _server = std::move(server);
@@ -28,6 +30,8 @@ Cluster::Initialize(nats::NATSConfig&& natsConfig,
         _rpcClient = unique_ptr<NATSRPCClient>(new NATSRPCClient(_server, _natsConfig));
         _sd = std::unique_ptr<ServiceDiscovery>(
             new ServiceDiscovery(_server, "http://127.0.0.1:4001"));
+
+        _log->info("Cluster correctly initialized");
         return true;
     } catch (PitayaException* e) {
         _log->error("error initializing cluster: {}", e->what());

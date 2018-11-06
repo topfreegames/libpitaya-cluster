@@ -14,7 +14,16 @@ file(GLOB protobuf_files
   "include/protos/*"
   )
 
-add_library(pitaya_cluster SHARED
+option(BUILD_MACOSX_BUNDLE "Should build a bundle for Macosx" OFF)
+
+if(BUILD_MACOSX_BUNDLE)
+    message(STATUS "Setting library to MODULE")
+    set(LIB_TYPE MODULE)
+else()
+    set(LIB_TYPE SHARED)
+endif()
+
+add_library(pitaya_cluster ${LIB_TYPE}
     include/pitaya.h
     include/pitaya/service_discovery.h
     include/pitaya/service_discovery/worker.h
@@ -48,6 +57,15 @@ add_library(pitaya_cluster SHARED
 
 add_library(pitaya::pitaya_cluster ALIAS pitaya_cluster)
 
+if(BUILD_MACOSX_BUNDLE)
+    message(STATUS "Setting properties for MacOSX bundle")
+    set_target_properties(pitaya_cluster
+        PROPERTIES
+            SUFFIX ".bundle"
+            #BUNDLE TRUE
+            )
+endif()
+
 set_target_properties(pitaya_cluster
   PROPERTIES
     CXX_STANDARD 14)
@@ -70,11 +88,13 @@ target_link_libraries(pitaya_cluster
 # Add example
 # ===============================
 
-add_executable(main
-    src/pitaya_cluster.cpp)
+if(NOT BUILD_MACOSX_BUNDLE)
+    add_executable(main
+        src/pitaya_cluster.cpp)
 
-target_link_libraries(main PRIVATE pitaya_cluster)
+    target_link_libraries(main PRIVATE pitaya_cluster)
 
-set_target_properties(main
-  PROPERTIES
-    CXX_STANDARD 14)
+    set_target_properties(main
+      PROPERTIES
+        CXX_STANDARD 14)
+endif()

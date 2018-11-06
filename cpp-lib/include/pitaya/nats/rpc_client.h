@@ -15,7 +15,9 @@ namespace nats {
 class NATSRPCClient
 {
 public:
-    NATSRPCClient(const pitaya::Server& server, const NATSConfig& config);
+    NATSRPCClient(const pitaya::Server& server,
+                  const NATSConfig& config,
+                  const char* loggerName = nullptr);
     std::shared_ptr<protos::Response> Call(const pitaya::Server& target,
                                            std::unique_ptr<protos::Request> req);
 

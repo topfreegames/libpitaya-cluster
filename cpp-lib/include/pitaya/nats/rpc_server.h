@@ -17,7 +17,8 @@ class NATSRPCServer
 public:
     NATSRPCServer(const pitaya::Server& server,
                   const NATSConfig& config,
-                  pitaya::RPCHandlerFunc handler);
+                  pitaya::RPCHandlerFunc handler,
+                  const char* loggerName = nullptr);
 
 private:
     void print_sub_status(natsSubscription* sub);

@@ -15,7 +15,9 @@ namespace service_discovery {
 class ServiceDiscovery
 {
 public:
-    ServiceDiscovery(const pitaya::Server& server, const std::string& address);
+    ServiceDiscovery(const pitaya::Server& server,
+                     const std::string& address,
+                     const char* loggerName = nullptr);
     ~ServiceDiscovery();
 
     boost::optional<pitaya::Server> GetServerById(const std::string& id);

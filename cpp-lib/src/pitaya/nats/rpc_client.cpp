@@ -15,8 +15,9 @@ using namespace pitaya;
 namespace pitaya {
 namespace nats {
 
-NATSRPCClient::NATSRPCClient(const Server& server, const NATSConfig& config)
-    : _log(spdlog::stdout_color_mt("nats_rpc_client"))
+NATSRPCClient::NATSRPCClient(const Server& server, const NATSConfig& config, const char* loggerName)
+    : _log(loggerName ? spdlog::get(loggerName)->clone("nats_rpc_client")
+                      : spdlog::stdout_color_mt("nats_rpc_client"))
     , nc(nullptr)
     , sub(nullptr)
     , timeout_ms(config.requestTimeoutMs)

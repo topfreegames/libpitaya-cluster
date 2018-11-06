@@ -2,6 +2,7 @@
 #include "pitaya/cluster.h"
 #include "pitaya/nats/rpc_server.h"
 #include "spdlog/logger.h"
+#include "spdlog/sinks/base_sink.h"
 #include "spdlog/sinks/stdout_color_sinks.h"
 #include <assert.h>
 #include <boost/optional.hpp>
@@ -9,6 +10,34 @@
 using namespace std;
 using namespace pitaya;
 using pitaya::nats::NATSConfig;
+
+template<typename Mutex>
+class function_sink : public spdlog::sinks::base_sink<Mutex>
+{
+public:
+    function_sink(std::function<void(const char*)> handler)
+        : _handler(handler)
+    {}
+
+protected:
+    void sink_it_(const spdlog::details::log_msg& msg) override
+    {
+        fmt::memory_buffer formatted;
+        spdlog::sinks::sink::formatter_->format(msg, formatted);
+        std::string formattedStr = fmt::to_string(formatted);
+        _handler(formattedStr.c_str());
+    }
+
+    void flush_() override
+    { /* Ignore flushing */
+    }
+
+private:
+    std::function<void(const char*)> _handler;
+};
+
+using function_sink_mt = function_sink<std::mutex>;
+using function_sink_st = function_sink<spdlog::details::null_mutex>;
 
 static char*
 ConvertToCString(const std::string& str)
@@ -155,17 +184,31 @@ RpcCallback(protos::Request req)
     return res;
 }
 
+static std::shared_ptr<spdlog::logger>
+CreateLogger(void (*logHandler)(const char*))
+{
+    std::shared_ptr<spdlog::logger> logger;
+    if (logHandler) {
+        logger = std::make_shared<spdlog::logger>("c_wrapper",
+                                                  std::make_shared<function_sink_mt>(logHandler));
+        spdlog::register_logger(logger);
+    } else {
+        logger = spdlog::stdout_color_mt("c_wrapper");
+    }
+
+    logger->set_level(spdlog::level::debug);
+    return logger;
+}
+
 extern "C"
 {
 
-    // void tfg_ra_SetLogFunction(void (*LogFn)(int level, const char *msg))
-    //{
-    //}
-
-    bool tfg_pitc_Initialize(CServer* sv, CNATSConfig* nc, RpcPinvokeCb cb)
+    bool tfg_pitc_Initialize(CServer* sv,
+                             CNATSConfig* nc,
+                             RpcPinvokeCb cb,
+                             void (*logHandler)(const char*))
     {
-        gLogger = spdlog::stdout_color_mt("c_wrapper");
-        gLogger->set_level(spdlog::level::debug);
+        gLogger = CreateLogger(logHandler);
 
         NATSConfig natsCfg = NATSConfig(nc->addr,
                                         nc->request_timeout_ms,
@@ -187,7 +230,7 @@ extern "C"
 
         // get configs
         return pitaya::Cluster::Instance().Initialize(
-            std::move(natsCfg), logOpts, server, RpcCallback);
+            std::move(natsCfg), logOpts, server, RpcCallback, "c_wrapper");
     }
 
     CServer* tfg_pitc_GetServerById(const char* serverId)
