@@ -1,6 +1,7 @@
 #include "pitaya/nats/rpc_client.h"
 #include "nats/nats.h"
 #include "pitaya.h"
+#include "pitaya/constants.h"
 #include "pitaya/nats/config.h"
 #include "pitaya/utils.h"
 #include "protos/request.pb.h"
@@ -59,10 +60,10 @@ RPCClient::Call(const pitaya::Server& target, const protos::Request& req)
         auto err = new protos::Error();
         if (s == NATS_TIMEOUT) {
             // TODO const codes in separate file
-            err->set_code("PIT-504");
+            err->set_code(kCodeTimeout);
             err->set_msg("nats timeout");
         } else {
-            err->set_code("PIT-500");
+            err->set_code(kCodeInternalError);
             err->set_msg("nats error");
         }
         res.set_allocated_error(err);

@@ -25,6 +25,7 @@ endif()
 
 add_library(pitaya_cluster ${LIB_TYPE}
     include/pitaya.h
+    include/pitaya/constants.h
     include/pitaya/service_discovery.h
     include/pitaya/service_discovery/worker.h
     include/pitaya/nats/rpc_client.h

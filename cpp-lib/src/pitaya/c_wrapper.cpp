@@ -1,5 +1,6 @@
 #include "pitaya.h"
 #include "pitaya/cluster.h"
+#include "pitaya/constants.h"
 #include "pitaya/nats/rpc_server.h"
 #include "spdlog/logger.h"
 #include "spdlog/sinks/base_sink.h"
@@ -167,7 +168,7 @@ RpcCallback(protos::Request req)
     bool success = res.ParseFromArray(memBuf->data, memBuf->size);
     if (!success) {
         auto err = new protos::Error();
-        err->set_code("PIT-500");
+        err->set_code(pitaya::kCodeInternalError);
         err->set_msg("pinvoke failed");
         res.set_allocated_error(err);
     }

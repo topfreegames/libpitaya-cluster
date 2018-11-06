@@ -1,4 +1,5 @@
 #include "pitaya/cluster.h"
+#include "pitaya/constants.h"
 #include "pitaya/utils.h"
 #include "protos/msg.pb.h"
 
@@ -40,12 +41,12 @@ Cluster::RPC(const string& route, const MessageLite& arg, MessageLite& ret)
         auto sv_type = r.server_type;
         auto servers = _sd->GetServersByType(sv_type);
         if (servers.size() < 1) {
-            return pitaya::PitayaError("PIT-404", "no servers found for route: " + route);
+            return pitaya::PitayaError(kCodeNotFound, "no servers found for route: " + route);
         }
         pitaya::Server sv = pitaya::utils::RandomServer(servers);
         return RPC(sv.id, route, arg, ret);
     } catch (PitayaException* e) {
-        return pitaya::PitayaError("PIT-500", e->what());
+        return pitaya::PitayaError(kCodeInternalError, e->what());
     }
 }
 
@@ -56,7 +57,7 @@ Cluster::RPC(const string& server_id, const string& route, const MessageLite& ar
     auto sv = _sd->GetServerById(server_id);
     if (!sv) {
         // TODO better error code with constants somewhere
-        return pitaya::PitayaError("PIT-404", "server not found");
+        return pitaya::PitayaError(kCodeNotFound, "server not found");
     }
     auto msg = new protos::Msg();
     msg->set_type(protos::MsgType::MsgRequest);
@@ -80,7 +81,7 @@ Cluster::RPC(const string& server_id, const string& route, const MessageLite& ar
 
     auto parsed = ret.ParseFromString(res.data());
     if (!parsed) {
-        return pitaya::PitayaError("PIT-500", "error parsing protobuf");
+        return pitaya::PitayaError(kCodeInternalError, "error parsing protobuf");
     }
 
     return boost::none;
