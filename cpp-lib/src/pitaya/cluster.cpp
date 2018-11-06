@@ -72,10 +72,9 @@ Cluster::RPC(const string& server_id,
     msg->set_type(protos::MsgType::MsgRequest);
     msg->set_route(route.c_str());
 
-    size_t size = arg->ByteSizeLong();
-    void* buffer = malloc(size);
-    arg->SerializeToArray(buffer, size);
-    msg->set_data((const char*)buffer);
+    std::vector<uint8_t> buffer(arg->ByteSizeLong());
+    arg->SerializeToArray(buffer.data(), buffer.size());
+    msg->set_data(std::string((char*)buffer.data(), buffer.size()));
 
     auto req = std::unique_ptr<protos::Request>(new protos::Request());
     req->set_type(protos::RPCType::User);
@@ -98,7 +97,6 @@ Cluster::RPC(const string& server_id,
         return err;
     }
 
-    free(buffer);
     return nullptr;
 }
 

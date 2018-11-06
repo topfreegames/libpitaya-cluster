@@ -45,7 +45,7 @@ NATSRPCServer::NATSRPCServer(const Server& server,
     s = natsConnection_Connect(&nc, opts);
     if (s == NATS_OK) {
         s = natsConnection_Subscribe(
-            &sub, nc, utils::GetTopicForServer(std::move(server)).c_str(), handle_msg, this);
+            &sub, nc, utils::GetTopicForServer(server).c_str(), handle_msg, this);
     }
     if (s == NATS_OK) {
         _log->info("nats rpc server configured!");
@@ -57,7 +57,7 @@ NATSRPCServer::NATSRPCServer(const Server& server,
 void
 NATSRPCServer::handle_msg(natsConnection* nc, natsSubscription* sub, natsMsg* msg, void* closure)
 {
-    auto instance = (NATSRPCServer*)closure;
+    auto instance = reinterpret_cast<NATSRPCServer*>(closure);
 
     instance->print_sub_status(sub);
 
@@ -71,14 +71,11 @@ NATSRPCServer::handle_msg(natsConnection* nc, natsSubscription* sub, natsMsg* ms
 
     protos::Response res = handler(req);
 
-    size_t size = res.ByteSizeLong();
-    void* buffer = malloc(size);
-    res.SerializeToArray(buffer, size);
+    std::vector<uint8_t> buffer(res.ByteSizeLong());
+    res.SerializeToArray(buffer.data(), buffer.size());
 
-    natsConnection_Publish(nc, reply, buffer, size);
-
+    natsConnection_Publish(nc, reply, buffer.data(), buffer.size());
     natsMsg_Destroy(msg);
-    free(buffer);
 }
 
 void
@@ -119,21 +116,21 @@ NATSRPCServer::err_handler(natsConnection* nc,
 void
 NATSRPCServer::disconnected_cb(natsConnection* nc, void* closure)
 {
-    auto instance = (NATSRPCServer*)closure;
+    auto instance = reinterpret_cast<NATSRPCServer*>(closure);
     instance->_log->error("nats disconnected! will try to reconnect...");
 }
 
 void
 NATSRPCServer::reconnected_cb(natsConnection* nc, void* closure)
 {
-    auto instance = (NATSRPCServer*)closure;
+    auto instance = reinterpret_cast<NATSRPCServer*>(closure);
     instance->_log->error("nats reconnected!");
 }
 
 void
 NATSRPCServer::closed_cb(natsConnection* nc, void* closure)
 {
-    auto instance = (NATSRPCServer*)closure;
+    auto instance = reinterpret_cast<NATSRPCServer*>(closure);
     instance->_log->error("failed all nats reconnection attempts!");
     // TODO: exit server here, but need to do this gracefully
 }

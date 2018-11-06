@@ -19,7 +19,7 @@ NATSRPCClient::NATSRPCClient(const Server& server, const NATSConfig& config, con
     : _log(loggerName ? spdlog::get(loggerName)->clone("nats_rpc_client")
                       : spdlog::stdout_color_mt("nats_rpc_client"))
     , nc(nullptr)
-    , sub(nullptr)
+//    , sub(nullptr)
     , timeout_ms(config.requestTimeoutMs)
 {
     _log->set_level(spdlog::level::debug);
@@ -48,20 +48,15 @@ NATSRPCClient::Call(const pitaya::Server& target, std::unique_ptr<protos::Reques
 {
     auto topic = utils::GetTopicForServer(target);
 
-    size_t size = req->ByteSizeLong();
-    std::vector<uint8_t> buffer;
-    buffer.reserve(size);
-
-    req->SerializeToArray(buffer.data(), size);
+    std::vector<uint8_t> buffer(req->ByteSizeLong());
+    req->SerializeToArray(buffer.data(), buffer.size());
 
     natsMsg* reply = nullptr;
     natsStatus s =
-        natsConnection_Request(&reply, nc, topic.c_str(), buffer.data(), size, timeout_ms);
+        natsConnection_Request(&reply, nc, topic.c_str(), buffer.data(), buffer.size(), timeout_ms);
     auto res = std::make_shared<protos::Response>();
 
     if (s != NATS_OK) {
-        // TODO: verify the protobuf code, but this code seems to have a memory leak.
-        // Where is err deleted?
         auto err = new protos::Error();
         if (s == NATS_TIMEOUT) {
             // TODO const codes in separate file
@@ -77,7 +72,6 @@ NATSRPCClient::Call(const pitaya::Server& target, std::unique_ptr<protos::Reques
     }
 
     natsMsg_Destroy(reply);
-
     return res;
 }
 

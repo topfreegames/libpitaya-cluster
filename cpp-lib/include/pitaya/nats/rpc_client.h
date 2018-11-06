@@ -24,7 +24,7 @@ public:
 private:
     std::shared_ptr<spdlog::logger> _log;
     natsConnection* nc;
-    natsSubscription* sub;
+//    natsSubscription* sub;
     int timeout_ms;
     static void closed_cb(natsConnection* nc,
                           void* closure); // called when all reconnection requests failed
