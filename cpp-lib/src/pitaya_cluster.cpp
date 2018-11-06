@@ -32,6 +32,8 @@ rpc_handler(protos::Request req)
 int
 main()
 {
+    auto logger = spdlog::stdout_color_mt("main");
+
     Server server("someid", "sometype");
     NATSConfig nats_config("nats://localhost:4222", 1000, 3000, 3, 100);
 
@@ -41,7 +43,7 @@ main()
 
     try {
         Cluster cluster(
-            std::move(sdConfig), std::move(nats_config), std::move(server), rpc_handler);
+            std::move(sdConfig), std::move(nats_config), std::move(server), rpc_handler, "main");
 
         {
             ////// INIT

@@ -20,7 +20,7 @@ enum class LeaseKeepAliveStatus
 class LeaseKeepAlive
 {
 public:
-    LeaseKeepAlive(etcd::Client& client);
+    LeaseKeepAlive(etcd::Client& client, const char* loggerName);
     pplx::task<LeaseKeepAliveStatus> Start();
     void Stop();
     void SetLeaseId(int64_t leaseId);

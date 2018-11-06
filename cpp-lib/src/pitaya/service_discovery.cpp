@@ -29,7 +29,7 @@ ServiceDiscovery::ServiceDiscovery(const Config& config,
                                    const char* loggerName)
     : _log(loggerName ? spdlog::get(loggerName)->clone("service_discovery")
                       : spdlog::stdout_color_mt("service_discovery"))
-    , _worker(config, server)
+    , _worker(config, server, loggerName ? loggerName : "service_discovery")
 {
     if (server.id.empty() || server.type.empty()) {
         throw PitayaException("Server id and type cannot be empty");

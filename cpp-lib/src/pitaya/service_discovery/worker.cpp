@@ -18,16 +18,16 @@ namespace service_discovery {
 static string ServerAsJson(const Server& server);
 static string GetServerKey(const std::string& serverId, const std::string& serverType);
 
-Worker::Worker(const Config& config, pitaya::Server server) try
+Worker::Worker(const Config& config, pitaya::Server server, const char* loggerName) try
     : _config(config)
     , _workerExiting(false)
     , _server(std::move(server))
     , _client(config.endpoints)
     , _watcher(config.endpoints, config.etcdPrefix, std::bind(&Worker::OnWatch, this, _1))
-    , _leaseKeepAlive(_client)
+    , _log(spdlog::get(loggerName)->clone("service_discovery_worker"))
+    , _leaseKeepAlive(_client, loggerName)
     , _numKeepAliveRetriesLeft(3)
     , _syncServersTicker(config.syncServersIntervalSec, std::bind(&Worker::SyncServers, this)) {
-    _log = spdlog::get("service_discovery")->clone("service_discovery_worker");
     _log->set_level(spdlog::level::debug);
     _log->debug("Will synchronize servers every {} seconds",
                 _config.syncServersIntervalSec.count());

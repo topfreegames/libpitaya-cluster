@@ -25,10 +25,12 @@ Cluster::Cluster(service_discovery::Config&& sdConfig,
     _rpcServerHandlerFunc = rpcServerHandlerFunc;
 
     _rpcSv = unique_ptr<nats::RPCServer>(
-        new nats::RPCServer(_server, _natsConfig, _rpcServerHandlerFunc));
-    _rpcClient = unique_ptr<nats::RPCClient>(new nats::RPCClient(_server, _natsConfig));
+        new nats::RPCServer(_server, _natsConfig, _rpcServerHandlerFunc, loggerName));
+
+    _rpcClient = unique_ptr<nats::RPCClient>(new nats::RPCClient(_server, _natsConfig, loggerName));
+
     _sd = std::unique_ptr<service_discovery::ServiceDiscovery>(
-        new service_discovery::ServiceDiscovery(std::move(sdConfig), _server));
+        new service_discovery::ServiceDiscovery(std::move(sdConfig), _server, loggerName));
 
     _log->info("Cluster correctly initialized");
 }

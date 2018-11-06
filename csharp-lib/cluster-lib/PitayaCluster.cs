@@ -157,7 +157,6 @@ namespace Pitaya
 
     public PitayaCluster(SDConfig sdConfig, NatsConfig natsCfg, Server server, LogHandler logHandler = null)
     {
-      Logger.Debug("SYNC SERVERS: " + sdConfig.syncServersIntervalSec);
       IntPtr sdCfgPtr = new StructWrapper(sdConfig);
       IntPtr natsCfgPtr = new StructWrapper(natsCfg);
       IntPtr serverPtr = new StructWrapper(server);

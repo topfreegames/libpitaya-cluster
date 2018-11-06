@@ -7,8 +7,8 @@ using std::chrono::seconds;
 namespace pitaya {
 namespace service_discovery {
 
-LeaseKeepAlive::LeaseKeepAlive(etcd::Client& client)
-    : _log(spdlog::get("service_discovery")->clone("lease_keep_alive"))
+LeaseKeepAlive::LeaseKeepAlive(etcd::Client& client, const char* loggerName)
+    : _log(spdlog::get(loggerName)->clone("lease_keep_alive"))
     , _client(client)
     , _leaseId(-1)
     , _donePromise()

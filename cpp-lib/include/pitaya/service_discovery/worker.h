@@ -30,7 +30,7 @@ enum class JobInfo
 class Worker
 {
 public:
-    Worker(const Config& config, pitaya::Server server);
+    Worker(const Config& config, pitaya::Server server, const char* loggerName);
     ~Worker();
 
     boost::optional<pitaya::Server> GetServerById(const std::string& id);
