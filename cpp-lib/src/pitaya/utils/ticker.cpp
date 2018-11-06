@@ -30,5 +30,5 @@ Ticker::TickWrapper()
     }
 }
 
-}
-}
+} // namespace utils
+} // namespace pitaya

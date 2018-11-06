@@ -103,5 +103,5 @@ NATSRPCClient::closed_cb(natsConnection* nc, void* closure)
     // TODO: exit server here, but need to do this gracefully
 }
 
-}
-}
+} // namespace nats
+} // namespace pitaya

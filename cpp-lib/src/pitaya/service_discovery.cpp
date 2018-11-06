@@ -56,5 +56,5 @@ ServiceDiscovery::GetServersByType(const std::string& type)
     return _worker.GetServersByType(type);
 }
 
-}
-}
+} // namespace service_discovery
+} // namespace pitaya

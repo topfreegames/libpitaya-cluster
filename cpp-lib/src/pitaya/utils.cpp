@@ -24,5 +24,5 @@ RandomServer(const std::vector<Server>& vec)
     return random_element;
 }
 
-}
-}
+} // namespace utils
+} // namespace pitaya

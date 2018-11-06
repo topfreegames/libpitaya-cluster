@@ -47,7 +47,7 @@ private:
     std::mutex _mutex;
 };
 
-}
-}
+} // namespace utils
+} // namespace pitaya
 
 #endif // PITAYA_UTILS_SYNC_MAP_H

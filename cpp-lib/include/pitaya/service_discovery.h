@@ -5,9 +5,9 @@
 #include <string>
 
 #include "pitaya.h"
+#include "pitaya/service_discovery/config.h"
 #include "pitaya/service_discovery/worker.h"
 #include "spdlog/spdlog.h"
-#include "pitaya/service_discovery/config.h"
 #include <boost/optional.hpp>
 
 namespace pitaya {
@@ -29,7 +29,7 @@ private:
     Worker _worker;
 };
 
-}
-}
+} // namespace service_discovery
+} // namespace pitaya
 
 #endif // TFG_SERVICE_DISCOVERY_H

@@ -4,9 +4,9 @@
 #include "spdlog/logger.h"
 #include "spdlog/sinks/base_sink.h"
 #include "spdlog/sinks/stdout_color_sinks.h"
-#include <chrono>
 #include <assert.h>
 #include <boost/optional.hpp>
+#include <chrono>
 
 using namespace std;
 using namespace pitaya;
@@ -222,7 +222,7 @@ extern "C"
 
         try {
             auto cluster = new pitaya::Cluster(
-               sdConfig->ToConfig(), std::move(natsCfg), server, RpcCallback, "c_wrapper");
+                sdConfig->ToConfig(), std::move(natsCfg), server, RpcCallback, "c_wrapper");
             return reinterpret_cast<ClusterPtr>(cluster);
         } catch (const PitayaException& exc) {
             gLogger->error("Failed to create cluster instance: {}", exc.what());
@@ -279,9 +279,8 @@ extern "C"
 
         auto res = std::make_shared<protos::Response>();
 
-        auto err = (strlen(serverId) == 0)
-                       ? cluster->RPC(route, req, res)
-                       : cluster->RPC(serverId, route, req, res);
+        auto err = (strlen(serverId) == 0) ? cluster->RPC(route, req, res)
+                                           : cluster->RPC(serverId, route, req, res);
 
         if (err) {
             gLogger->error("received error on RPC: {}", err->msg);

@@ -37,7 +37,7 @@ private:
     pplx::task<LeaseKeepAliveStatus> _runTask;
 };
 
-}
-}
+} // namespace service_discovery
+} // namespace pitaya
 
 #endif // SERVICE_DISCOVERY_LEASE_KEEP_ALIVE_H

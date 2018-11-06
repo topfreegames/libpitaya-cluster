@@ -39,9 +39,9 @@ main()
     sdConfig.endpoints = "http://127.0.0.1:4001";
     sdConfig.etcdPrefix = "pitaya/servers";
 
-
     try {
-        Cluster cluster(std::move(sdConfig), std::move(nats_config), std::move(server), rpc_handler);
+        Cluster cluster(
+            std::move(sdConfig), std::move(nats_config), std::move(server), rpc_handler);
 
         {
             ////// INIT

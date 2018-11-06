@@ -2,12 +2,12 @@
 #define SERVICE_DISCOVERY_SERVICE_DISCOVERY_WORKER_H
 
 #include "pitaya.h"
+#include "pitaya/service_discovery/config.h"
 #include "pitaya/service_discovery/lease_keep_alive.h"
 #include "pitaya/utils/semaphore.h"
 #include "pitaya/utils/sync_deque.h"
 #include "pitaya/utils/sync_map.h"
 #include "pitaya/utils/ticker.h"
-#include "pitaya/service_discovery/config.h"
 #include "spdlog/spdlog.h"
 #include <boost/optional.hpp>
 #include <chrono>
@@ -81,7 +81,7 @@ private:
     utils::SyncMap<std::string, std::unordered_map<std::string, pitaya::Server>> _serversByType;
 };
 
-}
-}
+} // namespace service_discovery
+} // namespace pitaya
 
 #endif // SERVICE_DISCOVERY_SERVICE_DISCOVERY_WORKER_H

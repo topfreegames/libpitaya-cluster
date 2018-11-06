@@ -1,8 +1,8 @@
 #ifndef PITAYA_SERVICE_DISCOVERY_CONFIG_H
 #define PITAYA_SERVICE_DISCOVERY_CONFIG_H
 
-#include <string>
 #include <chrono>
+#include <string>
 
 namespace pitaya {
 namespace service_discovery {
@@ -26,7 +26,7 @@ struct Config
     {}
 };
 
-}
-}
+} // namespace service_discovery
+} // namespace pitaya
 
 #endif // PITAYA_SERVICE_DISCOVERY_CONFIG_H

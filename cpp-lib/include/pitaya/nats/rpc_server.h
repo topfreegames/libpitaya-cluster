@@ -39,7 +39,7 @@ private:
                                void* closure); // called when the connection is repaired
 };
 
-}
-}
+} // namespace nats
+} // namespace pitaya
 
 #endif // PITAYA_NATS_RPC_SERVER_H

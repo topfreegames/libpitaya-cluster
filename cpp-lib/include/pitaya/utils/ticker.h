@@ -34,7 +34,7 @@ private:
     std::future<void> _runFuture;
 };
 
-}
-}
+} // namespace utils
+} // namespace pitaya
 
 #endif // PITAYA_UTILS_TICKER_H

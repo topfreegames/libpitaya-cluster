@@ -26,7 +26,7 @@ Cluster::Cluster(service_discovery::Config&& sdConfig,
         new nats::NATSRPCServer(_server, _natsConfig, _rpcServerHandlerFunc));
     _rpcClient = unique_ptr<nats::NATSRPCClient>(new nats::NATSRPCClient(_server, _natsConfig));
     _sd = std::unique_ptr<service_discovery::ServiceDiscovery>(
-           new service_discovery::ServiceDiscovery(std::move(sdConfig), _server));
+        new service_discovery::ServiceDiscovery(std::move(sdConfig), _server));
 
     _log->info("Cluster correctly initialized");
 }
@@ -102,4 +102,4 @@ Cluster::RPC(const string& server_id,
     return nullptr;
 }
 
-}
+} // namespace pitaya

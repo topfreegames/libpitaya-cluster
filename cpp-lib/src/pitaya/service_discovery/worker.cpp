@@ -18,8 +18,7 @@ namespace service_discovery {
 static string ServerAsJson(const Server& server);
 static string GetServerKey(const std::string& serverId, const std::string& serverType);
 
-Worker::Worker(const Config& config, pitaya::Server server)
-try
+Worker::Worker(const Config& config, pitaya::Server server) try
     : _config(config)
     , _workerExiting(false)
     , _server(std::move(server))
@@ -27,16 +26,15 @@ try
     , _watcher(config.endpoints, config.etcdPrefix, std::bind(&Worker::OnWatch, this, _1))
     , _leaseKeepAlive(_client)
     , _numKeepAliveRetriesLeft(3)
-    , _syncServersTicker(config.syncServersIntervalSec, std::bind(&Worker::SyncServers, this))
-{
+    , _syncServersTicker(config.syncServersIntervalSec, std::bind(&Worker::SyncServers, this)) {
     _log = spdlog::get("service_discovery")->clone("service_discovery_worker");
     _log->set_level(spdlog::level::debug);
-    _log->debug("Will synchronize servers every {} seconds", _config.syncServersIntervalSec.count());
+    _log->debug("Will synchronize servers every {} seconds",
+                _config.syncServersIntervalSec.count());
     _workerThread = std::thread(&Worker::StartThread, this);
-}
-catch (const etcd::watch_error& exc)
-{
-    throw PitayaException(fmt::format("Failed to initialize ServiceDiscovery watcher: {}", exc.what()));
+} catch (const etcd::watch_error& exc) {
+    throw PitayaException(
+        fmt::format("Failed to initialize ServiceDiscovery watcher: {}", exc.what()));
 }
 
 Worker::~Worker()
@@ -480,5 +478,5 @@ Worker::ParseServer(const string& jsonStr)
     return server;
 }
 
-}
-}
+} // namespace service_discovery
+} // namespace pitaya

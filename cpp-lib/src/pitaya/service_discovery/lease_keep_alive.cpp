@@ -82,5 +82,5 @@ LeaseKeepAlive::SetLeaseId(int64_t leaseId)
     _leaseId = leaseId;
 }
 
-}
-}
+} // namespace service_discovery
+} // namespace pitaya

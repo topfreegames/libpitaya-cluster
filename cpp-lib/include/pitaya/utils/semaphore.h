@@ -54,7 +54,7 @@ private:
     uint64_t _count;
 };
 
-}
-}
+} // namespace utils
+} // namespace pitaya
 
 #endif // PITAYA_UTILS_SEMAPHORE_H
