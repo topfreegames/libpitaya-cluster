@@ -149,7 +149,6 @@ void
 OnSignal(int signum)
 {
     if (gSignalHandler) {
-        gLogger->info("Calling signal handler");
         gSignalHandler();
     }
 }
@@ -301,8 +300,6 @@ extern "C"
         (*outBuf)->size = size;
         (*outBuf)->data = bin;
 
-        gLogger->debug("RPC data length is {}", (*outBuf)->size);
-        gLogger->debug("RPC data is {}", (char*)(*outBuf)->data);
         return nullptr;
     }
 
