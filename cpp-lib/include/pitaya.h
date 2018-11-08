@@ -4,7 +4,7 @@
 #include "protos/request.pb.h"
 #include "protos/response.pb.h"
 #include <boost/algorithm/string.hpp>
-#import <string>
+#include <string>
 
 namespace pitaya {
 using RPCHandlerFunc = std::function<protos::Response(protos::Request)>;

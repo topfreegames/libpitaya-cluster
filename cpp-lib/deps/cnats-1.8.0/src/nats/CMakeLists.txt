@@ -53,7 +53,8 @@ target_link_libraries(nats_static
         ${NATS_PROTOBUF_LIB})
 set_target_properties(nats nats_static PROPERTIES
   VERSION ${NATS_VERSION_MAJOR}.${NATS_VERSION_MINOR}.${NATS_VERSION_PATCH}
-  SOVERSION ${NATS_VERSION_MAJOR}.${NATS_VERSION_MINOR})
+  SOVERSION ${NATS_VERSION_MAJOR}.${NATS_VERSION_MINOR}
+  POSITION_INDEPENDENT_CODE ON)
 
 # --------------------------------------
 # Install the libraries and header files

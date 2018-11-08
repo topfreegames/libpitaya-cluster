@@ -2,8 +2,14 @@ cmake_minimum_required(VERSION 3.7)
 
 project(PitayaCluster)
 
+set(CMAKE_CXX_FLAGS "-fPIC")
+
 # Prefer static libraries over dynamic ones.
-set(CMAKE_FIND_LIBRARY_SUFFIXES ".a" ".lib" ".dylib" ".so" ".dll")
+if(UNIX AND NOT APPLE)
+  set(CMAKE_FIND_LIBRARY_SUFFIXES ".so" ".a")
+else()
+  set(CMAKE_FIND_LIBRARY_SUFFIXES ".a" ".lib" ".dylib" ".so" ".dll")
+endif()
 
 if(EXISTS ${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
     include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
@@ -71,7 +77,8 @@ endif()
 
 set_target_properties(pitaya_cluster
   PROPERTIES
-    CXX_STANDARD 14)
+    CXX_STANDARD 14
+    POSITION_INDEPENDENT_CODE ON)
 
 target_include_directories(pitaya_cluster
   PUBLIC
@@ -85,7 +92,9 @@ target_include_directories(pitaya_cluster
 target_link_libraries(pitaya_cluster
   PUBLIC
     nats_static
-    etcd-cpp-api)
+    etcd-cpp-api
+  PRIVATE
+    libprotobuf)
 
 # ===============================
 # Add example
