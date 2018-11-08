@@ -1,8 +1,7 @@
-out
-*.dylib
-*.so
-bin
-obj
+#out
+#bin
+#obj
+csharp-example/csharp-example/bin
 .vscode
 *.meta
 *.app
