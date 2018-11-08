@@ -3,7 +3,6 @@ using UnityEngine.UI;
 using Pitaya;
 using System;
 using AOT;
-using Logger = Pitaya.Logger;
 
 public class LibPitayaExample : MonoBehaviour {
 
@@ -13,10 +12,10 @@ public class LibPitayaExample : MonoBehaviour {
 
 	public InputField inputRPC;
 
-	[MonoPInvokeCallback(typeof(PitayaCluster.LogHandler))]
+	[MonoPInvokeCallback(typeof(Action<string>))]
 	private static void LogFunction(string msg)
 	{
-		Debug.Log(msg);
+		//Debug.Log(msg);
 	}
 
 	private PitayaCluster _cluster;
@@ -49,15 +48,6 @@ public class LibPitayaExample : MonoBehaviour {
 	    NatsConfig nc = new NatsConfig("127.0.0.1:4222", 2000, 1000, 3, 100);
 
 	    Debug.Log("Adding signal handler");
-	    PitayaCluster.AddSignalHandler(() =>
-	    {
-		    if (_cluster != null)
-		    {
-			    _cluster.Dispose();
-			    _cluster = null;
-		    }
-		    Application.Quit();
-	    });
 	    Debug.Log("Adding signal handler DONE");
 
 	    try
@@ -77,6 +67,20 @@ public class LibPitayaExample : MonoBehaviour {
 	    _cluster.RegisterRemote(tr);
 
     }
+
+	private void Awake()
+	{
+		//PitayaCluster.SetLogFunction(LogFunction);
+	    PitayaCluster.AddSignalHandler(() =>
+	    {
+		    if (_cluster != null)
+		    {
+			    _cluster.Dispose();
+			    _cluster = null;
+		    }
+		    Application.Quit();
+	    });
+	}
 
 	void SendRPCButtonClicked()
 	{

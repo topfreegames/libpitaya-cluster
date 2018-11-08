@@ -2,7 +2,12 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="8f0646a9-6f8a-418d-b60b-d7b517c98754" name="Default Changelist" comment="">
+      <change beforePath="$PROJECT_DIR$/../cpp-lib/deps/etcd-cpp-apiv3" beforeDir="false" afterPath="$PROJECT_DIR$/../cpp-lib/deps/etcd-cpp-apiv3" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../cpp-lib/deps/grpc" beforeDir="false" afterPath="$PROJECT_DIR$/../cpp-lib/deps/grpc" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../cpp-lib/include/pitaya/service_discovery/worker.h" beforeDir="false" afterPath="$PROJECT_DIR$/../cpp-lib/include/pitaya/service_discovery/worker.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../cpp-lib/src/pitaya/c_wrapper.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../cpp-lib/src/pitaya/c_wrapper.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../cpp-lib/src/pitaya/service_discovery/worker.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../cpp-lib/src/pitaya/service_discovery/worker.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../csharp-lib/cluster-lib/PitayaCluster.cs" beforeDir="false" afterPath="$PROJECT_DIR$/../csharp-lib/cluster-lib/PitayaCluster.cs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/.idea.unity-example/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.unity-example/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Assets/LibPitayaExample.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/LibPitayaExample.cs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Assets/Plugins/libpitaya_cluster.bundle" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Plugins/libpitaya_cluster.bundle" afterDir="false" />
@@ -18,56 +23,73 @@
     <session id="151444795">
       <usages-collector id="statistics.lifecycle.project">
         <counts>
-          <entry key="project.closed" value="2" />
+          <entry key="project.closed" value="4" />
           <entry key="project.open.time.1" value="1" />
           <entry key="project.open.time.5" value="1" />
-          <entry key="project.opened" value="2" />
+          <entry key="project.open.time.7" value="1" />
+          <entry key="project.open.time.8" value="1" />
+          <entry key="project.opened" value="4" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.extensions.open">
         <counts>
-          <entry key="cs" value="4" />
+          <entry key="cs" value="5" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.types.open">
         <counts>
-          <entry key="C#" value="4" />
+          <entry key="C#" value="5" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.extensions.edit">
         <counts>
-          <entry key="cs" value="1096" />
+          <entry key="cs" value="2241" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.types.edit">
         <counts>
-          <entry key="C#" value="1096" />
+          <entry key="C#" value="2241" />
         </counts>
       </usages-collector>
     </session>
   </component>
   <component name="FileEditorManager">
-    <leaf>
+    <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/Assets/LibPitayaExample.cs">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="765">
-              <caret line="51" column="43" selection-start-line="51" selection-start-column="43" selection-end-line="51" selection-end-column="43" />
+            <state relative-caret-position="270">
+              <caret line="18" column="4" selection-start-line="18" selection-start-column="4" selection-end-line="18" selection-end-column="4" />
               <folding>
-                <marker date="1541528882279" expanded="true" signature="6:109" ph="..." />
-                <marker date="1541528882279" expanded="true" signature="157:2533" ph="{...}" />
-                <marker date="1541528882279" expanded="true" signature="350:374" ph="{...}" />
-                <marker date="1541528882279" expanded="true" signature="438:1769" ph="{...}" />
-                <marker date="1541528882279" expanded="true" signature="1167:1302" ph="{...}" />
-                <marker date="1541528882279" expanded="true" signature="1202:1269" ph="{...}" />
-                <marker date="1541528882279" expanded="true" signature="1360:1493" ph="{...}" />
-                <marker date="1541528882279" expanded="true" signature="1524:1627" ph="{...}" />
-                <marker date="1541528882279" expanded="true" signature="1799:2115" ph="{...}" />
-                <marker date="1541528882279" expanded="true" signature="1861:2039" ph="{...}" />
-                <marker date="1541528882279" expanded="true" signature="2061:2109" ph="{...}" />
-                <marker date="1541528882279" expanded="true" signature="2163:2410" ph="{...}" />
-                <marker date="1541528882279" expanded="true" signature="2464:2469" ph="{...}" />
-                <marker date="1541528882279" expanded="true" signature="2496:2531" ph="{...}" />
+                <marker date="1541606815644" expanded="true" signature="6:79" ph="..." />
+                <marker date="1541606815644" expanded="true" signature="127:2570" ph="{...}" />
+                <marker date="1541606815644" expanded="true" signature="310:336" ph="{...}" />
+                <marker date="1541606815644" expanded="true" signature="400:1552" ph="{...}" />
+                <marker date="1541606815644" expanded="true" signature="1143:1276" ph="{...}" />
+                <marker date="1541606815644" expanded="true" signature="1307:1410" ph="{...}" />
+                <marker date="1541606815644" expanded="true" signature="1575:1807" ph="{...}" />
+                <marker date="1541606815644" expanded="true" signature="1667:1802" ph="{...}" />
+                <marker date="1541606815644" expanded="true" signature="1702:1769" ph="{...}" />
+                <marker date="1541606815644" expanded="true" signature="1837:2152" ph="{...}" />
+                <marker date="1541606815644" expanded="true" signature="1899:2076" ph="{...}" />
+                <marker date="1541606815644" expanded="true" signature="2098:2146" ph="{...}" />
+                <marker date="1541606815644" expanded="true" signature="2200:2447" ph="{...}" />
+                <marker date="1541606815644" expanded="true" signature="2501:2506" ph="{...}" />
+                <marker date="1541606815644" expanded="true" signature="2533:2568" ph="{...}" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/Assets/Remotes/TestRemote.cs">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="195">
+              <caret line="15" selection-start-line="15" selection-end-line="15" />
+              <folding>
+                <marker date="1541532159587" expanded="false" signature="6:50" ph="..." />
+                <marker date="1541532159587" expanded="true" signature="134:385" ph="{...}" />
+                <marker date="1541532159587" expanded="true" signature="190:289" ph="{...}" />
               </folding>
             </state>
           </provider>
@@ -76,8 +98,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/EB42C23D-C548-4732-8BD3-3A1723672D75/61/6b62b548/PitayaCluster.cs">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="1965">
-              <caret line="131" column="29" selection-start-line="131" selection-start-column="29" selection-end-line="131" selection-end-column="29" />
+            <state relative-caret-position="-299">
+              <caret line="39" column="35" selection-start-line="39" selection-start-column="35" selection-end-line="39" selection-end-column="35" />
             </state>
           </provider>
         </entry>
@@ -97,14 +119,16 @@
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/.." />
   </component>
   <component name="HighlightingSettingsPerFile">
-    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/EB42C23D-C548-4732-8BD3-3A1723672D75/cf/3223eaf7/SDConfig.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/EB42C23D-C548-4732-8BD3-3A1723672D75/cf/3223eaf7/SDConfig.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/../csharp-lib/cluster-lib/PitayaCluster.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/EB42C23D-C548-4732-8BD3-3A1723672D75/61/6b62b548/PitayaCluster.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/LibPitayaExample.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/Assets/Remotes/TestRemote.cs" root0="FORCE_HIGHLIGHTING" />
   </component>
   <component name="IdeDocumentHistory">
     <option name="CHANGED_PATHS">
       <list>
+        <option value="$PROJECT_DIR$/Assets/Remotes/TestRemote.cs" />
         <option value="$PROJECT_DIR$/Assets/LibPitayaExample.cs" />
       </list>
     </option>
@@ -132,15 +156,20 @@
               <item name="Project" type="e068e287:UnityExplorerRootNode" />
               <item name="Assets" type="48f920db:UnityExplorerNode$AssetsRoot" />
             </path>
+            <path>
+              <item name="Project" type="e068e287:UnityExplorerRootNode" />
+              <item name="Assets" type="48f920db:UnityExplorerNode$AssetsRoot" />
+              <item name="Remotes" type="1045f7f1:UnityExplorerNode" />
+            </path>
           </expand>
           <select />
         </subPane>
         <option name="show-hidden-items" value="false" />
       </pane>
+      <pane id="FileSystemExplorer" />
       <pane id="SolutionExplorer">
         <option name="show-all-files" value="false" />
       </pane>
-      <pane id="FileSystemExplorer" />
     </panes>
   </component>
   <component name="PropertiesComponent">
@@ -167,9 +196,9 @@
       <option name="pid" />
       <method v="2" />
     </configuration>
-    <configuration name="Attach to Unity Editor" type="UNITY_DEBUG_RUN_CONFIGURATION" factoryName="Unity Debug" show_console_on_std_err="false" show_console_on_std_out="false" port="50000" address="localhost" pid="75991">
+    <configuration name="Attach to Unity Editor" type="UNITY_DEBUG_RUN_CONFIGURATION" factoryName="Unity Debug" show_console_on_std_err="false" show_console_on_std_out="false" port="50000" address="localhost" pid="86084">
       <option name="listenPortForConnections" value="false" />
-      <option name="pid" value="75991" />
+      <option name="pid" value="86084" />
       <method v="2" />
     </configuration>
     <list>
@@ -186,11 +215,13 @@
       <updated>1541459736845</updated>
       <workItem from="1541459738146" duration="3401000" />
       <workItem from="1541526877242" duration="1289000" />
+      <workItem from="1541532128605" duration="1177000" />
+      <workItem from="1541539543700" duration="8030000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="4690000" />
+    <option name="totallyTimeSpent" value="13897000" />
   </component>
   <component name="TodoView">
     <todo-panel id="selected-file">
@@ -204,13 +235,13 @@
   <component name="ToolWindowManager">
     <frame x="0" y="0" width="1680" height="1050" extended-state="0" />
     <layout>
-      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.25274727" />
+      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.25885227" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
       <window_info anchor="bottom" id="Find" order="1" />
       <window_info anchor="bottom" id="Run" order="2" />
-      <window_info active="true" anchor="bottom" id="Debug" order="3" visible="true" weight="0.39954597" />
+      <window_info anchor="bottom" id="Debug" order="3" weight="0.3989796" />
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
       <window_info anchor="bottom" id="TODO" order="6" />
@@ -244,6 +275,32 @@
           <properties exception="System.Threading.ThreadAbortException" displayValue="System.Threading.ThreadAbortException" />
           <option name="timeStamp" value="1" />
         </breakpoint>
+        <line-breakpoint enabled="true" type="DotNet Breakpoints">
+          <url>file://$PROJECT_DIR$/Assets/LibPitayaExample.cs</url>
+          <line>72</line>
+          <properties documentPath="$PROJECT_DIR$/Assets/LibPitayaExample.cs" initialLine="73">
+            <startOffsets>
+              <option value="1583" />
+            </startOffsets>
+            <endOffsets>
+              <option value="1625" />
+            </endOffsets>
+          </properties>
+          <option name="timeStamp" value="2" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="DotNet Breakpoints">
+          <url>file://$PROJECT_DIR$/Assets/LibPitayaExample.cs</url>
+          <line>17</line>
+          <properties documentPath="$PROJECT_DIR$/Assets/LibPitayaExample.cs" initialLine="17">
+            <startOffsets>
+              <option value="318" />
+            </startOffsets>
+            <endOffsets>
+              <option value="333" />
+            </endOffsets>
+          </properties>
+          <option name="timeStamp" value="4" />
+        </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>
   </component>
@@ -262,32 +319,45 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/Assets/Remotes/TestRemote.cs">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="195">
+          <caret line="15" selection-start-line="15" selection-end-line="15" />
+          <folding>
+            <marker date="1541532159587" expanded="false" signature="6:50" ph="..." />
+            <marker date="1541532159587" expanded="true" signature="134:385" ph="{...}" />
+            <marker date="1541532159587" expanded="true" signature="190:289" ph="{...}" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/EB42C23D-C548-4732-8BD3-3A1723672D75/61/6b62b548/PitayaCluster.cs">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1965">
-          <caret line="131" column="29" selection-start-line="131" selection-start-column="29" selection-end-line="131" selection-end-column="29" />
+        <state relative-caret-position="-299">
+          <caret line="39" column="35" selection-start-line="39" selection-start-column="35" selection-end-line="39" selection-end-column="35" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/Assets/LibPitayaExample.cs">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="765">
-          <caret line="51" column="43" selection-start-line="51" selection-start-column="43" selection-end-line="51" selection-end-column="43" />
+        <state relative-caret-position="270">
+          <caret line="18" column="4" selection-start-line="18" selection-start-column="4" selection-end-line="18" selection-end-column="4" />
           <folding>
-            <marker date="1541528882279" expanded="true" signature="6:109" ph="..." />
-            <marker date="1541528882279" expanded="true" signature="157:2533" ph="{...}" />
-            <marker date="1541528882279" expanded="true" signature="350:374" ph="{...}" />
-            <marker date="1541528882279" expanded="true" signature="438:1769" ph="{...}" />
-            <marker date="1541528882279" expanded="true" signature="1167:1302" ph="{...}" />
-            <marker date="1541528882279" expanded="true" signature="1202:1269" ph="{...}" />
-            <marker date="1541528882279" expanded="true" signature="1360:1493" ph="{...}" />
-            <marker date="1541528882279" expanded="true" signature="1524:1627" ph="{...}" />
-            <marker date="1541528882279" expanded="true" signature="1799:2115" ph="{...}" />
-            <marker date="1541528882279" expanded="true" signature="1861:2039" ph="{...}" />
-            <marker date="1541528882279" expanded="true" signature="2061:2109" ph="{...}" />
-            <marker date="1541528882279" expanded="true" signature="2163:2410" ph="{...}" />
-            <marker date="1541528882279" expanded="true" signature="2464:2469" ph="{...}" />
-            <marker date="1541528882279" expanded="true" signature="2496:2531" ph="{...}" />
+            <marker date="1541606815644" expanded="true" signature="6:79" ph="..." />
+            <marker date="1541606815644" expanded="true" signature="127:2570" ph="{...}" />
+            <marker date="1541606815644" expanded="true" signature="310:336" ph="{...}" />
+            <marker date="1541606815644" expanded="true" signature="400:1552" ph="{...}" />
+            <marker date="1541606815644" expanded="true" signature="1143:1276" ph="{...}" />
+            <marker date="1541606815644" expanded="true" signature="1307:1410" ph="{...}" />
+            <marker date="1541606815644" expanded="true" signature="1575:1807" ph="{...}" />
+            <marker date="1541606815644" expanded="true" signature="1667:1802" ph="{...}" />
+            <marker date="1541606815644" expanded="true" signature="1702:1769" ph="{...}" />
+            <marker date="1541606815644" expanded="true" signature="1837:2152" ph="{...}" />
+            <marker date="1541606815644" expanded="true" signature="1899:2076" ph="{...}" />
+            <marker date="1541606815644" expanded="true" signature="2098:2146" ph="{...}" />
+            <marker date="1541606815644" expanded="true" signature="2200:2447" ph="{...}" />
+            <marker date="1541606815644" expanded="true" signature="2501:2506" ph="{...}" />
+            <marker date="1541606815644" expanded="true" signature="2533:2568" ph="{...}" />
           </folding>
         </state>
       </provider>

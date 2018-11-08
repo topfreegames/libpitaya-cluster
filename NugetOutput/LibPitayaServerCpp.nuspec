@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<package >
+  <metadata>
+    <id>LibPitayaServerCpp</id>
+    <version>0.1.0</version>
+    <authors>leonardo</authors>
+    <owners>leonardo</owners>
+    <projectUrl>https://github.com/topfreegames/libpitaya-cluster</projectUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>C# client for interacting with other pitaya servers</description>
+    <releaseNotes>Initial release</releaseNotes>
+    <copyright>Copyright TFG 2018</copyright>
+    <tags>pitaya libpitaya-cluster</tags>
+    <dependencies>
+        <dependency id="protobuf.net32" version="3.5.1"/>
+    </dependencies>
+  </metadata>
+  <files>
+    <!-- Add files from an arbitrary folder that's not necessarily in the project -->
+    <file src="binaries/**/*" target="" />
+    <file src="lib/**" target="" />
+  </files>
+</package>
