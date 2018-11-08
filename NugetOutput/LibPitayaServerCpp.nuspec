@@ -2,7 +2,7 @@
 <package >
   <metadata>
     <id>LibPitayaServerCpp</id>
-    <version>0.1.0</version>
+    <version>0.1.1</version>
     <authors>leonardo</authors>
     <owners>leonardo</owners>
     <projectUrl>https://github.com/topfreegames/libpitaya-cluster</projectUrl>
@@ -12,7 +12,7 @@
     <copyright>Copyright TFG 2018</copyright>
     <tags>pitaya libpitaya-cluster</tags>
     <dependencies>
-        <dependency id="protobuf.net32" version="3.5.1"/>
+        <dependency id="protobuf.net35" version="3.5.1" />
     </dependencies>
   </metadata>
   <files>
