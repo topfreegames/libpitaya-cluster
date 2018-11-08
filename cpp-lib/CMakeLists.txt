@@ -2,6 +2,9 @@ cmake_minimum_required(VERSION 3.7)
 
 project(PitayaCluster)
 
+# Prefer static libraries over dynamic ones.
+set(CMAKE_FIND_LIBRARY_SUFFIXES ".a" ".lib" ".dylib" ".so" ".dll")
+
 if(EXISTS ${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
     include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
     conan_basic_setup(TARGETS NO_OUTPUT_DIRS)
@@ -9,10 +12,10 @@ endif()
 
 add_subdirectory(deps/grpc EXCLUDE_FROM_ALL)
 add_subdirectory(deps/etcd-cpp-apiv3 EXCLUDE_FROM_ALL)
+add_subdirectory(deps/cnats-1.8.0 EXCLUDE_FROM_ALL)
 
 file(GLOB protobuf_files
-  "include/protos/*"
-  )
+  "include/protos/*")
 
 option(BUILD_MACOSX_BUNDLE "Should build a bundle for Macosx" OFF)
 
@@ -81,7 +84,7 @@ target_include_directories(pitaya_cluster
 
 target_link_libraries(pitaya_cluster
   PUBLIC
-    CONAN_PKG::cnats
+    nats_static
     etcd-cpp-api)
 
 # ===============================

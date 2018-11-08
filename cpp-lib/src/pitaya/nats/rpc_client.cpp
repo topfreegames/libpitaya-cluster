@@ -1,5 +1,4 @@
 #include "pitaya/nats/rpc_client.h"
-#include "nats/nats.h"
 #include "pitaya.h"
 #include "pitaya/constants.h"
 #include "pitaya/nats/config.h"
@@ -8,6 +7,7 @@
 #include "protos/response.pb.h"
 #include "spdlog/sinks/stdout_color_sinks.h"
 #include <iostream>
+#include <nats/nats.h>
 #include <string>
 
 using std::string;

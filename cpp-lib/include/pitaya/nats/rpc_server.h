@@ -1,12 +1,12 @@
 #ifndef PITAYA_NATS_RPC_SERVER_H
 #define PITAYA_NATS_RPC_SERVER_H
 
-#include "nats/nats.h"
 #include "pitaya.h"
 #include "pitaya/nats/config.h"
 #include "protos/request.pb.h"
 #include "protos/response.pb.h"
 #include "spdlog/spdlog.h"
+#include <nats/nats.h>
 #include <string>
 
 namespace pitaya {

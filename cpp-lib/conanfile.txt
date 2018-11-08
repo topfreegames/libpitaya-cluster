@@ -1,5 +1,5 @@
 [requires]
-cnats/1.8.0@tfg-tools/testing
+OpenSSL/1.0.2o@conan/stable
 
 [generators]
 cmake
