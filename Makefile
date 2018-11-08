@@ -1,3 +1,19 @@
+MODULE_NAME = LibPitayaClusterCpp
+
+nuget-clean:
+	@rm -rf NugetOutput/Temp/bin/Release
+	@rm -rf NugetOutput/obj
+	@rm -rf NugetOutput/*.nupkg
+
+build-all: nuget-clean build-csharp-lib-release
+
+pack: build-all
+	@cp csharp-lib/cluster-lib/bin/Release/cluster-lib.dll NugetOutput/lib
+	@cd NugetOutput && nuget pack *.nuspec -OutputDirectory .
+
+push: pack
+	@cd NugetOutput && nuget push *.nupkg -Source $(MODULE_NAME)
+
 default: build
 
 ensure-out-dir:
@@ -11,6 +27,9 @@ build-csharp-example:
 	
 build-csharp-lib:
 	@cd ./csharp-lib && msbuild
+
+build-csharp-lib-release:
+	@cd ./csharp-lib && msbuild /p:Configuration=Release
 	
 run-csharp-example:
 	@cd ./csharp-example/csharp-example && mono ./bin/Debug/csharp-example.exe

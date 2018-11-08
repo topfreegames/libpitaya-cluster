@@ -77,7 +77,7 @@ endif()
 
 set_target_properties(pitaya_cluster
   PROPERTIES
-    CXX_STANDARD 14
+    CXX_STANDARD 11
     POSITION_INDEPENDENT_CODE ON)
 
 target_include_directories(pitaya_cluster
@@ -108,5 +108,5 @@ if(NOT BUILD_MACOSX_BUNDLE)
 
     set_target_properties(main
       PROPERTIES
-        CXX_STANDARD 14)
+        CXX_STANDARD 11)
 endif()

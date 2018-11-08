@@ -8,7 +8,6 @@ using boost::optional;
 using std::string;
 using std::vector;
 using std::placeholders::_1;
-using namespace std::chrono_literals;
 using namespace pitaya;
 namespace json = web::json;
 

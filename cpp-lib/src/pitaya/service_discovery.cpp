@@ -17,7 +17,6 @@ namespace chrono = std::chrono;
 namespace json = web::json;
 
 using std::placeholders::_1;
-using namespace std::chrono_literals;
 using namespace pitaya;
 
 namespace pitaya {
