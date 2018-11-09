@@ -8,9 +8,9 @@
 #include "pitaya/cluster.h"
 
 using namespace pitaya;
-using trompeloeil::_;
 using boost::optional;
 using pitaya::service_discovery::ServiceDiscovery;
+using trompeloeil::_;
 
 protos::Response RpcFunc(protos::Request)
 {
@@ -35,8 +35,7 @@ TEST_CASE("Cluster can be created normally")
         serverToReturn.id = "my-server-id";
         serverToReturn.type = "connector";
 
-        REQUIRE_CALL(*mockSd, GetServerById(ANY(std::string)))
-            .RETURN(serverToReturn);
+        REQUIRE_CALL(*mockSd, GetServerById(ANY(std::string))).RETURN(serverToReturn);
 
         protos::Response internalRes;
         internalRes.set_data("ABACATE");
@@ -44,8 +43,7 @@ TEST_CASE("Cluster can be created normally")
         protos::Response resToReturn;
         resToReturn.set_data(internalRes.SerializeAsString());
 
-        REQUIRE_CALL(*mockRpcClient, Call(_, ANY(const protos::Request&)))
-            .RETURN(resToReturn);
+        REQUIRE_CALL(*mockRpcClient, Call(_, ANY(const protos::Request&))).RETURN(resToReturn);
 
         auto msg = new protos::Msg();
         msg->set_data("hello my friend");

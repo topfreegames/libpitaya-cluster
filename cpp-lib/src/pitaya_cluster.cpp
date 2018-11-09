@@ -16,6 +16,23 @@ using namespace pitaya;
 using namespace pitaya::nats;
 using pitaya::service_discovery::ServiceDiscovery;
 
+//==========================================
+// Integration with the mocking library
+//==========================================
+namespace trompeloeil {
+template<>
+void
+reporter<specialized>::send(severity s, const char* file, unsigned long line, const char* msg)
+{
+    auto f = line ? file : "[file/line unavailable]";
+    if (s == severity::fatal) {
+        ADD_FAIL_AT(f, line, msg);
+    } else {
+        ADD_FAIL_CHECK_AT(f, line, msg);
+    }
+}
+} // namespace trompeloeil
+
 int x;
 
 protos::Response
