@@ -16,7 +16,7 @@ using namespace pitaya;
 namespace pitaya {
 namespace nats {
 
-RPCClient::RPCClient(const Server& server, const NATSConfig& config, const char* loggerName)
+NatsRpcClient::NatsRpcClient(const Server& server, const NatsConfig& config, const char* loggerName)
     : _log(loggerName ? spdlog::get(loggerName)->clone("nats_rpc_client")
                       : spdlog::stdout_color_mt("nats_rpc_client"))
     , _nc(nullptr)
@@ -44,7 +44,7 @@ RPCClient::RPCClient(const Server& server, const NATSConfig& config, const char*
 }
 
 protos::Response
-RPCClient::Call(const pitaya::Server& target, const protos::Request& req)
+NatsRpcClient::Call(const pitaya::Server& target, const protos::Request& req)
 {
     auto topic = utils::GetTopicForServer(target);
 
@@ -76,23 +76,23 @@ RPCClient::Call(const pitaya::Server& target, const protos::Request& req)
 }
 
 void
-RPCClient::DisconnectedCb(natsConnection* nc, void* closure)
+NatsRpcClient::DisconnectedCb(natsConnection* nc, void* closure)
 {
-    auto instance = reinterpret_cast<RPCClient*>(closure);
+    auto instance = reinterpret_cast<NatsRpcClient*>(closure);
     instance->_log->error("nats disconnected! will try to reconnect...");
 }
 
 void
-RPCClient::ReconnectedCb(natsConnection* nc, void* closure)
+NatsRpcClient::ReconnectedCb(natsConnection* nc, void* closure)
 {
-    auto instance = reinterpret_cast<RPCClient*>(closure);
+    auto instance = reinterpret_cast<NatsRpcClient*>(closure);
     instance->_log->error("nats reconnected!");
 }
 
 void
-RPCClient::ClosedCb(natsConnection* nc, void* closure)
+NatsRpcClient::ClosedCb(natsConnection* nc, void* closure)
 {
-    auto instance = reinterpret_cast<RPCClient*>(closure);
+    auto instance = reinterpret_cast<NatsRpcClient*>(closure);
     instance->_log->error("failed all nats reconnection attempts!");
     // TODO: exit server here, but need to do this gracefully
 }

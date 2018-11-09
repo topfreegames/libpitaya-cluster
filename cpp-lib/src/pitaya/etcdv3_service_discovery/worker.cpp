@@ -1,4 +1,4 @@
-#include "pitaya/service_discovery/worker.h"
+#include "pitaya/etcdv3_service_discovery/worker.h"
 #include "pitaya/utils/string_utils.h"
 #include <assert.h>
 #include <cpprest/json.h>
@@ -12,7 +12,7 @@ using namespace pitaya;
 namespace json = web::json;
 
 namespace pitaya {
-namespace service_discovery {
+namespace etcdv3_service_discovery {
 
 static string ServerAsJson(const Server& server);
 static string GetServerKey(const std::string& serverId, const std::string& serverType);
@@ -477,5 +477,5 @@ Worker::ParseServer(const string& jsonStr)
     return server;
 }
 
-} // namespace service_discovery
+} // namespace etcdv3_service_discovery
 } // namespace pitaya

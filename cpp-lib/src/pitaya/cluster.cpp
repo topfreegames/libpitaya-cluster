@@ -1,7 +1,11 @@
 #include "pitaya/cluster.h"
 #include "pitaya/constants.h"
+#include "pitaya/etcdv3_service_discovery.h"
+#include "pitaya/nats/rpc_client.h"
+#include "pitaya/nats/rpc_server.h"
 #include "pitaya/utils.h"
 #include "protos/msg.pb.h"
+#include <spdlog/sinks/stdout_color_sinks.h>
 
 using namespace pitaya;
 using namespace std;
@@ -11,28 +15,32 @@ using google::protobuf::MessageLite;
 
 namespace pitaya {
 
-Cluster::Cluster(service_discovery::Config&& sdConfig,
-                 nats::NATSConfig&& natsConfig,
+using etcdv3_service_discovery::Etcdv3ServiceDiscovery;
+using service_discovery::ServiceDiscovery;
+
+Cluster::Cluster(etcdv3_service_discovery::Config&& sdConfig,
+                 nats::NatsConfig&& natsConfig,
                  Server server,
-                 RPCHandlerFunc rpcServerHandlerFunc,
+                 RpcHandlerFunc rpcServerHandlerFunc,
                  const char* loggerName)
+    : Cluster(std::unique_ptr<ServiceDiscovery>(
+                  new Etcdv3ServiceDiscovery(std::move(sdConfig), server, loggerName)),
+              std::unique_ptr<RpcServer>(
+                  new nats::NatsRpcServer(server, natsConfig, rpcServerHandlerFunc, loggerName)),
+              std::unique_ptr<RpcClient>(new nats::NatsRpcClient(server, natsConfig, loggerName)))
+{}
+
+Cluster::Cluster(std::unique_ptr<service_discovery::ServiceDiscovery> sd,
+                 std::unique_ptr<RpcServer> rpcServer,
+                 std::unique_ptr<RpcClient> rpcClient,
+                 const char* loggerName)
+    : _log(loggerName ? spdlog::get(loggerName)->clone("cluster")
+                      : spdlog::stdout_color_mt("cluster"))
+    , _sd(std::move(sd))
+    , _rpcSv(std::move(rpcServer))
+    , _rpcClient(std::move(rpcClient))
 {
-    _log =
-        loggerName ? spdlog::get(loggerName)->clone("cluster") : spdlog::stdout_color_mt("cluster");
     _log->set_level(spdlog::level::debug);
-    _natsConfig = std::move(natsConfig);
-    _server = std::move(server);
-    _rpcServerHandlerFunc = rpcServerHandlerFunc;
-
-    _rpcSv = unique_ptr<nats::RPCServer>(
-        new nats::RPCServer(_server, _natsConfig, _rpcServerHandlerFunc, loggerName));
-
-    _rpcClient = unique_ptr<nats::RPCClient>(new nats::RPCClient(_server, _natsConfig, loggerName));
-
-    _sd = std::unique_ptr<service_discovery::ServiceDiscovery>(
-        new service_discovery::ServiceDiscovery(std::move(sdConfig), _server, loggerName));
-
-    _log->info("Cluster correctly initialized");
 }
 
 optional<PitayaError>

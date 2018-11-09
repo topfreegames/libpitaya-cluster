@@ -15,13 +15,12 @@ using namespace pitaya;
 namespace pitaya {
 namespace nats {
 
-RPCHandlerFunc RPCServer::handler;
-
-RPCServer::RPCServer(const Server& server,
-                     const NATSConfig& config,
-                     RPCHandlerFunc handlerFunc,
-                     const char* loggerName)
-    : _log(loggerName ? spdlog::get(loggerName)->clone("nats_rpc_server")
+NatsRpcServer::NatsRpcServer(const Server& server,
+                             const NatsConfig& config,
+                             RpcHandlerFunc handlerFunc,
+                             const char* loggerName)
+    : RpcServer(handlerFunc)
+    , _log(loggerName ? spdlog::get(loggerName)->clone("nats_rpc_server")
                       : spdlog::stdout_color_mt("nats_rpc_server"))
     , _nc(nullptr)
     , _sub(nullptr)
@@ -41,7 +40,6 @@ RPCServer::RPCServer(const Server& server,
     natsOptions_SetErrorHandler(opts, ErrHandler, this);
     natsOptions_SetURL(opts, config.natsAddr.c_str());
 
-    handler = handlerFunc;
     s = natsConnection_Connect(&_nc, opts);
     if (s == NATS_OK) {
         s = natsConnection_Subscribe(
@@ -55,9 +53,9 @@ RPCServer::RPCServer(const Server& server,
 }
 
 void
-RPCServer::HandleMsg(natsConnection* nc, natsSubscription* sub, natsMsg* msg, void* closure)
+NatsRpcServer::HandleMsg(natsConnection* nc, natsSubscription* sub, natsMsg* msg, void* closure)
 {
-    auto instance = reinterpret_cast<RPCServer*>(closure);
+    auto instance = reinterpret_cast<NatsRpcServer*>(closure);
 
     instance->PrintSubStatus(sub);
 
@@ -69,7 +67,7 @@ RPCServer::HandleMsg(natsConnection* nc, natsSubscription* sub, natsMsg* msg, vo
         return;
     }
 
-    protos::Response res = handler(req);
+    protos::Response res = instance->_handlerFunc(req);
 
     std::vector<uint8_t> buffer(res.ByteSizeLong());
     res.SerializeToArray(buffer.data(), buffer.size());
@@ -79,7 +77,7 @@ RPCServer::HandleMsg(natsConnection* nc, natsSubscription* sub, natsMsg* msg, vo
 }
 
 void
-RPCServer::PrintSubStatus(natsSubscription* subscription)
+NatsRpcServer::PrintSubStatus(natsSubscription* subscription)
 {
     int pendingMsgs;
     int maxPendingMsgs;
@@ -100,12 +98,12 @@ RPCServer::PrintSubStatus(natsSubscription* subscription)
 }
 
 void
-RPCServer::ErrHandler(natsConnection* nc,
-                      natsSubscription* subscription,
-                      natsStatus err,
-                      void* closure)
+NatsRpcServer::ErrHandler(natsConnection* nc,
+                          natsSubscription* subscription,
+                          natsStatus err,
+                          void* closure)
 {
-    auto instance = (RPCServer*)closure;
+    auto instance = (NatsRpcServer*)closure;
     if (err == NATS_SLOW_CONSUMER) {
         instance->_log->error("nats runtime error: slow consumer");
     } else {
@@ -114,23 +112,23 @@ RPCServer::ErrHandler(natsConnection* nc,
 }
 
 void
-RPCServer::DisconnectedCb(natsConnection* nc, void* closure)
+NatsRpcServer::DisconnectedCb(natsConnection* nc, void* closure)
 {
-    auto instance = reinterpret_cast<RPCServer*>(closure);
+    auto instance = reinterpret_cast<NatsRpcServer*>(closure);
     instance->_log->error("nats disconnected! will try to reconnect...");
 }
 
 void
-RPCServer::ReconnectedCb(natsConnection* nc, void* closure)
+NatsRpcServer::ReconnectedCb(natsConnection* nc, void* closure)
 {
-    auto instance = reinterpret_cast<RPCServer*>(closure);
+    auto instance = reinterpret_cast<NatsRpcServer*>(closure);
     instance->_log->error("nats reconnected!");
 }
 
 void
-RPCServer::ClosedCb(natsConnection* nc, void* closure)
+NatsRpcServer::ClosedCb(natsConnection* nc, void* closure)
 {
-    auto instance = reinterpret_cast<RPCServer*>(closure);
+    auto instance = reinterpret_cast<NatsRpcServer*>(closure);
     instance->_log->error("failed all nats reconnection attempts!");
     // TODO: exit server here, but need to do this gracefully
 }

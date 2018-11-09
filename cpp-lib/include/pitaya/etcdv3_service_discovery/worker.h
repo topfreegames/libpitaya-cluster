@@ -1,9 +1,9 @@
-#ifndef SERVICE_DISCOVERY_SERVICE_DISCOVERY_WORKER_H
-#define SERVICE_DISCOVERY_SERVICE_DISCOVERY_WORKER_H
+#ifndef PITAYA_ETCDV3_SERVICE_DISCOVERY_WORKER_H
+#define PITAYA_ETCDV3_SERVICE_DISCOVERY_WORKER_H
 
 #include "pitaya.h"
-#include "pitaya/service_discovery/config.h"
-#include "pitaya/service_discovery/lease_keep_alive.h"
+#include "pitaya/etcdv3_service_discovery/config.h"
+#include "pitaya/etcdv3_service_discovery/lease_keep_alive.h"
 #include "pitaya/utils/semaphore.h"
 #include "pitaya/utils/sync_deque.h"
 #include "pitaya/utils/sync_map.h"
@@ -18,7 +18,7 @@
 #include <thread>
 
 namespace pitaya {
-namespace service_discovery {
+namespace etcdv3_service_discovery {
 
 enum class JobInfo
 {
@@ -81,7 +81,7 @@ private:
     utils::SyncMap<std::string, std::unordered_map<std::string, pitaya::Server>> _serversByType;
 };
 
-} // namespace service_discovery
+} // namespace etcdv3_service_discovery
 } // namespace pitaya
 
-#endif // SERVICE_DISCOVERY_SERVICE_DISCOVERY_WORKER_H
+#endif // PITAYA_ETCDV3_SERVICE_DISCOVERY_WORKER_H

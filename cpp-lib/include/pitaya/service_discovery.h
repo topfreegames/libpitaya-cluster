@@ -1,13 +1,10 @@
-#ifndef TFG_SERVICE_DISCOVERY_H
-#define TFG_SERVICE_DISCOVERY_H
+#ifndef PITAYA_SERVICE_DISCOVERY_H
+#define PITAYA_SERVICE_DISCOVERY_H
 
 #include <memory>
 #include <string>
 
 #include "pitaya.h"
-#include "pitaya/service_discovery/config.h"
-#include "pitaya/service_discovery/worker.h"
-#include "spdlog/spdlog.h"
 #include <boost/optional.hpp>
 
 namespace pitaya {
@@ -16,20 +13,13 @@ namespace service_discovery {
 class ServiceDiscovery
 {
 public:
-    ServiceDiscovery(const Config& config,
-                     const pitaya::Server& server,
-                     const char* loggerName = nullptr);
-    ~ServiceDiscovery();
+    virtual ~ServiceDiscovery() = default;
 
-    boost::optional<pitaya::Server> GetServerById(const std::string& id);
-    std::vector<pitaya::Server> GetServersByType(const std::string& type);
-
-private:
-    std::shared_ptr<spdlog::logger> _log;
-    Worker _worker;
+    virtual boost::optional<pitaya::Server> GetServerById(const std::string& id) = 0;
+    virtual std::vector<pitaya::Server> GetServersByType(const std::string& type) = 0;
 };
 
 } // namespace service_discovery
 } // namespace pitaya
 
-#endif // TFG_SERVICE_DISCOVERY_H
+#endif // PITAYA_SERVICE_DISCOVERY_H

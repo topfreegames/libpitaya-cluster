@@ -1,5 +1,6 @@
 #include "pitaya.h"
 #include "pitaya/cluster.h"
+#include "pitaya/etcdv3_service_discovery/config.h"
 #include "pitaya/service_discovery.h"
 #include "protos/msg.pb.h"
 #include "protos/request.pb.h"
@@ -7,6 +8,7 @@
 #include <exception>
 #include <iostream>
 #include <memory>
+#include <spdlog/sinks/stdout_color_sinks.h>
 #include <thread>
 
 using namespace std;
@@ -35,9 +37,9 @@ main()
     auto logger = spdlog::stdout_color_mt("main");
 
     Server server("someid", "sometype");
-    NATSConfig nats_config("nats://localhost:4222", 1000, 3000, 3, 100);
+    NatsConfig nats_config("nats://localhost:4222", 1000, 3000, 3, 100);
 
-    service_discovery::Config sdConfig;
+    etcdv3_service_discovery::Config sdConfig;
     sdConfig.endpoints = "http://127.0.0.1:4001";
     sdConfig.etcdPrefix = "pitaya/servers";
 

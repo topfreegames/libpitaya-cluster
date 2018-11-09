@@ -1,5 +1,5 @@
-#ifndef TFG_PITAYA_H
-#define TFG_PITAYA_H
+#ifndef PITAYA_H
+#define PITAYA_H
 
 #include "protos/request.pb.h"
 #include "protos/response.pb.h"
@@ -7,7 +7,8 @@
 #include <string>
 
 namespace pitaya {
-using RPCHandlerFunc = std::function<protos::Response(protos::Request)>;
+
+using RpcHandlerFunc = std::function<protos::Response(protos::Request)>;
 
 class PitayaException : public std::exception
 {
@@ -74,4 +75,4 @@ struct Server
 };
 
 } // namespace pitaya
-#endif
+#endif // PITAYA_H

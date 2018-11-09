@@ -1,11 +1,11 @@
-#ifndef PITAYA_SERVICE_DISCOVERY_CONFIG_H
-#define PITAYA_SERVICE_DISCOVERY_CONFIG_H
+#ifndef PITAYA_ETCDV3_SERVICE_DISCOVERY_CONFIG_H
+#define PITAYA_ETCDV3_SERVICE_DISCOVERY_CONFIG_H
 
 #include <chrono>
 #include <string>
 
 namespace pitaya {
-namespace service_discovery {
+namespace etcdv3_service_discovery {
 
 struct Config
 {
@@ -26,7 +26,7 @@ struct Config
     {}
 };
 
-} // namespace service_discovery
+} // namespace etcdv3_service_discovery
 } // namespace pitaya
 
-#endif // PITAYA_SERVICE_DISCOVERY_CONFIG_H
+#endif // PITAYA_ETCDV3_SERVICE_DISCOVERY_CONFIG_H

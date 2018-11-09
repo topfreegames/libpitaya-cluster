@@ -11,7 +11,7 @@
 
 using namespace std;
 using namespace pitaya;
-using pitaya::nats::NATSConfig;
+using pitaya::nats::NatsConfig;
 
 template<typename Mutex>
 class function_sink : public spdlog::sinks::base_sink<Mutex>
@@ -122,9 +122,9 @@ struct CSDConfig
     int logServerDetails;
     int syncServersIntervalSec;
 
-    service_discovery::Config ToConfig()
+    etcdv3_service_discovery::Config ToConfig()
     {
-        service_discovery::Config config;
+        etcdv3_service_discovery::Config config;
         config.endpoints = std::string(endpoints);
         config.etcdPrefix = std::string(etcdPrefix);
         config.heartbeatTTLSec = std::chrono::seconds(heartbeatTTLSec);
@@ -206,7 +206,7 @@ extern "C"
     {
         gLogger = CreateLogger(logHandler);
 
-        NATSConfig natsCfg = NATSConfig(nc->addr,
+        NatsConfig natsCfg = NatsConfig(nc->addr,
                                         nc->requestTimeoutMs,
                                         nc->connectionTimeoutMs,
                                         nc->maxReconnectionAttempts,

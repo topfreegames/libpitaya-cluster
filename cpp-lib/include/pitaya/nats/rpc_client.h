@@ -3,6 +3,7 @@
 
 #include "pitaya.h"
 #include "pitaya/nats/config.h"
+#include "pitaya/rpc_client.h"
 #include "protos/request.pb.h"
 #include "protos/response.pb.h"
 #include "spdlog/spdlog.h"
@@ -12,13 +13,13 @@
 namespace pitaya {
 namespace nats {
 
-class RPCClient
+class NatsRpcClient : public RpcClient
 {
 public:
-    RPCClient(const pitaya::Server& server,
-              const NATSConfig& config,
-              const char* loggerName = nullptr);
-    protos::Response Call(const pitaya::Server& target, const protos::Request& req);
+    NatsRpcClient(const pitaya::Server& server,
+                  const NatsConfig& config,
+                  const char* loggerName = nullptr);
+    protos::Response Call(const pitaya::Server& target, const protos::Request& req) override;
 
 private:
     std::shared_ptr<spdlog::logger> _log;

@@ -6,7 +6,7 @@
 namespace pitaya {
 namespace nats {
 
-struct NATSConfig
+struct NatsConfig
 {
     // TODO make more nats configs in both client and server
     // like buffer size, connection retries, etc
@@ -16,7 +16,7 @@ struct NATSConfig
     int maxReconnectionAttempts;
     int maxPendingMsgs;
 
-    NATSConfig(const std::string& addr,
+    NatsConfig(const std::string& addr,
                const int requestTimeoutMs,
                const int64_t connectionTimeoutMs,
                const int maxReconnectionAttempts,
@@ -28,7 +28,7 @@ struct NATSConfig
         , maxPendingMsgs(maxPendingMsgs)
     {}
 
-    NATSConfig()
+    NatsConfig()
         : connectionTimeoutMs(-1)
         , requestTimeoutMs(-1)
         , maxReconnectionAttempts(3)

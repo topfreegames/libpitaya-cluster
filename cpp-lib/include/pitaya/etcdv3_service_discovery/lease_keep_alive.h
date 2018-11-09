@@ -1,5 +1,5 @@
-#ifndef SERVICE_DISCOVERY_LEASE_KEEP_ALIVE_H
-#define SERVICE_DISCOVERY_LEASE_KEEP_ALIVE_H
+#ifndef PITAYA_ETCDV3_SERVICE_DISCOVERY_LEASE_KEEP_ALIVE_H
+#define PITAYA_ETCDV3_SERVICE_DISCOVERY_LEASE_KEEP_ALIVE_H
 
 #include "spdlog/spdlog.h"
 #include <etcd/Client.hpp>
@@ -9,7 +9,7 @@
 #include <string>
 
 namespace pitaya {
-namespace service_discovery {
+namespace etcdv3_service_discovery {
 
 enum class LeaseKeepAliveStatus
 {
@@ -37,7 +37,7 @@ private:
     pplx::task<LeaseKeepAliveStatus> _runTask;
 };
 
-} // namespace service_discovery
+} // namespace etcdv3_service_discovery
 } // namespace pitaya
 
 #endif // SERVICE_DISCOVERY_LEASE_KEEP_ALIVE_H

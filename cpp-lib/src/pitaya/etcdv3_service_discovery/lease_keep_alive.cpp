@@ -1,11 +1,11 @@
-#include "pitaya/service_discovery/lease_keep_alive.h"
+#include "pitaya/etcdv3_service_discovery/lease_keep_alive.h"
 #include "spdlog/sinks/stdout_color_sinks.h"
 #include <chrono>
 
 using std::chrono::seconds;
 
 namespace pitaya {
-namespace service_discovery {
+namespace etcdv3_service_discovery {
 
 LeaseKeepAlive::LeaseKeepAlive(etcd::Client& client, const char* loggerName)
     : _log(spdlog::get(loggerName)->clone("lease_keep_alive"))
@@ -17,7 +17,7 @@ LeaseKeepAlive::LeaseKeepAlive(etcd::Client& client, const char* loggerName)
     _log->set_level(spdlog::level::debug);
 }
 
-pplx::task<service_discovery::LeaseKeepAliveStatus>
+pplx::task<etcdv3_service_discovery::LeaseKeepAliveStatus>
 LeaseKeepAlive::Start()
 {
     if (_leaseId == -1) {
@@ -82,5 +82,5 @@ LeaseKeepAlive::SetLeaseId(int64_t leaseId)
     _leaseId = leaseId;
 }
 
-} // namespace service_discovery
+} // namespace etcdv3_service_discovery
 } // namespace pitaya

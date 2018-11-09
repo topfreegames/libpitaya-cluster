@@ -2,13 +2,13 @@
 #define PITAYA_CLUSTER_H
 
 #include "pitaya.h"
+#include "pitaya/etcdv3_service_discovery/config.h"
 #include "pitaya/nats/config.h"
-#include "pitaya/nats/rpc_client.h"
-#include "pitaya/nats/rpc_server.h"
+#include "pitaya/rpc_client.h"
+#include "pitaya/rpc_server.h"
 #include "pitaya/service_discovery.h"
 #include "protos/request.pb.h"
 #include "protos/response.pb.h"
-#include "spdlog/sinks/stdout_color_sinks.h"
 #include "spdlog/spdlog.h"
 #include <boost/optional.hpp>
 #include <google/protobuf/message_lite.h>
@@ -29,10 +29,15 @@ struct PitayaError
 class Cluster
 {
 public:
-    Cluster(service_discovery::Config&& sdConfig,
-            nats::NATSConfig&& natsConfig,
+    Cluster(std::unique_ptr<service_discovery::ServiceDiscovery> sd,
+            std::unique_ptr<RpcServer> rpcServer,
+            std::unique_ptr<RpcClient> rpcClient,
+            const char* loggerName = nullptr);
+
+    Cluster(etcdv3_service_discovery::Config&& sdConfig,
+            nats::NatsConfig&& natsConfig,
             Server server,
-            RPCHandlerFunc rpcServerHandlerFunc,
+            RpcHandlerFunc rpcServerHandlerFunc,
             const char* loggerName = nullptr);
 
     service_discovery::ServiceDiscovery& GetServiceDiscovery() { return *_sd.get(); }
@@ -48,12 +53,9 @@ public:
 
 private:
     std::shared_ptr<spdlog::logger> _log;
-    pitaya::nats::NATSConfig _natsConfig;
-    Server _server;
     std::unique_ptr<service_discovery::ServiceDiscovery> _sd;
-    std::unique_ptr<nats::RPCServer> _rpcSv;
-    std::unique_ptr<nats::RPCClient> _rpcClient;
-    RPCHandlerFunc _rpcServerHandlerFunc;
+    std::unique_ptr<RpcServer> _rpcSv;
+    std::unique_ptr<RpcClient> _rpcClient;
 };
 
 } // namespace pitaya

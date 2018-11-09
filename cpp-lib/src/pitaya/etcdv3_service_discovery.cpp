@@ -1,5 +1,5 @@
-#include "pitaya/service_discovery.h"
-#include "pitaya/service_discovery/lease_keep_alive.h"
+#include "pitaya/etcdv3_service_discovery.h"
+#include "pitaya/etcdv3_service_discovery/lease_keep_alive.h"
 #include "pitaya/utils/string_utils.h"
 #include "spdlog/sinks/stdout_color_sinks.h"
 #include <algorithm>
@@ -20,12 +20,12 @@ using std::placeholders::_1;
 using namespace pitaya;
 
 namespace pitaya {
-namespace service_discovery {
+namespace etcdv3_service_discovery {
 
 // Helper functions
-ServiceDiscovery::ServiceDiscovery(const Config& config,
-                                   const Server& server,
-                                   const char* loggerName)
+Etcdv3ServiceDiscovery::Etcdv3ServiceDiscovery(const Config& config,
+                                               const Server& server,
+                                               const char* loggerName)
     : _log(loggerName ? spdlog::get(loggerName)->clone("service_discovery")
                       : spdlog::stdout_color_mt("service_discovery"))
     , _worker(config, server, loggerName ? loggerName : "service_discovery")
@@ -38,22 +38,22 @@ ServiceDiscovery::ServiceDiscovery(const Config& config,
     _log->set_level(spdlog::level::debug);
 }
 
-ServiceDiscovery::~ServiceDiscovery()
+Etcdv3ServiceDiscovery::~Etcdv3ServiceDiscovery()
 {
     _log->info("Terminating");
 }
 
 boost::optional<pitaya::Server>
-ServiceDiscovery::GetServerById(const std::string& id)
+Etcdv3ServiceDiscovery::GetServerById(const std::string& id)
 {
     return _worker.GetServerById(id);
 }
 
 vector<Server>
-ServiceDiscovery::GetServersByType(const std::string& type)
+Etcdv3ServiceDiscovery::GetServersByType(const std::string& type)
 {
     return _worker.GetServersByType(type);
 }
 
-} // namespace service_discovery
+} // namespace etcdv3_service_discovery
 } // namespace pitaya

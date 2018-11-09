@@ -3,6 +3,7 @@
 
 #include "pitaya.h"
 #include "pitaya/nats/config.h"
+#include "pitaya/rpc_server.h"
 #include "protos/request.pb.h"
 #include "protos/response.pb.h"
 #include "spdlog/spdlog.h"
@@ -12,13 +13,13 @@
 namespace pitaya {
 namespace nats {
 
-class RPCServer
+class NatsRpcServer : public RpcServer
 {
 public:
-    RPCServer(const pitaya::Server& server,
-              const NATSConfig& config,
-              pitaya::RPCHandlerFunc handler,
-              const char* loggerName = nullptr);
+    NatsRpcServer(const Server& server,
+                  const NatsConfig& config,
+                  RpcHandlerFunc handler,
+                  const char* loggerName = nullptr);
 
 private:
     void PrintSubStatus(natsSubscription* sub);
@@ -36,7 +37,6 @@ private:
 
 private:
     std::shared_ptr<spdlog::logger> _log;
-    static pitaya::RPCHandlerFunc handler;
     natsConnection* _nc;
     natsSubscription* _sub;
 };
