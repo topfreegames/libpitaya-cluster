@@ -122,5 +122,40 @@ TEST_CASE("Cluster can be created normally")
         CHECK(pErr.msg == "Horrible error");
     }
 
+    SUBCASE("RPC returns error if it cannot parse the protobuf message")
+    {
+        Server serverToReturn;
+        serverToReturn.frontend = false;
+        serverToReturn.hostname = "random-host";
+        serverToReturn.id = "my-server-id";
+        serverToReturn.type = "connector";
+
+        REQUIRE_CALL(*mockSd, GetServerById("my-server-id")).RETURN(serverToReturn);
+
+        auto error = new protos::Error();
+        error->set_allocated_code(new std::string(kCodeInternalError));
+        error->set_allocated_msg(new std::string("Horrible error"));
+
+        protos::Response resToReturn;
+        resToReturn.set_data("woiqdjoi2jd8398u320f9u23f");
+
+        REQUIRE_CALL(*mockRpcClient, Call(_, ANY(const protos::Request&))).RETURN(resToReturn);
+
+        auto msg = new protos::Msg();
+        msg->set_data("hello my friend");
+        msg->set_route("someroute");
+
+        protos::Request req;
+        req.set_allocated_msg(msg);
+
+        protos::Response res;
+
+        optional<PitayaError> err = cluster.RPC("my-server-id", "mytest.route", req, res);
+
+        CHECK(err.has_value());
+        CHECK(err.value().code == kCodeInternalError);
+        CHECK(err.value().msg == "error parsing protobuf");
+    }
+
     spdlog::drop_all();
 }
