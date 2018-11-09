@@ -1,7 +1,7 @@
 #include "doctest.h"
 #include "trompeloeil.hpp"
-#include <memory>
 #include <boost/optional.hpp>
+#include <memory>
 
 #include "mock_rpc_client.h"
 #include "mock_rpc_server.h"
@@ -31,7 +31,6 @@ TEST_CASE("Cluster can be created normally")
                              std::unique_ptr<RpcServer>(mockRpcSv),
                              std::unique_ptr<RpcClient>(mockRpcClient) };
 
-
     SUBCASE("RPCs can be done successfuly")
     {
         Server serverToReturn;
@@ -40,7 +39,11 @@ TEST_CASE("Cluster can be created normally")
         serverToReturn.id = "my-server-id";
         serverToReturn.type = "connector";
 
-        REQUIRE_CALL(*mockSd, GetServerById("my-server-id")).RETURN(serverToReturn);
+        trompeloeil::sequence seq;
+
+        REQUIRE_CALL(*mockSd, GetServerById("my-server-id"))
+            .RETURN(serverToReturn)
+            .IN_SEQUENCE(seq);
 
         protos::Response internalRes;
         internalRes.set_data("ABACATE");
@@ -48,7 +51,9 @@ TEST_CASE("Cluster can be created normally")
         protos::Response resToReturn;
         resToReturn.set_data(internalRes.SerializeAsString());
 
-        REQUIRE_CALL(*mockRpcClient, Call(_, ANY(const protos::Request&))).RETURN(resToReturn);
+        REQUIRE_CALL(*mockRpcClient, Call(_, ANY(const protos::Request&)))
+            .RETURN(resToReturn)
+            .IN_SEQUENCE(seq);
 
         auto msg = new protos::Msg();
         msg->set_data("hello my friend");
@@ -93,7 +98,11 @@ TEST_CASE("Cluster can be created normally")
         serverToReturn.id = "my-server-id";
         serverToReturn.type = "connector";
 
-        REQUIRE_CALL(*mockSd, GetServerById("my-server-id")).RETURN(serverToReturn);
+        trompeloeil::sequence seq;
+
+        REQUIRE_CALL(*mockSd, GetServerById("my-server-id"))
+            .RETURN(serverToReturn)
+            .IN_SEQUENCE(seq);
 
         auto error = new protos::Error();
         error->set_allocated_code(new std::string(kCodeInternalError));
@@ -102,7 +111,9 @@ TEST_CASE("Cluster can be created normally")
         protos::Response resToReturn;
         resToReturn.set_allocated_error(error);
 
-        REQUIRE_CALL(*mockRpcClient, Call(_, ANY(const protos::Request&))).RETURN(resToReturn);
+        REQUIRE_CALL(*mockRpcClient, Call(_, ANY(const protos::Request&)))
+            .RETURN(resToReturn)
+            .IN_SEQUENCE(seq);
 
         auto msg = new protos::Msg();
         msg->set_data("hello my friend");
@@ -130,7 +141,11 @@ TEST_CASE("Cluster can be created normally")
         serverToReturn.id = "my-server-id";
         serverToReturn.type = "connector";
 
-        REQUIRE_CALL(*mockSd, GetServerById("my-server-id")).RETURN(serverToReturn);
+        trompeloeil::sequence seq;
+
+        REQUIRE_CALL(*mockSd, GetServerById("my-server-id"))
+            .RETURN(serverToReturn)
+            .IN_SEQUENCE(seq);
 
         auto error = new protos::Error();
         error->set_allocated_code(new std::string(kCodeInternalError));
@@ -139,7 +154,9 @@ TEST_CASE("Cluster can be created normally")
         protos::Response resToReturn;
         resToReturn.set_data("woiqdjoi2jd8398u320f9u23f");
 
-        REQUIRE_CALL(*mockRpcClient, Call(_, ANY(const protos::Request&))).RETURN(resToReturn);
+        REQUIRE_CALL(*mockRpcClient, Call(_, ANY(const protos::Request&)))
+            .RETURN(resToReturn)
+            .IN_SEQUENCE(seq);
 
         auto msg = new protos::Msg();
         msg->set_data("hello my friend");
