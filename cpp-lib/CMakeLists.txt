@@ -136,10 +136,14 @@ if(BUILD_TESTING)
         test/main_test.cpp)
 
     set_target_properties(pitaya_cluster_tests PROPERTIES
+        CXX_STANDARD 14
         OUTPUT_NAME tests)
 
+    target_compile_definitions(pitaya_cluster_tests
+      PRIVATE -DGTEST_LINKED_AS_SHARED_LIBRARY)
+
     target_link_libraries(pitaya_cluster_tests
-      PRIVATE GTest::GTest GTest::Main pitaya_cluster)
+      PRIVATE GTest::GTest pitaya_cluster)
 
     add_test(tests tests)
 endif()

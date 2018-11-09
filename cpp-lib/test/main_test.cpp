@@ -1,9 +1,14 @@
-#include <gtest/gtest.h>
+#define DOCTEST_CONFIG_IMPLEMENT
+#include "doctest.h"
 
 int
 main(int argc, char* argv[])
 {
-    ::testing::InitGoogleTest(&argc, argv);
-    int res = RUN_ALL_TESTS();
+    doctest::Context context;
+
+    context.setOption("no-breaks", true);
+    context.applyCommandLine(argc, argv);
+
+    int res = context.run();
     return res;
 }
