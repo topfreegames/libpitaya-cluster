@@ -52,7 +52,11 @@ LeaseKeepAlive::TickWrapper()
 
         auto res = _client.lease_keep_alive(_leaseId).get();
         if (!res.is_ok()) {
-            _log->error("Failed to renew lease, stopping");
+            if (res.status.etcd_error_code == etcdv3::V3StatusCode::UNDERLYING_GRPC_ERROR) {
+                _log->error("Failed to renew lease, stopping ({})", res.status.grpc_error_message);
+            } else {
+                _log->error("Failed to renew lease, stopping ({})", res.status.etcd_error_message);
+            }
             _leaseId = -1;
             return LeaseKeepAliveStatus::Fail;
         }

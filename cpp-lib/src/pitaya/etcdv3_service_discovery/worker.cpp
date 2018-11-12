@@ -89,10 +89,6 @@ Worker::StartThread()
             case JobInfo::EtcdReconnectionFailure:
                 _log->error("Reconnection failure, {} retries left!", _numKeepAliveRetriesLeft);
 
-                if (_numKeepAliveRetriesLeft <= 0) {
-                    throw std::runtime_error("Failed reconnection to etcd");
-                }
-
                 while (_numKeepAliveRetriesLeft > 0) {
                     --_numKeepAliveRetriesLeft;
                     auto status = Bootstrap();
@@ -100,6 +96,10 @@ Worker::StartThread()
                         _numKeepAliveRetriesLeft = 3;
                         break;
                     }
+                }
+
+                if (_numKeepAliveRetriesLeft <= 0) {
+                    throw std::runtime_error("Failed reconnection to etcd");
                 }
 
                 break;
@@ -164,6 +164,7 @@ Worker::GrantLease()
                 _log->error("lease keep alive failed!");
                 std::lock_guard<decltype(_jobQueue)> lock(_jobQueue);
                 _jobQueue.PushBack(JobInfo::EtcdReconnectionFailure);
+                _syncServersTicker.Stop();
                 _semaphore.Notify();
             } break;
         }
