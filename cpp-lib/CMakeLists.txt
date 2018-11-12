@@ -125,7 +125,7 @@ endif()
 # Enable tests
 #==============================
 include(CTest)
-if(BUILD_TESTING)
+if(BUILD_TESTING AND NOT BUILD_MACOSX_BUNDLE)
     find_package(GTest REQUIRED)
 
     add_executable(pitaya_cluster_tests

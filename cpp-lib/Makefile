@@ -8,3 +8,8 @@ format:
 	@for f in ${HDR_FILES} ; do \
 		clang-format -i $$f ; \
 	done
+
+build-linux:
+	docker build -t pitaya-cluster .
+	docker run --name pitaya-cluster pitaya-cluster:latest
+	docker cp `docker ps -aqf "name=pitaya-cluster"`:/cpp-lib/_builds/make-release/libpitaya_cluster.so ../NugetOutput/binaries/linux
