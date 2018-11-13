@@ -18,33 +18,43 @@ namespace pitaya {
 using etcdv3_service_discovery::Etcdv3ServiceDiscovery;
 using service_discovery::ServiceDiscovery;
 
-Cluster::Cluster(etcdv3_service_discovery::Config&& sdConfig,
-                 nats::NatsConfig&& natsConfig,
-                 Server server,
-                 RpcHandlerFunc rpcServerHandlerFunc,
-                 const char* loggerName)
-    : Cluster(std::unique_ptr<ServiceDiscovery>(
-                  new Etcdv3ServiceDiscovery(std::move(sdConfig), server, loggerName)),
-              std::unique_ptr<RpcServer>(
-                  new nats::NatsRpcServer(server, natsConfig, rpcServerHandlerFunc, loggerName)),
-              std::unique_ptr<RpcClient>(new nats::NatsRpcClient(server, natsConfig, loggerName)))
-{}
+void Cluster::Initialize(etcdv3_service_discovery::Config&& sdConfig,
+                         nats::NatsConfig&& natsConfig,
+                         Server server,
+                         RpcHandlerFunc rpcServerHandlerFunc,
+                         const char* loggerName)
+{
+    Initialize(std::unique_ptr<ServiceDiscovery>(new Etcdv3ServiceDiscovery(std::move(sdConfig), server, loggerName)),
+               std::unique_ptr<RpcServer>(new nats::NatsRpcServer(server, natsConfig, rpcServerHandlerFunc, loggerName)),
+               std::unique_ptr<RpcClient>(new nats::NatsRpcClient(server, natsConfig, loggerName)));
+}
 
-Cluster::Cluster(std::unique_ptr<service_discovery::ServiceDiscovery> sd,
+void
+    Cluster::Initialize(std::unique_ptr<service_discovery::ServiceDiscovery> sd,
                  std::unique_ptr<RpcServer> rpcServer,
                  std::unique_ptr<RpcClient> rpcClient,
                  const char* loggerName)
-    : _log((loggerName && spdlog::get(loggerName)) ? spdlog::get(loggerName)->clone("cluster")
-                                                   : spdlog::stdout_color_mt("cluster"))
-    , _sd(std::move(sd))
-    , _rpcSv(std::move(rpcServer))
-    , _rpcClient(std::move(rpcClient))
 {
+    _log = ((loggerName && spdlog::get(loggerName)) ? spdlog::get(loggerName)->clone("cluster")
+            : spdlog::stdout_color_mt("cluster"));
     _log->set_level(spdlog::level::debug);
+    _sd = std::move(sd);
+    _rpcSv = std::move(rpcServer);
+    _rpcClient = std::move(rpcClient);
 }
 
 Cluster::~Cluster()
 {
+    Terminate();
+}
+
+void
+Cluster::Terminate()
+{
+    _sd.reset();
+    _rpcSv.reset();
+    _rpcClient.reset();
+
     _log->flush();
     spdlog::drop("cluster");
 }

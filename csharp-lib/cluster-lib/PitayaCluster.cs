@@ -7,7 +7,7 @@ using System.Collections.Generic;
 
 namespace Pitaya
 {
-  public class PitayaCluster : IDisposable
+  public class PitayaCluster
   {
     [UnmanagedFunctionPointer(CallingConvention.StdCall)]
     public delegate IntPtr RPCCb(IntPtr req);
@@ -19,11 +19,9 @@ namespace Pitaya
 
     public delegate void SignalHandler();
 
-    private Dictionary<string, RemoteMethod> remotesDict = new Dictionary<string, RemoteMethod>();
+    private static Dictionary<string, RemoteMethod> remotesDict = new Dictionary<string, RemoteMethod>();
 
     private static Action onSignalEvent;
-
-    private IntPtr _clusterPtr;
 
     private static Protos.Response GetErrorResponse(string code, string msg)
     {
@@ -46,7 +44,7 @@ namespace Pitaya
       return mem.ToArray();
     }
 
-    public void RegisterRemote(BaseRemote remote)
+    public static void RegisterRemote(BaseRemote remote)
     {
       string className = remote.GetType().Name.ToLower();
       RegisterRemote(remote, className, Utils.DefaultRemoteNameFunc);
@@ -57,7 +55,7 @@ namespace Pitaya
       RegisterRemote(remote, name, Utils.DefaultRemoteNameFunc);
     }
 
-    public void RegisterRemote(BaseRemote remote, string name, RemoteNameFunc remoteNameFunc)
+    public static void RegisterRemote(BaseRemote remote, string name, RemoteNameFunc remoteNameFunc)
     {
       Dictionary<string, RemoteMethod> m = remote.getRemotesMap();
       foreach (KeyValuePair<string, RemoteMethod> kvp in m)
@@ -81,7 +79,7 @@ namespace Pitaya
     }
 
     // TODO can we make this faster with some delegate-fu?
-    private IntPtr RPCCbFunc(IntPtr reqPtr)
+    private static IntPtr RPCCbFunc(IntPtr reqPtr)
     {
       var req = (RPCReq)Marshal.PtrToStructure(reqPtr, typeof(RPCReq));
       byte[] data = req.GetReqData();
@@ -155,7 +153,7 @@ namespace Pitaya
       onSignalEvent?.Invoke();
     }
 
-    public PitayaCluster(SDConfig sdConfig, NatsConfig natsCfg, Server server, string logFile = "")
+    public static void Initialize(SDConfig sdConfig, NatsConfig natsCfg, Server server, string logFile = "")
     {
       IntPtr sdCfgPtr = new StructWrapper(sdConfig);
       IntPtr natsCfgPtr = new StructWrapper(natsCfg);
@@ -163,26 +161,22 @@ namespace Pitaya
 
       PitayaCluster.RPCCb rpcCbFunc = RPCCbFunc;
       IntPtr rpcCbFuncPtr = Marshal.GetFunctionPointerForDelegate(rpcCbFunc);
-      _clusterPtr = NewClusterInternal(serverPtr, sdCfgPtr, natsCfgPtr, rpcCbFuncPtr, logFile);
+      bool ok = InitializeInternal(serverPtr, sdCfgPtr, natsCfgPtr, rpcCbFuncPtr, logFile);
 
-      if (_clusterPtr == IntPtr.Zero)
+      if (!ok)
       {
         throw new PitayaException("Initialization failed");
       }
     }
 
-    ~PitayaCluster() => Dispose();
-
-    public void Dispose()
+    public static void Terminate()
     {
-      if (_clusterPtr != IntPtr.Zero)
-        DestroyClusterInternal(_clusterPtr);
-      _clusterPtr = IntPtr.Zero;
+        TerminateInternal();
     }
 
-    public Server? GetServerById(string serverId)
+    public static Server? GetServerById(string serverId)
     {
-      IntPtr serverPtr = GetServerByIdInternal(_clusterPtr, serverId);
+      var serverPtr = GetServerByIdInternal(serverId);
 
       if (serverPtr == IntPtr.Zero)
       {
@@ -195,7 +189,7 @@ namespace Pitaya
       return server;
     }
 
-    public unsafe T Rpc<T>(string serverId, Route route, IMessage msg)
+    public static unsafe T Rpc<T>(string serverId, Route route, IMessage msg)
     {
       // IntPtr ptr = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(MemoryBuffer)));
 
@@ -205,7 +199,7 @@ namespace Pitaya
       var data = ProtoMessageToByteArray(msg);
       fixed (byte* p = data)
       {
-        pitayaErr = RPCInternal(_clusterPtr, serverId, route.ToString(), (IntPtr)p, data.Length, &memBufPtr);
+        pitayaErr = RPCInternal(serverId, route.ToString(), (IntPtr)p, data.Length, &memBufPtr);
       }
 
       if (pitayaErr != IntPtr.Zero) // error
@@ -222,26 +216,26 @@ namespace Pitaya
       return protoRet;
     }
 
-    public T Rpc<T>(Route route, IMessage msg)
+    public static T Rpc<T>(Route route, IMessage msg)
     {
       return Rpc<T>("", route, msg);
     }
 
 
-    [DllImport("libpitaya_cluster", CallingConvention = CallingConvention.Cdecl, EntryPoint = "tfg_pitc_NewCluster")]
-    private static extern IntPtr NewClusterInternal(IntPtr server, IntPtr sdConfig, IntPtr natsCfg, IntPtr cbPtr, string logFile);
+    [DllImport("libpitaya_cluster", CallingConvention = CallingConvention.Cdecl, EntryPoint = "tfg_pitc_Initialize")]
+    private static extern bool InitializeInternal(IntPtr server, IntPtr sdConfig, IntPtr natsCfg, IntPtr cbPtr, string logFile);
 
-    [DllImport("libpitaya_cluster", CallingConvention = CallingConvention.Cdecl, EntryPoint = "tfg_pitc_DestroyCluster")]
-    private static extern void DestroyClusterInternal(IntPtr clusterPtr);
+    [DllImport("libpitaya_cluster", CallingConvention = CallingConvention.Cdecl, EntryPoint = "tfg_pitc_Terminate")]
+    private static extern void TerminateInternal();
 
     [DllImport("libpitaya_cluster", CallingConvention = CallingConvention.Cdecl, EntryPoint = "tfg_pitc_GetServerById")]
-    private static extern IntPtr GetServerByIdInternal(IntPtr clusterPtr, string serverId);
+    private static extern IntPtr GetServerByIdInternal(string serverId);
 
     [DllImport("libpitaya_cluster", CallingConvention = CallingConvention.Cdecl, EntryPoint = "tfg_pitc_FreeServer")]
     private static extern void FreeServerInternal(IntPtr serverPtr);
 
     [DllImport("libpitaya_cluster", CallingConvention = CallingConvention.Cdecl, EntryPoint = "tfg_pitc_RPC")]
-    private static extern unsafe IntPtr RPCInternal(IntPtr clusterPtr, string serverId, string route, IntPtr data, int dataSize, MemoryBuffer** buffer);
+    private static extern unsafe IntPtr RPCInternal(string serverId, string route, IntPtr data, int dataSize, MemoryBuffer** buffer);
 
     [DllImport("libpitaya_cluster", CallingConvention = CallingConvention.Cdecl, EntryPoint = "tfg_pitc_FreeMemoryBuffer")]
     private static extern unsafe void FreeMemoryBufferInternal(MemoryBuffer *ptr);

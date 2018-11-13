@@ -35,20 +35,14 @@ namespace PitayaCSharpExample
 
       PitayaCluster.AddSignalHandler(() =>
       {
-        if (cluster != null)
-        {
-          Logger.Info("Calling dispose on cluster");
-          cluster.Dispose();
-          cluster = null;
-        }
-        Logger.Info("Exiting program");
+        Logger.Info("Calling terminate on cluster");
+        PitayaCluster.Terminate();
         Environment.Exit(1);
       });
 
       try
       {
-        cluster = new PitayaCluster(sdConfig, nc, sv, "SPECIAL_LOGGER.out");
-        //cluster = new PitayaCluster(sdConfig, nc, sv);
+        PitayaCluster.Initialize(sdConfig, nc, sv, "SPECIAL_LOGGER.out");
       }
       catch (PitayaException exc)
       {
@@ -59,11 +53,11 @@ namespace PitayaCSharpExample
       Logger.Info("pitaya lib initialized successfully :)");
 
       TestRemote tr = new TestRemote();
-      cluster.RegisterRemote(tr);
+      PitayaCluster.RegisterRemote(tr);
 
       System.Threading.Thread.Sleep(1000);
 
-      var res = cluster.Rpc<Protos.RPCRes>(Route.FromString("csharp.testremote.remote"), null);
+      var res = PitayaCluster.Rpc<Protos.RPCRes>(Route.FromString("csharp.testremote.remote"), null);
 
       Console.WriteLine($"Code: {res.Code}");
       Console.WriteLine($"Msg: {res.Msg}");

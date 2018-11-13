@@ -169,11 +169,11 @@ using ClusterPtr = void*;
 extern "C"
 {
 
-    ClusterPtr tfg_pitc_NewCluster(CServer* sv,
-                                   CSDConfig* sdConfig,
-                                   CNATSConfig* nc,
-                                   RpcPinvokeCb cb,
-                                   const char* logFile)
+    bool tfg_pitc_Initialize(CServer* sv,
+                             CSDConfig* sdConfig,
+                             CNATSConfig* nc,
+                             RpcPinvokeCb cb,
+                             const char* logFile)
     {
         if (!spdlog::get("c_wrapper")) {
             gLogger = CreateLogger(logFile);
@@ -190,23 +190,22 @@ extern "C"
         gPinvokeCb = cb;
         if (gPinvokeCb == nullptr) {
             gLogger->error("pinvoke callback not set!");
-            return nullptr;
+            return false;
         }
 
         try {
-            auto cluster = new pitaya::Cluster(
+            pitaya::Cluster::Instance().Initialize(
                 sdConfig->ToConfig(), std::move(natsCfg), server, RpcCallback, "c_wrapper");
-            return reinterpret_cast<ClusterPtr>(cluster);
+            return true;
         } catch (const PitayaException& exc) {
             gLogger->error("Failed to create cluster instance: {}", exc.what());
-            return nullptr;
+            return false;
         }
     }
 
-    CServer* tfg_pitc_GetServerById(ClusterPtr ptr, const char* serverId)
+    CServer* tfg_pitc_GetServerById(const char* serverId)
     {
-        auto cluster = reinterpret_cast<pitaya::Cluster*>(ptr);
-        auto maybeServer = cluster->GetServiceDiscovery().GetServerById(serverId);
+        auto maybeServer = Cluster::Instance().GetServiceDiscovery().GetServerById(serverId);
 
         if (!maybeServer) {
             return nullptr;
@@ -219,16 +218,14 @@ extern "C"
 
     void tfg_pitc_FreeServer(CServer* cServer) { delete cServer; }
 
-    void tfg_pitc_DestroyCluster(ClusterPtr ptr)
+    void tfg_pitc_Terminate()
     {
-        delete reinterpret_cast<pitaya::Cluster*>(ptr);
         spdlog::drop_all();
         gLogger->info("Cluster destroyed");
         gLogger->flush();
     }
 
-    CPitayaError* tfg_pitc_RPC(ClusterPtr ptr,
-                               const char* serverId,
+    CPitayaError* tfg_pitc_RPC(const char* serverId,
                                const char* route,
                                void* data,
                                int dataSize,
@@ -237,8 +234,6 @@ extern "C"
         assert(serverId && "server id should not be null");
         assert(route && "route should not be null");
         assert((data || (!data && dataSize == 0)) && "data len should be 0 if data is null");
-
-        auto cluster = reinterpret_cast<pitaya::Cluster*>(ptr);
 
         auto msg = new protos::Msg();
         msg->set_data(std::string(reinterpret_cast<char*>(data), dataSize));
@@ -254,8 +249,8 @@ extern "C"
 
         protos::Response res;
 
-        auto err = (strlen(serverId) == 0) ? cluster->RPC(route, req, res)
-                                           : cluster->RPC(serverId, route, req, res);
+        auto err = (strlen(serverId) == 0) ? Cluster::Instance().RPC(route, req, res)
+                                           : Cluster::Instance().RPC(serverId, route, req, res);
 
         if (err) {
             gLogger->error("received error on RPC: {}", err->msg);

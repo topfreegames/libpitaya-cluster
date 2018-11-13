@@ -35,8 +35,8 @@ rpc_handler(protos::Request req)
 int
 main()
 {
-    //    auto logger = spdlog::stdout_color_mt("main");
-    auto logger = spdlog::basic_logger_mt("main", "custom-log.log");
+    auto logger = spdlog::stdout_color_mt("main");
+//    auto logger = spdlog::basic_logger_mt("main", "custom-log.log");
 
     Server server("someid", "sometype", "{\"user\": \"Carro\"}");
     NatsConfig nats_config("nats://localhost:4222", 1000, 3000, 3, 100);
@@ -46,7 +46,7 @@ main()
     sdConfig.etcdPrefix = "pitaya/";
 
     try {
-        Cluster cluster(
+        Cluster::Instance().Initialize(
             std::move(sdConfig), std::move(nats_config), std::move(server), rpc_handler, "main");
 
         {
@@ -62,7 +62,7 @@ main()
             ///// FINISH
             protos::Response res;
 
-            auto err = cluster.RPC("csharp.testremote.remote", req, res);
+            auto err = Cluster::Instance().RPC("csharp.testremote.remote", req, res);
             if (err) {
                 cout << "received error:" << err.value().msg << endl;
             } else {
@@ -71,6 +71,8 @@ main()
         }
 
         cin >> x;
+
+        Cluster::Instance().Terminate();
     } catch (const PitayaException& e) {
         cout << e.what() << endl;
         cin >> x;

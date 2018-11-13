@@ -29,16 +29,24 @@ struct PitayaError
 class Cluster
 {
 public:
-    Cluster(std::unique_ptr<service_discovery::ServiceDiscovery> sd,
-            std::unique_ptr<RpcServer> rpcServer,
-            std::unique_ptr<RpcClient> rpcClient,
-            const char* loggerName = nullptr);
+    static Cluster& Instance()
+    {
+        static Cluster instance;
+        return instance;
+    }
 
-    Cluster(etcdv3_service_discovery::Config&& sdConfig,
-            nats::NatsConfig&& natsConfig,
-            Server server,
-            RpcHandlerFunc rpcServerHandlerFunc,
-            const char* loggerName = nullptr);
+    void Initialize(std::unique_ptr<service_discovery::ServiceDiscovery> sd,
+                    std::unique_ptr<RpcServer> rpcServer,
+                    std::unique_ptr<RpcClient> rpcClient,
+                    const char* loggerName = nullptr);
+
+    void Initialize(etcdv3_service_discovery::Config&& sdConfig,
+                    nats::NatsConfig&& natsConfig,
+                    Server server,
+                    RpcHandlerFunc rpcServerHandlerFunc,
+                    const char* loggerName = nullptr);
+
+    void Terminate();
 
     ~Cluster();
 
