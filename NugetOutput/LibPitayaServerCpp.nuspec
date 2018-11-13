@@ -2,13 +2,13 @@
 <package >
   <metadata>
     <id>LibPitayaServerCpp</id>
-    <version>0.1.1</version>
+    <version>0.1.2</version>
     <authors>leonardo</authors>
     <owners>leonardo</owners>
     <projectUrl>https://github.com/topfreegames/libpitaya-cluster</projectUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>C# client for interacting with other pitaya servers</description>
-    <releaseNotes>Initial release</releaseNotes>
+    <releaseNotes>Fix bug where the server key was created incorrectly</releaseNotes>
     <copyright>Copyright TFG 2018</copyright>
     <tags>pitaya libpitaya-cluster</tags>
     <dependencies>

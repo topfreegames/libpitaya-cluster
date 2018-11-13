@@ -9,7 +9,12 @@ format:
 		clang-format -i $$f ; \
 	done
 
-build-linux:
-	docker build -t pitaya-cluster .
-	docker run --name pitaya-cluster pitaya-cluster:latest
-	docker cp `docker ps -aqf "name=pitaya-cluster"`:/cpp-lib/_builds/make-release/libpitaya_cluster.so ../NugetOutput/binaries/linux
+clean-docker-container:
+	@if [[ `docker ps -aqf "name=pitaya-cluster"` != "" ]]; then \
+		docker rm `docker ps -aqf "name=pitaya-cluster"` ; \
+	fi
+
+build-linux: clean-docker-container
+	@docker build -t pitaya-cluster .
+	@docker run --name pitaya-cluster pitaya-cluster:latest
+	@docker cp `docker ps -aqf "name=pitaya-cluster"`:/cpp-lib/_builds/make-release/libpitaya_cluster.so ../NugetOutput/binaries/linux

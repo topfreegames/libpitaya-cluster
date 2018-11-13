@@ -11,9 +11,6 @@ pack: build-all
 	@cp csharp-lib/cluster-lib/bin/Release/cluster-lib.dll NugetOutput/lib
 	@cd NugetOutput && nuget pack *.nuspec -OutputDirectory .
 
-push: pack
-	@cd NugetOutput && nuget push *.nupkg -Source $(MODULE_NAME)
-
 default: build
 
 ensure-out-dir:
@@ -24,13 +21,13 @@ build: ensure-out-dir
 
 build-csharp-example:
 	@cd ./csharp-example && msbuild
-	
+
 build-csharp-lib:
 	@cd ./csharp-lib && msbuild
 
 build-csharp-lib-release:
 	@cd ./csharp-lib && msbuild /p:Configuration=Release
-	
+
 run-csharp-example:
 	@cd ./csharp-example/csharp-example && mono ./bin/Debug/csharp-example.exe
 

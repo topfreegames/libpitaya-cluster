@@ -191,7 +191,7 @@ Worker::BootstrapServer(const Server& server)
 etcdv3::V3Status
 Worker::AddServerToEtcd(const Server& server)
 {
-    string key = fmt::format("{}/{}", _config.etcdPrefix, GetServerKey(server.id, server.type));
+    string key = fmt::format("{}{}", _config.etcdPrefix, GetServerKey(server.id, server.type));
     etcd::Response res = _client.set(key, ServerAsJson(server), _leaseId).get();
     return res.status;
 }
@@ -250,7 +250,7 @@ Worker::SyncServers()
 optional<pitaya::Server>
 Worker::GetServerFromEtcd(const std::string& serverId, const std::string& serverType)
 {
-    auto serverKey = fmt::format("{}/{}", _config.etcdPrefix, GetServerKey(serverId, serverType));
+    auto serverKey = fmt::format("{}{}", _config.etcdPrefix, GetServerKey(serverId, serverType));
 
     try {
         etcd::Response res = _client.get(serverKey).get();
@@ -419,7 +419,7 @@ Worker::ParseEtcdKey(const string& key, string& serverType, string& serverId)
 static string
 GetServerKey(const std::string& serverId, const std::string& serverType)
 {
-    return fmt::format("{}/{}", serverType, serverId);
+    return fmt::format("servers/{}/{}", serverType, serverId);
 }
 
 void

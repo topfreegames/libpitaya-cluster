@@ -41,7 +41,7 @@ main()
 
     etcdv3_service_discovery::Config sdConfig;
     sdConfig.endpoints = "http://127.0.0.1:4001";
-    sdConfig.etcdPrefix = "pitaya/servers";
+    sdConfig.etcdPrefix = "pitaya/";
 
     try {
         Cluster cluster(
