@@ -34,13 +34,19 @@ Cluster::Cluster(std::unique_ptr<service_discovery::ServiceDiscovery> sd,
                  std::unique_ptr<RpcServer> rpcServer,
                  std::unique_ptr<RpcClient> rpcClient,
                  const char* loggerName)
-    : _log(loggerName ? spdlog::get(loggerName)->clone("cluster")
-                      : spdlog::stdout_color_mt("cluster"))
+    : _log((loggerName && spdlog::get(loggerName)) ? spdlog::get(loggerName)->clone("cluster")
+                                                   : spdlog::stdout_color_mt("cluster"))
     , _sd(std::move(sd))
     , _rpcSv(std::move(rpcServer))
     , _rpcClient(std::move(rpcClient))
 {
     _log->set_level(spdlog::level::debug);
+}
+
+Cluster::~Cluster()
+{
+    _log->flush();
+    spdlog::drop("cluster");
 }
 
 optional<PitayaError>

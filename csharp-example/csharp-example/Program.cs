@@ -47,7 +47,8 @@ namespace PitayaCSharpExample
 
       try
       {
-        cluster = new PitayaCluster(sdConfig, nc, sv);
+        cluster = new PitayaCluster(sdConfig, nc, sv, "SPECIAL_LOGGER.out");
+        //cluster = new PitayaCluster(sdConfig, nc, sv);
       }
       catch (PitayaException exc)
       {

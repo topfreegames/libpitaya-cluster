@@ -155,7 +155,7 @@ namespace Pitaya
       onSignalEvent?.Invoke();
     }
 
-    public PitayaCluster(SDConfig sdConfig, NatsConfig natsCfg, Server server, LogHandler logHandler = null)
+    public PitayaCluster(SDConfig sdConfig, NatsConfig natsCfg, Server server, string logFile = "")
     {
       IntPtr sdCfgPtr = new StructWrapper(sdConfig);
       IntPtr natsCfgPtr = new StructWrapper(natsCfg);
@@ -163,7 +163,7 @@ namespace Pitaya
 
       PitayaCluster.RPCCb rpcCbFunc = RPCCbFunc;
       IntPtr rpcCbFuncPtr = Marshal.GetFunctionPointerForDelegate(rpcCbFunc);
-      _clusterPtr = NewClusterInternal(serverPtr, sdCfgPtr, natsCfgPtr, rpcCbFuncPtr, logHandler);
+      _clusterPtr = NewClusterInternal(serverPtr, sdCfgPtr, natsCfgPtr, rpcCbFuncPtr, logFile);
 
       if (_clusterPtr == IntPtr.Zero)
       {
@@ -229,7 +229,7 @@ namespace Pitaya
 
 
     [DllImport("libpitaya_cluster", CallingConvention = CallingConvention.Cdecl, EntryPoint = "tfg_pitc_NewCluster")]
-    private static extern IntPtr NewClusterInternal(IntPtr server, IntPtr sdConfig, IntPtr natsCfg, IntPtr cbPtr, LogHandler logHandler);
+    private static extern IntPtr NewClusterInternal(IntPtr server, IntPtr sdConfig, IntPtr natsCfg, IntPtr cbPtr, string logFile);
 
     [DllImport("libpitaya_cluster", CallingConvention = CallingConvention.Cdecl, EntryPoint = "tfg_pitc_DestroyCluster")]
     private static extern void DestroyClusterInternal(IntPtr clusterPtr);

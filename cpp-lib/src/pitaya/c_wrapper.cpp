@@ -4,6 +4,7 @@
 #include "pitaya/nats/rpc_server.h"
 #include "spdlog/logger.h"
 #include "spdlog/sinks/base_sink.h"
+#include "spdlog/sinks/basic_file_sink.h"
 #include "spdlog/sinks/stdout_color_sinks.h"
 #include <assert.h>
 #include <boost/optional.hpp>
@@ -12,34 +13,6 @@
 using namespace std;
 using namespace pitaya;
 using pitaya::nats::NatsConfig;
-
-template<typename Mutex>
-class function_sink : public spdlog::sinks::base_sink<Mutex>
-{
-public:
-    function_sink(std::function<void(const char*)> handler)
-        : _handler(handler)
-    {}
-
-protected:
-    void sink_it_(const spdlog::details::log_msg& msg) override
-    {
-        fmt::memory_buffer formatted;
-        spdlog::sinks::sink::formatter_->format(msg, formatted);
-        std::string formattedStr = fmt::to_string(formatted);
-        _handler(formattedStr.c_str());
-    }
-
-    void flush_() override
-    { /* Ignore flushing */
-    }
-
-private:
-    std::function<void(const char*)> _handler;
-};
-
-using function_sink_mt = function_sink<std::mutex>;
-using function_sink_st = function_sink<spdlog::details::null_mutex>;
 
 static char*
 ConvertToCString(const std::string& str)
@@ -178,13 +151,11 @@ RpcCallback(protos::Request req)
 }
 
 static std::shared_ptr<spdlog::logger>
-CreateLogger(void (*logHandler)(const char*))
+CreateLogger(const char* logFile)
 {
     std::shared_ptr<spdlog::logger> logger;
-    if (logHandler) {
-        logger = std::make_shared<spdlog::logger>("c_wrapper",
-                                                  std::make_shared<function_sink_mt>(logHandler));
-        spdlog::register_logger(logger);
+    if (logFile && strlen(logFile) > 0) {
+        logger = spdlog::basic_logger_mt("c_wrapper", logFile);
     } else {
         logger = spdlog::stdout_color_mt("c_wrapper");
     }
@@ -202,9 +173,11 @@ extern "C"
                                    CSDConfig* sdConfig,
                                    CNATSConfig* nc,
                                    RpcPinvokeCb cb,
-                                   void (*logHandler)(const char*))
+                                   const char* logFile)
     {
-        gLogger = CreateLogger(logHandler);
+        if (!spdlog::get("c_wrapper")) {
+            gLogger = CreateLogger(logFile);
+        }
 
         NatsConfig natsCfg = NatsConfig(nc->addr,
                                         nc->requestTimeoutMs,
@@ -249,7 +222,9 @@ extern "C"
     void tfg_pitc_DestroyCluster(ClusterPtr ptr)
     {
         delete reinterpret_cast<pitaya::Cluster*>(ptr);
+        spdlog::drop_all();
         gLogger->info("Cluster destroyed");
+        gLogger->flush();
     }
 
     CPitayaError* tfg_pitc_RPC(ClusterPtr ptr,

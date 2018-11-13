@@ -8,6 +8,7 @@
 #include <exception>
 #include <iostream>
 #include <memory>
+#include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <thread>
 
@@ -34,9 +35,10 @@ rpc_handler(protos::Request req)
 int
 main()
 {
-    auto logger = spdlog::stdout_color_mt("main");
+    //    auto logger = spdlog::stdout_color_mt("main");
+    auto logger = spdlog::basic_logger_mt("main", "custom-log.log");
 
-    Server server("someid", "sometype");
+    Server server("someid", "sometype", "{\"user\": \"Carro\"}");
     NatsConfig nats_config("nats://localhost:4222", 1000, 3000, 3, 100);
 
     etcdv3_service_discovery::Config sdConfig;

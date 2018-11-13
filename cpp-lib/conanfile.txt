@@ -2,5 +2,4 @@
 OpenSSL/1.0.2o@conan/stable
 
 [generators]
-cmake
 cmake_paths

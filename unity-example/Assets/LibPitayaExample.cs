@@ -53,7 +53,7 @@ public class LibPitayaExample : MonoBehaviour {
 	    try
 	    {
 		    Debug.Log("Creating instance of PitayaCluster");
-			_cluster = new PitayaCluster(sdConfig, nc, sv, LogFunction);
+			_cluster = new PitayaCluster(sdConfig, nc, sv, "LOG_GOI.log");
 	    }
 	    catch (PitayaException e)
 	    {
@@ -70,7 +70,6 @@ public class LibPitayaExample : MonoBehaviour {
 
 	private void Awake()
 	{
-		//PitayaCluster.SetLogFunction(LogFunction);
 	    PitayaCluster.AddSignalHandler(() =>
 	    {
 		    if (_cluster != null)

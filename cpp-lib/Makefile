@@ -17,4 +17,4 @@ clean-docker-container:
 build-linux: clean-docker-container
 	@docker build -t pitaya-cluster .
 	@docker run --name pitaya-cluster pitaya-cluster:latest
-	@docker cp `docker ps -aqf "name=pitaya-cluster"`:/cpp-lib/_builds/make-release/libpitaya_cluster.so ../NugetOutput/binaries/linux
+	@docker cp `docker ps -aqf "name=pitaya-cluster"`:/cpp-lib/_builds/linux-make-release/libpitaya_cluster.so ../NugetOutput/binaries/linux

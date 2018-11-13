@@ -40,6 +40,8 @@ public:
             RpcHandlerFunc rpcServerHandlerFunc,
             const char* loggerName = nullptr);
 
+    ~Cluster();
+
     service_discovery::ServiceDiscovery& GetServiceDiscovery() { return *_sd.get(); }
 
     boost::optional<PitayaError> RPC(const std::string& serverId,

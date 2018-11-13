@@ -59,8 +59,8 @@ struct Server
     Server(const std::string& id,
            const std::string& type,
            const std::string& metadata,
-           const std::string& hostname,
-           bool frontend)
+           const std::string& hostname = "",
+           bool frontend = false)
         : id(id)
         , type(type)
         , metadata(metadata)

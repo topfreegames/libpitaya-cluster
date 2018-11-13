@@ -19,6 +19,7 @@ public:
     NatsRpcClient(const pitaya::Server& server,
                   const NatsConfig& config,
                   const char* loggerName = nullptr);
+    ~NatsRpcClient();
     protos::Response Call(const pitaya::Server& target, const protos::Request& req) override;
 
 private:

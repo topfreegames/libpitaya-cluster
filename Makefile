@@ -5,7 +5,18 @@ nuget-clean:
 	@rm -rf NugetOutput/obj
 	@rm -rf NugetOutput/*.nupkg
 
-build-all: nuget-clean build-csharp-lib-release
+build-cpp:
+	@cd cpp-lib && $(MAKE) build-linux
+	@cd cpp-lib && rm -rf _builds/unity-release && \
+		cmake -H. -B_builds/unity-release -GNinja -DCMAKE_BUILD_TYPE=Release \
+				-DBUILD_MACOSX_BUNDLE=ON -DCMAKE_TOOLCHAIN_FILE=~/vcpkg/scripts/buildsystems/vcpkg.cmake && \
+		cmake --build _builds/unity-release
+	@cp cpp-lib/_builds/unity-release/libpitaya_cluster.bundle NugetOutput/binaries/mac
+
+build-all: nuget-clean build-csharp-lib-release build-cpp
+
+pack-only:
+	@cd NugetOutput && nuget pack *.nuspec -OutputDirectory .
 
 pack: build-all
 	@cp csharp-lib/cluster-lib/bin/Release/cluster-lib.dll NugetOutput/lib
@@ -27,6 +38,7 @@ build-csharp-lib:
 
 build-csharp-lib-release:
 	@cd ./csharp-lib && msbuild /p:Configuration=Release
+	@cp ./csharp-lib/cluster-lib/bin/Release/cluster-lib.dll NugetOutput/lib
 
 run-csharp-example:
 	@cd ./csharp-example/csharp-example && mono ./bin/Debug/csharp-example.exe

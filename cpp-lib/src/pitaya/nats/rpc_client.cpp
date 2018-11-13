@@ -43,6 +43,12 @@ NatsRpcClient::NatsRpcClient(const Server& server, const NatsConfig& config, con
     }
 }
 
+NatsRpcClient::~NatsRpcClient()
+{
+    _log->flush();
+    spdlog::drop("nats_rpc_client");
+}
+
 protos::Response
 NatsRpcClient::Call(const pitaya::Server& target, const protos::Request& req)
 {

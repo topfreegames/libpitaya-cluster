@@ -34,6 +34,9 @@ Worker::Worker(const Config& config, pitaya::Server server, const char* loggerNa
 } catch (const etcd::watch_error& exc) {
     throw PitayaException(
         fmt::format("Failed to initialize ServiceDiscovery watcher: {}", exc.what()));
+} catch (const spdlog::spdlog_ex& exc) {
+    throw PitayaException(
+        fmt::format("Failed to initialize ServiceDiscovery watcher: {}", exc.what()));
 }
 
 Worker::~Worker()
@@ -45,6 +48,7 @@ void
 Worker::Shutdown()
 {
     _log->info("Will shutdown");
+
     {
         std::lock_guard<decltype(_jobQueue)> lock(_jobQueue);
         _jobQueue.PushBack(JobInfo::Shutdown);
@@ -54,6 +58,9 @@ Worker::Shutdown()
     if (_workerThread.joinable()) {
         _workerThread.join();
     }
+
+    _log->flush();
+    spdlog::drop("service_disovery_worker");
 }
 
 void
@@ -441,7 +448,7 @@ ServerAsJson(const Server& server)
     obj.object();
     obj["id"] = json::value::string(server.id);
     obj["type"] = json::value::string(server.type);
-    obj["metadata"] = json::value::string(server.metadata);
+    obj["metadata"] = json::value::parse(server.metadata);
     obj["hostname"] = json::value::string(server.hostname);
     obj["frontend"] = json::value::boolean(server.frontend);
     return obj.serialize();

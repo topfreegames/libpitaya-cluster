@@ -52,6 +52,12 @@ NatsRpcServer::NatsRpcServer(const Server& server,
     }
 }
 
+NatsRpcServer::~NatsRpcServer()
+{
+    _log->flush();
+    spdlog::drop("nats_rpc_server");
+}
+
 void
 NatsRpcServer::HandleMsg(natsConnection* nc, natsSubscription* sub, natsMsg* msg, void* closure)
 {

@@ -21,6 +21,8 @@ public:
                   RpcHandlerFunc handler,
                   const char* loggerName = nullptr);
 
+    ~NatsRpcServer();
+
 private:
     void PrintSubStatus(natsSubscription* sub);
     static void HandleMsg(natsConnection* nc, natsSubscription* sub, natsMsg* msg, void* closure);

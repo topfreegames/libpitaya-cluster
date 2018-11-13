@@ -26,8 +26,9 @@ namespace etcdv3_service_discovery {
 Etcdv3ServiceDiscovery::Etcdv3ServiceDiscovery(const Config& config,
                                                const Server& server,
                                                const char* loggerName)
-    : _log(loggerName ? spdlog::get(loggerName)->clone("service_discovery")
-                      : spdlog::stdout_color_mt("service_discovery"))
+    : _log((loggerName && spdlog::get(loggerName))
+               ? spdlog::get(loggerName)->clone("service_discovery")
+               : spdlog::stdout_color_mt("service_discovery"))
     , _worker(config, server, loggerName ? loggerName : "service_discovery")
 {
     if (server.id.empty() || server.type.empty()) {
@@ -41,6 +42,8 @@ Etcdv3ServiceDiscovery::Etcdv3ServiceDiscovery(const Config& config,
 Etcdv3ServiceDiscovery::~Etcdv3ServiceDiscovery()
 {
     _log->info("Terminating");
+    _log->flush();
+    spdlog::drop("service_disovery");
 }
 
 boost::optional<pitaya::Server>
