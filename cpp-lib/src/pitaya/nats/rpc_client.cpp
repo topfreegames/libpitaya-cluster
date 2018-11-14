@@ -22,7 +22,6 @@ NatsRpcClient::NatsRpcClient(const Server& server, const NatsConfig& config, con
     , _nc(nullptr)
     , _timeoutMs(config.requestTimeoutMs)
 {
-    _log->set_level(spdlog::level::debug);
     natsOptions* opts;
     auto s = natsOptions_Create(&opts);
     if (s != NATS_OK) {

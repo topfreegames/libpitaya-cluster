@@ -24,12 +24,14 @@ Worker::Worker(const Config& config, pitaya::Server server, const char* loggerNa
     , _client(config.endpoints)
     , _watcher(config.endpoints, config.etcdPrefix, std::bind(&Worker::OnWatch, this, _1))
     , _log(spdlog::get(loggerName)->clone("service_discovery_worker"))
-    , _leaseKeepAlive(_client, loggerName)
+    , _leaseKeepAlive(_client, config.logHeartbeat, loggerName)
     , _numKeepAliveRetriesLeft(3)
     , _syncServersTicker(config.syncServersIntervalSec, std::bind(&Worker::SyncServers, this)) {
-    _log->set_level(spdlog::level::debug);
-    _log->debug("Will synchronize servers every {} seconds",
-                _config.syncServersIntervalSec.count());
+
+    if (_config.logServerSync) {
+        _log->debug("Will synchronize servers every {} seconds",
+                    _config.syncServersIntervalSec.count());
+    }
     _workerThread = std::thread(&Worker::StartThread, this);
 } catch (const etcd::watch_error& exc) {
     throw PitayaException(
@@ -116,7 +118,7 @@ Worker::StartThread()
                 _leaseKeepAlive.Stop();
                 _syncServersTicker.Stop();
                 // TODO: revoke lease
-                _log->info("Exiting loop");
+                _log->debug("Exiting loop");
                 return;
             case JobInfo::WatchError:
                 _log->error("Watch error");
@@ -216,7 +218,8 @@ Worker::AddServer(const Server& server)
 void
 Worker::SyncServers()
 {
-    _log->debug("Will synchronize servers");
+    if (_config.logServerSync)
+        _log->debug("Will synchronize servers");
 
     etcd::Response res = _client.ls(_config.etcdPrefix).get();
     if (!res.is_ok()) {
@@ -237,7 +240,9 @@ Worker::SyncServers()
         allIds.push_back(serverId);
 
         if (_serversById.FindWithLock(serverId) == _serversById.end()) {
-            _log->info("Loading info from missing server: {}/{}", serverType, serverId);
+            if (_config.logServerSync) {
+                _log->debug("Loading info from missing server: {}/{}", serverType, serverId);
+            }
             auto server = GetServerFromEtcd(serverId, serverType);
             if (!server) {
                 _log->error("Error getting server from etcd: {}", serverId);
@@ -249,9 +254,11 @@ Worker::SyncServers()
     }
 
     DeleteLocalInvalidServers(std::move(allIds));
-    PrintServers();
 
-    _log->debug("Servers synchronized");
+    if (_config.logServerDetails)
+        PrintServers();
+    if (_config.logServerSync)
+        _log->debug("Servers synchronized");
 }
 
 optional<pitaya::Server>
@@ -311,7 +318,7 @@ Worker::PrintServers()
 {
     std::lock_guard<decltype(_serversByType)> lock(_serversByType);
     for (const auto& typePair : _serversByType) {
-        _log->info("Type: {}, Servers:", typePair.first);
+        _log->debug("Type: {}, Servers:", typePair.first);
         for (const auto& svPair : typePair.second) {
             PrintServer(svPair.second);
         }
@@ -384,7 +391,7 @@ Worker::OnWatch(etcd::Response res)
 
         AddServer(std::move(server.value()));
 
-        _log->info("Server {} added", res.value.key);
+        _log->debug("Server {} added", res.value.key);
         PrintServers();
     } else if (res.action == "delete") {
         string serverType, serverId;
@@ -394,7 +401,7 @@ Worker::OnWatch(etcd::Response res)
         }
 
         DeleteServer(serverId);
-        _log->info("Server {} deleted", serverId);
+        _log->debug("Server {} deleted", serverId);
         PrintServers();
     }
 }

@@ -44,7 +44,6 @@ Cluster::Initialize(Server server,
 {
     _log = ((loggerName && spdlog::get(loggerName)) ? spdlog::get(loggerName)->clone("cluster")
                                                     : spdlog::stdout_color_mt("cluster"));
-    _log->set_level(spdlog::level::debug);
     _sd = std::move(sd);
     _rpcSv = std::move(rpcServer);
     _rpcClient = std::move(rpcClient);

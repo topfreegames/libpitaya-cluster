@@ -88,6 +88,15 @@ static RpcPinvokeCb gPinvokeCb;
 static std::shared_ptr<spdlog::logger> gLogger;
 static void (*gSignalHandler)() = nullptr;
 
+enum LogLevel : int
+{
+    LogLevel_Debug = 0,
+    LogLevel_Info = 1,
+    LogLevel_Warn = 2,
+    LogLevel_Error = 3,
+    LogLevel_Critical = 4,
+};
+
 struct CSDConfig
 {
     const char* endpoints;
@@ -97,6 +106,7 @@ struct CSDConfig
     int logServerSync;
     int logServerDetails;
     int syncServersIntervalSec;
+    LogLevel logLevel;
 
     etcdv3_service_discovery::Config ToConfig()
     {
@@ -181,6 +191,24 @@ extern "C"
     {
         if (!spdlog::get("c_wrapper")) {
             gLogger = CreateLogger(logFile);
+        }
+
+        switch (sdConfig->logLevel) {
+            case LogLevel_Debug:
+                gLogger->set_level(spdlog::level::debug);
+                break;
+            case LogLevel_Info:
+                gLogger->set_level(spdlog::level::info);
+                break;
+            case LogLevel_Warn:
+                gLogger->set_level(spdlog::level::warn);
+                break;
+            case LogLevel_Error:
+                gLogger->set_level(spdlog::level::err);
+                break;
+            case LogLevel_Critical:
+                gLogger->set_level(spdlog::level::critical);
+                break;
         }
 
         NatsConfig natsCfg = NatsConfig(nc->addr,
@@ -278,18 +306,9 @@ extern "C"
             return nullptr;
         }
 
-        gLogger->error("out size is: {}", size);
-
         *outBuf = new MemoryBuffer;
         (*outBuf)->size = size;
         (*outBuf)->data = bin;
-
-        std::cout << "array :) =>";
-
-        for (int i = 0; i < (*outBuf)->size; i++) {
-            std::cout << (int)bin[i] << " ";
-        }
-        std::cout << std::endl;
 
         return nullptr;
     }

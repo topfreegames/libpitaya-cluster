@@ -20,7 +20,7 @@ enum class LeaseKeepAliveStatus
 class LeaseKeepAlive
 {
 public:
-    LeaseKeepAlive(etcd::Client& client, const char* loggerName);
+    LeaseKeepAlive(etcd::Client& client, bool shouldLog, const char* loggerName);
     pplx::task<LeaseKeepAliveStatus> Start();
     void Stop();
     void SetLeaseId(int64_t leaseId);
@@ -30,6 +30,7 @@ private:
 
 private:
     std::shared_ptr<spdlog::logger> _log;
+    bool _shouldLog;
     etcd::Client& _client;
     int64_t _leaseId;
     std::promise<void> _donePromise;

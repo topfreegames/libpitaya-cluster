@@ -36,7 +36,6 @@ Etcdv3ServiceDiscovery::Etcdv3ServiceDiscovery(const Config& config,
     }
 
     _worker.WaitUntilInitialized();
-    _log->set_level(spdlog::level::debug);
 }
 
 Etcdv3ServiceDiscovery::~Etcdv3ServiceDiscovery()

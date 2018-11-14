@@ -36,7 +36,8 @@ int
 main()
 {
     auto logger = spdlog::stdout_color_mt("main");
-//    auto logger = spdlog::basic_logger_mt("main", "custom-log.log");
+    logger->set_level(spdlog::level::debug);
+    //    auto logger = spdlog::basic_logger_mt("main", "custom-log.log");
 
     Server server("someid", "sometype", "{\"user\": \"Carro\"}");
     NatsConfig nats_config("nats://localhost:4222", 1000, 3000, 3, 100);
@@ -44,6 +45,8 @@ main()
     etcdv3_service_discovery::Config sdConfig;
     sdConfig.endpoints = "http://127.0.0.1:4001";
     sdConfig.etcdPrefix = "pitaya/";
+    sdConfig.logHeartbeat = false;
+    sdConfig.logServerSync = false;
 
     try {
         Cluster::Instance().Initialize(

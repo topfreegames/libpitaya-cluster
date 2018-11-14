@@ -25,7 +25,6 @@ NatsRpcServer::NatsRpcServer(const Server& server,
     , _nc(nullptr)
     , _sub(nullptr)
 {
-    _log->set_level(spdlog::level::debug);
     natsOptions* opts;
     auto s = natsOptions_Create(&opts);
     if (s != NATS_OK) {

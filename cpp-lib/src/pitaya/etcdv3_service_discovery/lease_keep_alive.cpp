@@ -7,15 +7,14 @@ using std::chrono::seconds;
 namespace pitaya {
 namespace etcdv3_service_discovery {
 
-LeaseKeepAlive::LeaseKeepAlive(etcd::Client& client, const char* loggerName)
+LeaseKeepAlive::LeaseKeepAlive(etcd::Client& client, bool shouldLog, const char* loggerName)
     : _log(spdlog::get(loggerName)->clone("lease_keep_alive"))
+    , _shouldLog(shouldLog)
     , _client(client)
     , _leaseId(-1)
     , _donePromise()
     , _doneFuture(_donePromise.get_future())
-{
-    _log->set_level(spdlog::level::debug);
-}
+{}
 
 pplx::task<etcdv3_service_discovery::LeaseKeepAliveStatus>
 LeaseKeepAlive::Start()
@@ -48,7 +47,8 @@ LeaseKeepAlive::TickWrapper()
 
     auto status = std::future_status::timeout;
     while (status != std::future_status::ready) {
-        _log->debug("Renewing lease");
+        if (_shouldLog)
+            _log->debug("Renewing lease");
 
         auto res = _client.lease_keep_alive(_leaseId).get();
         if (!res.is_ok()) {
@@ -62,17 +62,20 @@ LeaseKeepAlive::TickWrapper()
         }
 
         if (res.value.ttl < 1) {
-            _log->info("Received TTL of {} seconds, stopping", res.value.ttl);
+            if (_shouldLog)
+                _log->debug("Received TTL of {} seconds, stopping", res.value.ttl);
             _leaseId = -1;
             return LeaseKeepAliveStatus::Fail;
         }
 
         auto waitFor = seconds{ static_cast<int>(res.value.ttl / 3.0f) };
 
-        _log->debug("Lease {} renewed for {} seconds, waiting {} for renew",
-                    _leaseId,
-                    res.value.ttl,
-                    waitFor.count());
+        if (_shouldLog) {
+            _log->debug("Lease {} renewed for {} seconds, waiting {} for renew",
+                        _leaseId,
+                        res.value.ttl,
+                        waitFor.count());
+        }
 
         status = _doneFuture.wait_for(waitFor);
     }
