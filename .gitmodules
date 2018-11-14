@@ -13,3 +13,6 @@
 [submodule "cpp-lib/deps/spdlog"]
 	path = cpp-lib/deps/spdlog
 	url = https://github.com/gabime/spdlog
+[submodule "cpp-lib/deps/jaeger-client-cpp"]
+	path = cpp-lib/deps/jaeger-client-cpp
+	url = https://github.com/jaegertracing/jaeger-client-cpp

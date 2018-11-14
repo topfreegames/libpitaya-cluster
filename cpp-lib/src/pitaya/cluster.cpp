@@ -6,6 +6,7 @@
 #include "pitaya/utils.h"
 #include "protos/msg.pb.h"
 #include <spdlog/sinks/stdout_color_sinks.h>
+#include <jaegertracing/Tracer.h>
 
 using namespace pitaya;
 using namespace std;
@@ -41,6 +42,10 @@ void
     _sd = std::move(sd);
     _rpcSv = std::move(rpcServer);
     _rpcClient = std::move(rpcClient);
+
+    auto span1 = opentracing::Tracer::Global()->StartSpan("tracedFunction");
+    auto span2 = opentracing::Tracer::Global()->StartSpan(
+            "traced", { opentracing::ChildOf(&span1->context()) });
 }
 
 Cluster::~Cluster()

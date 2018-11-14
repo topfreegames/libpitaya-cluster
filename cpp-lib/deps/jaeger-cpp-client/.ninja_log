@@ -1,0 +1,19 @@
+# ninja log v5
+0	81	1542201855	jaeger_cpp_client-prefix/src/jaeger_cpp_client-stamp/jaeger_cpp_client-mkdir	bfe62e894d42e39f
+82	4380	1542201860	jaeger_cpp_client-prefix/src/jaeger_cpp_client-stamp/jaeger_cpp_client-download	a781ba677a92ec6d
+4381	4411	1542201860	jaeger_cpp_client-prefix/src/jaeger_cpp_client-stamp/jaeger_cpp_client-patch	48d9156f31cf085a
+4381	5711	0	jaeger_cpp_client-prefix/src/jaeger_cpp_client-stamp/jaeger_cpp_client-update	736f44fc48494bb3
+5711	5735	1542201861	jaeger_cpp_client-prefix/src/jaeger_cpp_client-stamp/jaeger_cpp_client-configure	50340f885bc4921b
+5735	5760	1542201861	jaeger_cpp_client-prefix/src/jaeger_cpp_client-stamp/jaeger_cpp_client-build	34d59bd0c935d789
+5760	5787	1542201861	jaeger_cpp_client-prefix/src/jaeger_cpp_client-stamp/jaeger_cpp_client-install	124b72bfbe70326f
+5787	5812	1542201861	jaeger_cpp_client-prefix/src/jaeger_cpp_client-stamp/jaeger_cpp_client-test	eb9a2709f5232b03
+5812	5848	1542201861	CMakeFiles/jaeger_cpp_client-complete	d503db341f9ea2d8
+5812	5848	1542201861	jaeger_cpp_client-prefix/src/jaeger_cpp_client-stamp/jaeger_cpp_client-done	d503db341f9ea2d8
+0	108	1542201909	build.ninja	3fa80f0c1a1f7058
+1	1450	0	jaeger_cpp_client-prefix/src/jaeger_cpp_client-stamp/jaeger_cpp_client-update	736f44fc48494bb3
+1451	180700	1542202090	jaeger_cpp_client-prefix/src/jaeger_cpp_client-stamp/jaeger_cpp_client-configure	71535a752a77dc3a
+180820	214925	1542202124	jaeger_cpp_client-prefix/src/jaeger_cpp_client-stamp/jaeger_cpp_client-build	1515f256fd401f75
+214957	215218	1542202124	jaeger_cpp_client-prefix/src/jaeger_cpp_client-stamp/jaeger_cpp_client-install	14c327a4d3f9e6bb
+215223	215263	1542202125	jaeger_cpp_client-prefix/src/jaeger_cpp_client-stamp/jaeger_cpp_client-test	eb9a2709f5232b03
+215263	215321	1542202125	CMakeFiles/jaeger_cpp_client-complete	d503db341f9ea2d8
+215263	215321	1542202125	jaeger_cpp_client-prefix/src/jaeger_cpp_client-stamp/jaeger_cpp_client-done	d503db341f9ea2d8

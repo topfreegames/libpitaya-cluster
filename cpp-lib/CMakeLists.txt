@@ -4,6 +4,25 @@ project(PitayaCluster)
 
 set(CMAKE_CXX_FLAGS "-fPIC")
 
+# Make the build directory
+execute_process(
+    COMMAND ${CMAKE_COMMAND} -H. -Bbuild
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/deps/jaeger-cpp-client)
+execute_process(
+    COMMAND ${CMAKE_COMMAND} --build build
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/deps/jaeger-cpp-client)
+
+set(CMAKE_PREFIX_PATH "${CMAKE_PREFIX_PATH};${CMAKE_SOURCE_DIR}/deps/jaeger-cpp-client/build/install")
+
+add_library(jaegertracing INTERFACE IMPORTED)
+target_include_directories(jaegertracing
+  INTERFACE
+    ${CMAKE_SOURCE_DIR}/deps/jaeger-cpp-client/build/install/include
+    ${CMAKE_SOURCE_DIR}/deps/jaeger-cpp-client/opentracing_include
+    ${CMAKE_SOURCE_DIR}/deps/jaeger-cpp-client/yaml_cpp_include
+    ${CMAKE_SOURCE_DIR}/deps/jaeger-cpp-client/thrift_include)
+target_link_libraries(jaegertracing INTERFACE ${CMAKE_SOURCE_DIR}/deps/jaeger-cpp-client/build/install/lib/libjaegertracing.dylib)
+
 # Prefer static libraries over dynamic ones.
 if(UNIX AND NOT APPLE)
   set(CMAKE_FIND_LIBRARY_SUFFIXES ".so" ".a")
@@ -16,11 +35,16 @@ if(EXISTS ${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
     conan_basic_setup(TARGETS NO_OUTPUT_DIRS)
 endif()
 
+if(EXISTS ${CMAKE_BINARY_DIR}/conan_paths.cmake)
+    include(${CMAKE_BINARY_DIR}/conan_paths.cmake)
+endif()
+
 find_package(Boost REQUIRED)
 
 add_subdirectory(deps/grpc EXCLUDE_FROM_ALL)
 add_subdirectory(deps/etcd-cpp-apiv3 EXCLUDE_FROM_ALL)
 add_subdirectory(deps/cnats-1.8.0 EXCLUDE_FROM_ALL)
+#add_subdirectory(deps/jaeger-client-cpp EXCLUDE_FROM_ALL)
 
 file(GLOB protobuf_files
   "include/protos/*")
@@ -93,7 +117,8 @@ target_include_directories(pitaya_cluster
   PUBLIC
     $<BUILD_INTERFACE:
       ${CMAKE_SOURCE_DIR}/include
-      ${CMAKE_SOURCE_DIR}/deps/spdlog/include>
+      ${CMAKE_SOURCE_DIR}/deps/spdlog/include
+      ${install_dir}/include>
     $<INSTALL_INTERFACE:include>
   PRIVATE
     src)
@@ -102,6 +127,8 @@ target_link_libraries(pitaya_cluster
   PUBLIC
     nats_static
     etcd-cpp-api
+    #jaegertracing::jaegertracing
+    jaegertracing
   PRIVATE
     libprotobuf
     Boost::boost)
