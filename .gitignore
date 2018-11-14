@@ -46,3 +46,4 @@ sysinfo.txt
 *.swp
 
 go-server/vendor
+_build

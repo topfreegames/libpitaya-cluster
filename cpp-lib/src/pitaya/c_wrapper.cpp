@@ -80,6 +80,9 @@ struct RPCReq
     const char* route;
 };
 
+typedef void (*CsharpFreeCb)(void*);
+static CsharpFreeCb freePinvoke;
+
 typedef MemoryBuffer* (*RpcPinvokeCb)(RPCReq*);
 static RpcPinvokeCb gPinvokeCb;
 static std::shared_ptr<spdlog::logger> gLogger;
@@ -145,8 +148,8 @@ RpcCallback(protos::Request req)
         res.set_allocated_error(err);
     }
     // TODO hacky, OMG :O - do stress testing to see if this will leak memory
-    free(memBuf->data);
-    free(memBuf);
+    freePinvoke(memBuf->data);
+    freePinvoke(memBuf);
     return res;
 }
 
@@ -173,6 +176,7 @@ extern "C"
                              CSDConfig* sdConfig,
                              CNATSConfig* nc,
                              RpcPinvokeCb cb,
+                             CsharpFreeCb freeCb,
                              const char* logFile)
     {
         if (!spdlog::get("c_wrapper")) {
@@ -190,6 +194,12 @@ extern "C"
         gPinvokeCb = cb;
         if (gPinvokeCb == nullptr) {
             gLogger->error("pinvoke callback not set!");
+            return false;
+        }
+
+        freePinvoke = freeCb;
+        if (freePinvoke == nullptr) {
+            gLogger->error("freePinvoke callback not set!");
             return false;
         }
 
@@ -236,11 +246,13 @@ extern "C"
         assert((data || (!data && dataSize == 0)) && "data len should be 0 if data is null");
 
         auto msg = new protos::Msg();
+        msg->set_type(protos::MsgType::MsgRequest);
         msg->set_data(std::string(reinterpret_cast<char*>(data), dataSize));
         msg->set_route(route);
 
         protos::Request req;
         req.set_allocated_msg(msg);
+        req.set_type(protos::RPCType::User);
 
         std::vector<uint8_t> buffer;
         buffer.resize(req.ByteSizeLong());
@@ -266,9 +278,18 @@ extern "C"
             return nullptr;
         }
 
+        gLogger->error("out size is: {}", size);
+
         *outBuf = new MemoryBuffer;
         (*outBuf)->size = size;
         (*outBuf)->data = bin;
+
+        std::cout << "array :) =>";
+
+        for (int i = 0; i < (*outBuf)->size; i++) {
+            std::cout << (int)bin[i] << " ";
+        }
+        std::cout << std::endl;
 
         return nullptr;
     }

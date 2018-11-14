@@ -13,6 +13,9 @@ namespace Pitaya
     public delegate IntPtr RPCCb(IntPtr req);
     public delegate string RemoteNameFunc(string methodName);
 
+    [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+    public delegate void FreeHGlobalDelegate(IntPtr ptr);
+
     public delegate void OnSignalFunc();
 
     public delegate void LogHandler(string msg);
@@ -132,11 +135,10 @@ namespace Pitaya
     private static T GetProtoMessageFromMemoryBuffer<T>(MemoryBuffer rpcRes)
     {
       byte[] resData = rpcRes.GetData();
-      Logger.Debug("resData is: " + Encoding.UTF8.GetString(resData));
       var response = new Protos.Response();
       response.MergeFrom(new CodedInputStream(resData));
       var res = (IMessage)Activator.CreateInstance(typeof(T));
-      res.MergeFrom(new CodedInputStream(resData));
+      res.MergeFrom(response.Data);
       Logger.Debug("getProtoMsgFromResponse: got this res {0}", res);
       return (T)res;
     }
@@ -161,7 +163,11 @@ namespace Pitaya
 
       PitayaCluster.RPCCb rpcCbFunc = RPCCbFunc;
       IntPtr rpcCbFuncPtr = Marshal.GetFunctionPointerForDelegate(rpcCbFunc);
-      bool ok = InitializeInternal(serverPtr, sdCfgPtr, natsCfgPtr, rpcCbFuncPtr, logFile);
+
+      FreeHGlobalDelegate freeDelegate = Marshal.FreeHGlobal;
+      IntPtr freeHGlobalPtr = Marshal.GetFunctionPointerForDelegate(freeDelegate);
+
+      bool ok = InitializeInternal(serverPtr, sdCfgPtr, natsCfgPtr, rpcCbFuncPtr, freeHGlobalPtr, logFile);
 
       if (!ok)
       {
@@ -223,7 +229,7 @@ namespace Pitaya
 
 
     [DllImport("libpitaya_cluster", CallingConvention = CallingConvention.Cdecl, EntryPoint = "tfg_pitc_Initialize")]
-    private static extern bool InitializeInternal(IntPtr server, IntPtr sdConfig, IntPtr natsCfg, IntPtr cbPtr, string logFile);
+    private static extern bool InitializeInternal(IntPtr server, IntPtr sdConfig, IntPtr natsCfg, IntPtr cbPtr, IntPtr freePtr, string logFile);
 
     [DllImport("libpitaya_cluster", CallingConvention = CallingConvention.Cdecl, EntryPoint = "tfg_pitc_Terminate")]
     private static extern void TerminateInternal();

@@ -35,7 +35,8 @@ public:
         return instance;
     }
 
-    void Initialize(std::unique_ptr<service_discovery::ServiceDiscovery> sd,
+    void Initialize(Server server,
+                    std::unique_ptr<service_discovery::ServiceDiscovery> sd,
                     std::unique_ptr<RpcServer> rpcServer,
                     std::unique_ptr<RpcClient> rpcClient,
                     const char* loggerName = nullptr);
@@ -54,18 +55,19 @@ public:
 
     boost::optional<PitayaError> RPC(const std::string& serverId,
                                      const std::string& route,
-                                     const google::protobuf::MessageLite& arg,
-                                     google::protobuf::MessageLite& ret);
+                                     protos::Request& req,
+                                     protos::Response& ret);
 
     boost::optional<PitayaError> RPC(const std::string& route,
-                                     const google::protobuf::MessageLite& arg,
-                                     google::protobuf::MessageLite& ret);
+                                     protos::Request& req,
+                                     protos::Response& ret);
 
 private:
     std::shared_ptr<spdlog::logger> _log;
     std::unique_ptr<service_discovery::ServiceDiscovery> _sd;
     std::unique_ptr<RpcServer> _rpcSv;
     std::unique_ptr<RpcClient> _rpcClient;
+    Server _server;
 };
 
 } // namespace pitaya

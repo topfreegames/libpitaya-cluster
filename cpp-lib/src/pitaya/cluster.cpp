@@ -5,10 +5,12 @@
 #include "pitaya/nats/rpc_server.h"
 #include "pitaya/utils.h"
 #include "protos/msg.pb.h"
+#include <cpprest/json.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 
 using namespace pitaya;
 using namespace std;
+namespace json = web::json;
 using boost::optional;
 
 using google::protobuf::MessageLite;
@@ -18,29 +20,35 @@ namespace pitaya {
 using etcdv3_service_discovery::Etcdv3ServiceDiscovery;
 using service_discovery::ServiceDiscovery;
 
-void Cluster::Initialize(etcdv3_service_discovery::Config&& sdConfig,
-                         nats::NatsConfig&& natsConfig,
-                         Server server,
-                         RpcHandlerFunc rpcServerHandlerFunc,
-                         const char* loggerName)
+void
+Cluster::Initialize(etcdv3_service_discovery::Config&& sdConfig,
+                    nats::NatsConfig&& natsConfig,
+                    Server server,
+                    RpcHandlerFunc rpcServerHandlerFunc,
+                    const char* loggerName)
 {
-    Initialize(std::unique_ptr<ServiceDiscovery>(new Etcdv3ServiceDiscovery(std::move(sdConfig), server, loggerName)),
-               std::unique_ptr<RpcServer>(new nats::NatsRpcServer(server, natsConfig, rpcServerHandlerFunc, loggerName)),
+    Initialize(server,
+               std::unique_ptr<ServiceDiscovery>(
+                   new Etcdv3ServiceDiscovery(std::move(sdConfig), server, loggerName)),
+               std::unique_ptr<RpcServer>(
+                   new nats::NatsRpcServer(server, natsConfig, rpcServerHandlerFunc, loggerName)),
                std::unique_ptr<RpcClient>(new nats::NatsRpcClient(server, natsConfig, loggerName)));
 }
 
 void
-    Cluster::Initialize(std::unique_ptr<service_discovery::ServiceDiscovery> sd,
-                 std::unique_ptr<RpcServer> rpcServer,
-                 std::unique_ptr<RpcClient> rpcClient,
-                 const char* loggerName)
+Cluster::Initialize(Server server,
+                    std::unique_ptr<service_discovery::ServiceDiscovery> sd,
+                    std::unique_ptr<RpcServer> rpcServer,
+                    std::unique_ptr<RpcClient> rpcClient,
+                    const char* loggerName)
 {
     _log = ((loggerName && spdlog::get(loggerName)) ? spdlog::get(loggerName)->clone("cluster")
-            : spdlog::stdout_color_mt("cluster"));
+                                                    : spdlog::stdout_color_mt("cluster"));
     _log->set_level(spdlog::level::debug);
     _sd = std::move(sd);
     _rpcSv = std::move(rpcServer);
     _rpcClient = std::move(rpcClient);
+    _server = server;
 }
 
 Cluster::~Cluster()
@@ -60,7 +68,7 @@ Cluster::Terminate()
 }
 
 optional<PitayaError>
-Cluster::RPC(const string& route, const MessageLite& arg, MessageLite& ret)
+Cluster::RPC(const string& route, protos::Request& req, protos::Response& ret)
 {
     try {
         auto r = pitaya::Route(route);
@@ -70,14 +78,17 @@ Cluster::RPC(const string& route, const MessageLite& arg, MessageLite& ret)
             return pitaya::PitayaError(kCodeNotFound, "no servers found for route: " + route);
         }
         pitaya::Server sv = pitaya::utils::RandomServer(servers);
-        return RPC(sv.id, route, arg, ret);
+        return RPC(sv.id, route, req, ret);
     } catch (PitayaException* e) {
         return pitaya::PitayaError(kCodeInternalError, e->what());
     }
 }
 
 optional<PitayaError>
-Cluster::RPC(const string& server_id, const string& route, const MessageLite& arg, MessageLite& ret)
+Cluster::RPC(const string& server_id,
+             const string& route,
+             protos::Request& req,
+             protos::Response& ret)
 {
     _log->debug("Calling RPC on server {}", server_id);
     auto sv = _sd->GetServerById(server_id);
@@ -85,30 +96,25 @@ Cluster::RPC(const string& server_id, const string& route, const MessageLite& ar
         // TODO better error code with constants somewhere
         return pitaya::PitayaError(kCodeNotFound, "server not found");
     }
-    auto msg = new protos::Msg();
-    msg->set_type(protos::MsgType::MsgRequest);
-    msg->set_route(route.c_str());
 
-    std::vector<uint8_t> buffer(arg.ByteSizeLong());
-    arg.SerializeToArray(buffer.data(), buffer.size());
-    msg->set_data(std::string((char*)buffer.data(), buffer.size()));
+    std::vector<uint8_t> buffer(req.ByteSizeLong());
+    req.SerializeToArray(buffer.data(), buffer.size());
 
-    protos::Request req;
-    req.set_type(protos::RPCType::User);
-    req.set_allocated_msg(msg);
+    // TODO proper jaeger setup
+    json::value metadata;
+    metadata.object();
+    metadata[kPeerIdKey] = json::value::string(_server.id);
+    metadata[kPeerServiceKey] = json::value::string(_server.type);
+    string metadataStr = metadata.serialize();
+    req.set_metadata(metadataStr);
 
-    auto res = _rpcClient->Call(sv.value(), req);
-    if (res.has_error()) {
-        _log->debug("Received error calling client rpc: {}", res.error().msg());
-        return pitaya::PitayaError(res.error().code(), res.error().msg());
+    ret = _rpcClient->Call(sv.value(), req);
+    if (ret.has_error()) {
+        _log->debug("Received error calling client rpc: {}", ret.error().msg());
+        return pitaya::PitayaError(ret.error().code(), ret.error().msg());
     }
 
-    _log->debug("Successfuly called rpc: {}", res.data());
-
-    auto parsed = ret.ParseFromString(res.data());
-    if (!parsed) {
-        return pitaya::PitayaError(kCodeInternalError, "error parsing protobuf");
-    }
+    _log->debug("Successfuly called rpc: {}", ret.data());
 
     return boost::none;
 }
