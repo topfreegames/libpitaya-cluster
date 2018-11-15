@@ -19,6 +19,13 @@ using pitaya::service_discovery::ServiceDiscovery;
 
 int x;
 
+static void
+Handler(int signo)
+{
+    Cluster::Instance().Terminate();
+    exit(0);
+}
+
 protos::Response
 rpc_handler(protos::Request req)
 {
@@ -35,6 +42,9 @@ rpc_handler(protos::Request req)
 int
 main()
 {
+    signal(SIGTERM, Handler);
+    signal(SIGINT, Handler);
+
     auto logger = spdlog::stdout_color_mt("main");
     logger->set_level(spdlog::level::debug);
     //    auto logger = spdlog::basic_logger_mt("main", "custom-log.log");
@@ -47,6 +57,7 @@ main()
     sdConfig.etcdPrefix = "pitaya/";
     sdConfig.logHeartbeat = false;
     sdConfig.logServerSync = false;
+    sdConfig.syncServersIntervalSec = std::chrono::seconds(20);
 
     try {
         Cluster::Instance().Initialize(

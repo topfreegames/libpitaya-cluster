@@ -39,6 +39,7 @@ private:
 
 private:
     std::shared_ptr<spdlog::logger> _log;
+    natsOptions* _opts;
     natsConnection* _nc;
     natsSubscription* _sub;
 };

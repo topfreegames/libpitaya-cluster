@@ -59,9 +59,8 @@ void
 Cluster::Terminate()
 {
     _sd.reset();
-    _rpcSv.reset();
     _rpcClient.reset();
-
+    _rpcSv.reset();
     _log->flush();
     spdlog::drop("cluster");
 }

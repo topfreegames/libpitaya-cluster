@@ -16,6 +16,7 @@
 #include <pplx/pplxtasks.h>
 #include <string>
 #include <thread>
+#include <atomic>
 
 namespace pitaya {
 namespace etcdv3_service_discovery {
@@ -60,7 +61,7 @@ private:
 
 private:
     Config _config;
-    bool _workerExiting;
+    std::atomic_bool _workerExiting;
 
     std::promise<void> _initPromise;
     pitaya::Server _server;

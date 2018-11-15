@@ -24,6 +24,7 @@ public:
 
 private:
     std::shared_ptr<spdlog::logger> _log;
+    natsOptions* _opts;
     natsConnection* _nc;
     int _timeoutMs;
     static void ClosedCb(natsConnection* nc,

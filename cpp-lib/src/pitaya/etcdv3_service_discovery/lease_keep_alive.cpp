@@ -63,7 +63,7 @@ LeaseKeepAlive::TickWrapper()
 
         if (res.value.ttl < 1) {
             if (_shouldLog)
-                _log->debug("Received TTL of {} seconds, stopping", res.value.ttl);
+                _log->warn("Received TTL of {} seconds, stopping", res.value.ttl);
             _leaseId = -1;
             return LeaseKeepAliveStatus::Fail;
         }

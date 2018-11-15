@@ -37,6 +37,16 @@ namespace Pitaya
     public string msg;
   }
 
+  public enum NativeLogLevel
+  {
+    Debug = 0,
+    Info = 1,
+    Warn = 2,
+    Error = 3,
+    Critical = 4,
+  }
+
+
   [StructLayout(LayoutKind.Sequential)]
   public struct SDConfig
   {
@@ -49,9 +59,10 @@ namespace Pitaya
     public int logServerSync;
     public int logServerDetails;
     public int syncServersIntervalSec;
+    public NativeLogLevel logLevel;
 
     public SDConfig(string endpoints, string etcdPrefix, int heartbeatTTLSec, bool logHeartbeat,
-                    bool logServerSync, bool logServerDetails, int syncServersIntervalSec)
+                    bool logServerSync, bool logServerDetails, int syncServersIntervalSec, NativeLogLevel logLevel)
     {
       this.endpoints = endpoints;
       this.etcdPrefix = etcdPrefix;
@@ -60,6 +71,7 @@ namespace Pitaya
       this.logServerSync = Convert.ToInt32(logServerSync);
       this.logServerDetails = Convert.ToInt32(logServerDetails);
       this.syncServersIntervalSec = syncServersIntervalSec;
+      this.logLevel = logLevel;
     }
   }
 

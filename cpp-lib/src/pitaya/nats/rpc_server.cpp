@@ -22,24 +22,24 @@ NatsRpcServer::NatsRpcServer(const Server& server,
     : RpcServer(handlerFunc)
     , _log(loggerName ? spdlog::get(loggerName)->clone("nats_rpc_server")
                       : spdlog::stdout_color_mt("nats_rpc_server"))
+    , _opts(nullptr)
     , _nc(nullptr)
     , _sub(nullptr)
 {
-    natsOptions* opts;
-    auto s = natsOptions_Create(&opts);
+    auto s = natsOptions_Create(&_opts);
     if (s != NATS_OK) {
         throw PitayaException("error configuring nats server;");
     }
-    natsOptions_SetTimeout(opts, config.connectionTimeoutMs);
-    natsOptions_SetMaxReconnect(opts, config.maxReconnectionAttempts);
-    natsOptions_SetMaxPendingMsgs(opts, config.maxPendingMsgs);
-    natsOptions_SetClosedCB(opts, ClosedCb, this);
-    natsOptions_SetDisconnectedCB(opts, DisconnectedCb, this);
-    natsOptions_SetReconnectedCB(opts, ReconnectedCb, this);
-    natsOptions_SetErrorHandler(opts, ErrHandler, this);
-    natsOptions_SetURL(opts, config.natsAddr.c_str());
+    natsOptions_SetTimeout(_opts, config.connectionTimeoutMs);
+    natsOptions_SetMaxReconnect(_opts, config.maxReconnectionAttempts);
+    natsOptions_SetMaxPendingMsgs(_opts, config.maxPendingMsgs);
+    natsOptions_SetClosedCB(_opts, ClosedCb, this);
+    natsOptions_SetDisconnectedCB(_opts, DisconnectedCb, this);
+    natsOptions_SetReconnectedCB(_opts, ReconnectedCb, this);
+    natsOptions_SetErrorHandler(_opts, ErrHandler, this);
+    natsOptions_SetURL(_opts, config.natsAddr.c_str());
 
-    s = natsConnection_Connect(&_nc, opts);
+    s = natsConnection_Connect(&_nc, _opts);
     if (s == NATS_OK) {
         s = natsConnection_Subscribe(
             &_sub, _nc, utils::GetTopicForServer(server).c_str(), HandleMsg, this);
@@ -47,12 +47,22 @@ NatsRpcServer::NatsRpcServer(const Server& server,
     if (s == NATS_OK) {
         _log->info("nats rpc server configured!");
     } else {
+        natsOptions_Destroy(_opts);
         throw PitayaException("unable to initialize nats server");
     }
 }
 
 NatsRpcServer::~NatsRpcServer()
 {
+    _log->info("Stopping rpc server");
+    _log->debug("Destroying subscription");
+    natsSubscription_Destroy(_sub);
+    _log->debug("Destroying connection");
+    natsConnection_Destroy(_nc);
+    _log->debug("Destroying options");
+    natsOptions_Destroy(_opts);
+
+    _log->info("rpc server shut down");
     _log->flush();
     spdlog::drop("nats_rpc_server");
 }

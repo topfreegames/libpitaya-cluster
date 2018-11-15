@@ -2,13 +2,13 @@
 <package >
   <metadata>
     <id>LibPitayaServerCpp</id>
-    <version>0.2.1</version>
+    <version>0.3.1</version>
     <authors>leonardo</authors>
     <owners>leonardo</owners>
     <projectUrl>https://github.com/topfreegames/libpitaya-cluster</projectUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
-    <description>Add option to log to files</description>
-    <releaseNotes>Fix many bugs</releaseNotes>
+    <description>Library that allows communication with other pitaya servers</description>
+    <releaseNotes>Fix termination bugs</releaseNotes>
     <copyright>Copyright TFG 2018</copyright>
     <tags>pitaya libpitaya-cluster</tags>
     <dependencies>

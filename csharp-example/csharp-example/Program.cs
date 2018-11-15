@@ -19,8 +19,9 @@ namespace PitayaCSharpExample
         heartbeatTTLSec: 60,
         logHeartbeat: true,
         logServerSync: true,
-        logServerDetails: false,
-        syncServersIntervalSec: 30);
+        logServerDetails: true,
+        syncServersIntervalSec: 30,
+        logLevel: NativeLogLevel.Debug);
 
       var sv = new Server(
          serverId,
@@ -37,12 +38,14 @@ namespace PitayaCSharpExample
       {
         Logger.Info("Calling terminate on cluster");
         PitayaCluster.Terminate();
+        Logger.Info("Cluster terminated, exiting app");
         Environment.Exit(1);
+        //Environment.FailFast("oops");
       });
 
       try
       {
-        PitayaCluster.Initialize(sdConfig, nc, sv, "SPECIAL_LOGGER.out");
+        PitayaCluster.Initialize(sdConfig, nc, sv);
       }
       catch (PitayaException exc)
       {
@@ -62,7 +65,8 @@ namespace PitayaCSharpExample
       Console.WriteLine($"Code: {res.Code}");
       Console.WriteLine($"Msg: {res.Msg}");
 
-      Console.ReadKey();
+      while(true){}
+      //Console.ReadKey();
       //
       //      Server sv = PitayaCluster.GetServer(serverId);
       //      Logger.Info("got server with id: {0}", sv.id);

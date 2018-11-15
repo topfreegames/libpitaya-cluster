@@ -113,12 +113,15 @@ Worker::StartThread()
 
                 break;
             case JobInfo::Shutdown:
+                _log->info("Shutting down");
                 _workerExiting = true;
                 RevokeLease();
                 _leaseKeepAlive.Stop();
+                _log->debug("Stopping servers ticker");
                 _syncServersTicker.Stop();
-                // TODO: revoke lease
-                _log->debug("Exiting loop");
+                _log->debug("Servers ticker stopped");
+                _jobQueue.Clear();
+                _log->info("Exiting loop");
                 return;
             case JobInfo::WatchError:
                 _log->error("Watch error");
@@ -218,6 +221,11 @@ Worker::AddServer(const Server& server)
 void
 Worker::SyncServers()
 {
+    if (_workerExiting) {
+        _log->info("Worker exiting, no need to synchronize servers");
+        return;
+    }
+
     if (_config.logServerSync)
         _log->debug("Will synchronize servers");
 
@@ -295,22 +303,27 @@ Worker::DeleteLocalInvalidServers(const vector<string>& actualServers)
     std::lock_guard<decltype(_serversById)> serversByIdLock(_serversById);
     std::lock_guard<decltype(_serversByType)> serversByTypeLock(_serversByType);
 
+    std::vector<std::string> invalidServers;
+
     for (const auto& pair : _serversById) {
-        if (std::find(actualServers.begin(), actualServers.end(), pair.first) ==
-            actualServers.end()) {
-            _log->warn("Deleting invalid local server {}", pair.first);
-            DeleteServer(pair.first);
+        if (std::find(actualServers.begin(), actualServers.end(), pair.first) == actualServers.end()) {
+            invalidServers.push_back(pair.first);
         }
+    }
+
+    for (const auto& invalidServer : invalidServers) {
+        _log->warn("Deleting invalid local server {}", invalidServer);
+        DeleteServer(invalidServer);
     }
 }
 
 void
 Worker::RevokeLease()
 {
-    _log->debug("Revoking lease");
+    _log->info("Revoking lease");
     etcd::Response res = _client.lease_revoke(_leaseId).get();
     assert(res.is_ok() && "result should always be ok when revoking lease id");
-    _log->debug("Lease revoked successfuly");
+    _log->info("Lease revoked successfuly");
 }
 
 void
