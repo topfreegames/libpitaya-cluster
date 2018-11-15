@@ -97,6 +97,7 @@ Worker::StartThread()
         switch (info) {
             case JobInfo::EtcdReconnectionFailure:
                 _log->error("Reconnection failure, {} retries left!", _numKeepAliveRetriesLeft);
+                _syncServersTicker.Stop();
 
                 while (_numKeepAliveRetriesLeft > 0) {
                     --_numKeepAliveRetriesLeft;
@@ -248,9 +249,7 @@ Worker::SyncServers()
         allIds.push_back(serverId);
 
         if (_serversById.FindWithLock(serverId) == _serversById.end()) {
-            if (_config.logServerSync) {
-                _log->debug("Loading info from missing server: {}/{}", serverType, serverId);
-            }
+            _log->info("Loading info from missing server: {}/{}", serverType, serverId);
             auto server = GetServerFromEtcd(serverId, serverType);
             if (!server) {
                 _log->error("Error getting server from etcd: {}", serverId);
