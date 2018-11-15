@@ -18,7 +18,7 @@ build-all: nuget-clean build-csharp-lib-release build-cpp
 pack-only:
 	@cd NugetOutput && nuget pack *.nuspec -OutputDirectory .
 
-pack: build-all
+pack: nuget-clean build-all
 	@cp csharp-lib/cluster-lib/bin/Release/cluster-lib.dll NugetOutput/lib
 	@cd NugetOutput && nuget pack *.nuspec -OutputDirectory .
 

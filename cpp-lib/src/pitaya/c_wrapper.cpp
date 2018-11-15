@@ -258,9 +258,10 @@ extern "C"
 
     void tfg_pitc_Terminate()
     {
-        spdlog::drop_all();
+        pitaya::Cluster::Instance().Terminate();
         gLogger->info("Cluster destroyed");
         gLogger->flush();
+        spdlog::drop_all();
     }
 
     CPitayaError* tfg_pitc_RPC(const char* serverId,
