@@ -26,10 +26,15 @@ TEST_CASE("Cluster can be created normally")
     auto mockSd = new MockServiceDiscovery();
     auto mockRpcSv = new MockRpcServer(RpcFunc);
     auto mockRpcClient = new MockRpcClient();
+    Server server;
+    server.frontend = false;
+    server.id = "my-server-id";
+    server.type = "connector";
 
-    pitaya::Cluster cluster{ std::unique_ptr<ServiceDiscovery>(mockSd),
-                             std::unique_ptr<RpcServer>(mockRpcSv),
-                             std::unique_ptr<RpcClient>(mockRpcClient) };
+    pitaya::Cluster::Instance().Initialize(server,
+                                           std::unique_ptr<ServiceDiscovery>(mockSd),
+                                           std::unique_ptr<RpcServer>(mockRpcSv),
+                                           std::unique_ptr<RpcClient>(mockRpcClient));
 
     SUBCASE("RPCs can be done successfuly")
     {
@@ -64,7 +69,8 @@ TEST_CASE("Cluster can be created normally")
 
         protos::Response res;
 
-        optional<PitayaError> err = cluster.RPC("my-server-id", "mytest.route", req, res);
+        optional<PitayaError> err =
+            Cluster::Instance().RPC("my-server-id", "mytest.route", req, res);
 
         CHECK(!err.has_value());
     }
@@ -82,7 +88,8 @@ TEST_CASE("Cluster can be created normally")
 
         protos::Response res;
 
-        optional<PitayaError> err = cluster.RPC("my-server-id", "mytest.route", req, res);
+        optional<PitayaError> err =
+            Cluster::Instance().RPC("my-server-id", "mytest.route", req, res);
 
         CHECK(err.has_value());
 
@@ -124,7 +131,8 @@ TEST_CASE("Cluster can be created normally")
 
         protos::Response res;
 
-        optional<PitayaError> err = cluster.RPC("my-server-id", "mytest.route", req, res);
+        optional<PitayaError> err =
+            Cluster::Instance().RPC("my-server-id", "mytest.route", req, res);
 
         CHECK(err.has_value());
 
@@ -133,46 +141,6 @@ TEST_CASE("Cluster can be created normally")
         CHECK(pErr.msg == "Horrible error");
     }
 
-    SUBCASE("RPC returns error if it cannot parse the protobuf message")
-    {
-        Server serverToReturn;
-        serverToReturn.frontend = false;
-        serverToReturn.hostname = "random-host";
-        serverToReturn.id = "my-server-id";
-        serverToReturn.type = "connector";
-
-        trompeloeil::sequence seq;
-
-        REQUIRE_CALL(*mockSd, GetServerById("my-server-id"))
-            .RETURN(serverToReturn)
-            .IN_SEQUENCE(seq);
-
-        auto error = new protos::Error();
-        error->set_allocated_code(new std::string(kCodeInternalError));
-        error->set_allocated_msg(new std::string("Horrible error"));
-
-        protos::Response resToReturn;
-        resToReturn.set_data("woiqdjoi2jd8398u320f9u23f");
-
-        REQUIRE_CALL(*mockRpcClient, Call(_, ANY(const protos::Request&)))
-            .RETURN(resToReturn)
-            .IN_SEQUENCE(seq);
-
-        auto msg = new protos::Msg();
-        msg->set_data("hello my friend");
-        msg->set_route("someroute");
-
-        protos::Request req;
-        req.set_allocated_msg(msg);
-
-        protos::Response res;
-
-        optional<PitayaError> err = cluster.RPC("my-server-id", "mytest.route", req, res);
-
-        CHECK(err.has_value());
-        CHECK(err.value().code == kCodeInternalError);
-        CHECK(err.value().msg == "error parsing protobuf");
-    }
-
-    spdlog::drop_all();
+    Cluster::Instance().Terminate();
+    //    spdlog::drop_all();
 }
