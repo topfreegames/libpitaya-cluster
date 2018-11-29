@@ -38,6 +38,7 @@ add_library(pitaya_cluster ${LIB_TYPE}
     include/pitaya.h
     include/pitaya/constants.h
     include/pitaya/cluster.h
+    include/pitaya/c_wrapper.h
 
     include/pitaya/service_discovery.h
     include/pitaya/etcdv3_service_discovery.h
@@ -126,8 +127,6 @@ endif()
 #==============================
 include(CTest)
 if(BUILD_TESTING AND NOT BUILD_MACOSX_BUNDLE)
-    find_package(GTest REQUIRED)
-
     add_executable(pitaya_cluster_tests
         test/mock_service_discovery.h
         test/mock_rpc_client.h
@@ -139,11 +138,8 @@ if(BUILD_TESTING AND NOT BUILD_MACOSX_BUNDLE)
         CXX_STANDARD 14
         OUTPUT_NAME tests)
 
-    target_compile_definitions(pitaya_cluster_tests
-      PRIVATE -DGTEST_LINKED_AS_SHARED_LIBRARY)
-
     target_link_libraries(pitaya_cluster_tests
-      PRIVATE GTest::GTest pitaya_cluster)
+      PRIVATE pitaya_cluster)
 
     add_test(tests tests)
 endif()
