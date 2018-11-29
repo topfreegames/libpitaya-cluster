@@ -224,8 +224,8 @@ extern "C"
 
         protos::Response res;
 
-        auto err = (strlen(serverId) == 0) ? Cluster::Instance().RPC(route, req, res)
-                                           : Cluster::Instance().RPC(serverId, route, req, res);
+        auto err = (!serverId || strlen(serverId) == 0) ? Cluster::Instance().RPC(route, req, res)
+                                                        : Cluster::Instance().RPC(serverId, route, req, res);
 
         err = pitaya::PitayaError(kCodeNotFound, "server not found");
 

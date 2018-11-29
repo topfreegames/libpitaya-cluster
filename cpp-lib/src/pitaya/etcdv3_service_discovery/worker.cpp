@@ -43,13 +43,7 @@ Worker::Worker(const Config& config, pitaya::Server server, const char* loggerNa
 
 Worker::~Worker()
 {
-    Shutdown();
-}
-
-void
-Worker::Shutdown()
-{
-    _log->info("Will shutdown");
+    _log->debug("Worker Destructor");
 
     {
         std::lock_guard<decltype(_jobQueue)> lock(_jobQueue);
@@ -57,12 +51,27 @@ Worker::Shutdown()
         _semaphore.Notify();
     }
 
+    _log->debug("Will wait for worker thread");
+
     if (_workerThread.joinable()) {
         _workerThread.join();
     }
 
+    _log->debug("Finished waiting for worker thread");
+
     _log->flush();
     spdlog::drop("service_disovery_worker");
+}
+
+void
+Worker::Shutdown()
+{
+    _log->info("Shutting down");
+    _workerExiting = true;
+    _leaseKeepAlive.Stop();
+    _log->debug("Stopping servers ticker");
+    _syncServersTicker.Stop();
+    _log->debug("Servers ticker stopped");
 }
 
 void
@@ -97,6 +106,7 @@ Worker::StartThread()
         switch (info) {
             case JobInfo::EtcdReconnectionFailure:
                 _log->error("Reconnection failure, {} retries left!", _numKeepAliveRetriesLeft);
+                _client.stop_lease_keep_alive();
                 _syncServersTicker.Stop();
 
                 while (_numKeepAliveRetriesLeft > 0) {
@@ -109,26 +119,27 @@ Worker::StartThread()
                 }
 
                 if (_numKeepAliveRetriesLeft <= 0) {
-                    throw std::runtime_error("Failed reconnection to etcd");
+                    _log->critical("Failed to reconnecto to etcd, shutting down");
+                    Shutdown();
+                    std::thread(std::bind(raise, SIGTERM)).detach();
+                    _log->debug("Exiting loop");
+                    return;
                 }
 
                 break;
             case JobInfo::Shutdown:
                 _log->info("Shutting down");
-                _workerExiting = true;
                 RevokeLease();
-                _leaseKeepAlive.Stop();
-                _log->debug("Stopping servers ticker");
-                _syncServersTicker.Stop();
-                _log->debug("Servers ticker stopped");
-                _jobQueue.Clear();
-                _log->info("Exiting loop");
+                Shutdown();
+                _log->debug("Exiting loop");
                 return;
             case JobInfo::WatchError:
                 _log->error("Watch error");
                 break;
         }
     }
+
+    _log->debug("Thread exited loop");
 }
 
 etcdv3::V3Status
@@ -322,8 +333,11 @@ Worker::RevokeLease()
 {
     _log->info("Revoking lease");
     etcd::Response res = _client.lease_revoke(_leaseId).get();
-    assert(res.is_ok() && "result should always be ok when revoking lease id");
-    _log->info("Lease revoked successfuly");
+    if (res.is_ok()) {
+        _log->info("Lease revoked successfuly");
+    } else {
+        _log->error("Failed to revoke lease: etcd = {}, grpc = {}", res.status.etcd_error_message, res.status.grpc_error_message);
+    }
 }
 
 void

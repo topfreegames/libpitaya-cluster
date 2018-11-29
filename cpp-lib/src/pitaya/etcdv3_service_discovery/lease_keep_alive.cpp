@@ -8,7 +8,8 @@ namespace pitaya {
 namespace etcdv3_service_discovery {
 
 LeaseKeepAlive::LeaseKeepAlive(etcd::Client& client, bool shouldLog, const char* loggerName)
-    : _log(spdlog::get(loggerName)->clone("lease_keep_alive"))
+    : _running(false)
+    , _log(spdlog::get(loggerName)->clone("lease_keep_alive"))
     , _shouldLog(shouldLog)
     , _client(client)
     , _leaseId(-1)
@@ -35,9 +36,12 @@ LeaseKeepAlive::Start()
 void
 LeaseKeepAlive::Stop()
 {
-    _log->info("Stopping");
-    _donePromise.set_value();
-    _runTask.wait();
+    if (_running) {
+        _running = false;
+        _log->info("Stopping");
+        _donePromise.set_value();
+        _runTask.wait();
+    }
 }
 
 LeaseKeepAliveStatus

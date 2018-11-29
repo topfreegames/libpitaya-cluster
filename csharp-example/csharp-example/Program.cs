@@ -60,10 +60,16 @@ namespace PitayaCSharpExample
 
       System.Threading.Thread.Sleep(1000);
 
-      var res = PitayaCluster.Rpc<Protos.RPCRes>(Route.FromString("csharp.testremote.remote"), null);
-
-      Console.WriteLine($"Code: {res.Code}");
-      Console.WriteLine($"Msg: {res.Msg}");
+      try
+      {
+        var res = PitayaCluster.Rpc<Protos.RPCRes>(Route.FromString("csharp.testremote.remote"), null);
+        Console.WriteLine($"Code: {res.Code}");
+        Console.WriteLine($"Msg: {res.Msg}");
+      }
+      catch (PitayaException exc)
+      {
+        Console.WriteLine($"RPC failed: {exc.Message}");
+      }
 
       while(true){}
       //Console.ReadKey();

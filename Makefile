@@ -40,8 +40,14 @@ build-csharp-lib-release:
 	@cd ./csharp-lib && msbuild /p:Configuration=Release
 	@cp ./csharp-lib/cluster-lib/bin/Release/cluster-lib.dll NugetOutput/lib
 
+build-csharp-example-release:
+	@cd ./csharp-example && msbuild /p:Configuration=Release
+
 run-csharp-example:
 	@cd ./csharp-example/csharp-example && mono ./bin/Debug/csharp-example.exe
+
+run-csharp-example-release:
+	@cd ./csharp-example/csharp-example && mono ./bin/Release/csharp-example.exe
 
 build-go-server:
 	@cd ./go-server && dep ensure

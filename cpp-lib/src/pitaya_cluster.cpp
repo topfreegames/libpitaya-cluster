@@ -57,6 +57,7 @@ main()
     sdConfig.etcdPrefix = "pitaya/";
     sdConfig.logHeartbeat = false;
     sdConfig.logServerSync = false;
+    sdConfig.heartbeatTTLSec = std::chrono::seconds(20);
     sdConfig.syncServersIntervalSec = std::chrono::seconds(20);
 
     try {

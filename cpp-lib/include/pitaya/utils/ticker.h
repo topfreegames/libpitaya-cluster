@@ -13,7 +13,8 @@ class Ticker
 public:
     template<typename DurationType>
     Ticker(DurationType interval, std::function<void()> cb)
-        : _tickInterval(std::chrono::duration_cast<std::chrono::milliseconds>(interval))
+        : _running(false)
+        , _tickInterval(std::chrono::duration_cast<std::chrono::milliseconds>(interval))
         , _callback(cb)
     {}
 
@@ -27,6 +28,7 @@ private:
     void TickWrapper();
 
 private:
+    bool _running;
     std::chrono::milliseconds _tickInterval;
     std::function<void()> _callback;
     std::promise<void> _donePromise;

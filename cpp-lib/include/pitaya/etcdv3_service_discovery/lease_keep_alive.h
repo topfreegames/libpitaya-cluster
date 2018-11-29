@@ -29,6 +29,7 @@ private:
     LeaseKeepAliveStatus TickWrapper();
 
 private:
+    bool _running;
     std::shared_ptr<spdlog::logger> _log;
     bool _shouldLog;
     etcd::Client& _client;

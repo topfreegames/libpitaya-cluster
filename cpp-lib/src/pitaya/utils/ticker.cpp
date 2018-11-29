@@ -6,6 +6,7 @@ namespace utils {
 void
 Ticker::Start()
 {
+    _running = true;
     _donePromise = std::promise<void>();
     _doneFuture = _donePromise.get_future();
     _runFuture = std::async(std::launch::async, &Ticker::TickWrapper, this);
@@ -14,8 +15,11 @@ Ticker::Start()
 void
 Ticker::Stop()
 {
-    _donePromise.set_value();
-    _runFuture.wait();
+    if (_running) {
+        _running = false;
+        _donePromise.set_value();
+        _runFuture.wait();
+    }
 }
 
 void
