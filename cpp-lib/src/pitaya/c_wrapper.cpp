@@ -1,6 +1,4 @@
 #include "pitaya/c_wrapper.h"
-#include "pitaya.h"
-#include "pitaya/cluster.h"
 #include "pitaya/constants.h"
 #include "pitaya/nats/rpc_server.h"
 #include "spdlog/logger.h"
@@ -47,6 +45,20 @@ CPitayaError::CPitayaError(const std::string& codeStr, const std::string& msgStr
 {
     code = ConvertToCString(codeStr);
     msg = ConvertToCString(msgStr);
+}
+
+pitaya::etcdv3_service_discovery::Config
+CSDConfig::ToConfig()
+{
+    pitaya::etcdv3_service_discovery::Config config;
+    config.endpoints = endpoints ? std::string(endpoints) : "";
+    config.etcdPrefix = etcdPrefix ? std::string(etcdPrefix) : "";
+    config.heartbeatTTLSec = std::chrono::seconds(heartbeatTTLSec);
+    config.logHeartbeat = logHeartbeat;
+    config.logServerSync = logServerSync;
+    config.logServerDetails = logServerDetails;
+    config.syncServersIntervalSec = std::chrono::seconds(syncServersIntervalSec);
+    return config;
 }
 
 void
