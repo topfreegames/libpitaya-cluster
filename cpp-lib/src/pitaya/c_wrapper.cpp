@@ -1,3 +1,4 @@
+#include "pitaya/c_wrapper.h"
 #include "pitaya.h"
 #include "pitaya/cluster.h"
 #include "pitaya/constants.h"
@@ -18,118 +19,35 @@ static char*
 ConvertToCString(const std::string& str)
 {
     char* cString = new char[str.size() + 1]();
-    std::memcpy(cString, str.data(), str.size());
+    if (cString) {
+        std::memcpy(cString, str.data(), str.size());
+    }
     return cString;
 }
 
-struct CServer
-{
-    char* id = nullptr;
-    char* type = nullptr;
-    char* metadata = nullptr;
-    char* hostname = nullptr;
-    bool frontend = false;
-
-    ~CServer()
-    {
-        delete[] id;
-        delete[] type;
-        delete[] metadata;
-        delete[] hostname;
-    }
-
-    static CServer* FromPitayaServer(const pitaya::Server& pServer)
-    {
-        auto server = new CServer;
-        server->id = ConvertToCString(pServer.id);
-        server->type = ConvertToCString(pServer.type);
-        server->metadata = ConvertToCString(pServer.metadata);
-        server->hostname = ConvertToCString(pServer.hostname);
-        server->frontend = pServer.frontend;
-        return server;
-    }
-};
-
-struct CPitayaError
-{
-    char* code = nullptr;
-    char* msg = nullptr;
-
-    CPitayaError(const std::string& codeStr, const std::string& msgStr)
-    {
-        code = ConvertToCString(codeStr);
-        msg = ConvertToCString(msgStr);
-    }
-
-    ~CPitayaError()
-    {
-        delete[] code;
-        delete[] msg;
-    }
-};
-
-struct MemoryBuffer
-{
-    void* data;
-    int size;
-};
-
-struct RPCReq
-{
-    MemoryBuffer buffer;
-    const char* route;
-};
-
-typedef void (*CsharpFreeCb)(void*);
 static CsharpFreeCb freePinvoke;
 
-typedef MemoryBuffer* (*RpcPinvokeCb)(RPCReq*);
 static RpcPinvokeCb gPinvokeCb;
 static std::shared_ptr<spdlog::logger> gLogger;
 static void (*gSignalHandler)() = nullptr;
 
-enum LogLevel : int
+CServer*
+CServer::FromPitayaServer(const pitaya::Server& pServer)
 {
-    LogLevel_Debug = 0,
-    LogLevel_Info = 1,
-    LogLevel_Warn = 2,
-    LogLevel_Error = 3,
-    LogLevel_Critical = 4,
-};
+    auto server = new CServer;
+    server->id = ConvertToCString(pServer.id);
+    server->type = ConvertToCString(pServer.type);
+    server->metadata = ConvertToCString(pServer.metadata);
+    server->hostname = ConvertToCString(pServer.hostname);
+    server->frontend = pServer.frontend;
+    return server;
+}
 
-struct CSDConfig
+CPitayaError::CPitayaError(const std::string& codeStr, const std::string& msgStr)
 {
-    const char* endpoints;
-    const char* etcdPrefix;
-    int heartbeatTTLSec;
-    int logHeartbeat;
-    int logServerSync;
-    int logServerDetails;
-    int syncServersIntervalSec;
-    LogLevel logLevel;
-
-    etcdv3_service_discovery::Config ToConfig()
-    {
-        etcdv3_service_discovery::Config config;
-        config.endpoints = std::string(endpoints);
-        config.etcdPrefix = std::string(etcdPrefix);
-        config.heartbeatTTLSec = std::chrono::seconds(heartbeatTTLSec);
-        config.logHeartbeat = logHeartbeat;
-        config.logServerSync = logServerSync;
-        config.logServerDetails = logServerDetails;
-        config.syncServersIntervalSec = std::chrono::seconds(syncServersIntervalSec);
-        return config;
-    }
-};
-
-struct CNATSConfig
-{
-    const char* addr;
-    int64_t connectionTimeoutMs;
-    int requestTimeoutMs;
-    int maxReconnectionAttempts;
-    int maxPendingMsgs;
-};
+    code = ConvertToCString(codeStr);
+    msg = ConvertToCString(msgStr);
+}
 
 void
 OnSignal(int signum)
@@ -211,13 +129,17 @@ extern "C"
                 break;
         }
 
-        NatsConfig natsCfg = NatsConfig(nc->addr,
+        NatsConfig natsCfg = NatsConfig(nc->addr ? std::string(nc->addr) : "",
                                         nc->requestTimeoutMs,
                                         nc->connectionTimeoutMs,
                                         nc->maxReconnectionAttempts,
                                         nc->maxPendingMsgs);
 
-        Server server(sv->id, sv->type, sv->metadata, sv->hostname, sv->frontend);
+        Server server(sv->id ? std::string(sv->id) : "",
+                      sv->type ? std::string(sv->type) : "",
+                      sv->metadata ? std::string(sv->metadata) : "",
+                      sv->hostname ? std::string(sv->hostname) : "",
+                      sv->frontend);
 
         gPinvokeCb = cb;
         if (gPinvokeCb == nullptr) {
@@ -293,6 +215,8 @@ extern "C"
         auto err = (strlen(serverId) == 0) ? Cluster::Instance().RPC(route, req, res)
                                            : Cluster::Instance().RPC(serverId, route, req, res);
 
+        err = pitaya::PitayaError(kCodeNotFound, "server not found");
+
         if (err) {
             gLogger->error("received error on RPC: {}", err->msg);
             return new CPitayaError(err->code, err->msg);
@@ -320,7 +244,7 @@ extern "C"
         delete buf;
     }
 
-    void tfg_pitc_FreePitayaError(PitayaError* err) { delete err; }
+    void tfg_pitc_FreePitayaError(CPitayaError* err) { delete err; }
 
     void tfg_pitc_OnSignal(void (*signalHandler)())
     {

@@ -50,19 +50,18 @@ Cluster::Initialize(Server server,
     _server = server;
 }
 
-Cluster::~Cluster()
-{
-    Terminate();
-}
+Cluster::~Cluster() {}
 
 void
 Cluster::Terminate()
 {
+    if (_log)
+        _log->flush();
     _sd.reset();
     _rpcClient.reset();
     _rpcSv.reset();
-    _log->flush();
-    spdlog::drop("cluster");
+    if (spdlog::get("cluster"))
+        spdlog::drop("cluster");
 }
 
 optional<PitayaError>

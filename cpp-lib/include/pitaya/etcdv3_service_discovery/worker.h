@@ -9,6 +9,7 @@
 #include "pitaya/utils/sync_map.h"
 #include "pitaya/utils/ticker.h"
 #include "spdlog/spdlog.h"
+#include <atomic>
 #include <boost/optional.hpp>
 #include <chrono>
 #include <etcd/Client.hpp>
@@ -16,7 +17,6 @@
 #include <pplx/pplxtasks.h>
 #include <string>
 #include <thread>
-#include <atomic>
 
 namespace pitaya {
 namespace etcdv3_service_discovery {
