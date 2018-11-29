@@ -305,7 +305,8 @@ Worker::DeleteLocalInvalidServers(const vector<string>& actualServers)
     std::vector<std::string> invalidServers;
 
     for (const auto& pair : _serversById) {
-        if (std::find(actualServers.begin(), actualServers.end(), pair.first) == actualServers.end()) {
+        if (std::find(actualServers.begin(), actualServers.end(), pair.first) ==
+            actualServers.end()) {
             invalidServers.push_back(pair.first);
         }
     }
@@ -467,7 +468,11 @@ ServerAsJson(const Server& server)
     obj.object();
     obj["id"] = json::value::string(server.id);
     obj["type"] = json::value::string(server.type);
-    obj["metadata"] = json::value::parse(server.metadata);
+    try {
+        obj["metadata"] = json::value::parse(server.metadata);
+    } catch (const web::json::json_exception& exc) {
+        obj["metadata"] = json::value::string("");
+    }
     obj["hostname"] = json::value::string(server.hostname);
     obj["frontend"] = json::value::boolean(server.frontend);
     return obj.serialize();
