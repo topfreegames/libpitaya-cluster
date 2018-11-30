@@ -24,11 +24,11 @@ namespace PitayaCSharpExample
         logLevel: NativeLogLevel.Debug);
 
       var sv = new Server(
-         serverId,
-         "csharp",
-         "{\"ip\":\"127.0.0.1\"}",
-         "localhost",
-         false);
+         id: serverId,
+         type: "csharp",
+         metadata: "{\"ip\":\"127.0.0.1\"}",
+         hostname: "localhost",
+         frontend: false);
 
       NatsConfig nc = new NatsConfig("127.0.0.1:4222", 2000, 1000, 3, 100);
 

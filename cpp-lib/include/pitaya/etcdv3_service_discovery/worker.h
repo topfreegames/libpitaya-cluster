@@ -42,6 +42,7 @@ private:
     void Shutdown();
     void StartThread();
     void OnWatch(etcd::Response res);
+    void StartLeaseKeepAlive();
     etcdv3::V3Status Init();
     etcdv3::V3Status Bootstrap();
     etcdv3::V3Status GrantLease();

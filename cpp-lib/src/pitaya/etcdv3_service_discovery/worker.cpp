@@ -113,7 +113,9 @@ Worker::StartThread()
                     --_numKeepAliveRetriesLeft;
                     auto status = Bootstrap();
                     if (status.is_ok()) {
+                        _log->info("Etcd reconnection successful");
                         _numKeepAliveRetriesLeft = 3;
+                        StartLeaseKeepAlive();
                         break;
                     }
                 }
@@ -142,6 +144,31 @@ Worker::StartThread()
     _log->debug("Thread exited loop");
 }
 
+void
+Worker::StartLeaseKeepAlive()
+{
+    if (_leaseId == -1) {
+        _log->error("LeaseId is -1, cannot start lease keep alive");
+        return;
+    }
+
+    _leaseKeepAlive.SetLeaseId(_leaseId);
+    _leaseKeepAlive.Start().then([this](LeaseKeepAliveStatus status) {
+        switch (status) {
+            case LeaseKeepAliveStatus::Ok:
+                _log->info("lease keep alive exited with success");
+                break;
+            case LeaseKeepAliveStatus::Fail: {
+                _log->error("lease keep alive failed!");
+                std::lock_guard<decltype(_jobQueue)> lock(_jobQueue);
+                _jobQueue.PushBack(JobInfo::EtcdReconnectionFailure);
+                _syncServersTicker.Stop();
+                _semaphore.Notify();
+            } break;
+        }
+    });
+}
+
 etcdv3::V3Status
 Worker::Init()
 {
@@ -150,6 +177,7 @@ Worker::Init()
         return status;
     }
 
+    StartLeaseKeepAlive();
     _syncServersTicker.Start();
 
     return status;
@@ -177,22 +205,6 @@ Worker::GrantLease()
 
     _leaseId = res.value.lease_id;
     _log->info("Got lease id: {}", _leaseId);
-
-    _leaseKeepAlive.SetLeaseId(_leaseId);
-    _leaseKeepAlive.Start().then([this](LeaseKeepAliveStatus status) {
-        switch (status) {
-            case LeaseKeepAliveStatus::Ok:
-                _log->info("lease keep alive exited with success");
-                break;
-            case LeaseKeepAliveStatus::Fail: {
-                _log->error("lease keep alive failed!");
-                std::lock_guard<decltype(_jobQueue)> lock(_jobQueue);
-                _jobQueue.PushBack(JobInfo::EtcdReconnectionFailure);
-                _syncServersTicker.Stop();
-                _semaphore.Notify();
-            } break;
-        }
-    });
 
     return std::move(res.status);
 }

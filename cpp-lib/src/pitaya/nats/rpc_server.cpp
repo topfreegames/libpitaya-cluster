@@ -55,11 +55,8 @@ NatsRpcServer::NatsRpcServer(const Server& server,
 NatsRpcServer::~NatsRpcServer()
 {
     _log->info("Stopping rpc server");
-    _log->debug("Destroying subscription");
     natsSubscription_Destroy(_sub);
-    _log->debug("Destroying connection");
     natsConnection_Destroy(_nc);
-    _log->debug("Destroying options");
     natsOptions_Destroy(_opts);
 
     _log->info("rpc server shut down");
