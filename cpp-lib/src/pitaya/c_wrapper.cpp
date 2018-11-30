@@ -227,8 +227,6 @@ extern "C"
         auto err = (!serverId || strlen(serverId) == 0) ? Cluster::Instance().RPC(route, req, res)
                                                         : Cluster::Instance().RPC(serverId, route, req, res);
 
-        err = pitaya::PitayaError(kCodeNotFound, "server not found");
-
         if (err) {
             gLogger->error("received error on RPC: {}", err->msg);
             return new CPitayaError(err->code, err->msg);

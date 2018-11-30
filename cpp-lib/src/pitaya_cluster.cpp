@@ -77,7 +77,7 @@ main()
             ///// FINISH
             protos::Response res;
 
-            auto err = Cluster::Instance().RPC("csharp.testremote.remote", req, res);
+            auto err = Cluster::Instance().RPC("sometype.testremote.remote", req, res);
             if (err) {
                 cout << "received error:" << err.value().msg << endl;
             } else {

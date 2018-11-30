@@ -25,6 +25,7 @@ LeaseKeepAlive::Start()
         return pplx::task_from_result(LeaseKeepAliveStatus::Fail);
     }
 
+    _running = true;
     _donePromise = std::promise<void>();
     _doneFuture = _donePromise.get_future();
 
