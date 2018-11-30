@@ -1,7 +1,7 @@
-#include <string>
-#include <chrono>
 #include "pitaya.h"
 #include "pitaya/cluster.h"
+#include <chrono>
+#include <string>
 
 struct CPitayaError
 {
@@ -98,9 +98,11 @@ extern "C"
 
     void tfg_pitc_Terminate();
 
-    CPitayaError* tfg_pitc_RPC(const char* serverId,
-                               const char* route,
-                               void* data,
-                               int dataSize,
-                               MemoryBuffer** outBuf);
+    // CPitayaError* tfg_pitc_RPC(const char* serverId,
+    bool tfg_pitc_RPC(const char* serverId,
+                      const char* route,
+                      void* data,
+                      int dataSize,
+                      MemoryBuffer** outBuf,
+                      CPitayaError** err);
 }

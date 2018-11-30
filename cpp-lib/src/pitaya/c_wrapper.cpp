@@ -198,11 +198,12 @@ extern "C"
         spdlog::drop_all();
     }
 
-    CPitayaError* tfg_pitc_RPC(const char* serverId,
-                               const char* route,
-                               void* data,
-                               int dataSize,
-                               MemoryBuffer** outBuf)
+    bool tfg_pitc_RPC(const char* serverId,
+                      const char* route,
+                      void* data,
+                      int dataSize,
+                      MemoryBuffer** outBuf,
+                      CPitayaError** retErr)
     {
         assert(serverId && "server id should not be null");
         assert(route && "route should not be null");
@@ -224,12 +225,14 @@ extern "C"
 
         protos::Response res;
 
-        auto err = (!serverId || strlen(serverId) == 0) ? Cluster::Instance().RPC(route, req, res)
-                                                        : Cluster::Instance().RPC(serverId, route, req, res);
+        auto err = (!serverId || strlen(serverId) == 0)
+                       ? Cluster::Instance().RPC(route, req, res)
+                       : Cluster::Instance().RPC(serverId, route, req, res);
 
         if (err) {
             gLogger->error("received error on RPC: {}", err->msg);
-            return new CPitayaError(err->code, err->msg);
+            *retErr = new CPitayaError(err->code, err->msg);
+            return true;
         }
 
         size_t size = res.ByteSizeLong();
@@ -237,15 +240,15 @@ extern "C"
 
         if (!res.SerializeToArray(bin, size)) {
             gLogger->error("Error serializing RPC response");
-            // TODO: what should be done here?
-            return nullptr;
+            *retErr = new CPitayaError(kCodeInternalError, "Error serializing RPC response");
+            return true;
         }
 
         *outBuf = new MemoryBuffer;
         (*outBuf)->size = size;
         (*outBuf)->data = bin;
 
-        return nullptr;
+        return false;
     }
 
     void tfg_pitc_FreeMemoryBuffer(MemoryBuffer* buf)

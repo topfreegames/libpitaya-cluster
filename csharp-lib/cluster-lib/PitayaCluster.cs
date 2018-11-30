@@ -197,24 +197,21 @@ namespace Pitaya
 
     public static unsafe T Rpc<T>(string serverId, Route route, IMessage msg)
     {
-      // IntPtr ptr = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(MemoryBuffer)));
-
-      IntPtr pitayaErr = IntPtr.Zero;
+      bool err = false;
       MemoryBuffer* memBufPtr = null;
+      Pitaya.Error* retError = null;
 
       var data = ProtoMessageToByteArray(msg);
       fixed (byte* p = data)
       {
-        pitayaErr = RPCInternal(serverId, route.ToString(), (IntPtr)p, data.Length, &memBufPtr);
+        err = RPCInternal(serverId, route.ToString(), (IntPtr)p, data.Length, &memBufPtr, &retError);
       }
 
-      if (pitayaErr != IntPtr.Zero) // error
+      if (err) // error
       {
-        var err = (Pitaya.Error)Marshal.PtrToStructure(pitayaErr, typeof(Pitaya.Error));
+        FreePitayaErrorInternal(retError);
 
-        FreePitayaErrorInternal(pitayaErr);
-
-        throw new PitayaException($"RPC call failed: ({err.code}: {err.msg})");
+        throw new PitayaException($"RPC call failed: ({Marshal.PtrToStringAnsi((*retError).code)}: {Marshal.PtrToStringAnsi((*retError).msg)})");
       }
 
       var protoRet = GetProtoMessageFromMemoryBuffer<T>(*memBufPtr);
@@ -241,7 +238,7 @@ namespace Pitaya
     private static extern void FreeServerInternal(IntPtr serverPtr);
 
     [DllImport("libpitaya_cluster", CallingConvention = CallingConvention.Cdecl, EntryPoint = "tfg_pitc_RPC")]
-    private static extern unsafe IntPtr RPCInternal(string serverId, string route, IntPtr data, int dataSize, MemoryBuffer** buffer);
+    private static extern unsafe bool RPCInternal(string serverId, string route, IntPtr data, int dataSize, MemoryBuffer** buffer, Pitaya.Error** retErr);
 
     [DllImport("libpitaya_cluster", CallingConvention = CallingConvention.Cdecl, EntryPoint = "tfg_pitc_FreeMemoryBuffer")]
     private static extern unsafe void FreeMemoryBufferInternal(MemoryBuffer *ptr);
@@ -250,6 +247,6 @@ namespace Pitaya
     private static extern void OnSignalInternal(OnSignalFunc ptr);
 
     [DllImport("libpitaya_cluster", CallingConvention = CallingConvention.Cdecl, EntryPoint = "tfg_pitc_FreePitayaError")]
-    private static extern void FreePitayaErrorInternal(IntPtr ptr);
+    private static extern unsafe void FreePitayaErrorInternal(Pitaya.Error *ptr);
   }
 }

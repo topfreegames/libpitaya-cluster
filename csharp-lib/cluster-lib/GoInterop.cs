@@ -29,12 +29,10 @@ namespace Pitaya
   }
 
   [StructLayout(LayoutKind.Sequential)]
-  public class Error
+  public struct Error
   {
-    [MarshalAs(UnmanagedType.LPStr)]
-    public string code;
-    [MarshalAs(UnmanagedType.LPStr)]
-    public string msg;
+    public IntPtr code;
+    public IntPtr msg;
   }
 
   public enum NativeLogLevel
