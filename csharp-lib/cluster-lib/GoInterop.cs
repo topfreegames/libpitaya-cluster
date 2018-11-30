@@ -16,7 +16,8 @@ namespace Pitaya
     public string metadata;
     [MarshalAs(UnmanagedType.LPStr)]
     public string hostname;
-    public bool frontend;
+
+    public int frontend;
 
     public Server(string id, string type, string metadata, string hostname, bool frontend)
     {
@@ -24,15 +25,17 @@ namespace Pitaya
       this.type = type;
       this.metadata = metadata;
       this.hostname = hostname;
-      this.frontend = frontend;
+      this.frontend = Convert.ToInt32(frontend);
     }
   }
 
   [StructLayout(LayoutKind.Sequential)]
   public struct Error
   {
-    public IntPtr code;
-    public IntPtr msg;
+    [MarshalAs(UnmanagedType.LPStr)]
+    public string code;
+    [MarshalAs(UnmanagedType.LPStr)]
+    public string msg;
   }
 
   public enum NativeLogLevel

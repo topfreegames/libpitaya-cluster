@@ -182,36 +182,38 @@ namespace Pitaya
 
     public static Server? GetServerById(string serverId)
     {
-      var serverPtr = GetServerByIdInternal(serverId);
+      var retServer = new Server();
 
-      if (serverPtr == IntPtr.Zero)
+      bool ok = GetServerByIdInternal(serverId, ref retServer);
+
+      if (!ok)
       {
-        Logger.Error("There are no servers with id " + serverId);
+        Logger.Error($"There are no servers with id {serverId}");
         return null;
       }
 
-      var server = (Pitaya.Server)Marshal.PtrToStructure(serverPtr, typeof(Pitaya.Server));
-      FreeServerInternal(serverPtr);
-      return server;
+      //var server = (Pitaya.Server)Marshal.PtrToStructure(serverPtr, typeof(Pitaya.Server));
+      //FreeServerInternal(serverPtr);
+      return retServer;
     }
 
     public static unsafe T Rpc<T>(string serverId, Route route, IMessage msg)
     {
-      bool err = false;
+      bool ok = false;
       MemoryBuffer* memBufPtr = null;
-      Pitaya.Error* retError = null;
+      var retError = new Error();
 
       var data = ProtoMessageToByteArray(msg);
       fixed (byte* p = data)
       {
-        err = RPCInternal(serverId, route.ToString(), (IntPtr)p, data.Length, &memBufPtr, &retError);
+        ok = RPCInternal(serverId, route.ToString(), (IntPtr)p, data.Length, &memBufPtr, ref retError);
       }
 
-      if (err) // error
+      if (!ok) // error
       {
-        FreePitayaErrorInternal(retError);
+//        FreePitayaErrorInternal(retError);
 
-        throw new PitayaException($"RPC call failed: ({Marshal.PtrToStringAnsi((*retError).code)}: {Marshal.PtrToStringAnsi((*retError).msg)})");
+        throw new PitayaException($"RPC call failed: ({retError.code}: {retError.msg})");
       }
 
       var protoRet = GetProtoMessageFromMemoryBuffer<T>(*memBufPtr);
@@ -232,13 +234,13 @@ namespace Pitaya
     private static extern void TerminateInternal();
 
     [DllImport("libpitaya_cluster", CallingConvention = CallingConvention.Cdecl, EntryPoint = "tfg_pitc_GetServerById")]
-    private static extern IntPtr GetServerByIdInternal(string serverId);
+    private static extern bool GetServerByIdInternal(string serverId, ref Server retServer);
 
     [DllImport("libpitaya_cluster", CallingConvention = CallingConvention.Cdecl, EntryPoint = "tfg_pitc_FreeServer")]
     private static extern void FreeServerInternal(IntPtr serverPtr);
 
     [DllImport("libpitaya_cluster", CallingConvention = CallingConvention.Cdecl, EntryPoint = "tfg_pitc_RPC")]
-    private static extern unsafe bool RPCInternal(string serverId, string route, IntPtr data, int dataSize, MemoryBuffer** buffer, Pitaya.Error** retErr);
+    private static extern unsafe bool RPCInternal(string serverId, string route, IntPtr data, int dataSize, MemoryBuffer** buffer, ref Error retErr);
 
     [DllImport("libpitaya_cluster", CallingConvention = CallingConvention.Cdecl, EntryPoint = "tfg_pitc_FreeMemoryBuffer")]
     private static extern unsafe void FreeMemoryBufferInternal(MemoryBuffer *ptr);
@@ -246,7 +248,7 @@ namespace Pitaya
     [DllImport("libpitaya_cluster", CallingConvention = CallingConvention.Cdecl, EntryPoint = "tfg_pitc_OnSignal")]
     private static extern void OnSignalInternal(OnSignalFunc ptr);
 
-    [DllImport("libpitaya_cluster", CallingConvention = CallingConvention.Cdecl, EntryPoint = "tfg_pitc_FreePitayaError")]
-    private static extern unsafe void FreePitayaErrorInternal(Pitaya.Error *ptr);
+//    [DllImport("libpitaya_cluster", CallingConvention = CallingConvention.Cdecl, EntryPoint = "tfg_pitc_FreePitayaError")]
+//    private static extern unsafe void FreePitayaErrorInternal(/**/Pitaya.Error *ptr);
   }
 }

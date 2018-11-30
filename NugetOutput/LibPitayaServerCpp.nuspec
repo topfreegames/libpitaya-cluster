@@ -2,13 +2,13 @@
 <package >
   <metadata>
     <id>LibPitayaServerCpp</id>
-    <version>0.3.4</version>
+    <version>0.3.5</version>
     <authors>leonardo</authors>
     <owners>leonardo</owners>
     <projectUrl>https://github.com/topfreegames/libpitaya-cluster</projectUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>Library that allows communication with other pitaya servers</description>
-    <releaseNotes>Fixed bugs related to etcd reconnection and graceful shutdown.</releaseNotes>
+    <releaseNotes>Fix bug where RPC calls would always return an error</releaseNotes>
     <copyright>Copyright TFG 2018</copyright>
     <tags>pitaya libpitaya-cluster</tags>
     <dependencies>

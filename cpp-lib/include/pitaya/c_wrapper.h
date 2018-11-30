@@ -7,14 +7,6 @@ struct CPitayaError
 {
     char* code = nullptr;
     char* msg = nullptr;
-
-    CPitayaError(const std::string& codeStr, const std::string& msgStr);
-
-    ~CPitayaError()
-    {
-        delete[] code;
-        delete[] msg;
-    }
 };
 
 struct CServer
@@ -23,17 +15,7 @@ struct CServer
     char* type = nullptr;
     char* metadata = nullptr;
     char* hostname = nullptr;
-    bool frontend = false;
-
-    ~CServer()
-    {
-        delete[] id;
-        delete[] type;
-        delete[] metadata;
-        delete[] hostname;
-    }
-
-    static CServer* FromPitayaServer(const pitaya::Server& pServer);
+    int frontend = false;
 };
 
 enum LogLevel : int
@@ -92,17 +74,16 @@ extern "C"
                              CsharpFreeCb freeCb,
                              const char* logFile);
 
-    CServer* tfg_pitc_GetServerById(const char* serverId);
+    bool tfg_pitc_GetServerById(const char* serverId, CServer* retServer);
 
     void tfg_pitc_FreeServer(CServer* cServer);
 
     void tfg_pitc_Terminate();
 
-    // CPitayaError* tfg_pitc_RPC(const char* serverId,
     bool tfg_pitc_RPC(const char* serverId,
                       const char* route,
                       void* data,
                       int dataSize,
                       MemoryBuffer** outBuf,
-                      CPitayaError** err);
+                      CPitayaError* retErr);
 }

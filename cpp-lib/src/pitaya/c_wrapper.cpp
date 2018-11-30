@@ -16,7 +16,7 @@ using pitaya::nats::NatsConfig;
 static char*
 ConvertToCString(const std::string& str)
 {
-    char* cString = new char[str.size() + 1]();
+    char *cString = (char*)calloc(str.size() + 1, 1);
     if (cString) {
         std::memcpy(cString, str.data(), str.size());
     }
@@ -29,10 +29,10 @@ static RpcPinvokeCb gPinvokeCb;
 static std::shared_ptr<spdlog::logger> gLogger;
 static void (*gSignalHandler)() = nullptr;
 
-CServer*
-CServer::FromPitayaServer(const pitaya::Server& pServer)
+static CServer*
+FromPitayaServer(const pitaya::Server& pServer)
 {
-    auto server = new CServer;
+    auto server = (CServer*)malloc(sizeof(CServer));
     server->id = ConvertToCString(pServer.id);
     server->type = ConvertToCString(pServer.type);
     server->metadata = ConvertToCString(pServer.metadata);
@@ -41,10 +41,31 @@ CServer::FromPitayaServer(const pitaya::Server& pServer)
     return server;
 }
 
-CPitayaError::CPitayaError(const std::string& codeStr, const std::string& msgStr)
+static CPitayaError*
+NewPitayaError(const std::string& codeStr, const std::string& msgStr)
 {
-    code = ConvertToCString(codeStr);
-    msg = ConvertToCString(msgStr);
+    CPitayaError *err = (CPitayaError*)malloc(sizeof(CPitayaError));
+    err->code = ConvertToCString(codeStr);
+    err->msg = ConvertToCString(msgStr);
+    return err;
+}
+
+static void
+FreePitayaError(CPitayaError* err)
+{
+    free(err->code);
+    free(err->msg);
+    free(err);
+}
+
+static void
+FreeServer(CServer* sv)
+{
+    free(sv->id);
+    free(sv->type);
+    free(sv->metadata);
+    free(sv->hostname);
+    free(sv);
 }
 
 pitaya::etcdv3_service_discovery::Config
@@ -175,20 +196,24 @@ extern "C"
         }
     }
 
-    CServer* tfg_pitc_GetServerById(const char* serverId)
+    bool tfg_pitc_GetServerById(const char* serverId, CServer* retServer)
     {
         auto maybeServer = Cluster::Instance().GetServiceDiscovery().GetServerById(serverId);
 
         if (!maybeServer) {
-            return nullptr;
+            return false;
         }
 
         pitaya::Server server = maybeServer.value();
-        auto cs = CServer::FromPitayaServer(server);
-        return cs;
+        retServer->frontend = server.frontend; // FromPitayaServer(server);
+        retServer->hostname = ConvertToCString(server.hostname);
+        retServer->id = ConvertToCString(server.id);
+        retServer->metadata = ConvertToCString(server.metadata);
+        retServer->type = ConvertToCString(server.type);
+        return true;
     }
 
-    void tfg_pitc_FreeServer(CServer* cServer) { delete cServer; }
+    void tfg_pitc_FreeServer(CServer* cServer) { FreeServer(cServer); }
 
     void tfg_pitc_Terminate()
     {
@@ -203,7 +228,7 @@ extern "C"
                       void* data,
                       int dataSize,
                       MemoryBuffer** outBuf,
-                      CPitayaError** retErr)
+                      CPitayaError* retErr)
     {
         assert(serverId && "server id should not be null");
         assert(route && "route should not be null");
@@ -229,10 +254,12 @@ extern "C"
                        ? Cluster::Instance().RPC(route, req, res)
                        : Cluster::Instance().RPC(serverId, route, req, res);
 
+
         if (err) {
-            gLogger->error("received error on RPC: {}", err->msg);
-            *retErr = new CPitayaError(err->code, err->msg);
-            return true;
+            retErr->code = ConvertToCString(err->code);
+            retErr->msg = ConvertToCString(err->msg);
+            gLogger->error("received error on RPC: {}: {}", retErr->code, retErr->msg);
+            return false;
         }
 
         size_t size = res.ByteSizeLong();
@@ -240,15 +267,16 @@ extern "C"
 
         if (!res.SerializeToArray(bin, size)) {
             gLogger->error("Error serializing RPC response");
-            *retErr = new CPitayaError(kCodeInternalError, "Error serializing RPC response");
-            return true;
+            retErr->code = ConvertToCString(kCodeInternalError);
+            retErr->msg = ConvertToCString("Error serializing RPC response");
+            return false;
         }
 
         *outBuf = new MemoryBuffer;
         (*outBuf)->size = size;
         (*outBuf)->data = bin;
 
-        return false;
+        return true;
     }
 
     void tfg_pitc_FreeMemoryBuffer(MemoryBuffer* buf)
@@ -257,7 +285,7 @@ extern "C"
         delete buf;
     }
 
-    void tfg_pitc_FreePitayaError(CPitayaError* err) { delete err; }
+    void tfg_pitc_FreePitayaError(CPitayaError* err) { FreePitayaError(err); }
 
     void tfg_pitc_OnSignal(void (*signalHandler)())
     {
