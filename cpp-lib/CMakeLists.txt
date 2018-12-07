@@ -2,11 +2,22 @@ cmake_minimum_required(VERSION 3.7)
 
 project(PitayaCluster)
 
-set(CMAKE_CXX_FLAGS "-fPIC")
-
 # Prefer static libraries over dynamic ones.
 if(UNIX AND NOT APPLE)
   set(CMAKE_FIND_LIBRARY_SUFFIXES ".so" ".a")
+  # FIXME: this is an ugly solution, avoid setting global variables
+  # by adding properties to the targets.
+  set(CMAKE_CXX_FLAGS "-fPIC -stdlib=libc++")
+  # Set boost location
+  set(BOOST_ROOT "${CMAKE_SOURCE_DIR}/boost_install_libc++/linux" CACHE STRING "")
+  # Set cpprestsdk location
+  set(CMAKE_PREFIX_PATH "${CMAKE_SOURCE_DIR}/cpprestsdk_install/linux")
+elseif(APPLE)
+  set(CMAKE_FIND_LIBRARY_SUFFIXES ".a" ".lib" ".dylib" ".so" ".dll")
+  # Set boost location
+  set(BOOST_ROOT "${CMAKE_SOURCE_DIR}/boost_install_libc++/mac" CACHE STRING "")
+  # Set cpprestsdk location
+  set(CMAKE_PREFIX_PATH "${CMAKE_SOURCE_DIR}/cpprestsdk_install/mac")
 else()
   set(CMAKE_FIND_LIBRARY_SUFFIXES ".a" ".lib" ".dylib" ".so" ".dll")
 endif()
@@ -16,10 +27,21 @@ if(EXISTS ${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
     conan_basic_setup(TARGETS NO_OUTPUT_DIRS)
 endif()
 
+if(EXISTS ${CMAKE_BINARY_DIR}/conan_paths.cmake)
+    include(${CMAKE_BINARY_DIR}/conan_paths.cmake)
+endif()
+
 find_package(Boost REQUIRED)
 
+# Build dependencies as static libraries
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "")
+
+set(gRPC_BUILD_CSHARP_EXT OFF CACHE BOOL "")
 add_subdirectory(deps/grpc EXCLUDE_FROM_ALL)
+
 add_subdirectory(deps/etcd-cpp-apiv3 EXCLUDE_FROM_ALL)
+
+set(NATS_BUILD_STREAMING OFF CACHE BOOL "")
 add_subdirectory(deps/cnats-1.8.0 EXCLUDE_FROM_ALL)
 
 file(GLOB protobuf_files
@@ -107,26 +129,23 @@ target_link_libraries(pitaya_cluster
     libprotobuf
     Boost::boost)
 
-# ===============================
-# Add example
-# ===============================
-
-if(NOT BUILD_MACOSX_BUNDLE)
+include(CTest)
+if(BUILD_TESTING AND NOT BUILD_MACOSX_BUNDLE)
+    # ===============================
+    # Add example
+    # ===============================
     add_executable(main
-        src/pitaya_cluster.cpp)
+	src/pitaya_cluster.cpp)
 
     target_link_libraries(main PRIVATE pitaya_cluster)
 
     set_target_properties(main
       PROPERTIES
-        CXX_STANDARD 11)
-endif()
+	CXX_STANDARD 11)
 
-#==============================
-# Enable tests
-#==============================
-include(CTest)
-if(BUILD_TESTING AND NOT BUILD_MACOSX_BUNDLE)
+    #==============================
+    # Enable tests
+    #==============================
     add_executable(pitaya_cluster_tests
         test/mock_service_discovery.h
         test/mock_rpc_client.h
@@ -139,7 +158,9 @@ if(BUILD_TESTING AND NOT BUILD_MACOSX_BUNDLE)
         OUTPUT_NAME tests)
 
     target_link_libraries(pitaya_cluster_tests
-      PRIVATE pitaya_cluster)
+      PRIVATE
+        pitaya_cluster
+	Boost::boost)
 
     add_test(tests tests)
 endif()

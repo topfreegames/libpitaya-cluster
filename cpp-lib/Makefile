@@ -14,7 +14,19 @@ clean-docker-container:
 		docker rm `docker ps -aqf "name=pitaya-cluster"` ; \
 	fi
 
-build-linux: clean-docker-container
+build-linux:
+	@mkdir -p _builds/linux
+	@conan install -if _builds/linux .
+	@cmake -H. -B_builds/linux -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF -DBUILD_SHARED_LIBS=OFF
+	@cmake --build _builds/linux
+
+build-mac-unity:
+	@mkdir -p _builds/mac-unity
+	@conan install -if _builds/mac-unity .
+	@cmake -H. -B_builds/mac-unity -GNinja -DCMAKE_BUILD_TYPE=Release -DBUILD_MACOSX_BUNDLE=ON -DBUILD_TESTING=OFF -DBUILD_SHARED_LIBS=OFF
+	@cmake --build _builds/mac-unity
+
+build-linux-docker: clean-docker-container
 	@docker build -t pitaya-cluster .
 	@docker run --name pitaya-cluster pitaya-cluster:latest
 	@docker cp `docker ps -aqf "name=pitaya-cluster"`:/cpp-lib/_builds/linux-make-release/libpitaya_cluster.so ../NugetOutput/binaries/linux
