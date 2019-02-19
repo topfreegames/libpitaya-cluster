@@ -1,0 +1,18 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2011/08/nuspec.xsd">
+  <metadata>
+    <id>TFG.Protobuff35</id>
+    <version>3.6.1</version>
+    <title>Google Protocol Buffer</title>
+    <authors>Google Inc.</authors>
+    <owners>protobuf-packages</owners>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <licenseUrl>https://github.com/protocolbuffers/protobuf/blob/master/LICENSE</licenseUrl>
+    <projectUrl>https://github.com/protocolbuffers/protobuf</projectUrl>
+    <description>See project site for more info.</description>
+    <summary>Protocol buffers - Google's data interchange format.</summary>
+    <releaseNotes>Protocol Buffers compiled for .NET 3.5</releaseNotes>
+    <copyright>Copyright 2015, Google Inc.</copyright>
+    <tags>Protocol Buffers Binary Serialization Format Google proto proto3</tags>
+  </metadata>
+</package>

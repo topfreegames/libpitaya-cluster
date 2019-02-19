@@ -40,7 +40,7 @@
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="Google.Protobuf">
-      <HintPath>..\packages\protobuf.net35.3.5.1\lib\net35\Google.Protobuf.dll</HintPath>
+      <HintPath>..\packages\TFG.Protobuff35.3.6.1\lib\net35\Google.Protobuf.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>

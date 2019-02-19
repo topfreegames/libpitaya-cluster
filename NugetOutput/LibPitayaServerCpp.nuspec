@@ -2,22 +2,23 @@
 <package >
   <metadata>
     <id>LibPitayaServerCpp</id>
-    <version>0.3.7</version>
+    <version>0.3.9</version>
     <authors>leonardo</authors>
     <owners>leonardo</owners>
     <projectUrl>https://github.com/topfreegames/libpitaya-cluster</projectUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>Library that allows communication with other pitaya servers</description>
-    <releaseNotes>Fix issue where using libstdc++ would crash in unity. Binaries on linux now compiled with libc++</releaseNotes>
+    <releaseNotes>Reference the correct protobuf package</releaseNotes>
     <copyright>Copyright TFG 2018</copyright>
     <tags>pitaya libpitaya-cluster</tags>
     <dependencies>
-        <dependency id="protobuf.net35" version="3.5.1" />
+        <dependency id="TFG.Protobuff35" version="3.6.1" />
     </dependencies>
   </metadata>
   <files>
     <!-- Add files from an arbitrary folder that's not necessarily in the project -->
-    <file src="binaries/**/*" target="" />
-    <file src="lib/**" target="" />
+    <file src="../cpp-lib/_builds/linux/libpitaya_cluster.so" target="" />
+    <file src="../cpp-lib/_builds/mac-unity/libpitaya_cluster.bundle" target="" />
+    <file src="lib/**" target="lib/net35" />
   </files>
 </package>
