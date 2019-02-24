@@ -36,7 +36,8 @@ public class LibPitayaExample : MonoBehaviour {
 		    logHeartbeat: false,
 		    logServerSync: true,
 		    logServerDetails: false,
-		    syncServersIntervalSec: 60);
+		    syncServersIntervalSec: 60,
+		    logLevel: NativeLogLevel.Debug);
 
 	    var sv = new Server(
 		    serverId,
@@ -52,8 +53,8 @@ public class LibPitayaExample : MonoBehaviour {
 
 	    try
 	    {
-		    Debug.Log("Creating instance of PitayaCluster");
-			_cluster = new PitayaCluster(sdConfig, nc, sv, "LOG_GOI.log");
+		    Debug.Log("Initializing PitayaCluster");
+		    PitayaCluster.Initialize(sdConfig, nc, sv);
 	    }
 	    catch (PitayaException e)
 	    {
@@ -64,7 +65,7 @@ public class LibPitayaExample : MonoBehaviour {
 	    Pitaya.Logger.Info("pitaya lib initialized successfully :)");
 
 	    var tr = new TestRemote();
-	    _cluster.RegisterRemote(tr);
+	    PitayaCluster.RegisterRemote(tr);
 
     }
 
@@ -72,10 +73,8 @@ public class LibPitayaExample : MonoBehaviour {
 	{
 	    PitayaCluster.AddSignalHandler(() =>
 	    {
-		    if (_cluster != null)
 		    {
-			    _cluster.Dispose();
-			    _cluster = null;
+			    PitayaCluster.Terminate();
 		    }
 		    Application.Quit();
 	    });
@@ -86,7 +85,7 @@ public class LibPitayaExample : MonoBehaviour {
 		var msg = new Protos.RPCMsg {Msg = inputRPC.text};
 		try
         {
-            var res = _cluster.Rpc<Protos.RPCRes>(Route.FromString("csharp.testremote.remote"), msg);
+            var res = PitayaCluster.Rpc<Protos.RPCRes>(Route.FromString("csharp.testremote.remote"), msg);
             Debug.Log($"received rpc res: {res.Msg}");
         }
 		catch (Exception e)
@@ -114,6 +113,6 @@ public class LibPitayaExample : MonoBehaviour {
 
 	private void OnDestroy()
 	{
-        _cluster?.Dispose();
+		PitayaCluster.Terminate();
 	}
 }

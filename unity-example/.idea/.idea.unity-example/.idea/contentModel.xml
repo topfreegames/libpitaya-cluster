@@ -3,12 +3,14 @@
   <component name="ContentModelStore">
     <e p="$PROJECT_DIR$" t="IncludeRecursive">
       <e p="Assembly-CSharp.csproj" t="IncludeRecursive" />
-      <e p="Assets/Gen" t="Include">
-        <e p="Cluster.cs" t="Include" />
-      </e>
-      <e p="Assets/LibPitayaExample.cs" t="Include" />
-      <e p="Assets/Remotes" t="Include">
-        <e p="TestRemote.cs" t="Include" />
+      <e p="Assets" t="Include">
+        <e p="Gen" t="Include">
+          <e p="Cluster.cs" t="Include" />
+        </e>
+        <e p="LibPitayaExample.cs" t="Include" />
+        <e p="Remotes" t="Include">
+          <e p="TestRemote.cs" t="Include" />
+        </e>
       </e>
       <e p="Library" t="ExcludeRecursive" />
       <e p="obj" t="ExcludeRecursive" />
@@ -18,7 +20,6 @@
       </e>
       <e p="unity-example.sln" t="IncludeFlat" />
     </e>
-    <e p="$USER_HOME$/Library/Caches/Rider2018.2/extResources" t="IncludeRecursive" />
-    <e p="$USER_HOME$/Library/Caches/Rider2018.2/resharper-host/local/Transient/ReSharperHost/v182/SolutionCaches/_unity-example.-1513421679.00" t="ExcludeRecursive" />
+    <e p="$USER_HOME$/Library/Caches/Rider2018.1/resharper-host/local/Transient/ReSharperHost/v12/SolutionCaches/_unity-example.-1258930981.00" t="ExcludeRecursive" />
   </component>
 </project>

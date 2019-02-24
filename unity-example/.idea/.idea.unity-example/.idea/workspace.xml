@@ -2,13 +2,20 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="8f0646a9-6f8a-418d-b60b-d7b517c98754" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/../cpp-lib/include/pitaya/cluster.h" beforeDir="false" afterPath="$PROJECT_DIR$/../cpp-lib/include/pitaya/cluster.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../cpp-lib/src/pitaya/c_wrapper.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../cpp-lib/src/pitaya/c_wrapper.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../cpp-lib/src/pitaya/cluster.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../cpp-lib/src/pitaya/cluster.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../cpp-lib/src/pitaya_cluster.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../cpp-lib/src/pitaya_cluster.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/.idea.unity-example/.idea/contentModel.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.unity-example/.idea/contentModel.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/.idea.unity-example/.idea/indexLayout.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.unity-example/.idea/indexLayout.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/.idea.unity-example/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.unity-example/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assembly-CSharp.csproj" beforeDir="false" afterPath="$PROJECT_DIR$/Assembly-CSharp.csproj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Google.Protobuf.dll" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Google.Protobuf.dll" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/LibPitayaExample.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/LibPitayaExample.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/LibPitayaExampleScene.unity" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/LibPitayaExampleScene.unity" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Plugins/libpitaya_cluster.bundle" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Plugins/libpitaya_cluster.bundle" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/cluster-lib.dll" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/cluster-lib.dll" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ProjectSettings/ProjectVersion.txt" beforeDir="false" afterPath="$PROJECT_DIR$/ProjectSettings/ProjectVersion.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/UnityPackageManager/manifest.json" beforeDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
+    <option name="TRACKING_ENABLED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -51,66 +58,65 @@
   </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-      <file pinned="false" current-in-tab="false">
+      <file leaf-file-name="TestRemote.cs" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/Assets/Remotes/TestRemote.cs">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="195">
+            <state relative-caret-position="225">
               <caret line="15" selection-start-line="15" selection-end-line="15" />
-              <folding>
-                <marker date="1541532159587" expanded="false" signature="6:50" ph="..." />
-                <marker date="1541532159587" expanded="true" signature="134:385" ph="{...}" />
-                <marker date="1541532159587" expanded="true" signature="190:289" ph="{...}" />
-              </folding>
             </state>
           </provider>
         </entry>
       </file>
-      <file pinned="false" current-in-tab="true">
+      <file leaf-file-name="LibPitayaExample.cs" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/Assets/LibPitayaExample.cs">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="225">
-              <caret line="19" lean-forward="true" selection-start-line="19" selection-end-line="19" />
+            <state relative-caret-position="885">
+              <caret line="115" column="33" selection-start-line="115" selection-start-column="33" selection-end-line="115" selection-end-column="33" />
               <folding>
-                <marker date="1542129312153" expanded="false" signature="6:79" ph="..." />
-                <marker date="1542129312153" expanded="true" signature="127:2525" ph="{...}" />
-                <marker date="1542129312153" expanded="true" signature="310:336" ph="{...}" />
-                <marker date="1542129312153" expanded="true" signature="400:1554" ph="{...}" />
-                <marker date="1542129312153" expanded="true" signature="1143:1278" ph="{...}" />
-                <marker date="1542129312153" expanded="true" signature="1309:1412" ph="{...}" />
-                <marker date="1542129312153" expanded="true" signature="1577:1762" ph="{...}" />
-                <marker date="1542129312153" expanded="true" signature="1622:1757" ph="{...}" />
-                <marker date="1542129312153" expanded="true" signature="1657:1724" ph="{...}" />
-                <marker date="1542129312153" expanded="true" signature="1792:2107" ph="{...}" />
-                <marker date="1542129312153" expanded="true" signature="1854:2031" ph="{...}" />
-                <marker date="1542129312153" expanded="true" signature="2053:2101" ph="{...}" />
-                <marker date="1542129312153" expanded="true" signature="2155:2402" ph="{...}" />
-                <marker date="1542129312153" expanded="true" signature="2456:2461" ph="{...}" />
-                <marker date="1542129312153" expanded="true" signature="2488:2523" ph="{...}" />
+                <marker date="1551014338141" expanded="false" signature="6:79" ph="..." />
+                <marker date="1551014338141" expanded="true" signature="127:2504" ph="{...}" />
+                <marker date="1551014338141" expanded="true" signature="310:336" ph="{...}" />
+                <marker date="1551014338141" expanded="true" signature="400:1573" ph="{...}" />
+                <marker date="1551014338141" expanded="true" signature="1181:1292" ph="{...}" />
+                <marker date="1551014338141" expanded="true" signature="1323:1426" ph="{...}" />
+                <marker date="1551014338141" expanded="true" signature="1596:1736" ph="{...}" />
+                <marker date="1551014338141" expanded="true" signature="1641:1731" ph="{...}" />
+                <marker date="1551014338141" expanded="true" signature="1766:2086" ph="{...}" />
+                <marker date="1551014338141" expanded="true" signature="1828:2010" ph="{...}" />
+                <marker date="1551014338141" expanded="true" signature="2032:2080" ph="{...}" />
+                <marker date="1551014338141" expanded="true" signature="2134:2381" ph="{...}" />
+                <marker date="1551014338141" expanded="true" signature="2435:2440" ph="{...}" />
+                <marker date="1551014338141" expanded="true" signature="2467:2502" ph="{...}" />
               </folding>
             </state>
           </provider>
         </entry>
       </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/EB42C23D-C548-4732-8BD3-3A1723672D75/cf/3223eaf7/SDConfig.cs">
+      <file leaf-file-name="SDConfig.cs" pinned="false" current-in-tab="false">
+        <entry file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/78906C56-AE04-4FC6-8899-5A60F4F3A9D5/e1/c0d218aa/SDConfig.cs">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="345">
-              <caret line="23" selection-start-line="23" selection-end-line="23" />
+            <state relative-caret-position="360">
+              <caret line="24" column="11" selection-start-line="24" selection-start-column="11" selection-end-line="24" selection-end-column="11" />
             </state>
           </provider>
         </entry>
       </file>
     </leaf>
   </component>
+  <component name="FindInProjectRecents">
+    <findStrings>
+      <find>grpc</find>
+    </findStrings>
+  </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/.." />
   </component>
   <component name="HighlightingSettingsPerFile">
-    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/EB42C23D-C548-4732-8BD3-3A1723672D75/cf/3223eaf7/SDConfig.cs" root0="FORCE_HIGHLIGHTING" />
-    <setting file="file://$PROJECT_DIR$/../csharp-lib/cluster-lib/PitayaCluster.cs" root0="SKIP_HIGHLIGHTING" />
-    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/EB42C23D-C548-4732-8BD3-3A1723672D75/61/6b62b548/PitayaCluster.cs" root0="SKIP_HIGHLIGHTING" />
-    <setting file="file://$PROJECT_DIR$/Assets/LibPitayaExample.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Remotes/TestRemote.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/Assets/LibPitayaExample.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/../csharp-lib/cluster-lib/PitayaCluster.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/78906C56-AE04-4FC6-8899-5A60F4F3A9D5/2a/63c548ba/PitayaCluster.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/78906C56-AE04-4FC6-8899-5A60F4F3A9D5/e1/c0d218aa/SDConfig.cs" root0="FORCE_HIGHLIGHTING" />
   </component>
   <component name="IdeDocumentHistory">
     <option name="CHANGED_PATHS">
@@ -126,9 +132,13 @@
     <detection-done>true</detection-done>
     <sorting>DEFINITION_ORDER</sorting>
   </component>
-  <component name="ProjectFrameBounds" fullScreen="true">
+  <component name="NodePackageJsonFileManager">
+    <packageJsonPaths />
+  </component>
+  <component name="ProjectFrameBounds">
+    <option name="y" value="22" />
     <option name="width" value="1680" />
-    <option name="height" value="1050" />
+    <option name="height" value="1028" />
   </component>
   <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
   <component name="ProjectView">
@@ -136,27 +146,21 @@
       <foldersAlwaysOnTop value="true" />
     </navigator>
     <panes>
-      <pane id="FileSystemExplorer" />
       <pane id="UnityExplorer">
         <subPane>
           <expand>
             <path>
-              <item name="Project" type="e068e287:UnityExplorerRootNode" />
-              <item name="Assets" type="48f920db:UnityExplorerNode$AssetsRoot" />
-            </path>
-            <path>
-              <item name="Project" type="e068e287:UnityExplorerRootNode" />
-              <item name="Assets" type="48f920db:UnityExplorerNode$AssetsRoot" />
-              <item name="Remotes" type="1045f7f1:UnityExplorerNode" />
+              <item name="" type="ad4990d8:FileSystemViewPaneBase$ProjectViewPaneTreeStructure$createRoot$1" />
+              <item name="unity-example" type="483dac07:UnityExplorerNode$Root" />
             </path>
           </expand>
           <select />
         </subPane>
         <option name="show-hidden-items" value="false" />
       </pane>
-      <pane id="SolutionExplorer">
-        <option name="show-all-files" value="false" />
-      </pane>
+      <pane id="Scratches" />
+      <pane id="SolutionExplorer" />
+      <pane id="FileSystemExplorer" />
     </panes>
   </component>
   <component name="PropertiesComponent">
@@ -177,21 +181,22 @@
       </list>
     </option>
   </component>
-  <component name="RunManager" selected="Attach to Unity Editor.Attach to Unity Editor">
+  <component name="RunManager" selected="Attach Unity.Attach to Unity Editor">
     <configuration name="Attach to Unity Editor &amp; Play" type="UNITY_DEBUG_RUN_CONFIGURATION" factoryName="UNITY_ATTACH_AND_PLAY" show_console_on_std_err="false" show_console_on_std_out="false" port="50000" address="localhost">
       <option name="listenPortForConnections" value="false" />
       <option name="pid" />
       <method v="2" />
     </configuration>
-    <configuration name="Attach to Unity Editor" type="UNITY_DEBUG_RUN_CONFIGURATION" factoryName="Unity Debug" show_console_on_std_err="false" show_console_on_std_out="false" port="50000" address="localhost" pid="86084">
+    <configuration name="Attach to Unity Editor" type="UNITY_DEBUG_RUN_CONFIGURATION" factoryName="Unity Debug" show_console_on_std_err="false" show_console_on_std_out="false" port="50000" address="localhost">
       <option name="listenPortForConnections" value="false" />
-      <option name="pid" value="86084" />
-      <method v="2" />
+      <option name="pid" />
     </configuration>
     <list>
-      <item itemvalue="Attach to Unity Editor.Attach to Unity Editor" />
-      <item itemvalue="Attach to Unity Editor.Attach to Unity Editor &amp; Play" />
+      <item itemvalue="Attach Unity.Attach to Unity Editor" />
     </list>
+  </component>
+  <component name="SvnConfiguration">
+    <configuration />
   </component>
   <component name="TaskManager">
     <task active="true" id="Default" summary="Default task">
@@ -206,11 +211,12 @@
       <workItem from="1541539543700" duration="8030000" />
       <workItem from="1542128166154" duration="23000" />
       <workItem from="1542128205267" duration="2961000" />
+      <workItem from="1551013413103" duration="923000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="16881000" />
+    <option name="totallyTimeSpent" value="17804000" />
   </component>
   <component name="TodoView">
     <todo-panel id="selected-file">
@@ -222,58 +228,59 @@
     </todo-panel>
   </component>
   <component name="ToolWindowManager">
-    <frame x="0" y="0" width="1680" height="1050" extended-state="0" />
+    <frame x="0" y="22" width="1680" height="1028" extended-state="0" />
+    <editor active="true" />
     <layout>
+      <window_info anchor="bottom" id="TODO" order="6" />
+      <window_info anchor="right" id="Errors In Solution" order="3" />
+      <window_info anchor="bottom" id="Event Log" order="14" side_tool="true" />
+      <window_info anchor="bottom" id="Unit Tests" order="12" />
+      <window_info anchor="bottom" id="Database Changes" order="11" show_stripe_button="false" />
+      <window_info anchor="bottom" id="Version Control" order="9" />
+      <window_info anchor="bottom" id="Terminal" order="13" />
       <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.26190478" />
+      <window_info anchor="bottom" id="Docker" order="8" show_stripe_button="false" />
+      <window_info anchor="bottom" id="Unity" order="10" />
+      <window_info anchor="right" id="Database" order="4" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Favorites" order="2" side_tool="true" />
-      <window_info anchor="bottom" id="Message" order="0" />
-      <window_info anchor="bottom" id="Find" order="1" />
-      <window_info anchor="bottom" id="Run" order="2" />
-      <window_info anchor="bottom" id="Debug" order="3" weight="0.3989796" />
-      <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
-      <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
-      <window_info anchor="bottom" id="TODO" order="6" />
       <window_info anchor="bottom" id="NuGet" order="7" show_stripe_button="false" />
-      <window_info anchor="bottom" id="Docker" order="8" show_stripe_button="false" />
-      <window_info anchor="bottom" id="Version Control" order="9" show_stripe_button="false" />
-      <window_info anchor="bottom" id="Unity" order="10" />
-      <window_info anchor="bottom" id="Database Changes" order="11" show_stripe_button="false" />
-      <window_info anchor="bottom" id="Unit Tests" order="12" />
-      <window_info anchor="bottom" id="Terminal" order="13" />
-      <window_info anchor="bottom" id="Event Log" order="14" side_tool="true" />
+      <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
+      <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
       <window_info anchor="right" id="Commander" internal_type="SLIDING" order="0" type="SLIDING" weight="0.4" />
       <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
-      <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
-      <window_info anchor="right" id="Errors In Solution" order="3" />
-      <window_info anchor="right" id="Database" order="4" />
-      <window_info anchor="right" id="Cargo" order="5" />
-    </layout>
-    <layout-to-restore>
-      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.26190478" />
-      <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
-      <window_info id="Favorites" order="2" side_tool="true" />
-      <window_info anchor="bottom" id="Message" order="0" />
-      <window_info anchor="bottom" id="Find" order="1" />
       <window_info anchor="bottom" id="Run" order="2" />
       <window_info anchor="bottom" id="Debug" order="3" weight="0.3989796" />
+      <window_info anchor="right" id="Cargo" order="5" />
+      <window_info anchor="bottom" id="Message" order="0" />
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
-      <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
-      <window_info anchor="bottom" id="TODO" order="6" />
+      <window_info anchor="bottom" id="Find" order="1" />
+    </layout>
+    <layout-to-restore>
       <window_info anchor="bottom" id="NuGet" order="7" show_stripe_button="false" />
+      <window_info anchor="right" content_ui="combo" id="Hierarchy" order="3" weight="0.25" />
       <window_info anchor="bottom" id="Docker" order="8" show_stripe_button="false" />
       <window_info anchor="bottom" id="Version Control" order="9" show_stripe_button="false" />
       <window_info anchor="bottom" id="Unity" order="10" />
-      <window_info anchor="bottom" id="Database Changes" order="11" show_stripe_button="false" />
-      <window_info anchor="bottom" id="Unit Tests" order="12" />
-      <window_info anchor="bottom" id="Terminal" order="13" />
-      <window_info anchor="bottom" id="Event Log" order="14" side_tool="true" />
-      <window_info anchor="right" id="Cargo" order="0" />
+      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.26190478" />
+      <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info anchor="right" id="Commander" internal_type="SLIDING" order="1" type="SLIDING" weight="0.4" />
-      <window_info anchor="right" id="Ant Build" order="2" weight="0.25" />
-      <window_info anchor="right" content_ui="combo" id="Hierarchy" order="3" weight="0.25" />
+      <window_info anchor="bottom" id="TODO" order="6" />
+      <window_info anchor="bottom" id="Database Changes" order="11" show_stripe_button="false" />
+      <window_info anchor="right" id="Cargo" order="0" />
+      <window_info anchor="bottom" id="Run" order="2" />
+      <window_info anchor="bottom" id="Unit Tests" order="12" />
+      <window_info anchor="bottom" id="Debug" order="3" weight="0.3989796" />
       <window_info anchor="right" id="Errors In Solution" order="4" />
+      <window_info anchor="right" id="Ant Build" order="2" weight="0.25" />
       <window_info anchor="right" id="Database" order="5" />
+      <window_info anchor="bottom" id="Message" order="0" />
+      <window_info anchor="bottom" id="Event Log" order="14" side_tool="true" />
+      <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
+      <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
+      <window_info anchor="bottom" id="Find" order="1" />
+      <window_info anchor="bottom" id="Terminal" order="13" />
+      <window_info id="Favorites" order="2" side_tool="true" />
     </layout-to-restore>
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -295,6 +302,36 @@
     </breakpoint-manager>
   </component>
   <component name="editorHistoryManager">
+    <entry file="file://$PROJECT_DIR$/Assets/Remotes/TestRemote.cs">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="225">
+          <caret line="15" selection-start-line="15" selection-end-line="15" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Assets/LibPitayaExample.cs">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="285">
+          <caret line="19" lean-forward="true" selection-start-line="19" selection-end-line="19" />
+          <folding>
+            <marker date="1551014338141" expanded="false" signature="6:79" ph="..." />
+            <marker date="1551014338141" expanded="true" signature="127:2504" ph="{...}" />
+            <marker date="1551014338141" expanded="true" signature="310:336" ph="{...}" />
+            <marker date="1551014338141" expanded="true" signature="400:1573" ph="{...}" />
+            <marker date="1551014338141" expanded="true" signature="1181:1292" ph="{...}" />
+            <marker date="1551014338141" expanded="true" signature="1323:1426" ph="{...}" />
+            <marker date="1551014338141" expanded="true" signature="1596:1736" ph="{...}" />
+            <marker date="1551014338141" expanded="true" signature="1641:1731" ph="{...}" />
+            <marker date="1551014338141" expanded="true" signature="1766:2086" ph="{...}" />
+            <marker date="1551014338141" expanded="true" signature="1828:2010" ph="{...}" />
+            <marker date="1551014338141" expanded="true" signature="2032:2080" ph="{...}" />
+            <marker date="1551014338141" expanded="true" signature="2134:2381" ph="{...}" />
+            <marker date="1551014338141" expanded="true" signature="2435:2440" ph="{...}" />
+            <marker date="1551014338141" expanded="true" signature="2467:2502" ph="{...}" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/../csharp-lib/cluster-lib/PitayaCluster.cs">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="283">
@@ -304,50 +341,46 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/Assets/Remotes/TestRemote.cs">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="195">
+        <state relative-caret-position="225">
           <caret line="15" selection-start-line="15" selection-end-line="15" />
-          <folding>
-            <marker date="1541532159587" expanded="false" signature="6:50" ph="..." />
-            <marker date="1541532159587" expanded="true" signature="134:385" ph="{...}" />
-            <marker date="1541532159587" expanded="true" signature="190:289" ph="{...}" />
-          </folding>
         </state>
       </provider>
     </entry>
-    <entry file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/EB42C23D-C548-4732-8BD3-3A1723672D75/cf/3223eaf7/SDConfig.cs">
+    <entry file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/EB42C23D-C548-4732-8BD3-3A1723672D75/cf/3223eaf7/SDConfig.cs" />
+    <entry file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/EB42C23D-C548-4732-8BD3-3A1723672D75/61/6b62b548/PitayaCluster.cs" />
+    <entry file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/78906C56-AE04-4FC6-8899-5A60F4F3A9D5/e1/c0d218aa/SDConfig.cs">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="345">
-          <caret line="23" selection-start-line="23" selection-end-line="23" />
+        <state relative-caret-position="360">
+          <caret line="24" column="11" selection-start-line="24" selection-start-column="11" selection-end-line="24" selection-end-column="11" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/EB42C23D-C548-4732-8BD3-3A1723672D75/61/6b62b548/PitayaCluster.cs">
+    <entry file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/78906C56-AE04-4FC6-8899-5A60F4F3A9D5/2a/63c548ba/PitayaCluster.cs">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="585">
-          <caret line="39" column="35" selection-start-line="39" selection-start-column="35" selection-end-line="39" selection-end-column="35" />
+        <state relative-caret-position="2145">
+          <caret line="143" column="42" selection-start-line="143" selection-start-column="42" selection-end-line="143" selection-end-column="42" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/Assets/LibPitayaExample.cs">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="225">
-          <caret line="19" lean-forward="true" selection-start-line="19" selection-end-line="19" />
+        <state relative-caret-position="885">
+          <caret line="115" column="33" selection-start-line="115" selection-start-column="33" selection-end-line="115" selection-end-column="33" />
           <folding>
-            <marker date="1542129312153" expanded="false" signature="6:79" ph="..." />
-            <marker date="1542129312153" expanded="true" signature="127:2525" ph="{...}" />
-            <marker date="1542129312153" expanded="true" signature="310:336" ph="{...}" />
-            <marker date="1542129312153" expanded="true" signature="400:1554" ph="{...}" />
-            <marker date="1542129312153" expanded="true" signature="1143:1278" ph="{...}" />
-            <marker date="1542129312153" expanded="true" signature="1309:1412" ph="{...}" />
-            <marker date="1542129312153" expanded="true" signature="1577:1762" ph="{...}" />
-            <marker date="1542129312153" expanded="true" signature="1622:1757" ph="{...}" />
-            <marker date="1542129312153" expanded="true" signature="1657:1724" ph="{...}" />
-            <marker date="1542129312153" expanded="true" signature="1792:2107" ph="{...}" />
-            <marker date="1542129312153" expanded="true" signature="1854:2031" ph="{...}" />
-            <marker date="1542129312153" expanded="true" signature="2053:2101" ph="{...}" />
-            <marker date="1542129312153" expanded="true" signature="2155:2402" ph="{...}" />
-            <marker date="1542129312153" expanded="true" signature="2456:2461" ph="{...}" />
-            <marker date="1542129312153" expanded="true" signature="2488:2523" ph="{...}" />
+            <marker date="1551014338141" expanded="false" signature="6:79" ph="..." />
+            <marker date="1551014338141" expanded="true" signature="127:2504" ph="{...}" />
+            <marker date="1551014338141" expanded="true" signature="310:336" ph="{...}" />
+            <marker date="1551014338141" expanded="true" signature="400:1573" ph="{...}" />
+            <marker date="1551014338141" expanded="true" signature="1181:1292" ph="{...}" />
+            <marker date="1551014338141" expanded="true" signature="1323:1426" ph="{...}" />
+            <marker date="1551014338141" expanded="true" signature="1596:1736" ph="{...}" />
+            <marker date="1551014338141" expanded="true" signature="1641:1731" ph="{...}" />
+            <marker date="1551014338141" expanded="true" signature="1766:2086" ph="{...}" />
+            <marker date="1551014338141" expanded="true" signature="1828:2010" ph="{...}" />
+            <marker date="1551014338141" expanded="true" signature="2032:2080" ph="{...}" />
+            <marker date="1551014338141" expanded="true" signature="2134:2381" ph="{...}" />
+            <marker date="1551014338141" expanded="true" signature="2435:2440" ph="{...}" />
+            <marker date="1551014338141" expanded="true" signature="2467:2502" ph="{...}" />
           </folding>
         </state>
       </provider>

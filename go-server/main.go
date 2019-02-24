@@ -12,7 +12,6 @@ import (
 	"github.com/topfreegames/libpitaya-cluster/go-server/services"
 	"github.com/topfreegames/pitaya"
 	"github.com/topfreegames/pitaya/acceptor"
-	"github.com/topfreegames/pitaya/cluster"
 	"github.com/topfreegames/pitaya/component"
 	"github.com/topfreegames/pitaya/modules"
 	"github.com/topfreegames/pitaya/serialize/json"
@@ -75,20 +74,9 @@ func main() {
 	}
 
 	pitaya.Configure(true, svType, pitaya.Cluster, meta, confs)
-	gs, err := cluster.NewGRPCServer(pitaya.GetConfig(), pitaya.GetServer(), pitaya.GetMetricsReporters())
-	if err != nil {
-		panic(err)
-	}
 
 	bs := modules.NewETCDBindingStorage(pitaya.GetServer(), pitaya.GetConfig())
 	pitaya.RegisterModule(bs, "bindingsStorage")
-
-	gc, err := cluster.NewGRPCClient(pitaya.GetConfig(), pitaya.GetServer(), pitaya.GetMetricsReporters(), bs)
-	if err != nil {
-		panic(err)
-	}
-	pitaya.SetRPCServer(gs)
-	pitaya.SetRPCClient(gc)
 
 	defer pitaya.Shutdown()
 
