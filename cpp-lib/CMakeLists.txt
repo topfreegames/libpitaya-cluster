@@ -37,6 +37,9 @@ find_package(Boost REQUIRED)
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "")
 
 set(gRPC_BUILD_CSHARP_EXT OFF CACHE BOOL "")
+if(UNIX AND NOT APPLE)
+    set(gRPC_ZLIB_PROVIDER "package")
+endif()
 add_subdirectory(deps/grpc EXCLUDE_FROM_ALL)
 
 add_subdirectory(deps/etcd-cpp-apiv3 EXCLUDE_FROM_ALL)
@@ -160,7 +163,7 @@ if(BUILD_TESTING AND NOT BUILD_MACOSX_BUNDLE)
     target_link_libraries(pitaya_cluster_tests
       PRIVATE
         pitaya_cluster
-	Boost::boost)
+	    Boost::boost)
 
     add_test(tests tests)
 endif()

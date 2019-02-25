@@ -5,15 +5,13 @@ nuget-clean:
 	@rm -rf NugetOutput/obj
 	@rm -rf NugetOutput/*.nupkg
 
-build-cpp:
-	@cd cpp-lib && $(MAKE) build-linux
-	@cd cpp-lib && rm -rf _builds/unity-release && \
-		cmake -H. -B_builds/unity-release -GNinja -DCMAKE_BUILD_TYPE=Release \
-				-DBUILD_MACOSX_BUNDLE=ON -DCMAKE_TOOLCHAIN_FILE=~/vcpkg/scripts/buildsystems/vcpkg.cmake && \
-		cmake --build _builds/unity-release
-	@cp cpp-lib/_builds/unity-release/libpitaya_cluster.bundle NugetOutput/binaries/mac
+build-cpp-unity:
+	@cd cpp-lib && $(MAKE) build-linux-docker
+	@cd cpp-lib && $(MAKE) build-mac-unity
+	@cp cpp-lib/_builds/mac-unity/libpitaya_cluster.bundle NugetOutput/binaries/mac
+	@cp cpp-lib/_builds/linux/libpitaya_cluster.so NugetOutput/binaries/linux
 
-build-all: nuget-clean build-csharp-lib-release build-cpp
+build-all: nuget-clean build-csharp-lib-release build-cpp-unity
 
 pack-only:
 	@cd NugetOutput && nuget pack *.nuspec -OutputDirectory .
