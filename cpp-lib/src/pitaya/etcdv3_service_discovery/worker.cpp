@@ -348,7 +348,9 @@ Worker::RevokeLease()
     if (res.is_ok()) {
         _log->info("Lease revoked successfuly");
     } else {
-        _log->error("Failed to revoke lease: etcd = {}, grpc = {}", res.status.etcd_error_message, res.status.grpc_error_message);
+        _log->error("Failed to revoke lease: etcd = {}, grpc = {}",
+                    res.status.etcd_error_message,
+                    res.status.grpc_error_message);
     }
 }
 

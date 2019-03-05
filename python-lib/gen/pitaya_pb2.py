@@ -12,11 +12,11 @@ from google.protobuf import symbol_database as _symbol_database
 _sym_db = _symbol_database.Default()
 
 
-import request_pb2 as request__pb2
-import response_pb2 as response__pb2
-import push_pb2 as push__pb2
-import bind_pb2 as bind__pb2
-import kick_pb2 as kick__pb2
+from . import request_pb2 as request__pb2
+from . import response_pb2 as response__pb2
+from . import push_pb2 as push__pb2
+from . import bind_pb2 as bind__pb2
+from . import kick_pb2 as kick__pb2
 
 
 DESCRIPTOR = _descriptor.FileDescriptor(

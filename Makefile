@@ -61,8 +61,9 @@ protos-compile: submodules
 	@protoc --csharp_out=./unity-example/Assets/Gen/ ./go-server/protos/*.proto
 	@protoc --proto_path=pitaya-protos --csharp_out=./csharp-lib/cluster-lib/gen ./pitaya-protos/*.proto
 	@protoc --proto_path=pitaya-protos --python_out=./python-lib/gen ./pitaya-protos/*.proto
-	@protoc --proto_path=./go-server/protos --python_out=./python-lib/gen/ ./go-server/protos/cluster.proto
-	@protoc --gogofaster_out=. ./go-server/protos/*.proto
+	@protoc --proto_path=./go-server/protos --python_out=./python-lib/gen ./go-server/protos/cluster.proto
+	@sed -i '.old' 's/^\(import.*_pb2\)/from . \1/' ./python-lib/gen/*.py && rm ./python-lib/gen/*.old ## dirty python hack, see https://github.com/protocolbuffers/protobuf/issues/1491
+	@protoc --go_out=. ./go-server/protos/*.proto
 
 start-deps:
 	@docker-compose up -d

@@ -1,82 +1,70 @@
 from ctypes import *
 
-lib = cdll.LoadLibrary("./libpitaya_cluster.dylib")
+LIB = cdll.LoadLibrary("../precompiled/libpitaya_cluster.dylib")
 
 class SdConfig(Structure):
-  _fields_ = [
-    ("endpoints", c_char_p),
-    ("endpoints_len", c_int),
-    ("etcd_dial_timeout_sec", c_int),
-    ("etcd_prefix", c_char_p),
-    ("heartbeat_ttl_sec", c_int),
-    ("log_heartbeat", c_bool),
-    ("sync_servers_interval_sec", c_int)]
+    _fields_ = [
+        ("endpoints", c_char_p),
+        ("etcd_prefix", c_char_p),
+        ("heartbeat_ttl_sec", c_int),
+        ("log_heartbeat", c_int),
+        ("log_server_sync", c_int),
+        ("log_server_details", c_int),
+        ("sync_servers_interval_sec", c_int),
+        ("log_level", c_int)]
 
-class NatsRpcClientConfig(Structure):
-  _fields_ = [
-    ("endpoint", c_char_p),
-    ("max_connection_retries", c_int),
-    ("request_timeout_ms", c_int)]
+(LOGLEVEL_DEBUG, LOGLEVEL_INFO, LOGLEVEL_WARN, LOGLEVEL_ERROR,
+ LOGLEVEL_CRITICAL) = (0, 1, 2, 3, 4)
 
-class NatsRpcServerConfig(Structure):
-  _fields_ = [
-    ("endpoint", c_char_p),
-    ("max_connection_retries", c_int),
-    ("messages_buffer_size", c_int),
-    ("rpc_handle_worker_num", c_int)]
+class NatsConfig(Structure):
+    _fields_ = [
+        ("endpoint", c_char_p),
+        ("connection_timeout_ms", c_longlong),
+        ("request_timeout_ms", c_int),
+        ("max_reconnection_attempts", c_int),
+        ("max_pending_msgs", c_int)]
 
 class Server(Structure):
-  _fields_ = [
-    ("id", c_char_p),
-    ("type", c_char_p),
-    ("metadata", c_char_p),
-    ("frontend", c_bool)]
+    _fields_ = [
+        ("id", c_char_p),
+        ("type", c_char_p),
+        ("metadata", c_char_p),
+        ("hostname", c_char_p),
+        ("frontend", c_int)]
 
-class RPCRes(Structure):
-  _fields_ = [
-    ("data", c_void_p),
-    ("data_len", c_int)]
+class PitayaError(Structure):
+    _fields_ = [
+        ("code", c_char_p),
+        ("msg", c_char_p)]
+
+class MemoryBuffer(Structure):
+    _fields_ = [
+        ("data", c_void_p),
+        ("size", c_int)]
 
 class RPCReq(Structure):
-  _fields_ = [
-    ("data", c_void_p),
-    ("data_len", c_int),
-    ("route", c_char_p)]
+    _fields_ = [
+        ("buffer", MemoryBuffer),
+        ("route", c_char_p)]
 
-class GoString(Structure):
-  _fields_ = [("p", c_char_p), ("n", c_longlong)]
+RPCCB = CFUNCTYPE(c_void_p, POINTER(RPCReq))
+FREECB = CFUNCTYPE(None, c_void_p)
 
-class GoSlice(Structure):
-  _fields_ = [("data", c_void_p), ("len", c_longlong), ("cap", c_longlong)]
+LIB.tfg_pitc_Initialize.restype = c_bool
+LIB.tfg_pitc_Initialize.argtypes = [POINTER(Server), POINTER(SdConfig), POINTER(NatsConfig),
+                                    RPCCB, FREECB, c_char_p]
 
-class Route(Structure):
-  _fields_ = [("sv_type", c_char_p), ("service", c_char_p), ("method", c_char_p)]
+LIB.tfg_pitc_GetServerById.restype = c_bool
+LIB.tfg_pitc_GetServerById.argtypes = [c_char_p, POINTER(Server)]
 
-def route_from_str(route_str:str):
-  r = Route()
-  route_splitted = route_str.split(".")
-  if len(route_splitted) != 3:
-    raise Exception('invalid route {}'.format(route_str))
-  r.sv_type = route_splitted[0].encode('utf-8')
-  r.service = route_splitted[1].encode('utf-8')
-  r.method = route_splitted[2].encode('utf-8')
-  return r
+#LIB.tfg_pitc_FreeServer.argtypes = [POINTER(Server)]
 
-RPCCB = CFUNCTYPE(c_void_p, RPCReq)
+LIB.tfg_pitc_Terminate.restype = None
 
-lib.Init.restype = c_bool
-lib.Init.argtypes = [SdConfig, NatsRpcClientConfig, NatsRpcServerConfig, Server]
+LIB.tfg_pitc_FreeMemoryBuffer.argtypes = [POINTER(MemoryBuffer)]
 
-lib.GetServer.restype = c_bool
-lib.GetServer.argtypes = [GoString, POINTER(Server)]
+LIB.tfg_pitc_FreePitayaError.argtypes = [POINTER(PitayaError)]
 
-lib.FreeServer.argtypes = [POINTER(Server)]
-
-lib.FreeRPCRes.argtypes = [POINTER(RPCRes)]
-
-lib.Shutdown.restype = c_bool
-
-lib.SendRPC.restype = c_bool
-lib.SendRPC.argtypes = [GoString, Route, GoSlice, POINTER(RPCRes)]
-
-lib.SetRPCCallback.argtypes = [c_void_p]
+LIB.tfg_pitc_RPC.restype = c_bool
+LIB.tfg_pitc_RPC.argtypes = [c_char_p, c_char_p, c_void_p, c_int,
+                             POINTER(POINTER(MemoryBuffer)), POINTER(PitayaError)]

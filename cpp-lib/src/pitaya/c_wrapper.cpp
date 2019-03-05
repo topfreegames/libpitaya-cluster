@@ -16,7 +16,7 @@ using pitaya::nats::NatsConfig;
 static char*
 ConvertToCString(const std::string& str)
 {
-    char *cString = (char*)calloc(str.size() + 1, 1);
+    char* cString = (char*)calloc(str.size() + 1, 1);
     if (cString) {
         std::memcpy(cString, str.data(), str.size());
     }
@@ -44,7 +44,7 @@ FromPitayaServer(const pitaya::Server& pServer)
 static CPitayaError*
 NewPitayaError(const std::string& codeStr, const std::string& msgStr)
 {
-    CPitayaError *err = (CPitayaError*)malloc(sizeof(CPitayaError));
+    CPitayaError* err = (CPitayaError*)malloc(sizeof(CPitayaError));
     err->code = ConvertToCString(codeStr);
     err->msg = ConvertToCString(msgStr);
     return err;
@@ -253,7 +253,6 @@ extern "C"
         auto err = (!serverId || strlen(serverId) == 0)
                        ? Cluster::Instance().RPC(route, req, res)
                        : Cluster::Instance().RPC(serverId, route, req, res);
-
 
         if (err) {
             retErr->code = ConvertToCString(err->code);

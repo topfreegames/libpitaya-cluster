@@ -13,8 +13,8 @@ from google.protobuf import symbol_database as _symbol_database
 _sym_db = _symbol_database.Default()
 
 
-import session_pb2 as session__pb2
-import msg_pb2 as msg__pb2
+from . import session_pb2 as session__pb2
+from . import msg_pb2 as msg__pb2
 
 
 DESCRIPTOR = _descriptor.FileDescriptor(
