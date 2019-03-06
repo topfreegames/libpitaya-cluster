@@ -1,6 +1,6 @@
 [requires]
 OpenSSL/1.0.2o@conan/stable
-zlib/1.2.11@conan/stable
+boost/1.65.1@conan/stable
 
 [generators]
 cmake

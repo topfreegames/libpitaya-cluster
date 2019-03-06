@@ -4,19 +4,13 @@ project(PitayaCluster)
 
 # Prefer static libraries over dynamic ones.
 if(UNIX AND NOT APPLE)
-  set(CMAKE_FIND_LIBRARY_SUFFIXES ".so" ".a")
+  set(CMAKE_FIND_LIBRARY_SUFFIXES ".a" ".so")
   # FIXME: this is an ugly solution, avoid setting global variables
   # by adding properties to the targets.
-  set(CMAKE_CXX_FLAGS "-fPIC -stdlib=libc++")
-  # Set boost location
-  set(BOOST_ROOT "${CMAKE_SOURCE_DIR}/boost_install_libc++/linux" CACHE STRING "")
-  # Set cpprestsdk location
+  set(CMAKE_CXX_FLAGS "-fPIC")
   set(CMAKE_PREFIX_PATH "${CMAKE_SOURCE_DIR}/cpprestsdk_install/linux")
 elseif(APPLE)
   set(CMAKE_FIND_LIBRARY_SUFFIXES ".a" ".lib" ".dylib" ".so" ".dll")
-  # Set boost location
-  set(BOOST_ROOT "${CMAKE_SOURCE_DIR}/boost_install_libc++/mac" CACHE STRING "")
-  # Set cpprestsdk location
   set(CMAKE_PREFIX_PATH "${CMAKE_SOURCE_DIR}/cpprestsdk_install/mac")
 else()
   set(CMAKE_FIND_LIBRARY_SUFFIXES ".a" ".lib" ".dylib" ".so" ".dll")

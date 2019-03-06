@@ -17,7 +17,7 @@ clean-docker-container:
 build-linux:
 	@rm -rf _builds/linux
 	@conan install -if _builds/linux .
-	@cmake -H. -GNinja -B_builds/linux -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF -DBUILD_SHARED_LIBS=OFF
+	@cmake -H. -B_builds/linux -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF -DBUILD_SHARED_LIBS=OFF
 	@cmake --build _builds/linux
 
 build-mac:
@@ -31,12 +31,6 @@ build-mac-unity:
 	@conan install -if _builds/mac-unity .
 	@cmake -H. -B_builds/mac-unity -GNinja -DCMAKE_BUILD_TYPE=Release -DBUILD_MACOSX_BUNDLE=ON -DBUILD_TESTING=OFF -DBUILD_SHARED_LIBS=OFF
 	@cmake --build _builds/mac-unity
-
-#build-mac:
-#	@mkdir -p _builds/mac
-#	@conan install -if _builds/mac .
-#	@cmake -H. -B_builds/mac -GNinja -DCMAKE_BUILD_TYPE=Release -DBUILD_MACOSX_BUNDLE=ON -DBUILD_TESTING=OFF -DBUILD_SHARED_LIBS=OFF
-#	@cmake --build _builds/mac
 
 build-docker-image:
 	@docker build . -t pitaya-cluster
