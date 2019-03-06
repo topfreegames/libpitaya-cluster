@@ -1,8 +1,12 @@
-from ctypes import *
+""" this module interops with the c dll"""
+from ctypes import (c_char_p, c_int, c_longlong, c_void_p, cdll, Structure, POINTER,
+                    c_bool, CFUNCTYPE)
 
 LIB = cdll.LoadLibrary("../precompiled/libpitaya_cluster.dylib")
 
-class SdConfig(Structure):
+
+class SdConfig(Structure):  # pylint: disable=too-few-public-methods
+    """ service discovery configuration class """
     _fields_ = [
         ("endpoints", c_char_p),
         ("etcd_prefix", c_char_p),
@@ -13,10 +17,13 @@ class SdConfig(Structure):
         ("sync_servers_interval_sec", c_int),
         ("log_level", c_int)]
 
+
 (LOGLEVEL_DEBUG, LOGLEVEL_INFO, LOGLEVEL_WARN, LOGLEVEL_ERROR,
  LOGLEVEL_CRITICAL) = (0, 1, 2, 3, 4)
 
-class NatsConfig(Structure):
+
+class NatsConfig(Structure):  # pylint: disable=too-few-public-methods
+    """ nats configuration class """
     _fields_ = [
         ("endpoint", c_char_p),
         ("connection_timeout_ms", c_longlong),
@@ -24,7 +31,9 @@ class NatsConfig(Structure):
         ("max_reconnection_attempts", c_int),
         ("max_pending_msgs", c_int)]
 
-class Server(Structure):
+
+class Server(Structure):  # pylint: disable=too-few-public-methods
+    """ server class """
     _fields_ = [
         ("id", c_char_p),
         ("type", c_char_p),
@@ -32,20 +41,27 @@ class Server(Structure):
         ("hostname", c_char_p),
         ("frontend", c_int)]
 
-class PitayaError(Structure):
+
+class PitayaError(Structure):  # pylint: disable=too-few-public-methods
+    """ pitaya error class """
     _fields_ = [
         ("code", c_char_p),
         ("msg", c_char_p)]
 
-class MemoryBuffer(Structure):
+
+class MemoryBuffer(Structure):  # pylint: disable=too-few-public-methods
+    """ memory buffer class, this is used to send pointer to data to and from c """
     _fields_ = [
         ("data", c_void_p),
         ("size", c_int)]
 
-class RPCReq(Structure):
+
+class RPCReq(Structure):  # pylint: disable=too-few-public-methods
+    """ rpc req class used in sendrpc and rpc cbs """
     _fields_ = [
         ("buffer", MemoryBuffer),
         ("route", c_char_p)]
+
 
 RPCCB = CFUNCTYPE(c_void_p, POINTER(RPCReq))
 FREECB = CFUNCTYPE(None, c_void_p)
@@ -57,7 +73,7 @@ LIB.tfg_pitc_Initialize.argtypes = [POINTER(Server), POINTER(SdConfig), POINTER(
 LIB.tfg_pitc_GetServerById.restype = c_bool
 LIB.tfg_pitc_GetServerById.argtypes = [c_char_p, POINTER(Server)]
 
-#LIB.tfg_pitc_FreeServer.argtypes = [POINTER(Server)]
+LIB.tfg_pitc_FreeServer.argtypes = [POINTER(Server)]
 
 LIB.tfg_pitc_Terminate.restype = None
 
@@ -68,7 +84,6 @@ LIB.tfg_pitc_FreePitayaError.argtypes = [POINTER(PitayaError)]
 LIB.tfg_pitc_RPC.restype = c_bool
 LIB.tfg_pitc_RPC.argtypes = [c_char_p, c_char_p, c_void_p, c_int,
                              POINTER(POINTER(MemoryBuffer)), POINTER(PitayaError)]
-
 
 LIB.tfg_pitc_FreeMem.argtypes = [c_void_p]
 
