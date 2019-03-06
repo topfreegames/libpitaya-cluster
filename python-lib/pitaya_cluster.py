@@ -17,7 +17,7 @@ def init(
         server: pc.Server, logPath=b'/tmp/pitaya_cluster_log'):
     """ this method initializes pitaya cluster logic and should be called on start """
     res = pc.LIB.tfg_pitc_Initialize(
-        server, sd_config, nats_config, rpc_cb, free_cb, logPath)
+        server, sd_config, nats_config, _rpc_cb, _free_cb, logPath)
     if not res:
         raise Exception("error initializing pitaya")
 
@@ -61,12 +61,12 @@ def shutdown():
 
 
 @pc.FREECB
-def free_cb(mem: c_void_p):
+def _free_cb(mem: c_void_p):
     """ free cb is called internally by the c module to free allocated memory """
     pc.LIB.tfg_pitc_FreeMem(mem)
 
 
-def alloc_mem_buffer_ptr_with_response_data(res: Response):
+def _alloc_mem_buffer_ptr_with_response_data(res: Response):
     """ internal method, this allocs a memory buffer in the global heap for sending it to c code """
     if not isinstance(res, Response):
         raise TypeError
@@ -84,21 +84,21 @@ def alloc_mem_buffer_ptr_with_response_data(res: Response):
     return ptrStruct
 
 
-def get_error_response_c_void_p(code, msg):
+def _get_error_response_c_void_p(code, msg):
     """ gets an allocated buffer of an error response """
     res = Response()
     res.error.code = code
     res.error.msg = msg
-    return alloc_mem_buffer_ptr_with_response_data(res)
+    return _alloc_mem_buffer_ptr_with_response_data(res)
 
 
 @pc.RPCCB
-def rpc_cb(req: POINTER(pc.RPCReq)) -> c_void_p:
+def _rpc_cb(req: POINTER(pc.RPCReq)) -> c_void_p:
     """ this method is called internally by c code for receiving rpcs """
     r = req.contents.route
     route = Route.from_str(r).str()
     if route not in remotes_dict:
-        return get_error_response_c_void_p("PIT-404", "remote %s not found!" % route)
+        return _get_error_response_c_void_p("PIT-404", "remote %s not found!" % route)
     remote_method = remotes_dict[route]
     try:
         res = Response()
@@ -109,10 +109,10 @@ def rpc_cb(req: POINTER(pc.RPCReq)) -> c_void_p:
         arg.MergeFromString(req_data)
         ans = remote_method.method(remote_method.obj, arg)
         res.data = ans.SerializeToString()
-        return alloc_mem_buffer_ptr_with_response_data(res)
+        return _alloc_mem_buffer_ptr_with_response_data(res)
     except Exception as e:
         err_str = "exception: %s: %s" % (type(e).__name__, e)
-        return get_error_response_c_void_p("PIT-500", err_str)
+        return _get_error_response_c_void_p("PIT-500", err_str)
 
 
 def send_rpc(route: str, in_msg: message.Message, res_class: message.Message, server_id: str = '') -> message.Message:
