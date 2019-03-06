@@ -56,7 +56,7 @@ set_target_properties(cpprestsdk::cpprest PROPERTIES
   INTERFACE_COMPILE_DEFINITIONS "CPPREST_FORCE_HTTP_CLIENT_ASIO;CPPREST_FORCE_HTTP_LISTENER_ASIO"
   INTERFACE_COMPILE_OPTIONS "-fPIC"
   INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include"
-  INTERFACE_LINK_LIBRARIES "-ldl;\$<LINK_ONLY:-ldl>;\$<LINK_ONLY:cpprestsdk::cpprestsdk_websocketpp_internal>;\$<LINK_ONLY:dl>;\$<LINK_ONLY:cpprestsdk::cpprestsdk_zlib_internal>;/Library/Frameworks/CoreFoundation.framework;/Library/Frameworks/Security.framework;cpprestsdk::cpprestsdk_boost_internal;cpprestsdk::cpprestsdk_openssl_internal;cpprestsdk::cpprestsdk_boost_internal;cpprestsdk::cpprestsdk_openssl_internal"
+  INTERFACE_LINK_LIBRARIES "-ldl;\$<LINK_ONLY:-ldl>;\$<LINK_ONLY:dl>;\$<LINK_ONLY:cpprestsdk::cpprestsdk_zlib_internal>;cpprestsdk::cpprestsdk_boost_internal;cpprestsdk::cpprestsdk_openssl_internal;cpprestsdk::cpprestsdk_boost_internal;cpprestsdk::cpprestsdk_openssl_internal"
 )
 
 # Create imported target cpprestsdk::cpprestsdk_boost_internal

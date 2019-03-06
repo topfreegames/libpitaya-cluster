@@ -31,7 +31,7 @@
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="Google.Protobuf">
-      <HintPath>..\..\csharp-lib\packages\protobuf.net35.3.5.1\lib\net35\Google.Protobuf.dll</HintPath>
+      <HintPath>..\..\csharp-lib\packages\TFG.Protobuff35.3.6.1\lib\net35\Google.Protobuf.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>

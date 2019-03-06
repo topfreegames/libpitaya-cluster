@@ -211,9 +211,9 @@ namespace Pitaya
 
       if (!ok) // error
       {
-//        FreePitayaErrorInternal(retError);
-
-        throw new PitayaException($"RPC call failed: ({retError.code}: {retError.msg})");
+        string code = string.Copy(retError.code);
+        string errMsg = string.Copy(retError.msg);
+        throw new PitayaException($"RPC call failed: ({code}: {errMsg})");
       }
 
       var protoRet = GetProtoMessageFromMemoryBuffer<T>(*memBufPtr);
@@ -248,7 +248,7 @@ namespace Pitaya
     [DllImport("libpitaya_cluster", CallingConvention = CallingConvention.Cdecl, EntryPoint = "tfg_pitc_OnSignal")]
     private static extern void OnSignalInternal(OnSignalFunc ptr);
 
-//    [DllImport("libpitaya_cluster", CallingConvention = CallingConvention.Cdecl, EntryPoint = "tfg_pitc_FreePitayaError")]
-//    private static extern unsafe void FreePitayaErrorInternal(/**/Pitaya.Error *ptr);
+    [DllImport("libpitaya_cluster", CallingConvention = CallingConvention.Cdecl, EntryPoint = "tfg_pitc_FreePitayaError")]
+    private static extern unsafe void FreePitayaErrorInternal(ref Error err);
   }
 }

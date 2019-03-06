@@ -1,6 +1,6 @@
 from .route import Route
 from google.protobuf import message
-from ctypes import POINTER, byref, c_char, c_void_p, addressof, memmove, sizeof
+from ctypes import POINTER, byref, c_char, c_char_p, c_void_p, addressof, memmove, sizeof
 from .gen.response_pb2 import Response
 from .remote import BaseRemote
 from .c_interop import SdConfig, NatsConfig, Server, Native, FREECB, MemoryBuffer, RPCReq, RPCCB, PitayaError
@@ -29,11 +29,12 @@ def initialize_pitaya(
 
 def get_server_by_id(server_id: str):
     """ gets a server by its id """
-    # TODO needs free
+    # TODO needs free -- leak here!
     sv = Server()
     success = LIB.tfg_pitc_GetServerById(server_id.encode('utf-8'), sv)
     if success is False:
         raise Exception('failed to get server {}'.format(server_id))
+    # LIB.tfg_pitc_FreeServer(byref(sv))
     return sv
 
 
@@ -120,7 +121,7 @@ def _rpc_cb(req: POINTER(RPCReq)) -> c_void_p:
         return _get_error_response_c_void_p("PIT-500", err_str)
 
 
-def send_rpc(route: str, in_msg: message.Message, res_class: message.Message, server_id: str = '') -> message.Message:
+def send_rpc(route: str, in_msg: message.Message, res_class: message.Message, server_id: str='') -> message.Message:
     """ sends a rpc to other pitaya server """
     if not issubclass(type(in_msg), message.Message) or not issubclass(res_class, message.Message):
         raise TypeError
@@ -132,8 +133,9 @@ def send_rpc(route: str, in_msg: message.Message, res_class: message.Message, se
     res = LIB.tfg_pitc_RPC(server_id.encode(
         'utf-8'), route.encode('utf-8'), addressof(c_bytes), msg_len, byref(ret_ptr), byref(err))
     if not res:
-        # TODO: needs free
-        raise Exception("code: {} msg: {}".format(err.code, err.msg))
+        exception_msg = "code: {} msg: {}".format(err.code, err.msg)
+        LIB.tfg_pitc_FreePitayaError(err)
+        raise Exception(exception_msg)
     ret_bytes = (
         c_char * ret_ptr.contents.size).from_address(ret_ptr.contents.data)
     response = Response()

@@ -56,7 +56,7 @@ FreePitayaError(CPitayaError* err)
 {
     free(err->code);
     free(err->msg);
-    free(err);
+    //free(err);
 }
 
 static void
@@ -66,7 +66,7 @@ FreeServer(CServer* sv)
     free(sv->type);
     free(sv->metadata);
     free(sv->hostname);
-    free(sv);
+    //free(sv);
 }
 
 pitaya::etcdv3_service_discovery::Config
