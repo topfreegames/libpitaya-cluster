@@ -68,3 +68,9 @@ LIB.tfg_pitc_FreePitayaError.argtypes = [POINTER(PitayaError)]
 LIB.tfg_pitc_RPC.restype = c_bool
 LIB.tfg_pitc_RPC.argtypes = [c_char_p, c_char_p, c_void_p, c_int,
                              POINTER(POINTER(MemoryBuffer)), POINTER(PitayaError)]
+
+
+LIB.tfg_pitc_FreeMem.argtypes = [c_void_p]
+
+LIB.tfg_pitc_AllocMem.restype = c_void_p
+LIB.tfg_pitc_AllocMem.argtypes = [c_int]

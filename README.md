@@ -6,6 +6,7 @@ develop servers capable of discovering other pitaya servers and sending/receivin
 ### Requirements
 - Dotnet and Mono (for running csharp example)
 - Docker (for starting dependencies)
+- cmake >= 3.13 for building
 
 ### Pitaya Dependencies
 for running go-server, csharp-example and unity-example you must have an etcd running into localhost, port 2379 and a nats instance running on port 4222, theres a docker-compose file in the project with these dependencies, you can start them with ```make start-deps```

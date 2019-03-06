@@ -8,6 +8,7 @@
 #include <assert.h>
 #include <boost/optional.hpp>
 #include <chrono>
+#include <cstdio>
 
 using namespace std;
 using namespace pitaya;
@@ -90,6 +91,14 @@ OnSignal(int signum)
     }
 }
 
+void print_data(void* dt, int sz){
+  int j;
+  printf("data on c: ");
+  for(j = 0; j < sz; ++j)
+    printf("%02x ", ((uint8_t*) dt)[j]);
+  printf("\n");
+}
+
 protos::Response
 RpcCallback(protos::Request req)
 {
@@ -101,6 +110,8 @@ RpcCallback(protos::Request req)
     cReq.route = req.msg().route().c_str();
     auto memBuf = gPinvokeCb(&cReq);
 
+    //for debugging purposes, uncomment the below line
+    //print_data(memBuf->data, memBuf->size);
     bool success = res.ParseFromArray(memBuf->data, memBuf->size);
     if (!success) {
         auto err = new protos::Error();
@@ -276,6 +287,14 @@ extern "C"
         (*outBuf)->data = bin;
 
         return true;
+    }
+
+    void tfg_pitc_FreeMem(void * mem){
+      free(mem);
+    }
+
+    void * tfg_pitc_AllocMem(int sz){
+      return malloc(sz);
     }
 
     void tfg_pitc_FreeMemoryBuffer(MemoryBuffer* buf)

@@ -27,11 +27,11 @@ def shutdown():
 
 @pc.FREECB
 def free_cb(mem:c_void_p):
-    print("free ", mem)
+    pc.LIB.tfg_pitc_FreeMem(mem)
 
 @pc.RPCCB
 def rpc_cb(req:POINTER(pc.RPCReq)):
-    print("hellow ", req.contents.route)
+    ## TODO get route, register handler, route to right one
     invoke_res = cluster_pb.RPCRes()
     invoke_res.Msg = "hellow from python"
     invoke_res.Code = 777
@@ -40,23 +40,24 @@ def rpc_cb(req:POINTER(pc.RPCReq)):
     ## TODO populate with error
     res_bytes = res.SerializeToString()
     ret_len = len(res_bytes)
-    ## TODO free
+    #we alloc mem in c side because doing so from python causes it to be freed the moment we return
+    ptrData = pc.LIB.tfg_pitc_AllocMem(ret_len) 
     ret_data = (c_char * ret_len)(*res_bytes)
-
+    memmove(ptrData, ret_data, ret_len)
     ## TODO duplicated code can be refactored with send_rpc
     ret = pc.MemoryBuffer()
-    ret.data = addressof(ret_data)
+    ret.data = ptrData
     ret.size = ret_len
-    print("addresses", addressof(ret), ret.data)
-    return addressof(ret)
+    #we alloc mem in c side because doing so from python causes it to be freed the moment we return
+    ptrStruct = pc.LIB.tfg_pitc_AllocMem(sizeof(ret)) 
+    memmove(ptrStruct, addressof(ret), sizeof(ret))
+    return ptrStruct
 
 def send_rpc(route:str, in_msg:message, res_class:message, server_id:str=''):
     msg_bytes = in_msg.SerializeToString()
     msg_len = len(msg_bytes)
     svId = server_id.encode('utf-8')
-    ## TODO needs free
     c_bytes = (c_char * msg_len)(*msg_bytes)
-    ## TODO needs free
     ret_ptr = POINTER(pc.MemoryBuffer)()
     err = pc.PitayaError()
     res = pc.LIB.tfg_pitc_RPC(server_id.encode('utf-8'), route.encode('utf-8'), addressof(c_bytes), msg_len, byref(ret_ptr), byref(err))

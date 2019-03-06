@@ -242,13 +242,13 @@ namespace Protos {
       }
       if (other.session_ != null) {
         if (session_ == null) {
-          session_ = new global::Protos.Session();
+          Session = new global::Protos.Session();
         }
         Session.MergeFrom(other.Session);
       }
       if (other.msg_ != null) {
         if (msg_ == null) {
-          msg_ = new global::Protos.Msg();
+          Msg = new global::Protos.Msg();
         }
         Msg.MergeFrom(other.Msg);
       }
@@ -270,21 +270,21 @@ namespace Protos {
             _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, input);
             break;
           case 8: {
-            type_ = (global::Protos.RPCType) input.ReadEnum();
+            Type = (global::Protos.RPCType) input.ReadEnum();
             break;
           }
           case 18: {
             if (session_ == null) {
-              session_ = new global::Protos.Session();
+              Session = new global::Protos.Session();
             }
-            input.ReadMessage(session_);
+            input.ReadMessage(Session);
             break;
           }
           case 26: {
             if (msg_ == null) {
-              msg_ = new global::Protos.Msg();
+              Msg = new global::Protos.Msg();
             }
-            input.ReadMessage(msg_);
+            input.ReadMessage(Msg);
             break;
           }
           case 34: {

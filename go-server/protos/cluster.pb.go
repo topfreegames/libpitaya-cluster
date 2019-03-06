@@ -30,7 +30,7 @@ func (m *RPCMsg) Reset()         { *m = RPCMsg{} }
 func (m *RPCMsg) String() string { return proto.CompactTextString(m) }
 func (*RPCMsg) ProtoMessage()    {}
 func (*RPCMsg) Descriptor() ([]byte, []int) {
-	return fileDescriptor_cluster_4511d2cdbc01e3dd, []int{0}
+	return fileDescriptor_cluster_029e3b223c2225ef, []int{0}
 }
 func (m *RPCMsg) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_RPCMsg.Unmarshal(m, b)
@@ -70,7 +70,7 @@ func (m *RPCRes) Reset()         { *m = RPCRes{} }
 func (m *RPCRes) String() string { return proto.CompactTextString(m) }
 func (*RPCRes) ProtoMessage()    {}
 func (*RPCRes) Descriptor() ([]byte, []int) {
-	return fileDescriptor_cluster_4511d2cdbc01e3dd, []int{1}
+	return fileDescriptor_cluster_029e3b223c2225ef, []int{1}
 }
 func (m *RPCRes) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_RPCRes.Unmarshal(m, b)
@@ -110,10 +110,10 @@ func init() {
 }
 
 func init() {
-	proto.RegisterFile("go-server/protos/cluster.proto", fileDescriptor_cluster_4511d2cdbc01e3dd)
+	proto.RegisterFile("go-server/protos/cluster.proto", fileDescriptor_cluster_029e3b223c2225ef)
 }
 
-var fileDescriptor_cluster_4511d2cdbc01e3dd = []byte{
+var fileDescriptor_cluster_029e3b223c2225ef = []byte{
 	// 112 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0x92, 0x4b, 0xcf, 0xd7, 0x2d,
 	0x4e, 0x2d, 0x2a, 0x4b, 0x2d, 0xd2, 0x2f, 0x28, 0xca, 0x2f, 0xc9, 0x2f, 0xd6, 0x4f, 0xce, 0x29,
