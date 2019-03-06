@@ -2,7 +2,6 @@
 
 import inspect
 from google.protobuf import message
-import gen.cluster_pb2 as cluster_pb
 
 
 class RemoteMethod(object):
@@ -47,17 +46,3 @@ class BaseRemote(object):
                                         annotations['return'],
                                         annotations[full_spec.args[1]])
         return res
-
-
-# dummy remote class for development purposes
-class ExampleRemote(BaseRemote):
-    """ example remote for testing purposes """
-
-    # a valid remote should receive 1 argument that subclasses message.Message
-    # and return a class that also subclasses message.Message
-
-    def TestRemote(self, msg: cluster_pb.RPCMsg) -> cluster_pb.RPCMsg:
-        invoke_res = cluster_pb.RPCRes()
-        invoke_res.Msg = "success! called testremote with msg: %s" % msg.Msg
-        invoke_res.Code = 200
-        return invoke_res
