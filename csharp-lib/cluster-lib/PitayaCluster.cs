@@ -211,9 +211,7 @@ namespace Pitaya
 
       if (!ok) // error
       {
-        string code = string.Copy(retError.code);
-        string errMsg = string.Copy(retError.msg);
-        throw new PitayaException($"RPC call failed: ({code}: {errMsg})");
+        throw new PitayaException($"RPC call failed: ({retError.code}: {retError.msg})");
       }
 
       var protoRet = GetProtoMessageFromMemoryBuffer<T>(*memBufPtr);
