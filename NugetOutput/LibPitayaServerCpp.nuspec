@@ -2,13 +2,13 @@
 <package >
   <metadata>
     <id>LibPitayaServerCpp</id>
-    <version>0.3.9</version>
+    <version>0.3.10</version>
     <authors>leonardo</authors>
     <owners>leonardo</owners>
     <projectUrl>https://github.com/topfreegames/libpitaya-cluster</projectUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>Library that allows communication with other pitaya servers</description>
-    <releaseNotes>Reference the correct protobuf package</releaseNotes>
+    <releaseNotes>Build on linux with libstdc++ (fixes newest unity version crashes)</releaseNotes>
     <copyright>Copyright TFG 2018</copyright>
     <tags>pitaya libpitaya-cluster</tags>
     <dependencies>
