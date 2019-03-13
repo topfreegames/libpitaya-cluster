@@ -12,6 +12,7 @@
 #include "spdlog/spdlog.h"
 #include <boost/optional.hpp>
 #include <google/protobuf/message_lite.h>
+#include <ostream>
 
 namespace pitaya {
 
@@ -25,6 +26,16 @@ struct PitayaError
         , msg(msg)
     {}
 };
+
+template<class CharType, class CharTrait>
+inline std::basic_ostream<CharType, CharTrait>&
+operator<<(std::basic_ostream<CharType, CharTrait>& os, const PitayaError& e)
+{
+    if (os.good()) {
+        os << "PitayaError{ code = " << e.code << ", msg = " << e.msg << " }";
+    }
+    return os;
+}
 
 class Cluster
 {
