@@ -14,6 +14,13 @@ clean-docker-container:
 		docker rm `docker ps -aqf "name=pitaya-cluster"` ; \
 	fi
 
+clean-xcode:
+	@rm -rf _builds/xcode
+
+generate-xcode:
+	@conan install . -if _builds/xcode
+	@cmake -H. -B_builds/xcode -GXcode -DBUILD_TESTING=ON -DBUILD_SHARED_LIBS=OFF
+
 build-linux:
 	@rm -rf _builds/linux
 	@conan install -if _builds/linux .
