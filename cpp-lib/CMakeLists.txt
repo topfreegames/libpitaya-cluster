@@ -76,6 +76,7 @@ add_library(pitaya_cluster ${LIB_TYPE}
     include/pitaya/utils/sync_map.h
     include/pitaya/utils/sync_deque.h
 
+    src/pitaya.cpp
     src/pitaya/etcdv3_service_discovery.cpp
     src/pitaya/etcdv3_service_discovery/worker.cpp
     src/pitaya/etcdv3_service_discovery/lease_keep_alive.cpp
