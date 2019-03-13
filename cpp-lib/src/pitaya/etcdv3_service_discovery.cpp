@@ -3,7 +3,6 @@
 #include "pitaya/utils/string_utils.h"
 #include "spdlog/sinks/stdout_color_sinks.h"
 #include <algorithm>
-#include <cpprest/json.h>
 
 using std::cerr;
 using std::cout;
@@ -14,7 +13,6 @@ using std::unique_ptr;
 using std::vector;
 using std::chrono::seconds;
 namespace chrono = std::chrono;
-namespace json = web::json;
 
 using std::placeholders::_1;
 using namespace pitaya;
