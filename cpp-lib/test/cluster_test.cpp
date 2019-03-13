@@ -1,6 +1,7 @@
 #include "doctest.h"
 #include "trompeloeil.hpp"
 #include <boost/optional.hpp>
+#include <boost/optional/optional_io.hpp>
 #include <memory>
 
 #include "mock_rpc_client.h"
@@ -72,7 +73,7 @@ TEST_CASE("Cluster can be created normally")
         optional<PitayaError> err =
             Cluster::Instance().RPC("my-server-id", "mytest.route", req, res);
 
-        CHECK(!err.has_value());
+        CHECK(!err);
     }
 
     SUBCASE("RPC fails when no server is found")
@@ -91,7 +92,7 @@ TEST_CASE("Cluster can be created normally")
         optional<PitayaError> err =
             Cluster::Instance().RPC("my-server-id", "mytest.route", req, res);
 
-        CHECK(err.has_value());
+        CHECK(err);
 
         PitayaError pErr = err.value();
         CHECK(pErr.code == pitaya::kCodeNotFound);
@@ -134,7 +135,7 @@ TEST_CASE("Cluster can be created normally")
         optional<PitayaError> err =
             Cluster::Instance().RPC("my-server-id", "mytest.route", req, res);
 
-        CHECK(err.has_value());
+        CHECK(err);
 
         PitayaError pErr = err.value();
         CHECK(pErr.code == pitaya::kCodeInternalError);
