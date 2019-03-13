@@ -4,6 +4,7 @@
 #include <string>
 
 namespace pitaya {
+namespace constants {
 
 static constexpr const char* kCodeNotFound = "PIT-404";
 static constexpr const char* kCodeInternalError = "PIT-500";

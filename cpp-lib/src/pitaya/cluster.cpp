@@ -72,12 +72,12 @@ Cluster::RPC(const string& route, protos::Request& req, protos::Response& ret)
         auto sv_type = r.server_type;
         auto servers = _sd->GetServersByType(sv_type);
         if (servers.size() < 1) {
-            return pitaya::PitayaError(kCodeNotFound, "no servers found for route: " + route);
+            return pitaya::PitayaError(constants::kCodeNotFound, "no servers found for route: " + route);
         }
         pitaya::Server sv = pitaya::utils::RandomServer(servers);
         return RPC(sv.id, route, req, ret);
     } catch (PitayaException* e) {
-        return pitaya::PitayaError(kCodeInternalError, e->what());
+        return pitaya::PitayaError(constants::kCodeInternalError, e->what());
     }
 }
 
@@ -91,7 +91,7 @@ Cluster::RPC(const string& server_id,
     auto sv = _sd->GetServerById(server_id);
     if (!sv) {
         // TODO better error code with constants somewhere
-        return pitaya::PitayaError(kCodeNotFound, "server not found");
+        return pitaya::PitayaError(constants::kCodeNotFound, "server not found");
     }
 
     std::vector<uint8_t> buffer(req.ByteSizeLong());
@@ -100,8 +100,8 @@ Cluster::RPC(const string& server_id,
     // TODO proper jaeger setup
     json::value metadata;
     metadata.object();
-    metadata[kPeerIdKey] = json::value::string(_server.id);
-    metadata[kPeerServiceKey] = json::value::string(_server.type);
+    metadata[constants::kPeerIdKey] = json::value::string(_server.id);
+    metadata[constants::kPeerServiceKey] = json::value::string(_server.type);
     string metadataStr = metadata.serialize();
     req.set_metadata(metadataStr);
 
