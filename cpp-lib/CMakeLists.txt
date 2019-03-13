@@ -123,9 +123,9 @@ target_link_libraries(pitaya_cluster
   PUBLIC
     nats_static
     etcd-cpp-api
+    Boost::boost
   PRIVATE
-    libprotobuf
-    Boost::boost)
+    libprotobuf)
 
 include(CTest)
 if(BUILD_TESTING AND NOT BUILD_MACOSX_BUNDLE)
