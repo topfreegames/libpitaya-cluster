@@ -1,6 +1,11 @@
 #include "pitaya.h"
 #include "pitaya/cluster.h"
+#include "pitaya/etcdv3_service_discovery.h"
 #include "pitaya/etcdv3_service_discovery/config.h"
+#include "pitaya/grpc/rpc_client.h"
+#include "pitaya/grpc/rpc_server.h"
+#include "pitaya/nats/rpc_client.h"
+#include "pitaya/nats/rpc_server.h"
 #include "pitaya/service_discovery.h"
 #include "protos/msg.pb.h"
 #include "protos/request.pb.h"
@@ -15,69 +20,79 @@
 using namespace std;
 using namespace pitaya;
 using namespace pitaya::nats;
+using namespace pitaya::grpc;
+using pitaya::etcdv3_service_discovery::Etcdv3ServiceDiscovery;
 using pitaya::service_discovery::ServiceDiscovery;
 
 int x;
 
 static void
-Handler(int signo)
+SignalHandler(int signo)
 {
     Cluster::Instance().Terminate();
     exit(0);
 }
 
 protos::Response
-rpc_handler(protos::Request req)
+RpcHandler(const protos::Request& req)
 {
     cout << "rpc handler called with route: " << req.msg().route() << endl;
     auto res = protos::Response();
-    auto res2 = protos::Response();
-    res2.set_data("ok!");
-    std::string serialized;
-    res2.SerializeToString(&serialized);
-    res.set_data(serialized);
+    res.set_data("RPC went ok!");
     return res;
 }
 
 int
 main()
 {
-    signal(SIGTERM, Handler);
-    signal(SIGINT, Handler);
+    signal(SIGTERM, SignalHandler);
+    signal(SIGINT, SignalHandler);
 
     auto logger = spdlog::stdout_color_mt("main");
     logger->set_level(spdlog::level::debug);
-    //    auto logger = spdlog::basic_logger_mt("main", "custom-log.log");
 
-    Server server("someid", "sometype", "{\"user\": \"Carro\"}");
-    NatsConfig nats_config("nats://localhost:4222", 1000, 3000, 3, 100);
+    Server server("someid", "sometype", {
+        {"grpc-host", "127.0.0.1"},
+        {"grpc-port", "58000"},
+    });
+    NatsConfig natsConfig("nats://localhost:4222", 1000, 3000, 3, 100);
 
     etcdv3_service_discovery::Config sdConfig;
-    sdConfig.endpoints = "http://127.0.0.1:4001";
+    sdConfig.endpoints = "http://127.0.0.1:2379";
     sdConfig.etcdPrefix = "pitaya/";
     sdConfig.logHeartbeat = false;
-    sdConfig.logServerSync = false;
+    sdConfig.logServerSync = true;
+    sdConfig.logServerDetails = true;
     sdConfig.heartbeatTTLSec = std::chrono::seconds(20);
     sdConfig.syncServersIntervalSec = std::chrono::seconds(20);
 
     try {
-        Cluster::Instance().Initialize(
-            std::move(sdConfig), std::move(nats_config), std::move(server), rpc_handler, "main");
+        std::shared_ptr<ServiceDiscovery> serviceDiscovery =
+            std::make_shared<Etcdv3ServiceDiscovery>(std::move(sdConfig), server, "main");
+        auto rpcServer = std::unique_ptr<RpcServer>(new GrpcRpcServer(server, RpcHandler, "main"));
+        auto rpcClient =
+            std::unique_ptr<RpcClient>(new GrpcRpcClient(serviceDiscovery, server, "main"));
+
+        Cluster::Instance().Initialize(server,
+                                       std::move(serviceDiscovery),
+                                       std::move(rpcServer),
+                                       std::move(rpcClient),
+                                       "main");
 
         {
-            ////// INIT
+            // INIT
             auto msg = new protos::Msg();
-            msg->set_data("helloww");
-            msg->set_route("someroute");
-            /////
+            //            msg->set_data("helloww");
+            msg->set_route("sometype.room.testremote");
+
             protos::Request req;
             req.set_allocated_msg(msg);
             std::vector<uint8_t> buffer(req.ByteSizeLong());
             req.SerializeToArray(buffer.data(), buffer.size());
-            ///// FINISH
-            protos::Response res;
 
-            auto err = Cluster::Instance().RPC("sometype.testremote.remote", req, res);
+            // FINISH
+            protos::Response res;
+            auto err = Cluster::Instance().RPC("sometype.room.testremote", req, res);
             if (err) {
                 cout << "received error:" << err.value().msg << endl;
             } else {
