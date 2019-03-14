@@ -235,11 +235,20 @@ Worker::AddServerToEtcd(const Server& server)
 void
 Worker::AddServer(const Server& server)
 {
-    std::lock_guard<decltype(_serversById)> lock(_serversById);
-    if (_serversById.Find(server.id) == _serversById.end()) {
+    {
+        std::lock_guard<decltype(_serversById)> lock(_serversById);
+
+        if (_serversById.Find(server.id) != _serversById.end()) {
+            return;
+        }
+
+        _log->debug(
+            "Adding server {} with metadata {} to service_discovery", server.id, server.metadata);
         _serversById[server.id] = server;
         _serversByType[server.type][server.id] = server;
     }
+
+    BroadcastServerAdded(server);
 }
 
 void
@@ -370,14 +379,19 @@ void
 Worker::DeleteServer(const string& serverId)
 {
     // NOTE(lhahn): DeleteServer assumes that the resources are already locked.
-    if (_serversById.Find(serverId) != _serversById.end()) {
-        Server server = _serversById[serverId];
-        _serversById.Erase(serverId);
-        if (_serversByType.Find(server.type) != _serversByType.end()) {
-            auto& serverMap = _serversByType[server.type];
-            serverMap.erase(server.id);
-        }
+    if (_serversById.Find(serverId) == _serversById.end()) {
+        return;
     }
+
+    Server server = _serversById[serverId];
+    _serversById.Erase(serverId);
+
+    if (_serversByType.Find(server.type) != _serversByType.end()) {
+        auto& serverMap = _serversByType[server.type];
+        serverMap.erase(server.id);
+    }
+
+    BroadcastServerRemoved(server);
 }
 
 optional<pitaya::Server>
@@ -431,8 +445,6 @@ Worker::OnWatch(etcd::Response res)
         }
 
         AddServer(std::move(server.value()));
-
-        _log->debug("Server {} added", res.value.key);
         PrintServers();
     } else if (res.action == "delete") {
         string serverType, serverId;
@@ -481,11 +493,11 @@ void
 Worker::PrintServer(const Server& server)
 {
     bool printServerDetails = false;
-    _log->debug("Server: {}", GetServerKey(server.id, server.type));
+    _log->debug("  Server: {}", GetServerKey(server.id, server.type));
     if (printServerDetails) {
-        _log->debug("  - hostname: {}", server.hostname);
-        _log->debug("  - frontend: {}", server.frontend);
-        _log->debug("  - metadata: {}", server.metadata);
+        _log->debug("    - hostname: {}", server.hostname);
+        _log->debug("    - frontend: {}", server.frontend);
+        _log->debug("    - metadata: {}", server.metadata);
     }
 }
 
@@ -498,7 +510,7 @@ ServerAsJson(const Server& server)
     obj["type"] = json::value::string(server.type);
     try {
         obj["metadata"] = json::value::parse(server.metadata);
-    } catch (const web::json::json_exception& exc) {
+    } catch (const json::json_exception& exc) {
         obj["metadata"] = json::value::string("");
     }
     obj["hostname"] = json::value::string(server.hostname);
@@ -509,32 +521,73 @@ ServerAsJson(const Server& server)
 optional<Server>
 Worker::ParseServer(const string& jsonStr)
 {
-    auto jsonSrv = json::value::parse(jsonStr);
+    try {
+        auto jsonSrv = json::value::parse(jsonStr);
 
-    if (!jsonSrv.is_object()) {
-        _log->error("Server json is not an object {}", jsonStr);
+        if (!jsonSrv.is_object()) {
+            _log->error("Server json is not an object {}", jsonStr);
+            return boost::none;
+        }
+
+        auto server = optional<Server>(Server());
+
+        if (jsonSrv.has_boolean_field("frontend")) {
+            server->frontend = jsonSrv["frontend"].as_bool();
+        }
+        if (jsonSrv.has_string_field("type")) {
+            server->type = jsonSrv["type"].as_string();
+        }
+        if (jsonSrv.has_string_field("id")) {
+            server->id = jsonSrv["id"].as_string();
+        }
+        if (jsonSrv.has_object_field("metadata")) {
+            server->metadata = jsonSrv["metadata"].serialize();
+        }
+        if (jsonSrv.has_string_field("hostname")) {
+            server->hostname = jsonSrv["hostname"].as_string();
+        }
+
+        return server;
+    } catch (const json::json_exception& exc) {
+        _log->error("Failed to parse server json ({}): {}", jsonStr, exc.what());
         return boost::none;
     }
+}
 
-    auto server = optional<Server>(Server());
-
-    if (jsonSrv["frontend"].is_boolean()) {
-        server->frontend = jsonSrv["frontend"].as_bool();
-    }
-    if (jsonSrv["type"].is_string()) {
-        server->type = jsonSrv["type"].as_string();
-    }
-    if (jsonSrv["id"].is_string()) {
-        server->id = jsonSrv["id"].as_string();
-    }
-    if (jsonSrv["metadata"].is_string()) {
-        server->metadata = jsonSrv["metadata"].as_string();
-    }
-    if (jsonSrv["hostname"].is_string()) {
-        server->hostname = jsonSrv["hostname"].as_string();
+void
+Worker::AddListener(service_discovery::Listener* listener)
+{
+    // Whenever we add a new listener, we want to call ServerAdded
+    // for all existent servers on the class.
+    for (const auto& pair : _serversById) {
+        const Server& server = pair.second;
+        listener->ServerAdded(server);
     }
 
-    return server;
+    std::lock_guard<decltype(_listeners)> lock(_listeners);
+    _listeners.PushBack(listener);
+}
+
+void
+Worker::BroadcastServerAdded(const pitaya::Server& server)
+{
+    std::lock_guard<decltype(_listeners)> lock(_listeners);
+    for (auto l : _listeners) {
+        if (l) {
+            l->ServerAdded(server);
+        }
+    }
+}
+
+void
+Worker::BroadcastServerRemoved(const pitaya::Server& server)
+{
+    std::lock_guard<decltype(_listeners)> lock(_listeners);
+    for (auto l : _listeners) {
+        if (l) {
+            l->ServerRemoved(server);
+        }
+    }
 }
 
 } // namespace etcdv3_service_discovery
