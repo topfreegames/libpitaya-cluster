@@ -70,11 +70,13 @@ add_library(pitaya_cluster ${LIB_TYPE}
     include/pitaya/nats/config.h
     include/pitaya/nats/rpc_client.h
     include/pitaya/nats/rpc_server.h
+    include/pitaya/grpc/rpc_client.h
 
     include/pitaya/utils/semaphore.h
     include/pitaya/utils/ticker.h
     include/pitaya/utils/sync_map.h
     include/pitaya/utils/sync_deque.h
+    include/pitaya/utils/sync_vector.h
 
     src/pitaya.cpp
     src/pitaya/etcdv3_service_discovery.cpp
@@ -82,10 +84,13 @@ add_library(pitaya_cluster ${LIB_TYPE}
     src/pitaya/etcdv3_service_discovery/lease_keep_alive.cpp
     src/pitaya/nats/rpc_server.cpp
     src/pitaya/nats/rpc_client.cpp
+    src/pitaya/grpc/rpc_client.cpp
     src/pitaya/utils/string_utils.cpp
     src/pitaya/cluster.cpp
     src/pitaya/utils.cpp
     src/pitaya/c_wrapper.cpp
+    src/pitaya/utils/grpc.h
+    src/pitaya/utils/grpc.cpp
     src/pitaya/utils/string_utils.h
     src/pitaya/utils/ticker.cpp
     # Include protobuf-c
