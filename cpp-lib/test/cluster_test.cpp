@@ -95,7 +95,7 @@ TEST_CASE("Cluster can be created normally")
         CHECK(err);
 
         PitayaError pErr = err.value();
-        CHECK(pErr.code == pitaya::kCodeNotFound);
+        CHECK(pErr.code == constants::kCodeNotFound);
     }
 
     SUBCASE("RPC returns error when the call fails")
@@ -113,7 +113,7 @@ TEST_CASE("Cluster can be created normally")
             .IN_SEQUENCE(seq);
 
         auto error = new protos::Error();
-        error->set_allocated_code(new std::string(kCodeInternalError));
+        error->set_allocated_code(new std::string(constants::kCodeInternalError));
         error->set_allocated_msg(new std::string("Horrible error"));
 
         protos::Response resToReturn;
@@ -138,7 +138,7 @@ TEST_CASE("Cluster can be created normally")
         CHECK(err);
 
         PitayaError pErr = err.value();
-        CHECK(pErr.code == pitaya::kCodeInternalError);
+        CHECK(pErr.code == constants::kCodeInternalError);
         CHECK(pErr.msg == "Horrible error");
     }
 
