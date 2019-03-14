@@ -1,6 +1,7 @@
 #include "pitaya/cluster.h"
 #include "pitaya/constants.h"
 #include "pitaya/etcdv3_service_discovery.h"
+#include "pitaya/grpc/rpc_client.h"
 #include "pitaya/nats/rpc_client.h"
 #include "pitaya/nats/rpc_server.h"
 #include "pitaya/utils.h"
@@ -37,7 +38,7 @@ Cluster::Initialize(etcdv3_service_discovery::Config&& sdConfig,
 
 void
 Cluster::Initialize(Server server,
-                    std::unique_ptr<service_discovery::ServiceDiscovery> sd,
+                    std::shared_ptr<service_discovery::ServiceDiscovery> sd,
                     std::unique_ptr<RpcServer> rpcServer,
                     std::unique_ptr<RpcClient> rpcClient,
                     const char* loggerName)
@@ -72,7 +73,8 @@ Cluster::RPC(const string& route, protos::Request& req, protos::Response& ret)
         auto sv_type = r.server_type;
         auto servers = _sd->GetServersByType(sv_type);
         if (servers.size() < 1) {
-            return pitaya::PitayaError(constants::kCodeNotFound, "no servers found for route: " + route);
+            return pitaya::PitayaError(constants::kCodeNotFound,
+                                       "no servers found for route: " + route);
         }
         pitaya::Server sv = pitaya::utils::RandomServer(servers);
         return RPC(sv.id, route, req, ret);
