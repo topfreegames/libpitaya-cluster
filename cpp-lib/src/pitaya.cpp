@@ -1,5 +1,25 @@
 #include "pitaya.h"
 #include <boost/algorithm/string.hpp>
+#include <cpprest/json.h>
+
+namespace json = web::json;
+
+pitaya::Server::Server(const std::string& id,
+                       const std::string& type,
+                       const std::unordered_map<std::string, std::string>& metadata,
+                       const std::string& hostname,
+                       bool frontend)
+    : id(id)
+    , type(type)
+    , hostname(hostname)
+    , frontend(frontend)
+{
+    auto obj = json::value::object();
+    for (const auto& entry : metadata) {
+        obj[entry.first] = json::value::string(entry.second);
+    }
+    this->metadata = obj.serialize();
+}
 
 pitaya::Route::Route(const std::string& route_str)
 {

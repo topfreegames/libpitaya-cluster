@@ -4,10 +4,11 @@
 #include "protos/request.pb.h"
 #include "protos/response.pb.h"
 #include <string>
+#include <unordered_map>
 
 namespace pitaya {
 
-using RpcHandlerFunc = std::function<protos::Response(protos::Request)>;
+using RpcHandlerFunc = std::function<protos::Response(const protos::Request&)>;
 
 class PitayaException : public std::exception
 {
@@ -45,6 +46,12 @@ struct Server
     bool frontend;
 
     Server() {}
+    Server(const std::string& id,
+           const std::string& type,
+           const std::unordered_map<std::string, std::string>& metadata,
+           const std::string& hostname = "",
+           bool frontend = false);
+
     Server(const std::string& id,
            const std::string& type,
            const std::string& metadata,
