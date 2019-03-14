@@ -24,6 +24,7 @@ public:
 
     boost::optional<pitaya::Server> GetServerById(const std::string& id) override;
     std::vector<pitaya::Server> GetServersByType(const std::string& type) override;
+    void AddListener(service_discovery::Listener* listener) override;
 
 private:
     std::shared_ptr<spdlog::logger> _log;

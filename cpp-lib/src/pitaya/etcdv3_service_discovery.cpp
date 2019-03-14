@@ -55,5 +55,11 @@ Etcdv3ServiceDiscovery::GetServersByType(const std::string& type)
     return _worker.GetServersByType(type);
 }
 
+void
+Etcdv3ServiceDiscovery::AddListener(service_discovery::Listener* listener)
+{
+    _worker.AddListener(listener);
+}
+
 } // namespace etcdv3_service_discovery
 } // namespace pitaya
