@@ -3,6 +3,11 @@
 namespace pitaya {
 namespace utils {
 
+Ticker::~Ticker()
+{
+    Stop();
+}
+
 void
 Ticker::Start()
 {

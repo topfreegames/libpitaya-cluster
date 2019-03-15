@@ -18,6 +18,8 @@ public:
         , _callback(cb)
     {}
 
+    ~Ticker();
+
     void Start();
     void Stop();
 
