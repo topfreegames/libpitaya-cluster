@@ -98,10 +98,6 @@ Cluster::RPC(const string& server_id,
         return pitaya::PitayaError(constants::kCodeNotFound, "server not found");
     }
 
-    std::vector<uint8_t> buffer(req.ByteSizeLong());
-    req.SerializeToArray(buffer.data(), buffer.size());
-    req.set_type(::protos::RPCType::User);
-
     // TODO proper jaeger setup
     json::value metadata;
     metadata.object();
