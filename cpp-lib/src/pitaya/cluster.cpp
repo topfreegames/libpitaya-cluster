@@ -105,10 +105,11 @@ Cluster::RPC(const string& server_id,
     metadata[constants::kPeerServiceKey] = json::value::string(_server.type);
     string metadataStr = metadata.serialize();
     req.set_metadata(metadataStr);
+    req.set_type(::protos::RPCType::User);
 
     ret = _rpcClient->Call(sv.value(), req);
     if (ret.has_error()) {
-        _log->debug("Received error calling client rpc: {}", ret.error().msg());
+        _log->error("Received error calling client rpc: {}", ret.error().msg());
         return pitaya::PitayaError(ret.error().code(), ret.error().msg());
     }
 
