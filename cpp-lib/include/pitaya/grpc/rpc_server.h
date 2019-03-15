@@ -5,7 +5,9 @@
 #include "pitaya/rpc_server.h"
 #include "protos/request.pb.h"
 #include "protos/response.pb.h"
+
 #include "spdlog/logger.h"
+
 #include <grpcpp/server.h>
 
 class PitayaGrpcImpl;

@@ -1,7 +1,10 @@
 #include "pitaya/grpc/rpc_client.h"
+
 #include "pitaya/constants.h"
 #include "pitaya/utils/grpc.h"
+
 #include "spdlog/sinks/stdout_color_sinks.h"
+
 #include <assert.h>
 #include <cpprest/json.h>
 #include <grpcpp/create_channel.h>

@@ -11,6 +11,7 @@
 #include "pitaya/utils/sync_vector.h"
 #include "pitaya/utils/ticker.h"
 #include "spdlog/spdlog.h"
+
 #include <atomic>
 #include <boost/optional.hpp>
 #include <chrono>

@@ -1,6 +1,9 @@
 #include "pitaya/utils/grpc.h"
+
 #include "pitaya/constants.h"
+
 #include "spdlog/fmt/fmt.h"
+
 #include <cpprest/json.h>
 
 namespace pitaya {

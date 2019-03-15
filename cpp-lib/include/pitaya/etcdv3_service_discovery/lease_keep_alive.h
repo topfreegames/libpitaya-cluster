@@ -2,6 +2,7 @@
 #define PITAYA_ETCDV3_SERVICE_DISCOVERY_LEASE_KEEP_ALIVE_H
 
 #include "spdlog/spdlog.h"
+
 #include <etcd/Client.hpp>
 #include <functional>
 #include <future>

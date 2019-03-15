@@ -1,10 +1,13 @@
 #include "pitaya/nats/rpc_server.h"
-#include "nats/nats.h"
+
 #include "pitaya.h"
 #include "pitaya/utils.h"
 #include "protos/request.pb.h"
 #include "protos/response.pb.h"
+
 #include "spdlog/sinks/stdout_color_sinks.h"
+
+#include "nats/nats.h"
 #include <boost/format.hpp>
 #include <cstdio>
 #include <iostream>

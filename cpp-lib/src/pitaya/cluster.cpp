@@ -1,4 +1,5 @@
 #include "pitaya/cluster.h"
+
 #include "pitaya/constants.h"
 #include "pitaya/etcdv3_service_discovery.h"
 #include "pitaya/grpc/rpc_client.h"
@@ -6,6 +7,7 @@
 #include "pitaya/nats/rpc_server.h"
 #include "pitaya/utils.h"
 #include "protos/msg.pb.h"
+
 #include <cpprest/json.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 

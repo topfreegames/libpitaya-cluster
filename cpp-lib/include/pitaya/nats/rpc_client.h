@@ -7,6 +7,7 @@
 #include "protos/request.pb.h"
 #include "protos/response.pb.h"
 #include "spdlog/spdlog.h"
+
 #include <nats/nats.h>
 #include <string>
 

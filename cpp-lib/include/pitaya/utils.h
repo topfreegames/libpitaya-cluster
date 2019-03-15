@@ -2,6 +2,7 @@
 #define PITAYA_UTILS_H
 
 #include "pitaya.h"
+
 #include <string>
 
 namespace pitaya {

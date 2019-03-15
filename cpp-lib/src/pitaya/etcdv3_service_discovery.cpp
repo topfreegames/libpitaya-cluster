@@ -1,7 +1,10 @@
 #include "pitaya/etcdv3_service_discovery.h"
+
 #include "pitaya/etcdv3_service_discovery/lease_keep_alive.h"
 #include "pitaya/utils/string_utils.h"
+
 #include "spdlog/sinks/stdout_color_sinks.h"
+
 #include <algorithm>
 
 using std::cerr;

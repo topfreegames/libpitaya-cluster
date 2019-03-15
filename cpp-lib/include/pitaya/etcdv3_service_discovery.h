@@ -1,15 +1,15 @@
 #ifndef PITAYA_ETCDV3_SERVICE_DISCOVERY_H
 #define PITAYA_ETCDV3_SERVICE_DISCOVERY_H
 
-#include <memory>
-#include <string>
-
 #include "pitaya.h"
 #include "pitaya/etcdv3_service_discovery/config.h"
 #include "pitaya/etcdv3_service_discovery/worker.h"
 #include "pitaya/service_discovery.h"
 #include "spdlog/spdlog.h"
+
 #include <boost/optional.hpp>
+#include <memory>
+#include <string>
 
 namespace pitaya {
 namespace etcdv3_service_discovery {

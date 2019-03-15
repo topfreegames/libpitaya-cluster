@@ -1,9 +1,12 @@
 #include "pitaya/grpc/rpc_server.h"
+
 #include "pitaya/constants.h"
 #include "pitaya/utils/grpc.h"
 #include "protos/pitaya.grpc.pb.h"
 #include "spdlog/spdlog.h"
+
 #include "spdlog/sinks/stdout_color_sinks.h"
+
 #include <cpprest/json.h>
 #include <functional>
 #include <grpcpp/server_builder.h>

@@ -9,6 +9,7 @@
 #include "pitaya/service_discovery.h"
 #include "protos/msg.pb.h"
 #include "protos/request.pb.h"
+
 #include <chrono>
 #include <exception>
 #include <iostream>
@@ -51,10 +52,12 @@ main()
     auto logger = spdlog::stdout_color_mt("main");
     logger->set_level(spdlog::level::debug);
 
-    Server server("someid", "sometype", {
-        {"grpc-host", "127.0.0.1"},
-        {"grpc-port", "58000"},
-    });
+    Server server("someid",
+                  "sometype",
+                  {
+                      { "grpc-host", "127.0.0.1" },
+                      { "grpc-port", "58000" },
+                  });
     NatsConfig natsConfig("nats://localhost:4222", 1000, 3000, 3, 100);
 
     etcdv3_service_discovery::Config sdConfig;

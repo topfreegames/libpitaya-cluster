@@ -1,5 +1,7 @@
 #include "pitaya/etcdv3_service_discovery/lease_keep_alive.h"
+
 #include "spdlog/sinks/stdout_color_sinks.h"
+
 #include <chrono>
 
 using std::chrono::seconds;
