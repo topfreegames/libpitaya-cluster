@@ -3,6 +3,8 @@
 
 #include "protos/request.pb.h"
 #include "protos/response.pb.h"
+
+#include <ostream>
 #include <string>
 #include <unordered_map>
 
@@ -68,7 +70,25 @@ struct Server
         , type(type)
         , frontend(false)
     {}
+
+    bool operator==(const Server& sv) const
+    {
+        return id == sv.id && type == sv.type && metadata == sv.metadata &&
+               hostname == sv.hostname && frontend == sv.frontend;
+    }
 };
 
 } // namespace pitaya
+
+inline std::ostream&
+operator<<(std::ostream& out, const pitaya::Server& s)
+{
+    if (out.good()) {
+        out << "Server { id = " << s.id << ", type = " << s.type << ", metadata = " << s.metadata
+            << ", hostname = " << s.hostname << ", frontend = " << (s.frontend ? "true" : "false")
+            << " }";
+    }
+    return out;
+}
+
 #endif // PITAYA_H
