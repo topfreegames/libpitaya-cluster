@@ -1,147 +1,172 @@
-#include "doctest.h"
-#include "trompeloeil.hpp"
-#include <boost/optional.hpp>
-#include <boost/optional/optional_io.hpp>
-#include <memory>
+#include "pitaya/cluster.h"
+#include "pitaya/constants.h"
 
 #include "mock_rpc_client.h"
 #include "mock_rpc_server.h"
 #include "mock_service_discovery.h"
-#include "pitaya/cluster.h"
-#include "pitaya/constants.h"
-
-extern template struct trompeloeil::reporter<trompeloeil::specialized>;
+#include <boost/optional.hpp>
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
+#include <memory>
+#include <thread>
 
 using namespace pitaya;
+using namespace ::testing;
 using boost::optional;
 using pitaya::service_discovery::ServiceDiscovery;
-using trompeloeil::_;
 
 protos::Response RpcFunc(protos::Request)
 {
     return protos::Response();
 }
 
-TEST_CASE("Cluster can be created normally")
+class ClusterTest : public ::testing::Test
 {
-    auto mockSd = new MockServiceDiscovery();
-    auto mockRpcSv = new MockRpcServer(RpcFunc);
-    auto mockRpcClient = new MockRpcClient();
-    Server server;
-    server.frontend = false;
-    server.id = "my-server-id";
-    server.type = "connector";
-
-    pitaya::Cluster::Instance().Initialize(server,
-                                           std::unique_ptr<ServiceDiscovery>(mockSd),
-                                           std::unique_ptr<RpcServer>(mockRpcSv),
-                                           std::unique_ptr<RpcClient>(mockRpcClient));
-
-    SUBCASE("RPCs can be done successfuly")
+public:
+    void SetUp() override
     {
-        Server serverToReturn;
-        serverToReturn.frontend = false;
-        serverToReturn.hostname = "random-host";
-        serverToReturn.id = "my-server-id";
-        serverToReturn.type = "connector";
+        _mockSd = new MockServiceDiscovery();
+        _mockRpcSv = new MockRpcServer(RpcFunc);
+        _mockRpcClient = new MockRpcClient();
 
-        trompeloeil::sequence seq;
+        _server = Server();
+        _server.frontend = false;
+        _server.id = "my-server-id";
+        _server.type = "connector";
 
-        REQUIRE_CALL(*mockSd, GetServerById("my-server-id"))
-            .RETURN(serverToReturn)
-            .IN_SEQUENCE(seq);
+        pitaya::Cluster::Instance().Initialize(_server,
+                                               std::shared_ptr<ServiceDiscovery>(_mockSd),
+                                               std::unique_ptr<RpcServer>(_mockRpcSv),
+                                               std::unique_ptr<RpcClient>(_mockRpcClient));
 
-        protos::Response internalRes;
-        internalRes.set_data("ABACATE");
-
-        protos::Response resToReturn;
-        resToReturn.set_data(internalRes.SerializeAsString());
-
-        REQUIRE_CALL(*mockRpcClient, Call(_, ANY(const protos::Request&)))
-            .RETURN(resToReturn)
-            .IN_SEQUENCE(seq);
-
-        auto msg = new protos::Msg();
-        msg->set_data("hello my friend");
-        msg->set_route("someroute");
-
-        protos::Request req;
-        req.set_allocated_msg(msg);
-
-        protos::Response res;
-
-        optional<PitayaError> err =
-            Cluster::Instance().RPC("my-server-id", "mytest.route", req, res);
-
-        CHECK(!err);
+        spdlog::set_level(spdlog::level::critical);
     }
 
-    SUBCASE("RPC fails when no server is found")
-    {
-        REQUIRE_CALL(*mockSd, GetServerById("my-server-id")).RETURN(boost::none);
+    void TearDown() override { pitaya::Cluster::Instance().Terminate(); }
 
-        auto msg = new protos::Msg();
-        msg->set_data("hello my friend");
-        msg->set_route("someroute");
+protected:
+    Server _server;
+    MockServiceDiscovery* _mockSd;
+    MockRpcServer* _mockRpcSv;
+    MockRpcClient* _mockRpcClient;
+};
 
-        protos::Request req;
-        req.set_allocated_msg(msg);
+static std::thread gCallbackThread;
 
-        protos::Response res;
+ACTION_TEMPLATE(ExecuteCallback, HAS_1_TEMPLATE_PARAMS(unsigned, Index), AND_2_VALUE_PARAMS(a, b))
+{
+    auto fn = std::get<Index>(args);
 
-        optional<PitayaError> err =
-            Cluster::Instance().RPC("my-server-id", "mytest.route", req, res);
-
-        CHECK(err);
-
-        PitayaError pErr = err.value();
-        CHECK(pErr.code == constants::kCodeNotFound);
+    if (gCallbackThread.joinable()) {
+        gCallbackThread.join();
     }
 
-    SUBCASE("RPC returns error when the call fails")
-    {
-        Server serverToReturn;
-        serverToReturn.frontend = false;
-        serverToReturn.hostname = "random-host";
-        serverToReturn.id = "my-server-id";
-        serverToReturn.type = "connector";
-
-        trompeloeil::sequence seq;
-
-        REQUIRE_CALL(*mockSd, GetServerById("my-server-id"))
-            .RETURN(serverToReturn)
-            .IN_SEQUENCE(seq);
-
-        auto error = new protos::Error();
-        error->set_allocated_code(new std::string(constants::kCodeInternalError));
-        error->set_allocated_msg(new std::string("Horrible error"));
-
-        protos::Response resToReturn;
-        resToReturn.set_allocated_error(error);
-
-        REQUIRE_CALL(*mockRpcClient, Call(_, ANY(const protos::Request&)))
-            .RETURN(resToReturn)
-            .IN_SEQUENCE(seq);
-
-        auto msg = new protos::Msg();
-        msg->set_data("hello my friend");
-        msg->set_route("someroute");
-
-        protos::Request req;
-        req.set_allocated_msg(msg);
-
-        protos::Response res;
-
-        optional<PitayaError> err =
-            Cluster::Instance().RPC("my-server-id", "mytest.route", req, res);
-
-        CHECK(err);
-
-        PitayaError pErr = err.value();
-        CHECK(pErr.code == constants::kCodeInternalError);
-        CHECK(pErr.msg == "Horrible error");
-    }
-
-    Cluster::Instance().Terminate();
-    //    spdlog::drop_all();
+    gCallbackThread = std::thread([=] { fn(a, b); });
 }
+
+TEST_F(ClusterTest, RpcsCanBeDoneSuccessfuly)
+{
+    Server serverToReturn;
+    serverToReturn.frontend = false;
+    serverToReturn.hostname = "random-host";
+    serverToReturn.id = "my-server-id";
+    serverToReturn.type = "connector";
+
+    Sequence seq;
+
+    EXPECT_CALL(*_mockSd, GetServerById("my-server-id"))
+        .InSequence(seq)
+        .WillOnce(Return(serverToReturn));
+
+    protos::Response resToReturn;
+    resToReturn.set_data("ABACATE");
+
+    EXPECT_CALL(
+        *_mockRpcClient,
+        Call(Eq(serverToReturn), Property(&protos::Request::type, Eq(protos::RPCType::User))))
+        .InSequence(seq)
+        .WillOnce(Return(resToReturn));
+
+    auto msg = new protos::Msg();
+    msg->set_data("hello my friend");
+    msg->set_route("sometype.handler.method");
+
+    protos::Request req;
+    req.set_allocated_msg(msg);
+
+    protos::Response res;
+
+    optional<PitayaError> err = Cluster::Instance().RPC("my-server-id", "mytest.route", req, res);
+
+    EXPECT_FALSE(err);
+}
+
+TEST_F(ClusterTest, FailsWhenNoServerIsFound)
+{
+    EXPECT_CALL(*_mockSd, GetServerById("my-server-id")).WillOnce(Return(boost::none));
+
+    auto msg = new protos::Msg();
+    msg->set_data("hello my friend");
+    msg->set_route("someroute");
+
+    protos::Request req;
+    req.set_allocated_msg(msg);
+
+    protos::Response res;
+
+    optional<PitayaError> err = Cluster::Instance().RPC("my-server-id", "mytest.route", req, res);
+
+    EXPECT_TRUE(err);
+
+    PitayaError pErr = err.value();
+    EXPECT_EQ(pErr.code, constants::kCodeNotFound);
+}
+
+TEST_F(ClusterTest, RpcReturnsErrorWhenTheCallFails)
+{
+    Server serverToReturn;
+    serverToReturn.frontend = false;
+    serverToReturn.hostname = "random-host";
+    serverToReturn.id = "my-server-id";
+    serverToReturn.type = "connector";
+
+    Sequence seq;
+
+    EXPECT_CALL(*_mockSd, GetServerById(Eq("my-server-id")))
+        .InSequence(seq)
+        .WillOnce(Return(serverToReturn));
+
+    protos::Response resToReturn;
+    {
+        auto error = new protos::Error();
+        error->set_code(constants::kCodeInternalError);
+        error->set_msg("Horrible error");
+        resToReturn.set_allocated_error(error);
+    }
+
+    EXPECT_CALL(
+        *_mockRpcClient,
+        Call(Eq(serverToReturn), Property(&protos::Request::type, Eq(protos::RPCType::User))))
+        .InSequence(seq)
+        .WillOnce(Return(resToReturn));
+
+    auto msg = new protos::Msg();
+    msg->set_data("hello my friend");
+    msg->set_route("someroute");
+
+    protos::Request req;
+    req.set_allocated_msg(msg);
+
+    protos::Response res;
+
+    optional<PitayaError> err = Cluster::Instance().RPC("my-server-id", "mytest.route", req, res);
+
+    ASSERT_TRUE(err);
+
+    PitayaError pErr = err.value();
+    EXPECT_EQ(pErr.code, constants::kCodeInternalError);
+    EXPECT_EQ(pErr.msg, "Horrible error");
+}
+//
+// Cluster::Instance().Terminate();
+////    spdlog::drop_all();

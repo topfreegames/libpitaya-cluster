@@ -3,12 +3,13 @@
 
 #include "pitaya.h"
 #include "pitaya/rpc_client.h"
-#include "trompeloeil.hpp"
+
+#include <gmock/gmock.h>
 
 class MockRpcClient : public pitaya::RpcClient
 {
 public:
-    MAKE_MOCK2(Call, protos::Response(const pitaya::Server&, const protos::Request&), override);
+    MOCK_METHOD2(Call, protos::Response(const pitaya::Server&, const protos::Request&));
 };
 
 #endif // MOCK_RPC_CLIENT_H

@@ -148,6 +148,8 @@ if(BUILD_TESTING AND NOT BUILD_MACOSX_BUNDLE)
       PROPERTIES
 	CXX_STANDARD 11)
 
+    find_package(gtest REQUIRED)
+
     #==============================
     # Enable tests
     #==============================
@@ -156,6 +158,7 @@ if(BUILD_TESTING AND NOT BUILD_MACOSX_BUNDLE)
         test/mock_rpc_client.h
         test/mock_rpc_server.h
         test/cluster_test.cpp
+        test/ticker_test.cpp
         test/main_test.cpp)
 
     set_target_properties(pitaya_cluster_tests PROPERTIES
@@ -165,7 +168,8 @@ if(BUILD_TESTING AND NOT BUILD_MACOSX_BUNDLE)
     target_link_libraries(pitaya_cluster_tests
       PRIVATE
         pitaya_cluster
-	    Boost::boost)
+	    Boost::boost
+        CONAN_PKG::gtest)
 
     add_test(tests tests)
 endif()
