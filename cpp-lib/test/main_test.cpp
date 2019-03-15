@@ -1,4 +1,7 @@
 #include <gtest/gtest.h>
+#include <thread>
+
+std::thread gCallbackThread;
 
 int
 main(int argc, char* argv[])

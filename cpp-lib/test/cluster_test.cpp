@@ -1,3 +1,5 @@
+#include "test_common.h"
+
 #include "pitaya/cluster.h"
 #include "pitaya/constants.h"
 
@@ -5,18 +7,17 @@
 #include "mock_rpc_server.h"
 #include "mock_service_discovery.h"
 #include <boost/optional.hpp>
-#include <gmock/gmock.h>
-#include <gtest/gtest.h>
 #include <memory>
-#include <thread>
 
 using namespace pitaya;
 using namespace ::testing;
 using boost::optional;
 using pitaya::service_discovery::ServiceDiscovery;
 
-protos::Response RpcFunc(protos::Request)
+protos::Response
+RpcFunc(protos::Request req)
 {
+    (void)req;
     return protos::Response();
 }
 
@@ -50,19 +51,6 @@ protected:
     MockRpcServer* _mockRpcSv;
     MockRpcClient* _mockRpcClient;
 };
-
-static std::thread gCallbackThread;
-
-ACTION_TEMPLATE(ExecuteCallback, HAS_1_TEMPLATE_PARAMS(unsigned, Index), AND_2_VALUE_PARAMS(a, b))
-{
-    auto fn = std::get<Index>(args);
-
-    if (gCallbackThread.joinable()) {
-        gCallbackThread.join();
-    }
-
-    gCallbackThread = std::thread([=] { fn(a, b); });
-}
 
 TEST_F(ClusterTest, RpcsCanBeDoneSuccessfuly)
 {
@@ -167,6 +155,3 @@ TEST_F(ClusterTest, RpcReturnsErrorWhenTheCallFails)
     EXPECT_EQ(pErr.code, constants::kCodeInternalError);
     EXPECT_EQ(pErr.msg, "Horrible error");
 }
-//
-// Cluster::Instance().Terminate();
-////    spdlog::drop_all();

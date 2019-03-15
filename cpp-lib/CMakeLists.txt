@@ -154,6 +154,7 @@ if(BUILD_TESTING AND NOT BUILD_MACOSX_BUNDLE)
     # Enable tests
     #==============================
     add_executable(pitaya_cluster_tests
+        test/test_common.h
         test/mock_service_discovery.h
         test/mock_rpc_client.h
         test/mock_rpc_server.h

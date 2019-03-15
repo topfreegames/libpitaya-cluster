@@ -62,6 +62,8 @@ ForEachMacros:
   - BOOST_FOREACH
 IncludeBlocks:   Regroup
 IncludeCategories:
+  - Regex:           '^"test_common.h"'
+    Priority:        -1
   - Regex:           '^"(pitaya|protos)/|spdlog/spdlog.h|pitaya.h'
     Priority:        1
   - Regex:           '^"spdlog/.+"'
