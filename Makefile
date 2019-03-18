@@ -13,7 +13,7 @@ build-cpp-unity:
 
 build-all: nuget-clean build-csharp-lib-release build-cpp-unity
 
-pack-only:
+pack-only:nuget-clean
 	@cd NugetOutput && nuget pack *.nuspec -OutputDirectory .
 
 pack: nuget-clean build-all
