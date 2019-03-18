@@ -2,6 +2,7 @@
 #define PITAYA_ETCDV3_SERVICE_DISCOVERY_H
 
 #include "pitaya.h"
+#include "pitaya/etcd_client.h"
 #include "pitaya/etcdv3_service_discovery/config.h"
 #include "pitaya/service_discovery.h"
 #include "spdlog/spdlog.h"
@@ -20,6 +21,7 @@ class Etcdv3ServiceDiscovery : public service_discovery::ServiceDiscovery
 public:
     Etcdv3ServiceDiscovery(const Config& config,
                            const pitaya::Server& server,
+                           std::unique_ptr<EtcdClient> etcdClient,
                            const char* loggerName = nullptr);
     ~Etcdv3ServiceDiscovery();
 

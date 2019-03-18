@@ -19,15 +19,14 @@ namespace etcdv3_service_discovery {
 static string ServerAsJson(const Server& server);
 static string GetServerKey(const std::string& serverId, const std::string& serverType);
 
-Worker::Worker(const Config& config, pitaya::Server server, const char* loggerName) try
+Worker::Worker(const Config& config,
+               pitaya::Server server,
+               std::unique_ptr<EtcdClient> etcdClient,
+               const char* loggerName) try
     : _config(config)
     , _workerExiting(false)
     , _server(std::move(server))
-    , _etcdClient(new EtcdClientV3(config.endpoints,
-                                   config.etcdPrefix,
-                                   std::bind(&Worker::OnWatch, this, _1),
-                                   config.logHeartbeat,
-                                   loggerName))
+    , _etcdClient(std::move(etcdClient))
     , _log(spdlog::get(loggerName)->clone("service_discovery_worker"))
     , _numKeepAliveRetriesLeft(3)
     , _syncServersTicker(config.syncServersIntervalSec, std::bind(&Worker::SyncServers, this)) {
@@ -36,6 +35,7 @@ Worker::Worker(const Config& config, pitaya::Server server, const char* loggerNa
         _log->debug("Will synchronize servers every {} seconds",
                     _config.syncServersIntervalSec.count());
     }
+    _etcdClient->Watch(std::bind(&Worker::OnWatch, this, _1));
     _workerThread = std::thread(&Worker::StartThread, this);
 } catch (const etcd::watch_error& exc) {
     throw PitayaException(

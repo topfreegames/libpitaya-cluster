@@ -32,7 +32,7 @@ Cluster::Initialize(etcdv3_service_discovery::Config&& sdConfig,
 {
     Initialize(server,
                std::unique_ptr<ServiceDiscovery>(
-                   new Etcdv3ServiceDiscovery(std::move(sdConfig), server, loggerName)),
+                   new Etcdv3ServiceDiscovery(std::move(sdConfig), server, std::unique_ptr<EtcdClient>(new EtcdClientV3(sdConfig.endpoints, sdConfig.etcdPrefix, sdConfig.logHeartbeat, loggerName)), loggerName)),
                std::unique_ptr<RpcServer>(
                    new nats::NatsRpcServer(server, natsConfig, rpcServerHandlerFunc, loggerName)),
                std::unique_ptr<RpcClient>(new nats::NatsRpcClient(server, natsConfig, loggerName)));
