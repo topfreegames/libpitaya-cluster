@@ -4,6 +4,7 @@
 #include "protos/request.pb.h"
 #include "protos/response.pb.h"
 
+#include <functional>
 #include <ostream>
 #include <string>
 #include <unordered_map>
