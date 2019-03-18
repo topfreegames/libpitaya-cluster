@@ -41,9 +41,6 @@ add_subdirectory(deps/etcd-cpp-apiv3 EXCLUDE_FROM_ALL)
 set(NATS_BUILD_STREAMING OFF CACHE BOOL "")
 add_subdirectory(deps/cnats-1.8.0 EXCLUDE_FROM_ALL)
 
-file(GLOB protobuf_files
-  "include/protos/*")
-
 option(BUILD_MACOSX_BUNDLE "Should build a bundle for Macosx" OFF)
 
 if(BUILD_MACOSX_BUNDLE)
@@ -53,6 +50,9 @@ else()
     set(LIB_TYPE SHARED)
 endif()
 
+file(GLOB protobuf_files
+    "include/protos/*")
+
 add_library(pitaya_cluster ${LIB_TYPE}
     include/pitaya.h
     include/pitaya/constants.h
@@ -61,9 +61,7 @@ add_library(pitaya_cluster ${LIB_TYPE}
 
     include/pitaya/service_discovery.h
     include/pitaya/etcdv3_service_discovery.h
-    include/pitaya/etcdv3_service_discovery/worker.h
     include/pitaya/etcdv3_service_discovery/config.h
-    include/pitaya/etcdv3_service_discovery/lease_keep_alive.h
 
     include/pitaya/rpc_client.h
     include/pitaya/rpc_server.h
@@ -82,7 +80,7 @@ add_library(pitaya_cluster ${LIB_TYPE}
     src/pitaya.cpp
     src/pitaya/etcdv3_service_discovery.cpp
     src/pitaya/etcdv3_service_discovery/worker.cpp
-    src/pitaya/etcdv3_service_discovery/lease_keep_alive.cpp
+    src/pitaya/etcdv3_service_discovery/worker.h
     src/pitaya/nats/rpc_server.cpp
     src/pitaya/nats/rpc_client.cpp
     src/pitaya/grpc/rpc_client.cpp
@@ -95,21 +93,22 @@ add_library(pitaya_cluster ${LIB_TYPE}
     src/pitaya/utils/string_utils.h
     src/pitaya/utils/ticker.cpp
     src/pitaya/c_wrapper.cpp
+    src/pitaya/etcd_lease_keep_alive.h
+    src/pitaya/etcd_lease_keep_alive.cpp
+    src/pitaya/etcd_client.h
+    src/pitaya/etcd_client.cpp
     # Include protobuf-c
     deps/protobuf-c/protobuf-c/protobuf-c.c
     deps/protobuf-c/protobuf-c/protobuf-c.h
-    ${protobuf_files}
-    )
+    ${protobuf_files})
 
 add_library(pitaya::pitaya_cluster ALIAS pitaya_cluster)
 
 if(BUILD_MACOSX_BUNDLE)
     message(STATUS "Setting properties for MacOSX bundle")
     set_target_properties(pitaya_cluster
-        PROPERTIES
-            SUFFIX ".bundle"
-            #BUNDLE TRUE
-            )
+      PROPERTIES
+        SUFFIX ".bundle")
 endif()
 
 set_target_properties(pitaya_cluster
@@ -139,28 +138,30 @@ if(BUILD_TESTING AND NOT BUILD_MACOSX_BUNDLE)
     # ===============================
     # Add example
     # ===============================
-    add_executable(main
-	src/pitaya_cluster.cpp)
+    add_executable(main src/pitaya_cluster.cpp)
 
     target_link_libraries(main PRIVATE pitaya_cluster)
 
-    set_target_properties(main
-      PROPERTIES
-	CXX_STANDARD 11)
-
-    find_package(gtest REQUIRED)
+    set_target_properties(main PROPERTIES CXX_STANDARD 11)
 
     #==============================
     # Enable tests
     #==============================
+    find_package(gtest REQUIRED)
+    find_package(Boost REQUIRED COMPONENTS system thread)
+
     add_executable(pitaya_cluster_tests
         test/test_common.h
         test/mock_service_discovery.h
         test/mock_rpc_client.h
         test/mock_rpc_server.h
+        test/mock_etcd_client.h
         test/cluster_test.cpp
         test/ticker_test.cpp
+        test/etcdv3_service_discovery_test.cpp
         test/main_test.cpp)
+
+    target_include_directories(pitaya_cluster_tests PUBLIC src)
 
     set_target_properties(pitaya_cluster_tests PROPERTIES
         CXX_STANDARD 14
@@ -169,7 +170,9 @@ if(BUILD_TESTING AND NOT BUILD_MACOSX_BUNDLE)
     target_link_libraries(pitaya_cluster_tests
       PRIVATE
         pitaya_cluster
-	    Boost::boost
+        Boost::boost
+        Boost::system
+        Boost::thread
         CONAN_PKG::gtest)
 
     add_test(tests tests)

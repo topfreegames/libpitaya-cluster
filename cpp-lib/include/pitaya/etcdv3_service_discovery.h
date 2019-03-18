@@ -3,7 +3,6 @@
 
 #include "pitaya.h"
 #include "pitaya/etcdv3_service_discovery/config.h"
-#include "pitaya/etcdv3_service_discovery/worker.h"
 #include "pitaya/service_discovery.h"
 #include "spdlog/spdlog.h"
 
@@ -13,6 +12,8 @@
 
 namespace pitaya {
 namespace etcdv3_service_discovery {
+
+class Worker;
 
 class Etcdv3ServiceDiscovery : public service_discovery::ServiceDiscovery
 {
@@ -28,7 +29,7 @@ public:
 
 private:
     std::shared_ptr<spdlog::logger> _log;
-    Worker _worker;
+    std::unique_ptr<Worker> _worker;
 };
 
 } // namespace etcdv3_service_discovery

@@ -1,4 +1,4 @@
-#include "pitaya/etcdv3_service_discovery/lease_keep_alive.h"
+#include "pitaya/etcd_lease_keep_alive.h"
 
 #include "spdlog/sinks/stdout_color_sinks.h"
 
@@ -7,9 +7,8 @@
 using std::chrono::seconds;
 
 namespace pitaya {
-namespace etcdv3_service_discovery {
 
-LeaseKeepAlive::LeaseKeepAlive(etcd::Client& client, bool shouldLog, const char* loggerName)
+EtcdLeaseKeepAlive::EtcdLeaseKeepAlive(etcd::Client& client, bool shouldLog, const char* loggerName)
     : _running(false)
     , _log(spdlog::get(loggerName)->clone("lease_keep_alive"))
     , _shouldLog(shouldLog)
@@ -19,12 +18,12 @@ LeaseKeepAlive::LeaseKeepAlive(etcd::Client& client, bool shouldLog, const char*
     , _doneFuture(_donePromise.get_future())
 {}
 
-pplx::task<etcdv3_service_discovery::LeaseKeepAliveStatus>
-LeaseKeepAlive::Start()
+pplx::task<EtcdLeaseKeepAliveStatus>
+EtcdLeaseKeepAlive::Start()
 {
     if (_leaseId == -1) {
         _log->error("lease id is -1, not starting.");
-        return pplx::task_from_result(LeaseKeepAliveStatus::Fail);
+        return pplx::task_from_result(EtcdLeaseKeepAliveStatus::Fail);
     }
 
     _running = true;
@@ -32,23 +31,24 @@ LeaseKeepAlive::Start()
     _doneFuture = _donePromise.get_future();
 
     _log->info("Starting LeaseKeepAlive");
-    _runTask = pplx::create_task(std::bind(&LeaseKeepAlive::TickWrapper, this));
+    _runTask = pplx::create_task(std::bind(&EtcdLeaseKeepAlive::TickWrapper, this));
     return _runTask;
 }
 
 void
-LeaseKeepAlive::Stop()
+EtcdLeaseKeepAlive::Stop()
 {
     if (_running) {
         _running = false;
         _log->info("Stopping");
+        _client.stop_lease_keep_alive();
         _donePromise.set_value();
         _runTask.wait();
     }
 }
 
-LeaseKeepAliveStatus
-LeaseKeepAlive::TickWrapper()
+EtcdLeaseKeepAliveStatus
+EtcdLeaseKeepAlive::TickWrapper()
 {
     _log->info("Thread started: lease id: {}", _leaseId);
 
@@ -65,14 +65,14 @@ LeaseKeepAlive::TickWrapper()
                 _log->error("Failed to renew lease, stopping ({})", res.status.etcd_error_message);
             }
             _leaseId = -1;
-            return LeaseKeepAliveStatus::Fail;
+            return EtcdLeaseKeepAliveStatus::Fail;
         }
 
         if (res.value.ttl < 1) {
             if (_shouldLog)
                 _log->warn("Received TTL of {} seconds, stopping", res.value.ttl);
             _leaseId = -1;
-            return LeaseKeepAliveStatus::Fail;
+            return EtcdLeaseKeepAliveStatus::Fail;
         }
 
         auto waitFor = seconds{ static_cast<int>(res.value.ttl / 3.0f) };
@@ -87,14 +87,13 @@ LeaseKeepAlive::TickWrapper()
         status = _doneFuture.wait_for(waitFor);
     }
     _log->info("Stopped.");
-    return LeaseKeepAliveStatus::Ok;
+    return EtcdLeaseKeepAliveStatus::Ok;
 }
 
 void
-LeaseKeepAlive::SetLeaseId(int64_t leaseId)
+EtcdLeaseKeepAlive::SetLeaseId(int64_t leaseId)
 {
     _leaseId = leaseId;
 }
 
-} // namespace etcdv3_service_discovery
 } // namespace pitaya

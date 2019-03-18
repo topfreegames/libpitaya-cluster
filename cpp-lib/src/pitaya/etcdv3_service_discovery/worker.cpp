@@ -23,10 +23,12 @@ Worker::Worker(const Config& config, pitaya::Server server, const char* loggerNa
     : _config(config)
     , _workerExiting(false)
     , _server(std::move(server))
-    , _client(config.endpoints)
-    , _watcher(config.endpoints, config.etcdPrefix, std::bind(&Worker::OnWatch, this, _1))
+    , _etcdClient(new EtcdClientV3(config.endpoints,
+                                   config.etcdPrefix,
+                                   std::bind(&Worker::OnWatch, this, _1),
+                                   config.logHeartbeat,
+                                   loggerName))
     , _log(spdlog::get(loggerName)->clone("service_discovery_worker"))
-    , _leaseKeepAlive(_client, config.logHeartbeat, loggerName)
     , _numKeepAliveRetriesLeft(3)
     , _syncServersTicker(config.syncServersIntervalSec, std::bind(&Worker::SyncServers, this)) {
 
@@ -70,7 +72,7 @@ Worker::Shutdown()
 {
     _log->info("Shutting down");
     _workerExiting = true;
-    _leaseKeepAlive.Stop();
+    _etcdClient->StopLeaseKeepAlive();
     _log->debug("Stopping servers ticker");
     _syncServersTicker.Stop();
     _log->debug("Servers ticker stopped");
@@ -81,14 +83,10 @@ Worker::StartThread()
 {
     _log->info("Thread started");
 
-    auto status = Init();
+    bool ok = Init();
 
-    if (!status.is_ok()) {
-        if (status.etcd_error_code == etcd::StatusCode::UNDERLYING_GRPC_ERROR) {
-            throw PitayaException("gRPC init error: " + status.grpc_error_message);
-        } else {
-            throw PitayaException("etcd init error: " + status.etcd_error_message);
-        }
+    if (!ok) {
+        throw PitayaException("Initialization failed");
     }
 
     // Notify main thread that the worker is initialized.
@@ -108,13 +106,13 @@ Worker::StartThread()
         switch (info) {
             case JobInfo::EtcdReconnectionFailure:
                 _log->error("Reconnection failure, {} retries left!", _numKeepAliveRetriesLeft);
-                _client.stop_lease_keep_alive();
+                _etcdClient->StopLeaseKeepAlive();
                 _syncServersTicker.Stop();
 
                 while (_numKeepAliveRetriesLeft > 0) {
                     --_numKeepAliveRetriesLeft;
-                    auto status = Bootstrap();
-                    if (status.is_ok()) {
+                    auto ok = Bootstrap();
+                    if (ok) {
                         _log->info("Etcd reconnection successful");
                         _numKeepAliveRetriesLeft = 3;
                         StartLeaseKeepAlive();
@@ -154,13 +152,12 @@ Worker::StartLeaseKeepAlive()
         return;
     }
 
-    _leaseKeepAlive.SetLeaseId(_leaseId);
-    _leaseKeepAlive.Start().then([this](LeaseKeepAliveStatus status) {
+    _etcdClient->LeaseKeepAlive(_leaseId, [this](EtcdLeaseKeepAliveStatus status) {
         switch (status) {
-            case LeaseKeepAliveStatus::Ok:
+            case EtcdLeaseKeepAliveStatus::Ok:
                 _log->info("lease keep alive exited with success");
                 break;
-            case LeaseKeepAliveStatus::Fail: {
+            case EtcdLeaseKeepAliveStatus::Fail: {
                 _log->error("lease keep alive failed!");
                 std::lock_guard<decltype(_jobQueue)> lock(_jobQueue);
                 _jobQueue.PushBack(JobInfo::EtcdReconnectionFailure);
@@ -171,67 +168,49 @@ Worker::StartLeaseKeepAlive()
     });
 }
 
-etcdv3::V3Status
+bool
 Worker::Init()
 {
-    auto status = Bootstrap();
-    if (!status.is_ok()) {
-        return status;
+    bool ok = Bootstrap();
+    if (!ok) {
+        return false;
     }
 
     StartLeaseKeepAlive();
     _syncServersTicker.Start();
-
-    return status;
+    return true;
 }
 
-etcdv3::V3Status
+bool
 Worker::Bootstrap()
 {
-    auto status = GrantLease();
+    LeaseGrantResponse res = _etcdClient->LeaseGrant(_config.heartbeatTTLSec);
 
-    if (!status.is_ok()) {
-        return status;
+    if (!res.ok) {
+        _log->error("Lease grant failed: " + res.errorMsg);
+        return false;
     }
 
-    return BootstrapServer(_server);
-}
-
-etcdv3::V3Status
-Worker::GrantLease()
-{
-    etcd::Response res = _client.leasegrant(_config.heartbeatTTLSec.count()).get();
-    if (!res.is_ok()) {
-        return res.status;
-    }
-
-    _leaseId = res.value.lease_id;
+    _leaseId = res.leaseId;
     _log->info("Got lease id: {}", _leaseId);
 
-    return std::move(res.status);
-}
-
-etcdv3::V3Status
-Worker::BootstrapServer(const Server& server)
-{
-    etcdv3::V3Status status;
-
-    status = AddServerToEtcd(server);
-    if (!status.is_ok()) {
-        return status;
+    // Now bootstrap the server by adding itself to the servers in etcd
+    // and synchronizing the remote servers locally.
+    auto ok = AddServerToEtcd(_server);
+    if (!ok) {
+        return false;
     }
 
     SyncServers();
-
-    return status;
+    return true;
 }
 
-etcdv3::V3Status
+bool
 Worker::AddServerToEtcd(const Server& server)
 {
     string key = fmt::format("{}{}", _config.etcdPrefix, GetServerKey(server.id, server.type));
-    etcd::Response res = _client.set(key, ServerAsJson(server), _leaseId).get();
-    return res.status;
+    SetResponse res = _etcdClient->Set(key, ServerAsJson(server), _leaseId);
+    return res.ok;
 }
 
 void
@@ -264,8 +243,8 @@ Worker::SyncServers()
     if (_config.logServerSync)
         _log->debug("Will synchronize servers");
 
-    etcd::Response res = _client.ls(_config.etcdPrefix).get();
-    if (!res.is_ok()) {
+    ListResponse res = _etcdClient->List(_config.etcdPrefix);
+    if (!res.ok) {
         _log->error("Error synchronizing servers");
         return;
     }
@@ -308,20 +287,14 @@ Worker::GetServerFromEtcd(const std::string& serverId, const std::string& server
     auto serverKey = fmt::format("{}{}", _config.etcdPrefix, GetServerKey(serverId, serverType));
 
     try {
-        etcd::Response res = _client.get(serverKey).get();
+        GetResponse res = _etcdClient->Get(serverKey);
 
-        if (!res.is_ok()) {
-            string info;
-            if (res.status.etcd_error_code == etcd::StatusCode::UNDERLYING_GRPC_ERROR) {
-                info = res.status.grpc_error_message;
-            } else {
-                info = res.status.etcd_error_message;
-            }
-            _log->error("Failed to get key {} from server: {}", serverKey, info);
+        if (!res.ok) {
+            _log->error("Failed to get key {} from server: {}", serverKey, res.errorMsg);
             return boost::none;
         }
 
-        return ParseServer(res.value.value);
+        return ParseServer(res.value);
     } catch (const std::exception& exc) {
         _log->error("Error in communication with server: {}", exc.what());
         return boost::none;
@@ -355,13 +328,11 @@ void
 Worker::RevokeLease()
 {
     _log->info("Revoking lease");
-    etcd::Response res = _client.lease_revoke(_leaseId).get();
-    if (res.is_ok()) {
+    LeaseRevokeResponse res = _etcdClient->LeaseRevoke(_leaseId);
+    if (res.ok) {
         _log->info("Lease revoked successfuly");
     } else {
-        _log->error("Failed to revoke lease: etcd = {}, grpc = {}",
-                    res.status.etcd_error_message,
-                    res.status.grpc_error_message);
+        _log->error("Failed to revoke lease: {}", res.errorMsg);
     }
 }
 
@@ -424,14 +395,14 @@ Worker::GetServersByType(const std::string& type)
 }
 
 void
-Worker::OnWatch(etcd::Response res)
+Worker::OnWatch(WatchResponse res)
 {
     if (_workerExiting) {
         _log->debug("Worker is exiting, ignoring OnWatch call");
         return;
     }
 
-    if (!res.is_ok()) {
+    if (!res.ok) {
         _log->error("OnWatch error");
         std::lock_guard<decltype(_jobQueue)> lock(_jobQueue);
         _jobQueue.PushBack(JobInfo::WatchError);
@@ -440,9 +411,9 @@ Worker::OnWatch(etcd::Response res)
     }
 
     if (res.action == "create") {
-        auto server = ParseServer(res.value.value);
+        auto server = ParseServer(res.value);
         if (!server) {
-            _log->error("Error parsing server: {}", res.value.value);
+            _log->error("Error parsing server: {}", res.value);
             return;
         }
 
@@ -450,8 +421,8 @@ Worker::OnWatch(etcd::Response res)
         PrintServers();
     } else if (res.action == "delete") {
         string serverType, serverId;
-        if (!ParseEtcdKey(res.value.key, serverType, serverId)) {
-            _log->error("Failed to parse key from etcd: {}", res.value.key);
+        if (!ParseEtcdKey(res.key, serverType, serverId)) {
+            _log->error("Failed to parse key from etcd: {}", res.key);
             return;
         }
 

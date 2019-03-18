@@ -1,5 +1,5 @@
-#ifndef PITAYA_ETCDV3_SERVICE_DISCOVERY_LEASE_KEEP_ALIVE_H
-#define PITAYA_ETCDV3_SERVICE_DISCOVERY_LEASE_KEEP_ALIVE_H
+#ifndef PITAYA_ETCD_LEASE_KEEP_ALIVE_H
+#define PITAYA_ETCD_LEASE_KEEP_ALIVE_H
 
 #include "spdlog/spdlog.h"
 
@@ -10,24 +10,23 @@
 #include <string>
 
 namespace pitaya {
-namespace etcdv3_service_discovery {
 
-enum class LeaseKeepAliveStatus
+enum class EtcdLeaseKeepAliveStatus
 {
     Ok,
-    Fail
+    Fail,
 };
 
-class LeaseKeepAlive
+class EtcdLeaseKeepAlive
 {
 public:
-    LeaseKeepAlive(etcd::Client& client, bool shouldLog, const char* loggerName);
-    pplx::task<LeaseKeepAliveStatus> Start();
+    EtcdLeaseKeepAlive(etcd::Client& client, bool shouldLog, const char* loggerName);
+    pplx::task<EtcdLeaseKeepAliveStatus> Start();
     void Stop();
     void SetLeaseId(int64_t leaseId);
 
 private:
-    LeaseKeepAliveStatus TickWrapper();
+    EtcdLeaseKeepAliveStatus TickWrapper();
 
 private:
     bool _running;
@@ -37,10 +36,9 @@ private:
     int64_t _leaseId;
     std::promise<void> _donePromise;
     std::shared_future<void> _doneFuture;
-    pplx::task<LeaseKeepAliveStatus> _runTask;
+    pplx::task<EtcdLeaseKeepAliveStatus> _runTask;
 };
 
-} // namespace etcdv3_service_discovery
 } // namespace pitaya
 
 #endif // SERVICE_DISCOVERY_LEASE_KEEP_ALIVE_H

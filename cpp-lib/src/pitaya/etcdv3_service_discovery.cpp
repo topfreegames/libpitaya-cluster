@@ -1,6 +1,7 @@
 #include "pitaya/etcdv3_service_discovery.h"
 
-#include "pitaya/etcdv3_service_discovery/lease_keep_alive.h"
+#include "pitaya/etcd_lease_keep_alive.h"
+#include "pitaya/etcdv3_service_discovery/worker.h"
 #include "pitaya/utils/string_utils.h"
 
 #include "spdlog/sinks/stdout_color_sinks.h"
@@ -30,13 +31,13 @@ Etcdv3ServiceDiscovery::Etcdv3ServiceDiscovery(const Config& config,
     : _log((loggerName && spdlog::get(loggerName))
                ? spdlog::get(loggerName)->clone("service_discovery")
                : spdlog::stdout_color_mt("service_discovery"))
-    , _worker(config, server, loggerName ? loggerName : "service_discovery")
+    , _worker(new Worker(config, server, loggerName ? loggerName : "service_discovery"))
 {
     if (server.id.empty() || server.type.empty()) {
         throw PitayaException("Server id and type cannot be empty");
     }
 
-    _worker.WaitUntilInitialized();
+    _worker->WaitUntilInitialized();
 }
 
 Etcdv3ServiceDiscovery::~Etcdv3ServiceDiscovery()
@@ -49,19 +50,19 @@ Etcdv3ServiceDiscovery::~Etcdv3ServiceDiscovery()
 boost::optional<pitaya::Server>
 Etcdv3ServiceDiscovery::GetServerById(const std::string& id)
 {
-    return _worker.GetServerById(id);
+    return _worker->GetServerById(id);
 }
 
 vector<Server>
 Etcdv3ServiceDiscovery::GetServersByType(const std::string& type)
 {
-    return _worker.GetServersByType(type);
+    return _worker->GetServersByType(type);
 }
 
 void
 Etcdv3ServiceDiscovery::AddListener(service_discovery::Listener* listener)
 {
-    _worker.AddListener(listener);
+    _worker->AddListener(listener);
 }
 
 } // namespace etcdv3_service_discovery

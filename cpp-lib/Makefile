@@ -28,8 +28,8 @@ build-linux:
 	@cmake --build _builds/linux
 
 build-mac:
-	@mkdir -p _builds/mac
-	@conan install -if _builds/mac .
+	@rm -rf _builds/mac
+	@conan install . -if _builds/mac
 	@cmake -H. -B_builds/mac -GNinja -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF -DBUILD_SHARED_LIBS=OFF
 	@cmake --build _builds/mac
 

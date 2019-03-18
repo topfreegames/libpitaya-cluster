@@ -2,8 +2,8 @@
 #define PITAYA_ETCDV3_SERVICE_DISCOVERY_WORKER_H
 
 #include "pitaya.h"
+#include "pitaya/etcd_client.h"
 #include "pitaya/etcdv3_service_discovery/config.h"
-#include "pitaya/etcdv3_service_discovery/lease_keep_alive.h"
 #include "pitaya/service_discovery.h"
 #include "pitaya/utils/semaphore.h"
 #include "pitaya/utils/sync_deque.h"
@@ -45,13 +45,11 @@ public:
 private:
     void Shutdown();
     void StartThread();
-    void OnWatch(etcd::Response res);
+    void OnWatch(WatchResponse res);
     void StartLeaseKeepAlive();
-    etcdv3::V3Status Init();
-    etcdv3::V3Status Bootstrap();
-    etcdv3::V3Status GrantLease();
-    etcdv3::V3Status BootstrapServer(const pitaya::Server& server);
-    etcdv3::V3Status AddServerToEtcd(const pitaya::Server& server);
+    bool Init();
+    bool Bootstrap();
+    bool AddServerToEtcd(const pitaya::Server& server);
     void AddServer(const pitaya::Server& server);
     void SyncServers();
     void PrintServers();
@@ -73,13 +71,13 @@ private:
 
     std::promise<void> _initPromise;
     pitaya::Server _server;
-    etcd::Client _client;
-    etcd::Watcher _watcher;
+
+    std::unique_ptr<EtcdClient> _etcdClient;
+
     int64_t _leaseId;
     std::shared_ptr<spdlog::logger> _log;
     std::thread _workerThread;
 
-    LeaseKeepAlive _leaseKeepAlive;
     int _numKeepAliveRetriesLeft;
 
     utils::Ticker _syncServersTicker;
