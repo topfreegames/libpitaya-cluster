@@ -2,13 +2,13 @@
 <package >
   <metadata>
     <id>LibPitayaServerCpp</id>
-    <version>0.3.10</version>
+    <version>0.4.0</version>
     <authors>leonardo</authors>
     <owners>leonardo</owners>
     <projectUrl>https://github.com/topfreegames/libpitaya-cluster</projectUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>Library that allows communication with other pitaya servers</description>
-    <releaseNotes>Build on linux with libstdc++ (fixes newest unity version crashes)</releaseNotes>
+    <releaseNotes>Add support for gRPC server and client</releaseNotes>
     <copyright>Copyright TFG 2018</copyright>
     <tags>pitaya libpitaya-cluster</tags>
     <dependencies>
