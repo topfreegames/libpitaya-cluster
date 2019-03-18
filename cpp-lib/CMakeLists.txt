@@ -62,6 +62,8 @@ add_library(pitaya_cluster ${LIB_TYPE}
     include/pitaya/service_discovery.h
     include/pitaya/etcdv3_service_discovery.h
     include/pitaya/etcdv3_service_discovery/config.h
+    include/pitaya/etcd_client.h
+    include/pitaya/etcd_lease_keep_alive.h
 
     include/pitaya/rpc_client.h
     include/pitaya/rpc_server.h
@@ -93,9 +95,7 @@ add_library(pitaya_cluster ${LIB_TYPE}
     src/pitaya/utils/string_utils.h
     src/pitaya/utils/ticker.cpp
     src/pitaya/c_wrapper.cpp
-    src/pitaya/etcd_lease_keep_alive.h
     src/pitaya/etcd_lease_keep_alive.cpp
-    src/pitaya/etcd_client.h
     src/pitaya/etcd_client.cpp
     # Include protobuf-c
     deps/protobuf-c/protobuf-c/protobuf-c.c
