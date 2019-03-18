@@ -32,7 +32,10 @@ Etcdv3ServiceDiscovery::Etcdv3ServiceDiscovery(const Config& config,
     : _log((loggerName && spdlog::get(loggerName))
                ? spdlog::get(loggerName)->clone("service_discovery")
                : spdlog::stdout_color_mt("service_discovery"))
-    , _worker(new Worker(config, server, std::move(etcdClient), loggerName ? loggerName : "service_discovery"))
+    , _worker(new Worker(config,
+                         server,
+                         std::move(etcdClient),
+                         loggerName ? loggerName : "service_discovery"))
 {
     if (server.id.empty() || server.type.empty()) {
         throw PitayaException("Server id and type cannot be empty");

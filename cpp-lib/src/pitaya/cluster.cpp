@@ -3,6 +3,7 @@
 #include "pitaya/constants.h"
 #include "pitaya/etcdv3_service_discovery.h"
 #include "pitaya/grpc/rpc_client.h"
+#include "pitaya/grpc/rpc_server.h"
 #include "pitaya/nats/rpc_client.h"
 #include "pitaya/nats/rpc_server.h"
 #include "pitaya/utils.h"
@@ -24,15 +25,38 @@ using etcdv3_service_discovery::Etcdv3ServiceDiscovery;
 using service_discovery::ServiceDiscovery;
 
 void
-Cluster::Initialize(etcdv3_service_discovery::Config&& sdConfig,
-                    nats::NatsConfig&& natsConfig,
-                    Server server,
-                    RpcHandlerFunc rpcServerHandlerFunc,
-                    const char* loggerName)
+Cluster::InitializeWithGrpc(etcdv3_service_discovery::Config&& sdConfig,
+                            Server server,
+                            RpcHandlerFunc rpcServerHandlerFunc,
+                            const char* loggerName)
+{
+    auto sd = std::shared_ptr<ServiceDiscovery>(new Etcdv3ServiceDiscovery(
+        std::move(sdConfig),
+        server,
+        std::unique_ptr<EtcdClient>(new EtcdClientV3(
+            sdConfig.endpoints, sdConfig.etcdPrefix, sdConfig.logHeartbeat, loggerName)),
+        loggerName));
+
+    Initialize(server,
+               sd,
+               std::unique_ptr<RpcServer>(new GrpcServer(server, rpcServerHandlerFunc, loggerName)),
+               std::unique_ptr<RpcClient>(new GrpcClient(sd, server, loggerName)));
+}
+
+void
+Cluster::InitializeWithNats(etcdv3_service_discovery::Config&& sdConfig,
+                            nats::NatsConfig&& natsConfig,
+                            Server server,
+                            RpcHandlerFunc rpcServerHandlerFunc,
+                            const char* loggerName)
 {
     Initialize(server,
-               std::unique_ptr<ServiceDiscovery>(
-                   new Etcdv3ServiceDiscovery(std::move(sdConfig), server, std::unique_ptr<EtcdClient>(new EtcdClientV3(sdConfig.endpoints, sdConfig.etcdPrefix, sdConfig.logHeartbeat, loggerName)), loggerName)),
+               std::shared_ptr<ServiceDiscovery>(new Etcdv3ServiceDiscovery(
+                   std::move(sdConfig),
+                   server,
+                   std::unique_ptr<EtcdClient>(new EtcdClientV3(
+                       sdConfig.endpoints, sdConfig.etcdPrefix, sdConfig.logHeartbeat, loggerName)),
+                   loggerName)),
                std::unique_ptr<RpcServer>(
                    new nats::NatsRpcServer(server, natsConfig, rpcServerHandlerFunc, loggerName)),
                std::unique_ptr<RpcClient>(new nats::NatsRpcClient(server, natsConfig, loggerName)));

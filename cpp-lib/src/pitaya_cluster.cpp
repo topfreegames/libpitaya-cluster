@@ -69,17 +69,7 @@ main()
     sdConfig.syncServersIntervalSec = std::chrono::seconds(20);
 
     try {
-        std::shared_ptr<ServiceDiscovery> serviceDiscovery =
-            std::make_shared<Etcdv3ServiceDiscovery>(std::move(sdConfig), server, "main");
-        auto rpcServer = std::unique_ptr<RpcServer>(new GrpcRpcServer(server, RpcHandler, "main"));
-        auto rpcClient =
-            std::unique_ptr<RpcClient>(new GrpcRpcClient(serviceDiscovery, server, "main"));
-
-        Cluster::Instance().Initialize(server,
-                                       std::move(serviceDiscovery),
-                                       std::move(rpcServer),
-                                       std::move(rpcClient),
-                                       "main");
+        Cluster::Instance().InitializeWithGrpc(std::move(sdConfig), server, RpcHandler, "main");
 
         {
             // INIT

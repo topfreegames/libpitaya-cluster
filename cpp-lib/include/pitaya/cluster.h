@@ -53,11 +53,16 @@ public:
                     std::unique_ptr<RpcClient> rpcClient,
                     const char* loggerName = nullptr);
 
-    void Initialize(etcdv3_service_discovery::Config&& sdConfig,
-                    nats::NatsConfig&& natsConfig,
-                    Server server,
-                    RpcHandlerFunc rpcServerHandlerFunc,
-                    const char* loggerName = nullptr);
+    void InitializeWithNats(etcdv3_service_discovery::Config&& sdConfig,
+                            nats::NatsConfig&& natsConfig,
+                            Server server,
+                            RpcHandlerFunc rpcServerHandlerFunc,
+                            const char* loggerName = nullptr);
+
+    void InitializeWithGrpc(etcdv3_service_discovery::Config&& sdConfig,
+                            Server server,
+                            RpcHandlerFunc rpcServerHandlerFunc,
+                            const char* loggerName = nullptr);
 
     void Terminate();
 

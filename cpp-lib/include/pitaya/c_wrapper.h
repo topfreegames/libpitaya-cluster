@@ -73,7 +73,8 @@ extern "C"
                              CNATSConfig* nc,
                              RpcPinvokeCb cb,
                              CsharpFreeCb freeCb,
-                             const char* logFile);
+                             const char* logFile,
+                             bool useGRPC);
 
     bool tfg_pitc_GetServerById(const char* serverId, CServer* retServer);
 

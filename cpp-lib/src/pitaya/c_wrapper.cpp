@@ -1,10 +1,17 @@
 #include "pitaya/c_wrapper.h"
+
 #include "pitaya/constants.h"
+#include "pitaya/etcdv3_service_discovery.h"
+#include "pitaya/grpc/rpc_client.h"
+#include "pitaya/grpc/rpc_server.h"
+#include "pitaya/nats/rpc_client.h"
 #include "pitaya/nats/rpc_server.h"
+
 #include "spdlog/logger.h"
 #include "spdlog/sinks/base_sink.h"
 #include "spdlog/sinks/basic_file_sink.h"
 #include "spdlog/sinks/stdout_color_sinks.h"
+
 #include <assert.h>
 #include <boost/optional.hpp>
 #include <chrono>
@@ -12,6 +19,8 @@
 
 using namespace std;
 using namespace pitaya;
+using namespace pitaya::service_discovery;
+using namespace pitaya::etcdv3_service_discovery;
 using pitaya::nats::NatsConfig;
 
 static char*
@@ -56,7 +65,7 @@ FreePitayaError(CPitayaError* err)
 {
     free(err->code);
     free(err->msg);
-    //free(err);
+    // free(err);
 }
 
 static void
@@ -66,7 +75,7 @@ FreeServer(CServer* sv)
     free(sv->type);
     free(sv->metadata);
     free(sv->hostname);
-    //free(sv);
+    // free(sv);
 }
 
 pitaya::etcdv3_service_discovery::Config
@@ -91,12 +100,14 @@ OnSignal(int signum)
     }
 }
 
-void print_data(void* dt, int sz){
-  int j;
-  printf("data on c: ");
-  for(j = 0; j < sz; ++j)
-    printf("%02x ", ((uint8_t*) dt)[j]);
-  printf("\n");
+void
+print_data(void* dt, int sz)
+{
+    int j;
+    printf("data on c: ");
+    for (j = 0; j < sz; ++j)
+        printf("%02x ", ((uint8_t*)dt)[j]);
+    printf("\n");
 }
 
 protos::Response
@@ -110,12 +121,12 @@ RpcCallback(protos::Request req)
     cReq.route = req.msg().route().c_str();
     auto memBuf = gPinvokeCb(&cReq);
 
-    //for debugging purposes, uncomment the below line
-    //print_data(memBuf->data, memBuf->size);
+    // for debugging purposes, uncomment the below line
+    // print_data(memBuf->data, memBuf->size);
     bool success = res.ParseFromArray(memBuf->data, memBuf->size);
     if (!success) {
         auto err = new protos::Error();
-        err->set_code(pitaya::kCodeInternalError);
+        err->set_code(pitaya::constants::kCodeInternalError);
         err->set_msg("pinvoke failed");
         res.set_allocated_error(err);
     }
@@ -143,13 +154,13 @@ using ClusterPtr = void*;
 
 extern "C"
 {
-
     bool tfg_pitc_Initialize(CServer* sv,
                              CSDConfig* sdConfig,
                              CNATSConfig* nc,
                              RpcPinvokeCb cb,
                              CsharpFreeCb freeCb,
-                             const char* logFile)
+                             const char* logFile,
+                             bool useGRPC)
     {
         if (!spdlog::get("c_wrapper")) {
             gLogger = CreateLogger(logFile);
@@ -198,8 +209,13 @@ extern "C"
         }
 
         try {
-            pitaya::Cluster::Instance().Initialize(
-                sdConfig->ToConfig(), std::move(natsCfg), server, RpcCallback, "c_wrapper");
+            if (useGRPC) {
+                Cluster::Instance().InitializeWithGrpc(
+                    sdConfig->ToConfig(), server, RpcCallback, "c_wrapper");
+            } else {
+                Cluster::Instance().InitializeWithNats(
+                    sdConfig->ToConfig(), std::move(natsCfg), server, RpcCallback, "c_wrapper");
+            }
             return true;
         } catch (const PitayaException& exc) {
             gLogger->error("Failed to create cluster instance: {}", exc.what());
@@ -277,7 +293,7 @@ extern "C"
 
         if (!res.SerializeToArray(bin, size)) {
             gLogger->error("Error serializing RPC response");
-            retErr->code = ConvertToCString(kCodeInternalError);
+            retErr->code = ConvertToCString(constants::kCodeInternalError);
             retErr->msg = ConvertToCString("Error serializing RPC response");
             return false;
         }
@@ -289,13 +305,9 @@ extern "C"
         return true;
     }
 
-    void tfg_pitc_FreeMem(void * mem){
-      free(mem);
-    }
+    void tfg_pitc_FreeMem(void* mem) { free(mem); }
 
-    void * tfg_pitc_AllocMem(int sz){
-      return malloc(sz);
-    }
+    void* tfg_pitc_AllocMem(int sz) { return malloc(sz); }
 
     void tfg_pitc_FreeMemoryBuffer(MemoryBuffer* buf)
     {
