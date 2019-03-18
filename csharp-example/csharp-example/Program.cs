@@ -14,7 +14,7 @@ namespace PitayaCSharpExample
       string serverId = System.Guid.NewGuid().ToString();
 
       var sdConfig = new SDConfig(
-        endpoints: "http://127.0.0.1:4001",
+        endpoints: "http://127.0.0.1:2379",
         etcdPrefix: "pitaya/",
         heartbeatTTLSec: 60,
         logHeartbeat: true,
@@ -26,7 +26,7 @@ namespace PitayaCSharpExample
       var sv = new Server(
          id: serverId,
          type: "csharp",
-         metadata: "{\"ip\":\"127.0.0.1\"}",
+         metadata: "{\"grpc-host\":\"127.0.0.1\", \"grpc-port\": \"58000\"}",
          hostname: "localhost",
          frontend: false);
 
@@ -45,7 +45,7 @@ namespace PitayaCSharpExample
 
       try
       {
-        PitayaCluster.Initialize(sdConfig, nc, sv);
+        PitayaCluster.Initialize(sdConfig, nc, sv, null, true);
       }
       catch (PitayaException exc)
       {
