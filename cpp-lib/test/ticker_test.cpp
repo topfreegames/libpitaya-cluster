@@ -8,9 +8,7 @@ using namespace pitaya::utils;
 TEST(Ticker, DestructorStopsTheTicker)
 {
     bool called = false;
-    Ticker ticker(std::chrono::milliseconds(50), [&]() {
-        called = true;
-    });
+    Ticker ticker(std::chrono::milliseconds(50), [&]() { called = true; });
 
     ticker.Start();
 }
@@ -18,9 +16,7 @@ TEST(Ticker, DestructorStopsTheTicker)
 TEST(Ticker, CallbackIsNotCalledIfNotStarted)
 {
     bool called = false;
-    Ticker ticker(std::chrono::milliseconds(50), [&]() {
-        called = true;
-    });
+    Ticker ticker(std::chrono::milliseconds(50), [&]() { called = true; });
 
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
     ASSERT_FALSE(called);
@@ -29,9 +25,7 @@ TEST(Ticker, CallbackIsNotCalledIfNotStarted)
 TEST(Ticker, CallbackIsCalledIfStarted)
 {
     bool called = false;
-    Ticker ticker(std::chrono::milliseconds(10), [&]() {
-        called = true;
-    });
+    Ticker ticker(std::chrono::milliseconds(10), [&]() { called = true; });
 
     ticker.Start();
     std::this_thread::sleep_for(std::chrono::milliseconds(20));
@@ -42,9 +36,7 @@ TEST(Ticker, CallbackIsCalledIfStarted)
 TEST(Ticker, CallbackIsNotCalledIfStartedAndStopped)
 {
     bool called = false;
-    Ticker ticker(std::chrono::milliseconds(10), [&]() {
-        called = true;
-    });
+    Ticker ticker(std::chrono::milliseconds(10), [&]() { called = true; });
 
     ticker.Start();
     std::this_thread::sleep_for(std::chrono::milliseconds(5));
@@ -57,9 +49,7 @@ TEST(Ticker, CallbackIsNotCalledIfStartedAndStopped)
 TEST(Ticker, CallbackIsCalledNTimesWithLimitedPrecision)
 {
     size_t called = 0;
-    Ticker ticker(std::chrono::milliseconds(100), [&]() {
-        ++called;
-    });
+    Ticker ticker(std::chrono::milliseconds(100), [&]() { ++called; });
 
     ticker.Start();
     std::this_thread::sleep_for(std::chrono::milliseconds(1050));
@@ -71,9 +61,7 @@ TEST(Ticker, CallbackIsCalledNTimesWithLimitedPrecision)
 TEST(Ticker, DoesNotRespectTheIntervalForReallySmallOnes)
 {
     size_t called = 0;
-    Ticker ticker(std::chrono::milliseconds(1), [&]() {
-        ++called;
-    });
+    Ticker ticker(std::chrono::milliseconds(1), [&]() { ++called; });
 
     ticker.Start();
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
@@ -86,9 +74,8 @@ TEST(Ticker, CallbackIsNotCalledFromTheMainThread)
 {
     auto callbackThreadId = std::this_thread::get_id();
 
-    Ticker ticker(std::chrono::milliseconds(1), [&]() {
-        callbackThreadId = std::this_thread::get_id();
-    });
+    Ticker ticker(std::chrono::milliseconds(1),
+                  [&]() { callbackThreadId = std::this_thread::get_id(); });
 
     ticker.Start();
     std::this_thread::sleep_for(std::chrono::milliseconds(5));
