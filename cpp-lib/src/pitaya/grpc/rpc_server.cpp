@@ -54,12 +54,11 @@ private:
 };
 
 namespace pitaya {
-namespace grpc {
 
-GrpcRpcServer::GrpcRpcServer(const Server& server, RpcHandlerFunc handler, const char* loggerName)
+GrpcServer::GrpcServer(const Server& server, RpcHandlerFunc handler, const char* loggerName)
     : RpcServer(handler)
-    , _log(loggerName ? spdlog::get(loggerName)->clone("grpc_rpc_server")
-                      : spdlog::stdout_color_mt("grpc_rpc_server"))
+    , _log(loggerName ? spdlog::get(loggerName)->clone("grpc_server")
+                      : spdlog::stdout_color_mt("grpc_server"))
     , _service(new PitayaGrpcImpl(_handlerFunc, loggerName))
 {
     const auto address = utils::GetGrpcAddressFromServer(server);
@@ -74,7 +73,7 @@ GrpcRpcServer::GrpcRpcServer(const Server& server, RpcHandlerFunc handler, const
     _log->info("gRPC server started at: {}", address);
 }
 
-GrpcRpcServer::~GrpcRpcServer()
+GrpcServer::~GrpcServer()
 {
     _grpcServer->Shutdown();
     _log->info("Shutting down gRPC server");
@@ -82,10 +81,9 @@ GrpcRpcServer::~GrpcRpcServer()
 }
 
 void
-GrpcRpcServer::ThreadStart()
+GrpcServer::ThreadStart()
 {
     _log->info("Starting grpc rpc server thread");
 }
 
-} // namespace grpc
 } // namespace pitaya

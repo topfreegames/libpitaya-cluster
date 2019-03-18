@@ -13,13 +13,12 @@
 class PitayaGrpcImpl;
 
 namespace pitaya {
-namespace grpc {
 
-class GrpcRpcServer : public RpcServer
+class GrpcServer : public RpcServer
 {
 public:
-    GrpcRpcServer(const Server& server, RpcHandlerFunc handler, const char* loggerName = nullptr);
-    ~GrpcRpcServer();
+    GrpcServer(const Server& server, RpcHandlerFunc handler, const char* loggerName = nullptr);
+    ~GrpcServer();
 
 private:
     void ThreadStart();
@@ -30,7 +29,6 @@ private:
     std::unique_ptr<PitayaGrpcImpl> _service;
 };
 
-} // namespace grpc
 } // namespace pitaya
 
 #endif // PITAYA_GRPC_RPC_SERVER_H

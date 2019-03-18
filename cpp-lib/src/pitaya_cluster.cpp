@@ -21,7 +21,6 @@
 using namespace std;
 using namespace pitaya;
 using namespace pitaya::nats;
-using namespace pitaya::grpc;
 using pitaya::etcdv3_service_discovery::Etcdv3ServiceDiscovery;
 using pitaya::service_discovery::ServiceDiscovery;
 
@@ -52,12 +51,12 @@ main()
     auto logger = spdlog::stdout_color_mt("main");
     logger->set_level(spdlog::level::debug);
 
-    Server server("someid",
-                  "sometype",
-                  {
-                      { "grpc-host", "127.0.0.1" },
-                      { "grpc-port", "58000" },
-                  });
+    pitaya::Server server("someid",
+                          "sometype",
+                          {
+                              { "grpc-host", "127.0.0.1" },
+                              { "grpc-port", "58000" },
+                          });
     NatsConfig natsConfig("nats://localhost:4222", 1000, 3000, 3, 100);
 
     etcdv3_service_discovery::Config sdConfig;

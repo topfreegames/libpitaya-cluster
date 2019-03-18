@@ -13,13 +13,12 @@ namespace json = web::json;
 using grpc::Channel;
 
 namespace pitaya {
-namespace grpc {
 
-GrpcRpcClient::GrpcRpcClient(std::shared_ptr<service_discovery::ServiceDiscovery> serviceDiscovery,
-                             const pitaya::Server& server,
-                             const char* loggerName)
-    : _log(loggerName ? spdlog::get(loggerName)->clone("grpc_rpc_client")
-                      : spdlog::stdout_color_mt("grpc_rpc_client"))
+GrpcClient::GrpcClient(std::shared_ptr<service_discovery::ServiceDiscovery> serviceDiscovery,
+                       const pitaya::Server& server,
+                       const char* loggerName)
+    : _log(loggerName ? spdlog::get(loggerName)->clone("grpc_client")
+                      : spdlog::stdout_color_mt("grpc_client"))
     , _server(server)
     , _serviceDiscovery(std::move(serviceDiscovery))
 {
@@ -41,7 +40,7 @@ NewErrorResponse(const std::string& msg)
 }
 
 protos::Response
-GrpcRpcClient::Call(const pitaya::Server& target, const protos::Request& req)
+GrpcClient::Call(const pitaya::Server& target, const protos::Request& req)
 {
     // In order to send an rpc to a server, we need to first find the connection to the
     // server in the map.
@@ -80,7 +79,7 @@ GrpcRpcClient::Call(const pitaya::Server& target, const protos::Request& req)
 // ==================================================
 
 void
-GrpcRpcClient::ServerAdded(const pitaya::Server& server)
+GrpcClient::ServerAdded(const pitaya::Server& server)
 {
     if (server.metadata == "") {
         _log->debug("Ignoring server {}, since it does not support gRPC", server.id);
@@ -105,7 +104,7 @@ GrpcRpcClient::ServerAdded(const pitaya::Server& server)
 }
 
 void
-GrpcRpcClient::ServerRemoved(const pitaya::Server& server)
+GrpcClient::ServerRemoved(const pitaya::Server& server)
 {
     std::lock_guard<decltype(_stubsForServers)> lock(_stubsForServers);
 
@@ -119,5 +118,4 @@ GrpcRpcClient::ServerRemoved(const pitaya::Server& server)
     _log->debug("Removed server {}", server.id);
 }
 
-} // namespace grpc
 } // namespace pitaya
