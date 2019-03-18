@@ -8,7 +8,6 @@ namespace pitaya {
 
 EtcdClientV3::EtcdClientV3(const std::string& endpoint,
                            const std::string& prefix,
-                           std::function<void(WatchResponse)> onWatch,
                            bool logHeartbeat,
                            const char* loggerName)
     : _log(loggerName ? spdlog::get(loggerName)->clone("etcd_client_v3")
@@ -16,7 +15,6 @@ EtcdClientV3::EtcdClientV3(const std::string& endpoint,
     , _endpoint(endpoint)
     , _prefix(prefix)
     , _client(endpoint)
-    , _onWatch(std::move(onWatch))
     , _leaseKeepAlive(_client, logHeartbeat, loggerName)
 {}
 
@@ -114,6 +112,7 @@ EtcdClientV3::StopLeaseKeepAlive()
 void
 EtcdClientV3::Watch(std::function<void(WatchResponse)> onWatch)
 {
+    _onWatch = std::move(onWatch);
     _watcher = std::unique_ptr<etcd::Watcher>(
         new etcd::Watcher(_endpoint, _prefix, std::bind(&EtcdClientV3::OnWatch, this, _1)));
 }

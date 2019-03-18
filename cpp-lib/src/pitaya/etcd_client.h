@@ -76,7 +76,6 @@ class EtcdClientV3 : public EtcdClient
 public:
     EtcdClientV3(const std::string& endpoints,
                  const std::string& prefix,
-                 std::function<void(WatchResponse)> onWatch,
                  bool logHeartbeat,
                  const char* loggerName = nullptr);
 
