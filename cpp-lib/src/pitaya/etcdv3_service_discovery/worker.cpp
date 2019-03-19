@@ -208,7 +208,7 @@ Worker::Bootstrap()
 bool
 Worker::AddServerToEtcd(const Server& server)
 {
-    string key = fmt::format("{}{}", _config.etcdPrefix, GetServerKey(server.id, server.type));
+    string key = fmt::format("{}{}", _config.etcdPrefix, GetServerKey(server.Id(), server.Type()));
     SetResponse res = _etcdClient->Set(key, ServerAsJson(server), _leaseId);
     return res.ok;
 }
@@ -219,14 +219,15 @@ Worker::AddServer(const Server& server)
     {
         std::lock_guard<decltype(_serversById)> lock(_serversById);
 
-        if (_serversById.Find(server.id) != _serversById.end()) {
+        if (_serversById.Find(server.Id()) != _serversById.end()) {
             return;
         }
 
-        _log->debug(
-            "Adding server {} with metadata {} to service_discovery", server.id, server.metadata);
-        _serversById[server.id] = server;
-        _serversByType[server.type][server.id] = server;
+        _log->debug("Adding server {} with metadata {} to service_discovery",
+                    server.Id(),
+                    server.Metadata());
+        _serversById[server.Id()] = server;
+        _serversByType[server.Type()][server.Id()] = server;
     }
 
     BroadcastServerAdded(server);
@@ -359,9 +360,9 @@ Worker::DeleteServer(const string& serverId)
     Server server = _serversById[serverId];
     _serversById.Erase(serverId);
 
-    if (_serversByType.Find(server.type) != _serversByType.end()) {
-        auto& serverMap = _serversByType[server.type];
-        serverMap.erase(server.id);
+    if (_serversByType.Find(server.Type()) != _serversByType.end()) {
+        auto& serverMap = _serversByType[server.Type()];
+        serverMap.erase(server.Id());
     }
 
     BroadcastServerRemoved(server);
@@ -466,11 +467,11 @@ void
 Worker::PrintServer(const Server& server)
 {
     bool printServerDetails = false;
-    _log->debug("  Server: {}", GetServerKey(server.id, server.type));
+    _log->debug("  Server: {}", GetServerKey(server.Id(), server.Type()));
     if (printServerDetails) {
-        _log->debug("    - hostname: {}", server.hostname);
-        _log->debug("    - frontend: {}", server.frontend);
-        _log->debug("    - metadata: {}", server.metadata);
+        _log->debug("    - hostname: {}", server.Hostname());
+        _log->debug("    - frontend: {}", server.Frontend());
+        _log->debug("    - metadata: {}", server.Metadata());
     }
 }
 
@@ -479,15 +480,15 @@ ServerAsJson(const Server& server)
 {
     json::value obj;
     obj.object();
-    obj["id"] = json::value::string(server.id);
-    obj["type"] = json::value::string(server.type);
+    obj["id"] = json::value::string(server.Id());
+    obj["type"] = json::value::string(server.Type());
     try {
-        obj["metadata"] = json::value::parse(server.metadata);
+        obj["metadata"] = json::value::parse(server.Metadata());
     } catch (const json::json_exception& exc) {
         obj["metadata"] = json::value::string("");
     }
-    obj["hostname"] = json::value::string(server.hostname);
-    obj["frontend"] = json::value::boolean(server.frontend);
+    obj["hostname"] = json::value::string(server.Hostname());
+    obj["frontend"] = json::value::boolean(server.Frontend());
     return obj.serialize();
 }
 
@@ -502,25 +503,26 @@ Worker::ParseServer(const string& jsonStr)
             return boost::none;
         }
 
-        auto server = optional<Server>(Server());
+        bool frontend = false;
+        std::string hostname, type, id, metadata;
 
         if (jsonSrv.has_boolean_field("frontend")) {
-            server->frontend = jsonSrv["frontend"].as_bool();
+            frontend = jsonSrv["frontend"].as_bool();
         }
         if (jsonSrv.has_string_field("type")) {
-            server->type = jsonSrv["type"].as_string();
+            type = jsonSrv["type"].as_string();
         }
         if (jsonSrv.has_string_field("id")) {
-            server->id = jsonSrv["id"].as_string();
+            id = jsonSrv["id"].as_string();
         }
         if (jsonSrv.has_object_field("metadata")) {
-            server->metadata = jsonSrv["metadata"].serialize();
+            metadata = jsonSrv["metadata"].serialize();
         }
         if (jsonSrv.has_string_field("hostname")) {
-            server->hostname = jsonSrv["hostname"].as_string();
+            hostname = jsonSrv["hostname"].as_string();
         }
 
-        return server;
+        return Server(id, type, metadata, hostname, frontend);
     } catch (const json::json_exception& exc) {
         _log->error("Failed to parse server json ({}): {}", jsonStr, exc.what());
         return boost::none;

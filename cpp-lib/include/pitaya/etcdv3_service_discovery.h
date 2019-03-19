@@ -20,7 +20,7 @@ class Etcdv3ServiceDiscovery : public service_discovery::ServiceDiscovery
 {
 public:
     Etcdv3ServiceDiscovery(const Config& config,
-                           const pitaya::Server& server,
+                           Server server,
                            std::unique_ptr<EtcdClient> etcdClient,
                            const char* loggerName = nullptr);
     ~Etcdv3ServiceDiscovery();

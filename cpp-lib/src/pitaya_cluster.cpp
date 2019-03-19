@@ -37,6 +37,9 @@ protos::Response
 RpcHandler(const protos::Request& req)
 {
     cout << "rpc handler called with route: " << req.msg().route() << endl;
+    if (req.has_msg()) {
+        cout << "   data = " << req.msg().data() << endl;
+    }
     auto res = protos::Response();
     res.set_data("RPC went ok!");
     return res;
@@ -51,12 +54,7 @@ main()
     auto logger = spdlog::stdout_color_mt("main");
     logger->set_level(spdlog::level::debug);
 
-    pitaya::Server server("someid",
-                          "sometype",
-                          {
-                              { "grpc-host", "127.0.0.1" },
-                              { "grpc-port", "58000" },
-                          });
+    pitaya::Server server("someid", "sometype");
     NatsConfig natsConfig("nats://localhost:4222", 1000, 3000, 3, 100);
 
     etcdv3_service_discovery::Config sdConfig;
@@ -69,18 +67,23 @@ main()
     sdConfig.syncServersIntervalSec = std::chrono::seconds(20);
 
     GrpcConfig grpcConfig;
-    grpcConfig.host = "http://127.0.0.1";
+    grpcConfig.host = "127.0.0.1";
     grpcConfig.port = 5440;
     grpcConfig.connectionTimeout = std::chrono::seconds(2);
 
     try {
+#if 0
         Cluster::Instance().InitializeWithGrpc(
             std::move(grpcConfig), std::move(sdConfig), server, RpcHandler, "main");
+#else
+        Cluster::Instance().InitializeWithNats(
+            std::move(natsConfig), std::move(sdConfig), server, RpcHandler, "main");
+#endif
 
         {
             // INIT
             auto msg = new protos::Msg();
-            //            msg->set_data("helloww");
+            //                        msg->set_data("helloww");
             msg->set_route("room.room.testremote");
 
             protos::Request req;

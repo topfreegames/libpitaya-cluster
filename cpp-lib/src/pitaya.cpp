@@ -10,16 +10,35 @@ pitaya::Server::Server(const std::string& id,
                        const std::unordered_map<std::string, std::string>& metadata,
                        const std::string& hostname,
                        bool frontend)
-    : id(id)
-    , type(type)
-    , hostname(hostname)
-    , frontend(frontend)
+    : _id(id)
+    , _type(type)
+    , _hostname(hostname)
+    , _frontend(frontend)
 {
     auto obj = json::value::object();
     for (const auto& entry : metadata) {
         obj[entry.first] = json::value::string(entry.second);
     }
-    this->metadata = obj.serialize();
+    _metadata = obj.serialize();
+}
+
+void
+pitaya::Server::AddMetadata(const std::string& key, const std::string& val)
+{
+    json::value metadataJson;
+    if (_metadata.empty()) {
+        metadataJson = json::value::object();
+    } else {
+        metadataJson = json::value::parse(_metadata);
+    }
+
+    if (!metadataJson.is_object()) {
+        throw new PitayaException("Server metadata is not an object");
+    }
+
+    metadataJson[key] = json::value::string(val);
+
+    _metadata = metadataJson.serialize();
 }
 
 pitaya::Route::Route(const std::string& route_str)

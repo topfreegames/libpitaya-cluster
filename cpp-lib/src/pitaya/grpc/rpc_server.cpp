@@ -43,7 +43,6 @@ public:
             return grpc::Status::OK;
         }
 
-        // TODO: do I have to switch on the rpc type? (sys or user)
         *res = _handlerFunc(*req);
         return grpc::Status::OK;
     }
@@ -55,13 +54,14 @@ private:
 
 namespace pitaya {
 
-GrpcServer::GrpcServer(const Server& server, RpcHandlerFunc handler, const char* loggerName)
+GrpcServer::GrpcServer(GrpcConfig config, RpcHandlerFunc handler, const char* loggerName)
     : RpcServer(handler)
     , _log(loggerName ? spdlog::get(loggerName)->clone("grpc_server")
                       : spdlog::stdout_color_mt("grpc_server"))
+    , _config(std::move(config))
     , _service(new PitayaGrpcImpl(_handlerFunc, loggerName))
 {
-    const auto address = utils::GetGrpcAddressFromServer(server);
+    const auto address = _config.host + ":" + std::to_string(_config.port);
 
     _log->debug("Creating gRPC server at address {}", address);
 

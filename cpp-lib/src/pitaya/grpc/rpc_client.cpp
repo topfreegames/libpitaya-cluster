@@ -16,12 +16,10 @@ namespace pitaya {
 
 GrpcClient::GrpcClient(GrpcConfig config,
                        std::shared_ptr<service_discovery::ServiceDiscovery> serviceDiscovery,
-                       const pitaya::Server& server,
                        const char* loggerName)
     : _log(loggerName ? spdlog::get(loggerName)->clone("grpc_client")
                       : spdlog::stdout_color_mt("grpc_client"))
     , _config(std::move(config))
-    , _server(server)
     , _serviceDiscovery(std::move(serviceDiscovery))
 {
     assert(_serviceDiscovery != nullptr);
@@ -49,9 +47,9 @@ GrpcClient::Call(const pitaya::Server& target, const protos::Request& req)
 
     {
         std::lock_guard<decltype(_stubsForServers)> lock(_stubsForServers);
-        if (_stubsForServers.Find(target.id) == _stubsForServers.cend()) {
+        if (_stubsForServers.Find(target.Id()) == _stubsForServers.end()) {
             auto msg = fmt::format(
-                "Cannot call server {}, since it is not added to the connections map", target.id);
+                "Cannot call server {}, since it is not added to the connections map", target.Id());
             _log->error(msg);
             return NewErrorResponse(msg);
         }
@@ -60,7 +58,7 @@ GrpcClient::Call(const pitaya::Server& target, const protos::Request& req)
     // The stub is contained in the map. We then retrieve it and call the desired RPC function.
     {
         std::lock_guard<decltype(_stubsForServers)> lock(_stubsForServers);
-        protos::Pitaya::Stub* stub = _stubsForServers[target.id].get();
+        protos::Pitaya::Stub* stub = _stubsForServers[target.Id()].get();
 
         protos::Response res;
         ::grpc::ClientContext context;
@@ -83,17 +81,18 @@ GrpcClient::Call(const pitaya::Server& target, const protos::Request& req)
 void
 GrpcClient::ServerAdded(const pitaya::Server& server)
 {
-    if (server.metadata == "") {
-        _log->debug("Ignoring server {}, since it does not support gRPC", server.id);
+    if (server.Metadata() == "") {
+        _log->debug("Ignoring server {}, since it does not support gRPC", server.Id());
         return;
     }
 
     // First, we need to get the server host (address and port)
+
     std::string address;
     try {
         address = utils::GetGrpcAddressFromServer(server);
     } catch (const PitayaException& exc) {
-        _log->error("Failed to get gRPC address from server: ", exc.what());
+        _log->warn("Cannot fetch gRPC info from server {}: {}", server.Id(), exc.what());
         return;
     }
 
@@ -108,8 +107,8 @@ GrpcClient::ServerAdded(const pitaya::Server& server)
     auto stub = protos::Pitaya::NewStub(std::move(channel));
 
     std::lock_guard<decltype(_stubsForServers)> lock(_stubsForServers);
-    _stubsForServers[server.id] = std::move(stub);
-    _log->debug("New server {} added", server.id);
+    _stubsForServers[server.Id()] = std::move(stub);
+    _log->debug("New server {} added", server.Id());
 }
 
 void
@@ -117,14 +116,14 @@ GrpcClient::ServerRemoved(const pitaya::Server& server)
 {
     std::lock_guard<decltype(_stubsForServers)> lock(_stubsForServers);
 
-    if (_stubsForServers.Find(server.id) == _stubsForServers.cend()) {
+    if (_stubsForServers.Find(server.Id()) == _stubsForServers.end()) {
         _log->warn("Server {} was removed, however it was not synchronized in the grpc rpc client",
-                   server.id);
+                   server.Id());
         return;
     }
 
-    _stubsForServers.Erase(server.id);
-    _log->debug("Removed server {}", server.id);
+    _stubsForServers.Erase(server.Id());
+    _log->debug("Removed server {}", server.Id());
 }
 
 } // namespace pitaya

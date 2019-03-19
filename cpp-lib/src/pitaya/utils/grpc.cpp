@@ -12,16 +12,16 @@ namespace utils {
 std::string
 GetGrpcAddressFromServer(const Server& server)
 {
-    if (server.metadata == "") {
+    if (server.Metadata() == "") {
         throw PitayaException(
-            fmt::format("Ignoring server {}, since it does not support gRPC", server.id));
+            fmt::format("Ignoring server {}, since it does not support gRPC", server.Id()));
     }
 
     try {
-        auto metadataJson = web::json::value::parse(server.metadata);
+        auto metadataJson = web::json::value::parse(server.Metadata());
         if (!metadataJson.is_object()) {
             throw PitayaException(
-                fmt::format("Metadata from server is not a json object: {}", server.metadata));
+                fmt::format("Metadata from server is not a json object: {}", server.Metadata()));
         }
 
         auto metadataObj = metadataJson.as_object();
@@ -48,7 +48,7 @@ GetGrpcAddressFromServer(const Server& server)
         throw PitayaException(
             fmt::format("Failed to parse metadata json from server: error = {}, json string = {}",
                         exc.what(),
-                        server.metadata));
+                        server.Metadata()));
     }
 }
 

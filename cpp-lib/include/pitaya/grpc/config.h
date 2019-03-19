@@ -21,4 +21,3 @@ struct GrpcConfig
 } // namespace pitaya
 
 #endif // PITAYA_GRPC_CONFIG_H
-

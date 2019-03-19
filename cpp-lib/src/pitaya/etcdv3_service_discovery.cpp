@@ -26,7 +26,7 @@ namespace etcdv3_service_discovery {
 
 // Helper functions
 Etcdv3ServiceDiscovery::Etcdv3ServiceDiscovery(const Config& config,
-                                               const Server& server,
+                                               Server server,
                                                std::unique_ptr<EtcdClient> etcdClient,
                                                const char* loggerName)
     : _log((loggerName && spdlog::get(loggerName))
@@ -37,7 +37,7 @@ Etcdv3ServiceDiscovery::Etcdv3ServiceDiscovery(const Config& config,
                          std::move(etcdClient),
                          loggerName ? loggerName : "service_discovery"))
 {
-    if (server.id.empty() || server.type.empty()) {
+    if (server.Id().empty() || server.Type().empty()) {
         throw PitayaException("Server id and type cannot be empty");
     }
 

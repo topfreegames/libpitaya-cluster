@@ -54,8 +54,8 @@ public:
                     std::unique_ptr<RpcClient> rpcClient,
                     const char* loggerName = nullptr);
 
-    void InitializeWithNats(etcdv3_service_discovery::Config&& sdConfig,
-                            nats::NatsConfig&& natsConfig,
+    void InitializeWithNats(nats::NatsConfig&& natsConfig,
+                            etcdv3_service_discovery::Config&& sdConfig,
                             Server server,
                             RpcHandlerFunc rpcServerHandlerFunc,
                             const char* loggerName = nullptr);
@@ -67,8 +67,6 @@ public:
                             const char* loggerName = nullptr);
 
     void Terminate();
-
-    ~Cluster();
 
     service_discovery::ServiceDiscovery& GetServiceDiscovery() { return *_sd.get(); }
 

@@ -19,7 +19,7 @@ using namespace pitaya;
 namespace pitaya {
 namespace nats {
 
-NatsRpcClient::NatsRpcClient(const Server& server, const NatsConfig& config, const char* loggerName)
+NatsRpcClient::NatsRpcClient(const NatsConfig& config, const char* loggerName)
     : _log(loggerName ? spdlog::get(loggerName)->clone("nats_rpc_client")
                       : spdlog::stdout_color_mt("nats_rpc_client"))
     , _opts(nullptr)

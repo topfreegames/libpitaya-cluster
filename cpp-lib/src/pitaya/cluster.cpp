@@ -31,6 +31,12 @@ Cluster::InitializeWithGrpc(GrpcConfig config,
                             RpcHandlerFunc rpcServerHandlerFunc,
                             const char* loggerName)
 {
+    // In order to other servers know how to connect to our grpc server,
+    // we need to publish our host and port as metadata of the server.
+    // This needs to happen before the ServiceDiscovery is created.
+    server.AddMetadata(constants::kGrpcHostKey, config.host);
+    server.AddMetadata(constants::kGrpcPortKey, std::to_string(config.port));
+
     auto sd = std::shared_ptr<ServiceDiscovery>(new Etcdv3ServiceDiscovery(
         std::move(sdConfig),
         server,
@@ -38,16 +44,15 @@ Cluster::InitializeWithGrpc(GrpcConfig config,
             sdConfig.endpoints, sdConfig.etcdPrefix, sdConfig.logHeartbeat, loggerName)),
         loggerName));
 
-    Initialize(
-        server,
-        sd,
-        std::unique_ptr<RpcServer>(new GrpcServer(server, rpcServerHandlerFunc, loggerName)),
-        std::unique_ptr<RpcClient>(new GrpcClient(std::move(config), sd, server, loggerName)));
+    Initialize(server,
+               sd,
+               std::unique_ptr<RpcServer>(new GrpcServer(config, rpcServerHandlerFunc, loggerName)),
+               std::unique_ptr<RpcClient>(new GrpcClient(config, sd, loggerName)));
 }
 
 void
-Cluster::InitializeWithNats(etcdv3_service_discovery::Config&& sdConfig,
-                            nats::NatsConfig&& natsConfig,
+Cluster::InitializeWithNats(nats::NatsConfig&& natsConfig,
+                            etcdv3_service_discovery::Config&& sdConfig,
                             Server server,
                             RpcHandlerFunc rpcServerHandlerFunc,
                             const char* loggerName)
@@ -61,7 +66,7 @@ Cluster::InitializeWithNats(etcdv3_service_discovery::Config&& sdConfig,
                    loggerName)),
                std::unique_ptr<RpcServer>(
                    new nats::NatsRpcServer(server, natsConfig, rpcServerHandlerFunc, loggerName)),
-               std::unique_ptr<RpcClient>(new nats::NatsRpcClient(server, natsConfig, loggerName)));
+               std::unique_ptr<RpcClient>(new nats::NatsRpcClient(natsConfig, loggerName)));
 }
 
 void
@@ -78,8 +83,6 @@ Cluster::Initialize(Server server,
     _rpcClient = std::move(rpcClient);
     _server = server;
 }
-
-Cluster::~Cluster() {}
 
 void
 Cluster::Terminate()
@@ -105,7 +108,7 @@ Cluster::RPC(const string& route, protos::Request& req, protos::Response& ret)
                                        "no servers found for route: " + route);
         }
         pitaya::Server sv = pitaya::utils::RandomServer(servers);
-        return RPC(sv.id, route, req, ret);
+        return RPC(sv.Id(), route, req, ret);
     } catch (PitayaException* e) {
         return pitaya::PitayaError(constants::kCodeInternalError, e->what());
     }
@@ -120,15 +123,15 @@ Cluster::RPC(const string& server_id,
     _log->debug("Calling RPC on server {}", server_id);
     auto sv = _sd->GetServerById(server_id);
     if (!sv) {
-        // TODO better error code with constants somewhere
+        _log->error("Did not find server id {}", server_id);
         return pitaya::PitayaError(constants::kCodeNotFound, "server not found");
     }
 
     // TODO proper jaeger setup
     json::value metadata;
     metadata.object();
-    metadata[constants::kPeerIdKey] = json::value::string(_server.id);
-    metadata[constants::kPeerServiceKey] = json::value::string(_server.type);
+    metadata[constants::kPeerIdKey] = json::value::string(_server.Id());
+    metadata[constants::kPeerServiceKey] = json::value::string(_server.Type());
     string metadataStr = metadata.serialize();
     req.set_metadata(metadataStr);
     req.set_type(::protos::RPCType::User);

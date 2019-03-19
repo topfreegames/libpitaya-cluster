@@ -43,11 +43,11 @@ static CServer*
 FromPitayaServer(const pitaya::Server& pServer)
 {
     auto server = (CServer*)malloc(sizeof(CServer));
-    server->id = ConvertToCString(pServer.id);
-    server->type = ConvertToCString(pServer.type);
-    server->metadata = ConvertToCString(pServer.metadata);
-    server->hostname = ConvertToCString(pServer.hostname);
-    server->frontend = pServer.frontend;
+    server->id = ConvertToCString(pServer.Id());
+    server->type = ConvertToCString(pServer.Type());
+    server->metadata = ConvertToCString(pServer.Metadata());
+    server->hostname = ConvertToCString(pServer.Hostname());
+    server->frontend = pServer.Frontend();
     return server;
 }
 
@@ -162,50 +162,53 @@ CreateLogger(const char* logFile)
 
 using ClusterPtr = void*;
 
+static pitaya::Server
+CServerToServer(CServer* sv)
+{
+    return Server(sv->id ? std::string(sv->id) : "",
+                  sv->type ? std::string(sv->type) : "",
+                  sv->metadata ? std::string(sv->metadata) : "",
+                  sv->hostname ? std::string(sv->hostname) : "",
+                  sv->frontend);
+}
+
+static void
+SetLogLevel(LogLevel level)
+{
+    switch (level) {
+        case LogLevel_Debug:
+            gLogger->set_level(spdlog::level::debug);
+            break;
+        case LogLevel_Info:
+            gLogger->set_level(spdlog::level::info);
+            break;
+        case LogLevel_Warn:
+            gLogger->set_level(spdlog::level::warn);
+            break;
+        case LogLevel_Error:
+            gLogger->set_level(spdlog::level::err);
+            break;
+        case LogLevel_Critical:
+            gLogger->set_level(spdlog::level::critical);
+            break;
+    }
+}
+
 extern "C"
 {
-    bool tfg_pitc_Initialize(CGrpcConfig* grpcConfig,
-                             CServer* sv,
-                             CSDConfig* sdConfig,
-                             CNATSConfig* nc,
-                             RpcPinvokeCb cb,
-                             CsharpFreeCb freeCb,
-                             const char* logFile,
-                             bool useGRPC)
+    bool tfg_pitc_InitializeWithGrpc(CGrpcConfig* grpcConfig,
+                                     CSDConfig* sdConfig,
+                                     CServer* sv,
+                                     RpcPinvokeCb cb,
+                                     CsharpFreeCb freeCb,
+                                     LogLevel logLevel,
+                                     const char* logFile)
     {
         if (!spdlog::get("c_wrapper")) {
             gLogger = CreateLogger(logFile);
         }
-
-        switch (sdConfig->logLevel) {
-            case LogLevel_Debug:
-                gLogger->set_level(spdlog::level::debug);
-                break;
-            case LogLevel_Info:
-                gLogger->set_level(spdlog::level::info);
-                break;
-            case LogLevel_Warn:
-                gLogger->set_level(spdlog::level::warn);
-                break;
-            case LogLevel_Error:
-                gLogger->set_level(spdlog::level::err);
-                break;
-            case LogLevel_Critical:
-                gLogger->set_level(spdlog::level::critical);
-                break;
-        }
-
-        NatsConfig natsCfg = NatsConfig(nc->addr ? std::string(nc->addr) : "",
-                                        nc->requestTimeoutMs,
-                                        nc->connectionTimeoutMs,
-                                        nc->maxReconnectionAttempts,
-                                        nc->maxPendingMsgs);
-
-        Server server(sv->id ? std::string(sv->id) : "",
-                      sv->type ? std::string(sv->type) : "",
-                      sv->metadata ? std::string(sv->metadata) : "",
-                      sv->hostname ? std::string(sv->hostname) : "",
-                      sv->frontend);
+        SetLogLevel(logLevel);
+        Server server = CServerToServer(sv);
 
         gPinvokeCb = cb;
         if (gPinvokeCb == nullptr) {
@@ -220,13 +223,49 @@ extern "C"
         }
 
         try {
-            if (useGRPC) {
-                Cluster::Instance().InitializeWithGrpc(
-                    grpcConfig->ToConfig(), sdConfig->ToConfig(), server, RpcCallback, "c_wrapper");
-            } else {
-                Cluster::Instance().InitializeWithNats(
-                    sdConfig->ToConfig(), std::move(natsCfg), server, RpcCallback, "c_wrapper");
-            }
+            Cluster::Instance().InitializeWithGrpc(
+                grpcConfig->ToConfig(), sdConfig->ToConfig(), server, RpcCallback, "c_wrapper");
+            return true;
+        } catch (const PitayaException& exc) {
+            gLogger->error("Failed to create cluster instance: {}", exc.what());
+            return false;
+        }
+    }
+
+    bool tfg_pitc_InitializeWithNats(CNATSConfig* nc,
+                                     CSDConfig* sdConfig,
+                                     CServer* sv,
+                                     RpcPinvokeCb cb,
+                                     CsharpFreeCb freeCb,
+                                     LogLevel logLevel,
+                                     const char* logFile)
+    {
+        if (!spdlog::get("c_wrapper")) {
+            gLogger = CreateLogger(logFile);
+        }
+        SetLogLevel(logLevel);
+        NatsConfig natsCfg = NatsConfig(nc->addr ? std::string(nc->addr) : "",
+                                        nc->requestTimeoutMs,
+                                        nc->connectionTimeoutMs,
+                                        nc->maxReconnectionAttempts,
+                                        nc->maxPendingMsgs);
+        Server server = CServerToServer(sv);
+
+        gPinvokeCb = cb;
+        if (gPinvokeCb == nullptr) {
+            gLogger->error("pinvoke callback not set!");
+            return false;
+        }
+
+        freePinvoke = freeCb;
+        if (freePinvoke == nullptr) {
+            gLogger->error("freePinvoke callback not set!");
+            return false;
+        }
+
+        try {
+            Cluster::Instance().InitializeWithNats(
+                std::move(natsCfg), sdConfig->ToConfig(), server, RpcCallback, "c_wrapper");
             return true;
         } catch (const PitayaException& exc) {
             gLogger->error("Failed to create cluster instance: {}", exc.what());
@@ -243,11 +282,11 @@ extern "C"
         }
 
         pitaya::Server server = maybeServer.value();
-        retServer->frontend = server.frontend; // FromPitayaServer(server);
-        retServer->hostname = ConvertToCString(server.hostname);
-        retServer->id = ConvertToCString(server.id);
-        retServer->metadata = ConvertToCString(server.metadata);
-        retServer->type = ConvertToCString(server.type);
+        retServer->frontend = server.Frontend(); // FromPitayaServer(server);
+        retServer->hostname = ConvertToCString(server.Hostname());
+        retServer->id = ConvertToCString(server.Id());
+        retServer->metadata = ConvertToCString(server.Metadata());
+        retServer->type = ConvertToCString(server.Type());
         return true;
     }
 

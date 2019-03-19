@@ -42,11 +42,12 @@ struct Route
 
 struct Server
 {
-    std::string id;
-    std::string type;
-    std::string metadata;
-    std::string hostname;
-    bool frontend;
+public:
+    std::string Id() const { return _id; }
+    std::string Type() const { return _type; }
+    std::string Metadata() const { return _metadata; }
+    std::string Hostname() const { return _hostname; }
+    bool Frontend() const { return _frontend; }
 
     Server() {}
     Server(const std::string& id,
@@ -54,29 +55,37 @@ struct Server
            const std::unordered_map<std::string, std::string>& metadata,
            const std::string& hostname = "",
            bool frontend = false);
-
     Server(const std::string& id,
            const std::string& type,
            const std::string& metadata,
            const std::string& hostname = "",
            bool frontend = false)
-        : id(id)
-        , type(type)
-        , metadata(metadata)
-        , hostname(hostname)
-        , frontend(frontend)
+        : _id(id)
+        , _type(type)
+        , _metadata(metadata)
+        , _hostname(hostname)
+        , _frontend(frontend)
     {}
     Server(const std::string& id, const std::string& type)
-        : id(id)
-        , type(type)
-        , frontend(false)
+        : _id(id)
+        , _type(type)
+        , _frontend(false)
     {}
+
+    void AddMetadata(const std::string& key, const std::string& val);
 
     bool operator==(const Server& sv) const
     {
-        return id == sv.id && type == sv.type && metadata == sv.metadata &&
-               hostname == sv.hostname && frontend == sv.frontend;
+        return _id == sv._id && _type == sv._type && _metadata == sv._metadata &&
+               _hostname == sv._hostname && _frontend == sv._frontend;
     }
+
+private:
+    std::string _id;
+    std::string _type;
+    std::string _metadata;
+    std::string _hostname;
+    bool _frontend;
 };
 
 } // namespace pitaya
@@ -85,9 +94,9 @@ inline std::ostream&
 operator<<(std::ostream& out, const pitaya::Server& s)
 {
     if (out.good()) {
-        out << "Server { id = " << s.id << ", type = " << s.type << ", metadata = " << s.metadata
-            << ", hostname = " << s.hostname << ", frontend = " << (s.frontend ? "true" : "false")
-            << " }";
+        out << "Server { id = " << s.Id() << ", type = " << s.Type()
+            << ", metadata = " << s.Metadata() << ", hostname = " << s.Hostname()
+            << ", frontend = " << (s.Frontend() ? "true" : "false") << " }";
     }
     return out;
 }

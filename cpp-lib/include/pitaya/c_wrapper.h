@@ -37,7 +37,6 @@ struct CSDConfig
     int logServerSync;
     int logServerDetails;
     int syncServersIntervalSec;
-    LogLevel logLevel;
 
     pitaya::etcdv3_service_discovery::Config ToConfig();
 };
@@ -77,14 +76,21 @@ extern "C"
     typedef void (*CsharpFreeCb)(void*);
     typedef MemoryBuffer* (*RpcPinvokeCb)(RPCReq*);
 
-    bool tfg_pitc_Initialize(CGrpcConfig* grpcConfig,
-                             CServer* sv,
-                             CSDConfig* sdConfig,
-                             CNATSConfig* nc,
-                             RpcPinvokeCb cb,
-                             CsharpFreeCb freeCb,
-                             const char* logFile,
-                             bool useGRPC);
+    bool tfg_pitc_InitializeWithGrpc(CGrpcConfig* grpcConfig,
+                                     CSDConfig* sdConfig,
+                                     CServer* sv,
+                                     RpcPinvokeCb cb,
+                                     CsharpFreeCb freeCb,
+                                     LogLevel logLevel,
+                                     const char* logFile);
+
+    bool tfg_pitc_InitializeWithNats(CNATSConfig* nc,
+                                     CSDConfig* sdConfig,
+                                     CServer* sv,
+                                     RpcPinvokeCb cb,
+                                     CsharpFreeCb freeCb,
+                                     LogLevel logLevel,
+                                     const char* logFile);
 
     bool tfg_pitc_GetServerById(const char* serverId, CServer* retServer);
 

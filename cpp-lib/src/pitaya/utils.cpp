@@ -12,7 +12,7 @@ namespace utils {
 string
 GetTopicForServer(const Server& server)
 {
-    return boost::str(boost::format("pitaya/servers/%1%/%2%") % server.type % server.id);
+    return boost::str(boost::format("pitaya/servers/%1%/%2%") % server.Type() % server.Id());
 }
 
 pitaya::Server
