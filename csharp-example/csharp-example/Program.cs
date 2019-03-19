@@ -26,11 +26,13 @@ namespace PitayaCSharpExample
       var sv = new Server(
          id: serverId,
          type: "csharp",
-         metadata: "{\"grpc-host\":\"127.0.0.1\", \"grpc-port\": \"58000\"}",
+         metadata: "",
          hostname: "localhost",
          frontend: false);
 
-      NatsConfig nc = new NatsConfig("127.0.0.1:4222", 2000, 1000, 3, 100);
+      NatsConfig natsConfig = new NatsConfig("127.0.0.1:4222", 2000, 1000, 3, 100);
+
+      GrpcConfig grpcConfig = new GrpcConfig("127.0.0.1", 58800, 2);
 
       PitayaCluster cluster = null;
 
@@ -45,7 +47,8 @@ namespace PitayaCSharpExample
 
       try
       {
-        PitayaCluster.Initialize(sdConfig, nc, sv, null, true);
+        PitayaCluster.Initialize(grpcConfig, sdConfig, sv, null);
+        //PitayaCluster.Initialize(natsConfig, sdConfig, sv, null);
       }
       catch (PitayaException exc)
       {

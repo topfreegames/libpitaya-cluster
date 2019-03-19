@@ -77,6 +77,22 @@ namespace Pitaya
   }
 
   [StructLayout(LayoutKind.Sequential)]
+  public struct GrpcConfig
+  {
+    [MarshalAs(UnmanagedType.LPStr)]
+    public string host;
+    public int port;
+    public int connectionTimeoutSec;
+
+    public GrpcConfig(string host, int port, int connectionTimeoutSec)
+    {
+      this.host = host;
+      this.port = port;
+      this.connectionTimeoutSec = connectionTimeoutSec;
+    }
+  }
+
+  [StructLayout(LayoutKind.Sequential)]
   public struct Route
   {
     [MarshalAs(UnmanagedType.LPStr)]

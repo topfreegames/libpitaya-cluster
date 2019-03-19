@@ -155,10 +155,10 @@ namespace Pitaya
       onSignalEvent?.Invoke();
     }
 
-    public static void Initialize(SDConfig sdConfig, NatsConfig natsCfg, Server server, string logFile = "", bool useGRPC = false)
+    public static void Initialize(GrpcConfig grpcCfg, SDConfig sdCfg, Server server, string logFile = "")
     {
-      IntPtr sdCfgPtr = new StructWrapper(sdConfig);
-      IntPtr natsCfgPtr = new StructWrapper(natsCfg);
+      IntPtr grpcCfgPtr = new StructWrapper(grpcCfg);
+      IntPtr sdCfgPtr = new StructWrapper(sdCfg);
       IntPtr serverPtr = new StructWrapper(server);
 
       PitayaCluster.RPCCb rpcCbFunc = RPCCbFunc;
@@ -167,7 +167,27 @@ namespace Pitaya
       FreeHGlobalDelegate freeDelegate = Marshal.FreeHGlobal;
       IntPtr freeHGlobalPtr = Marshal.GetFunctionPointerForDelegate(freeDelegate);
 
-      bool ok = InitializeInternal(serverPtr, sdCfgPtr, natsCfgPtr, rpcCbFuncPtr, freeHGlobalPtr, logFile, useGRPC);
+      bool ok = InitializeWithGrpcInternal(grpcCfgPtr, sdCfgPtr, serverPtr, rpcCbFuncPtr, freeHGlobalPtr, logFile);
+
+      if (!ok)
+      {
+        throw new PitayaException("Initialization failed");
+      }
+    }
+
+    public static void Initialize(NatsConfig natsCfg, SDConfig sdCfg, Server server, string logFile = "")
+    {
+      IntPtr natsCfgPtr = new StructWrapper(natsCfg);
+      IntPtr sdCfgPtr = new StructWrapper(sdCfg);
+      IntPtr serverPtr = new StructWrapper(server);
+
+      PitayaCluster.RPCCb rpcCbFunc = RPCCbFunc;
+      IntPtr rpcCbFuncPtr = Marshal.GetFunctionPointerForDelegate(rpcCbFunc);
+
+      FreeHGlobalDelegate freeDelegate = Marshal.FreeHGlobal;
+      IntPtr freeHGlobalPtr = Marshal.GetFunctionPointerForDelegate(freeDelegate);
+
+      bool ok = InitializeWithNatsInternal(natsCfgPtr, sdCfgPtr, serverPtr, rpcCbFuncPtr, freeHGlobalPtr, logFile);
 
       if (!ok)
       {
@@ -225,8 +245,11 @@ namespace Pitaya
     }
 
 
-    [DllImport("libpitaya_cluster", CallingConvention = CallingConvention.Cdecl, EntryPoint = "tfg_pitc_Initialize")]
-    private static extern bool InitializeInternal(IntPtr server, IntPtr sdConfig, IntPtr natsCfg, IntPtr cbPtr, IntPtr freePtr, string logFile, bool useGRPC);
+    [DllImport("libpitaya_cluster", CallingConvention = CallingConvention.Cdecl, EntryPoint = "tfg_pitc_InitializeWithNats")]
+    private static extern bool InitializeWithNatsInternal(IntPtr natsCfg, IntPtr sdCfg, IntPtr server, IntPtr cbPtr, IntPtr freePtr, string logFile);
+
+    [DllImport("libpitaya_cluster", CallingConvention = CallingConvention.Cdecl, EntryPoint = "tfg_pitc_InitializeWithGrpc")]
+    private static extern bool InitializeWithGrpcInternal(IntPtr grpcCfg, IntPtr sdCfg, IntPtr server, IntPtr cbPtr, IntPtr freePtr, string logFile);
 
     [DllImport("libpitaya_cluster", CallingConvention = CallingConvention.Cdecl, EntryPoint = "tfg_pitc_Terminate")]
     private static extern void TerminateInternal();
