@@ -72,6 +72,7 @@ add_library(pitaya_cluster ${LIB_TYPE}
     include/pitaya/nats/rpc_server.h
     include/pitaya/grpc/rpc_client.h
     include/pitaya/grpc/rpc_server.h
+    include/pitaya/grpc/config.h
 
     include/pitaya/utils/semaphore.h
     include/pitaya/utils/ticker.h

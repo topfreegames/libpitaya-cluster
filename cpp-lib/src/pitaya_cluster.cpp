@@ -68,14 +68,20 @@ main()
     sdConfig.heartbeatTTLSec = std::chrono::seconds(20);
     sdConfig.syncServersIntervalSec = std::chrono::seconds(20);
 
+    GrpcConfig grpcConfig;
+    grpcConfig.host = "http://127.0.0.1";
+    grpcConfig.port = 5440;
+    grpcConfig.connectionTimeout = std::chrono::seconds(2);
+
     try {
-        Cluster::Instance().InitializeWithGrpc(std::move(sdConfig), server, RpcHandler, "main");
+        Cluster::Instance().InitializeWithGrpc(
+            std::move(grpcConfig), std::move(sdConfig), server, RpcHandler, "main");
 
         {
             // INIT
             auto msg = new protos::Msg();
             //            msg->set_data("helloww");
-            msg->set_route("sometype.room.testremote");
+            msg->set_route("room.room.testremote");
 
             protos::Request req;
             req.set_allocated_msg(msg);
@@ -84,7 +90,7 @@ main()
 
             // FINISH
             protos::Response res;
-            auto err = Cluster::Instance().RPC("sometype.room.testremote", req, res);
+            auto err = Cluster::Instance().RPC("room.room.testremote", req, res);
             if (err) {
                 cout << "received error:" << err.value().msg << endl;
             } else {

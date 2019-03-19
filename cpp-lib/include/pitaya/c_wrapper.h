@@ -42,6 +42,15 @@ struct CSDConfig
     pitaya::etcdv3_service_discovery::Config ToConfig();
 };
 
+struct CGrpcConfig
+{
+    const char* host;
+    int port;
+    int connectionTimeoutSec;
+
+    pitaya::GrpcConfig ToConfig();
+};
+
 struct CNATSConfig
 {
     const char* addr;
@@ -68,7 +77,8 @@ extern "C"
     typedef void (*CsharpFreeCb)(void*);
     typedef MemoryBuffer* (*RpcPinvokeCb)(RPCReq*);
 
-    bool tfg_pitc_Initialize(CServer* sv,
+    bool tfg_pitc_Initialize(CGrpcConfig* grpcConfig,
+                             CServer* sv,
                              CSDConfig* sdConfig,
                              CNATSConfig* nc,
                              RpcPinvokeCb cb,

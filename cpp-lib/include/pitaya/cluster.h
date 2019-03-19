@@ -3,6 +3,7 @@
 
 #include "pitaya.h"
 #include "pitaya/etcdv3_service_discovery/config.h"
+#include "pitaya/grpc/config.h"
 #include "pitaya/nats/config.h"
 #include "pitaya/rpc_client.h"
 #include "pitaya/rpc_server.h"
@@ -59,7 +60,8 @@ public:
                             RpcHandlerFunc rpcServerHandlerFunc,
                             const char* loggerName = nullptr);
 
-    void InitializeWithGrpc(etcdv3_service_discovery::Config&& sdConfig,
+    void InitializeWithGrpc(GrpcConfig config,
+                            etcdv3_service_discovery::Config&& sdConfig,
                             Server server,
                             RpcHandlerFunc rpcServerHandlerFunc,
                             const char* loggerName = nullptr);

@@ -92,6 +92,16 @@ CSDConfig::ToConfig()
     return config;
 }
 
+pitaya::GrpcConfig
+CGrpcConfig::ToConfig()
+{
+    pitaya::GrpcConfig config;
+    config.host = host;
+    config.port = port;
+    config.connectionTimeout = std::chrono::seconds(connectionTimeoutSec);
+    return config;
+}
+
 void
 OnSignal(int signum)
 {
@@ -154,7 +164,8 @@ using ClusterPtr = void*;
 
 extern "C"
 {
-    bool tfg_pitc_Initialize(CServer* sv,
+    bool tfg_pitc_Initialize(CGrpcConfig* grpcConfig,
+                             CServer* sv,
                              CSDConfig* sdConfig,
                              CNATSConfig* nc,
                              RpcPinvokeCb cb,
@@ -211,7 +222,7 @@ extern "C"
         try {
             if (useGRPC) {
                 Cluster::Instance().InitializeWithGrpc(
-                    sdConfig->ToConfig(), server, RpcCallback, "c_wrapper");
+                    grpcConfig->ToConfig(), sdConfig->ToConfig(), server, RpcCallback, "c_wrapper");
             } else {
                 Cluster::Instance().InitializeWithNats(
                     sdConfig->ToConfig(), std::move(natsCfg), server, RpcCallback, "c_wrapper");

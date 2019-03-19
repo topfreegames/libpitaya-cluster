@@ -25,7 +25,8 @@ using etcdv3_service_discovery::Etcdv3ServiceDiscovery;
 using service_discovery::ServiceDiscovery;
 
 void
-Cluster::InitializeWithGrpc(etcdv3_service_discovery::Config&& sdConfig,
+Cluster::InitializeWithGrpc(GrpcConfig config,
+                            etcdv3_service_discovery::Config&& sdConfig,
                             Server server,
                             RpcHandlerFunc rpcServerHandlerFunc,
                             const char* loggerName)
@@ -37,10 +38,11 @@ Cluster::InitializeWithGrpc(etcdv3_service_discovery::Config&& sdConfig,
             sdConfig.endpoints, sdConfig.etcdPrefix, sdConfig.logHeartbeat, loggerName)),
         loggerName));
 
-    Initialize(server,
-               sd,
-               std::unique_ptr<RpcServer>(new GrpcServer(server, rpcServerHandlerFunc, loggerName)),
-               std::unique_ptr<RpcClient>(new GrpcClient(sd, server, loggerName)));
+    Initialize(
+        server,
+        sd,
+        std::unique_ptr<RpcServer>(new GrpcServer(server, rpcServerHandlerFunc, loggerName)),
+        std::unique_ptr<RpcClient>(new GrpcClient(std::move(config), sd, server, loggerName)));
 }
 
 void

@@ -14,11 +14,13 @@ using grpc::Channel;
 
 namespace pitaya {
 
-GrpcClient::GrpcClient(std::shared_ptr<service_discovery::ServiceDiscovery> serviceDiscovery,
+GrpcClient::GrpcClient(GrpcConfig config,
+                       std::shared_ptr<service_discovery::ServiceDiscovery> serviceDiscovery,
                        const pitaya::Server& server,
                        const char* loggerName)
     : _log(loggerName ? spdlog::get(loggerName)->clone("grpc_client")
                       : spdlog::stdout_color_mt("grpc_client"))
+    , _config(std::move(config))
     , _server(server)
     , _serviceDiscovery(std::move(serviceDiscovery))
 {
@@ -96,6 +98,13 @@ GrpcClient::ServerAdded(const pitaya::Server& server)
     }
 
     auto channel = ::grpc::CreateChannel(address, ::grpc::InsecureChannelCredentials());
+
+    if (channel->WaitForConnected(std::chrono::system_clock::now() + _config.connectionTimeout)) {
+        _log->info("Successfully connected to gPRC server at {}", address);
+    } else {
+        _log->warn("Failed to connect to gRPC server at {}", address);
+    }
+
     auto stub = protos::Pitaya::NewStub(std::move(channel));
 
     std::lock_guard<decltype(_stubsForServers)> lock(_stubsForServers);
