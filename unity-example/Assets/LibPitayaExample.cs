@@ -30,14 +30,13 @@ public class LibPitayaExample : MonoBehaviour {
 	    string serverId = Guid.NewGuid().ToString();
 
 	    var sdConfig = new SDConfig(
-		    endpoints: "http://127.0.0.1:4001",
+		    endpoints: "http://10.0.21.121:2379",
 		    etcdPrefix: "pitaya/",
 		    heartbeatTTLSec: 60,
 		    logHeartbeat: false,
 		    logServerSync: true,
 		    logServerDetails: false,
-		    syncServersIntervalSec: 60,
-		    logLevel: NativeLogLevel.Debug);
+		    syncServersIntervalSec: 60);
 
 	    var sv = new Server(
 		    serverId,
