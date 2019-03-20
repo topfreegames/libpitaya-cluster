@@ -2,13 +2,13 @@
 <package >
   <metadata>
     <id>LibPitayaServerCpp</id>
-    <version>0.4.0</version>
+    <version>0.5.0</version>
     <authors>leonardo</authors>
     <owners>leonardo</owners>
     <projectUrl>https://github.com/topfreegames/libpitaya-cluster</projectUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>Library that allows communication with other pitaya servers</description>
-    <releaseNotes>Add support for gRPC server and client</releaseNotes>
+    <releaseNotes>Fix race condition on grpc client and separate initialization functions for grpc and nats</releaseNotes>
     <copyright>Copyright TFG 2018</copyright>
     <tags>pitaya libpitaya-cluster</tags>
     <dependencies>
