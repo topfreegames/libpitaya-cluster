@@ -60,10 +60,9 @@ namespace Pitaya
     public int logServerSync;
     public int logServerDetails;
     public int syncServersIntervalSec;
-    public NativeLogLevel logLevel;
 
     public SDConfig(string endpoints, string etcdPrefix, int heartbeatTTLSec, bool logHeartbeat,
-                    bool logServerSync, bool logServerDetails, int syncServersIntervalSec, NativeLogLevel logLevel)
+                    bool logServerSync, bool logServerDetails, int syncServersIntervalSec)
     {
       this.endpoints = endpoints;
       this.etcdPrefix = etcdPrefix;
@@ -72,7 +71,6 @@ namespace Pitaya
       this.logServerSync = Convert.ToInt32(logServerSync);
       this.logServerDetails = Convert.ToInt32(logServerDetails);
       this.syncServersIntervalSec = syncServersIntervalSec;
-      this.logLevel = logLevel;
     }
   }
 
