@@ -20,8 +20,7 @@ namespace PitayaCSharpExample
         logHeartbeat: true,
         logServerSync: true,
         logServerDetails: true,
-        syncServersIntervalSec: 30,
-        logLevel: NativeLogLevel.Debug);
+        syncServersIntervalSec: 30);
 
       var sv = new Server(
          id: serverId,
