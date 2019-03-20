@@ -8,8 +8,6 @@ nuget-clean:
 build-cpp-unity:
 	@cd cpp-lib && $(MAKE) build-linux-docker
 	@cd cpp-lib && $(MAKE) build-mac-unity
-	@cp cpp-lib/_builds/mac-unity/libpitaya_cluster.bundle NugetOutput/binaries/mac
-	@cp cpp-lib/_builds/linux/libpitaya_cluster.so NugetOutput/binaries/linux
 
 build-all: nuget-clean build-csharp-lib-release build-cpp-unity
 
