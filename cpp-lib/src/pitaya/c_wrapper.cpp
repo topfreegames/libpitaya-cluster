@@ -307,6 +307,13 @@ extern "C"
                       MemoryBuffer** outBuf,
                       CPitayaError* retErr)
     {
+        if (serverId == NULL || route == NULL || retErr == NULL) {
+            gLogger->error("Received null arguments on tfg_pic_RPC");
+            retErr->code = ConvertToCString(constants::kCodeInternalError);
+            retErr->msg = ConvertToCString("Received NULL arguments on tfg_pitc_RPC");
+            return false;
+        }
+
         assert(serverId && "server id should not be null");
         assert(route && "route should not be null");
         assert((data || (!data && dataSize == 0)) && "data len should be 0 if data is null");

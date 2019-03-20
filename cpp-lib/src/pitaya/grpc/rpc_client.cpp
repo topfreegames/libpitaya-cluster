@@ -23,8 +23,15 @@ GrpcClient::GrpcClient(GrpcConfig config,
     , _serviceDiscovery(std::move(serviceDiscovery))
 {
     assert(_serviceDiscovery != nullptr);
+    _log->info("Registering gRPC client as a listener to the service discovery");
     _serviceDiscovery->AddListener(this);
     _log->info("gRPC RPC client created");
+}
+
+GrpcClient::~GrpcClient()
+{
+    _log->info("Unregistering gRPC client as a listener to the service discovery");
+    _serviceDiscovery->RemoveListener(this);
 }
 
 static protos::Response

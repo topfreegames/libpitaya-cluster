@@ -69,5 +69,11 @@ Etcdv3ServiceDiscovery::AddListener(service_discovery::Listener* listener)
     _worker->AddListener(listener);
 }
 
+void
+Etcdv3ServiceDiscovery::RemoveListener(service_discovery::Listener* listener)
+{
+    _worker->RemoveListener(listener);
+}
+
 } // namespace etcdv3_service_discovery
 } // namespace pitaya

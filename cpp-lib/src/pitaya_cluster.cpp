@@ -1,4 +1,5 @@
 #include "pitaya.h"
+#include "pitaya/c_wrapper.h"
 #include "pitaya/cluster.h"
 #include "pitaya/etcdv3_service_discovery.h"
 #include "pitaya/etcdv3_service_discovery/config.h"
@@ -48,6 +49,7 @@ RpcHandler(const protos::Request& req)
 int
 main()
 {
+#if 1
     signal(SIGTERM, SignalHandler);
     signal(SIGINT, SignalHandler);
 
@@ -72,7 +74,7 @@ main()
     grpcConfig.connectionTimeout = std::chrono::seconds(2);
 
     try {
-#if 0
+#if 1
         Cluster::Instance().InitializeWithGrpc(
             std::move(grpcConfig), std::move(sdConfig), server, RpcHandler, "main");
 #else
@@ -108,4 +110,5 @@ main()
         cout << e.what() << endl;
         cin >> x;
     }
+#endif
 }

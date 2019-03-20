@@ -22,6 +22,7 @@ public:
     GrpcClient(GrpcConfig config,
                std::shared_ptr<service_discovery::ServiceDiscovery> serviceDiscovery,
                const char* loggerName = nullptr);
+    ~GrpcClient();
     protos::Response Call(const pitaya::Server& target, const protos::Request& req) override;
 
     void ServerAdded(const pitaya::Server& server) override;

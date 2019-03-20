@@ -2,6 +2,7 @@
 
 #include "pitaya/utils/string_utils.h"
 
+#include <algorithm>
 #include <assert.h>
 #include <cpprest/json.h>
 #include <sstream>
@@ -541,6 +542,13 @@ Worker::AddListener(service_discovery::Listener* listener)
 
     std::lock_guard<decltype(_listeners)> lock(_listeners);
     _listeners.PushBack(listener);
+}
+
+void
+Worker::RemoveListener(service_discovery::Listener* listener)
+{
+    std::lock_guard<decltype(_listeners)> lock(_listeners);
+    _listeners.Erase(std::remove(_listeners.begin(), _listeners.end(), listener), _listeners.end());
 }
 
 void

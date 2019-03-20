@@ -27,6 +27,7 @@ public:
     virtual boost::optional<pitaya::Server> GetServerById(const std::string& id) = 0;
     virtual std::vector<pitaya::Server> GetServersByType(const std::string& type) = 0;
     virtual void AddListener(Listener* listener) = 0;
+    virtual void RemoveListener(service_discovery::Listener* listener) = 0;
 };
 
 } // namespace service_discovery

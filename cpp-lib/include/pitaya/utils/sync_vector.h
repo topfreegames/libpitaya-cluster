@@ -11,6 +11,9 @@ template<typename T>
 class SyncVector
 {
 public:
+    using Iterator = typename std::vector<T>::iterator;
+    using ConstIterator = typename std::vector<T>::iterator;
+
     // BasicLockable interface for usage with std::lock_guard
     void lock() { _mutex.lock(); }
     void unlock() { _mutex.unlock(); }
@@ -20,11 +23,13 @@ public:
 
     void PushBack(const T& el) { _vector.push_back(el); }
 
+    Iterator Erase(Iterator start, Iterator end) { return _vector.erase(start, end); }
+
     // Make type iterable with range-based for loop.
-    typename std::vector<T>::iterator begin() { return _vector.begin(); }
-    typename std::vector<T>::iterator end() { return _vector.end(); }
-    typename std::vector<T>::const_iterator cbegin() const { return _vector.cbegin(); }
-    typename std::vector<T>::const_iterator cend() const { return _vector.cend(); }
+    Iterator begin() { return _vector.begin(); }
+    Iterator end() { return _vector.end(); }
+    ConstIterator cbegin() const { return _vector.cbegin(); }
+    ConstIterator cend() const { return _vector.cend(); }
 
 private:
     std::vector<T> _vector;

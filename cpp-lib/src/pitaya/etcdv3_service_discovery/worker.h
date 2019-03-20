@@ -44,6 +44,7 @@ public:
     std::vector<pitaya::Server> GetServersByType(const std::string& type);
     void WaitUntilInitialized();
     void AddListener(service_discovery::Listener* listener);
+    void RemoveListener(service_discovery::Listener* listener);
 
 private:
     void Shutdown();
