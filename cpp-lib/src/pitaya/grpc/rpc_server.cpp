@@ -70,14 +70,21 @@ GrpcServer::GrpcServer(GrpcConfig config, RpcHandlerFunc handler, const char* lo
     builder.RegisterService(_service.get());
 
     _grpcServer = std::unique_ptr<::grpc::Server>(builder.BuildAndStart());
-    _log->info("gRPC server started at: {}", address);
+
+    if (_grpcServer) {
+        _log->info("gRPC server started at: {}", address);
+    } else {
+        _log->error("Failed to start gRPC server at address {}", address);
+    }
 }
 
 GrpcServer::~GrpcServer()
 {
-    _grpcServer->Shutdown();
-    _log->info("Shutting down gRPC server");
-    _grpcServer->Wait();
+    if (_grpcServer) {
+        _log->info("Shutting down gRPC server");
+        _grpcServer->Shutdown();
+        _grpcServer->Wait();
+    }
 }
 
 void

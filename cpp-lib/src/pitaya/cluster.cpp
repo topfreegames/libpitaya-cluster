@@ -87,13 +87,15 @@ Cluster::Initialize(Server server,
 void
 Cluster::Terminate()
 {
-    if (_log)
+    if (_log) {
         _log->flush();
+    }
     _sd.reset();
     _rpcClient.reset();
     _rpcSv.reset();
-    if (spdlog::get("cluster"))
+    if (spdlog::get("cluster")) {
         spdlog::drop("cluster");
+    }
 }
 
 optional<PitayaError>
