@@ -15,6 +15,8 @@ using std::placeholders::_1;
 using namespace pitaya;
 namespace json = web::json;
 
+static constexpr const char* kLogTag = "service_discovery_worker";
+
 namespace pitaya {
 namespace etcdv3_service_discovery {
 
@@ -29,7 +31,7 @@ Worker::Worker(const Config& config,
     , _workerExiting(false)
     , _server(std::move(server))
     , _etcdClient(std::move(etcdClient))
-    , _log(spdlog::get(loggerName)->clone("service_discovery_worker"))
+    , _log(spdlog::get(loggerName)->clone(kLogTag))
     , _numKeepAliveRetriesLeft(3)
     , _syncServersTicker(config.syncServersIntervalSec, std::bind(&Worker::SyncServers, this)) {
 
@@ -66,7 +68,7 @@ Worker::~Worker()
     _log->debug("Finished waiting for worker thread");
 
     _log->flush();
-    spdlog::drop("service_disovery_worker");
+    spdlog::drop(kLogTag);
 }
 
 void

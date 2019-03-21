@@ -21,6 +21,8 @@ namespace chrono = std::chrono;
 using std::placeholders::_1;
 using namespace pitaya;
 
+static constexpr const char* kLogTag = "service_discovery";
+
 namespace pitaya {
 namespace etcdv3_service_discovery {
 
@@ -30,12 +32,12 @@ Etcdv3ServiceDiscovery::Etcdv3ServiceDiscovery(const Config& config,
                                                std::unique_ptr<EtcdClient> etcdClient,
                                                const char* loggerName)
     : _log((loggerName && spdlog::get(loggerName))
-               ? spdlog::get(loggerName)->clone("service_discovery")
-               : spdlog::stdout_color_mt("service_discovery"))
+               ? spdlog::get(loggerName)->clone(kLogTag)
+               : spdlog::stdout_color_mt(kLogTag))
     , _worker(new Worker(config,
                          server,
                          std::move(etcdClient),
-                         loggerName ? loggerName : "service_discovery"))
+                         loggerName ? loggerName : kLogTag))
 {
     if (server.Id().empty() || server.Type().empty()) {
         throw PitayaException("Server id and type cannot be empty");
@@ -48,7 +50,7 @@ Etcdv3ServiceDiscovery::~Etcdv3ServiceDiscovery()
 {
     _log->info("Terminating");
     _log->flush();
-    spdlog::drop("service_disovery");
+    spdlog::drop(kLogTag);
 }
 
 boost::optional<pitaya::Server>
