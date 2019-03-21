@@ -513,8 +513,11 @@ Worker::ParseServer(const string& jsonStr)
             hostname = jsonSrv["hostname"].as_string();
         }
 
-        auto sv = Server((Server::Kind)frontend, id, type, hostname)
-            .WithRawMetadata(metadata);
+        if (id.empty() || type.empty()) {
+            return boost::none;
+        }
+
+        auto sv = Server((Server::Kind)frontend, id, type, hostname).WithRawMetadata(metadata);
 
         return sv;
     } catch (const json::json_exception& exc) {
