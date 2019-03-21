@@ -56,7 +56,7 @@ main()
     auto logger = spdlog::stdout_color_mt("main");
     logger->set_level(spdlog::level::debug);
 
-    pitaya::Server server("someid", "sometype");
+    pitaya::Server server(Server::Kind::Frontend, "someid", "sometype");
     NatsConfig natsConfig("nats://localhost:4222", 1000, 3000, 3, 100);
 
     etcdv3_service_discovery::Config sdConfig;
