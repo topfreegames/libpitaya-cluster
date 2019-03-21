@@ -65,7 +65,11 @@ public:
     {}
 
     void AddMetadata(const std::string& key, const std::string& val);
-    Server& WithRawMetadata(std::string metadata) { _metadata = std::move(metadata); return *this; }
+    Server& WithRawMetadata(std::string metadata)
+    {
+        _metadata = std::move(metadata);
+        return *this;
+    }
 
     bool operator==(const Server& sv) const
     {

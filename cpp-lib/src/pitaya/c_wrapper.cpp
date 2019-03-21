@@ -170,8 +170,8 @@ CServerToServer(CServer* sv)
     auto hostname = sv->hostname ? std::string(sv->hostname) : "";
     auto metadata = sv->metadata ? std::string(sv->metadata) : "";
 
-    auto s = pitaya::Server((Server::Kind)sv->frontend, id, type, hostname)
-        .WithRawMetadata(metadata);
+    auto s =
+        pitaya::Server((Server::Kind)sv->frontend, id, type, hostname).WithRawMetadata(metadata);
     return s;
 }
 

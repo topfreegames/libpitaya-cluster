@@ -1,9 +1,9 @@
 #include "test_common.h"
 
-#include "pitaya/utils.h"
 #include "pitaya.h"
 #include "pitaya/etcdv3_service_discovery.h"
 #include "pitaya/etcdv3_service_discovery/config.h"
+#include "pitaya/utils.h"
 
 #include "mock_etcd_client.h"
 
@@ -12,22 +12,23 @@ using namespace ::testing;
 
 TEST(ParseEtcdKeyTest, ReturnsFalseWhenKeyIsInvalid)
 {
-    static struct {
+    static struct
+    {
         std::string key;
         std::string prefix;
     } arr[] = {
-        {"sniper3d/servers/room/server-id", "myPrefix/"},
-        {"sniper3d/servers/room/server-id", "myPrefix"},
-        {"sniper3dserversroomserver-id", "myPrefix"},
-        {"sniper3dserversroomserver-id", "myPrefix/"},
-        {"myPrefix", "myPrefix/"},
-        {"myPrefix/", "myPrefix/"},
-        {"myPrefix/servers", "myPrefix/"},
-        {"myPrefix/servers/mytype/", "myPrefix/"},
-        {"myPrefix//mytype/", "myPrefix/"},
-        {"m", "myPrefix/"},
-        {"myPrefix//mytype/myid", "myPrefix/"},
-        {"myPrefix/servers/mytype/myid", "myPrefix"},
+        { "sniper3d/servers/room/server-id", "myPrefix/" },
+        { "sniper3d/servers/room/server-id", "myPrefix" },
+        { "sniper3dserversroomserver-id", "myPrefix" },
+        { "sniper3dserversroomserver-id", "myPrefix/" },
+        { "myPrefix", "myPrefix/" },
+        { "myPrefix/", "myPrefix/" },
+        { "myPrefix/servers", "myPrefix/" },
+        { "myPrefix/servers/mytype/", "myPrefix/" },
+        { "myPrefix//mytype/", "myPrefix/" },
+        { "m", "myPrefix/" },
+        { "myPrefix//mytype/myid", "myPrefix/" },
+        { "myPrefix/servers/mytype/myid", "myPrefix" },
     };
 
     for (const auto& el : arr) {
@@ -41,15 +42,16 @@ TEST(ParseEtcdKeyTest, ReturnsFalseWhenKeyIsInvalid)
 
 TEST(ParseEtcdKeyTest, ReturnsTrueWhenKeyIsValid)
 {
-    static struct {
+    static struct
+    {
         std::string key;
         std::string prefix;
         std::string retType;
         std::string retId;
     } arr[] = {
-        {"sniper3d/servers/room/server-id", "sniper3d/", "room", "server-id"},
-        {"sniper3d/servers/tutu/baba", "sniper3d/", "tutu", "baba"},
-        {"pit/servers/tutu/baba", "pit/", "tutu", "baba"},
+        { "sniper3d/servers/room/server-id", "sniper3d/", "room", "server-id" },
+        { "sniper3d/servers/tutu/baba", "sniper3d/", "tutu", "baba" },
+        { "pit/servers/tutu/baba", "pit/", "tutu", "baba" },
     };
 
     for (const auto& el : arr) {

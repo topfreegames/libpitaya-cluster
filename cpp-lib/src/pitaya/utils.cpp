@@ -3,10 +3,10 @@
 #include "pitaya.h"
 #include "pitaya/utils/string_utils.h"
 
+#include <assert.h>
 #include <boost/format.hpp>
 #include <random>
 #include <string>
-#include <assert.h>
 
 using std::string;
 

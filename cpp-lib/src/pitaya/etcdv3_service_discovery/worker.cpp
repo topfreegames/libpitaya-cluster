@@ -1,7 +1,7 @@
 #include "pitaya/etcdv3_service_discovery/worker.h"
 
-#include "pitaya/utils/string_utils.h"
 #include "pitaya/utils.h"
+#include "pitaya/utils/string_utils.h"
 
 #include <algorithm>
 #include <assert.h>
@@ -324,7 +324,7 @@ Worker::DeleteLocalInvalidServers(const vector<string>& actualServers)
     }
 
     for (const auto& invalidServer : invalidServers) {
-        _log->warn("Deleting invalid local server {}", invalidServer);
+        _log->warn("Invalid local server {}, removing from server list", invalidServer);
         DeleteServer(invalidServer);
     }
 }
@@ -369,6 +369,7 @@ Worker::DeleteServer(const string& serverId)
         serverMap.erase(server.Id());
     }
 
+    _log->debug("Server {} deleted", server.Id());
     BroadcastServerRemoved(server);
 }
 
@@ -403,7 +404,7 @@ void
 Worker::OnWatch(WatchResponse res)
 {
     if (_workerExiting) {
-        _log->debug("Worker is exiting, ignoring OnWatch call");
+        _log->debug("OnWatch: Worker is exiting, ignoring call");
         return;
     }
 
@@ -419,21 +420,20 @@ Worker::OnWatch(WatchResponse res)
     // belongs to the same prefix and it is actually a server.
     string serverType, serverId;
     if (!utils::ParseEtcdKey(res.key, _config.etcdPrefix, serverType, serverId)) {
-        _log->debug("Ignoring {}", res.key);
+        _log->debug("OnWatch: Ignoring {}", res.key);
         return;
     }
 
     if (res.action == "create") {
         auto server = ParseServer(res.value);
         if (!server) {
-            _log->error("Error parsing server: {}", res.value);
+            _log->error("OnWatch: Error parsing server: {}", res.value);
             return;
         }
         AddServer(std::move(server.value()));
         PrintServers();
     } else if (res.action == "delete") {
         DeleteServer(serverId);
-        _log->debug("Server {} deleted", serverId);
         PrintServers();
     }
 }
