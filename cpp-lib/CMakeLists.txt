@@ -161,6 +161,7 @@ if(BUILD_TESTING AND NOT BUILD_MACOSX_BUNDLE)
         test/cluster_test.cpp
         test/ticker_test.cpp
         test/etcdv3_service_discovery_test.cpp
+        test/utils_test.cpp
         test/main_test.cpp)
 
     target_include_directories(pitaya_cluster_tests PUBLIC src)
