@@ -33,6 +33,12 @@ build-mac:
 	@cmake -H. -B_builds/mac -GNinja -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF -DBUILD_SHARED_LIBS=OFF
 	@cmake --build _builds/mac
 
+build-mac-debug:
+	@rm -rf _builds/mac-debug
+	@conan install . -if _builds/mac-debug
+	@cmake -H. -B_builds/mac-debug -GNinja -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTING=ON -DBUILD_SHARED_LIBS=OFF
+	@cmake --build _builds/mac-debug
+
 build-mac-unity:
 	@mkdir -p _builds/mac-unity
 	@conan install -if _builds/mac-unity .
