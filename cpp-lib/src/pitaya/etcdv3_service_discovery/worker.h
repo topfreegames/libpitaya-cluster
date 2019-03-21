@@ -58,7 +58,7 @@ private:
     void SyncServers();
     void PrintServers();
     void DeleteServer(const std::string& serverId);
-    bool ParseEtcdKey(const std::string& key, std::string& serverType, std::string& serverId);
+
     void PrintServer(const pitaya::Server& server);
     void RevokeLease();
     boost::optional<pitaya::Server> GetServerFromEtcd(const std::string& serverId,

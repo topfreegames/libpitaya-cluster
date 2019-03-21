@@ -40,39 +40,32 @@ struct Route
     Route(const std::string& route_str);
 };
 
-struct Server
+class Server
 {
 public:
+    enum Kind
+    {
+        Backend = 0,
+        Frontend = 1,
+    };
+
     std::string Id() const { return _id; }
     std::string Type() const { return _type; }
     std::string Metadata() const { return _metadata; }
     std::string Hostname() const { return _hostname; }
-    bool Frontend() const { return _frontend; }
+    bool IsFrontend() const { return _frontend; }
 
-    Server() {}
-    Server(const std::string& id,
-           const std::string& type,
-           const std::unordered_map<std::string, std::string>& metadata,
-           const std::string& hostname = "",
-           bool frontend = false);
-    Server(const std::string& id,
-           const std::string& type,
-           const std::string& metadata,
-           const std::string& hostname = "",
-           bool frontend = false)
-        : _id(id)
-        , _type(type)
-        , _metadata(metadata)
-        , _hostname(hostname)
-        , _frontend(frontend)
-    {}
-    Server(const std::string& id, const std::string& type)
-        : _id(id)
-        , _type(type)
-        , _frontend(false)
+    Server() = default;
+
+    Server(Kind kind, std::string id, std::string type, std::string hostname = "")
+        : _id(std::move(id))
+        , _type(std::move(type))
+        , _hostname(std::move(hostname))
+        , _frontend(static_cast<int>(kind))
     {}
 
     void AddMetadata(const std::string& key, const std::string& val);
+    Server& WithRawMetadata(std::string metadata) { _metadata = std::move(metadata); return *this; }
 
     bool operator==(const Server& sv) const
     {
@@ -96,7 +89,7 @@ operator<<(std::ostream& out, const pitaya::Server& s)
     if (out.good()) {
         out << "Server { id = " << s.Id() << ", type = " << s.Type()
             << ", metadata = " << s.Metadata() << ", hostname = " << s.Hostname()
-            << ", frontend = " << (s.Frontend() ? "true" : "false") << " }";
+            << ", frontend = " << (s.IsFrontend() ? "true" : "false") << " }";
     }
     return out;
 }

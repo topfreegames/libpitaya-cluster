@@ -5,23 +5,6 @@
 
 namespace json = web::json;
 
-pitaya::Server::Server(const std::string& id,
-                       const std::string& type,
-                       const std::unordered_map<std::string, std::string>& metadata,
-                       const std::string& hostname,
-                       bool frontend)
-    : _id(id)
-    , _type(type)
-    , _hostname(hostname)
-    , _frontend(frontend)
-{
-    auto obj = json::value::object();
-    for (const auto& entry : metadata) {
-        obj[entry.first] = json::value::string(entry.second);
-    }
-    _metadata = obj.serialize();
-}
-
 void
 pitaya::Server::AddMetadata(const std::string& key, const std::string& val)
 {

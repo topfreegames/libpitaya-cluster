@@ -1,6 +1,7 @@
 #include "pitaya/etcdv3_service_discovery/worker.h"
 
 #include "pitaya/utils/string_utils.h"
+#include "pitaya/utils.h"
 
 #include <algorithm>
 #include <assert.h>
@@ -256,9 +257,9 @@ Worker::SyncServers()
     for (size_t i = 0; i < res.keys.size(); ++i) {
         // 1. Parse key
         string serverType, serverId;
-        bool ok = ParseEtcdKey(res.keys[i], serverType, serverId);
-        if (!ok) {
-            _log->error("Failed to parse etcd key {}", res.keys[i]);
+        if (!utils::ParseEtcdKey(res.keys[i], _config.etcdPrefix, serverType, serverId)) {
+            _log->debug("Ignoring key {}", res.keys[i]);
+            continue;
         }
 
         allIds.push_back(serverId);
@@ -412,22 +413,23 @@ Worker::OnWatch(WatchResponse res)
         return;
     }
 
+    // First we need to parse the etcd key to figure out if it
+    // belongs to the same prefix and it is actually a server.
+    string serverType, serverId;
+    if (!utils::ParseEtcdKey(res.key, _config.etcdPrefix, serverType, serverId)) {
+        _log->debug("Ignoring {}", res.key);
+        return;
+    }
+
     if (res.action == "create") {
         auto server = ParseServer(res.value);
         if (!server) {
             _log->error("Error parsing server: {}", res.value);
             return;
         }
-
         AddServer(std::move(server.value()));
         PrintServers();
     } else if (res.action == "delete") {
-        string serverType, serverId;
-        if (!ParseEtcdKey(res.key, serverType, serverId)) {
-            _log->error("Failed to parse key from etcd: {}", res.key);
-            return;
-        }
-
         DeleteServer(serverId);
         _log->debug("Server {} deleted", serverId);
         PrintServers();
@@ -444,20 +446,6 @@ Worker::WaitUntilInitialized()
 // Utility functions
 // ======================================================
 
-bool
-Worker::ParseEtcdKey(const string& key, string& serverType, string& serverId)
-{
-    auto comps = string_utils::Split(key, '/');
-    if (comps.size() != 4) {
-        _log->error("Error parsing etcd key {} (server name can't contain /)", key);
-        return false;
-    }
-
-    serverType = comps[2];
-    serverId = comps[3];
-    return true;
-}
-
 static string
 GetServerKey(const std::string& serverId, const std::string& serverType)
 {
@@ -471,7 +459,7 @@ Worker::PrintServer(const Server& server)
     _log->debug("  Server: {}", GetServerKey(server.Id(), server.Type()));
     if (printServerDetails) {
         _log->debug("    - hostname: {}", server.Hostname());
-        _log->debug("    - frontend: {}", server.Frontend());
+        _log->debug("    - frontend: {}", server.IsFrontend());
         _log->debug("    - metadata: {}", server.Metadata());
     }
 }
@@ -489,7 +477,7 @@ ServerAsJson(const Server& server)
         obj["metadata"] = json::value::string("");
     }
     obj["hostname"] = json::value::string(server.Hostname());
-    obj["frontend"] = json::value::boolean(server.Frontend());
+    obj["frontend"] = json::value::boolean(server.IsFrontend());
     return obj.serialize();
 }
 
@@ -523,7 +511,10 @@ Worker::ParseServer(const string& jsonStr)
             hostname = jsonSrv["hostname"].as_string();
         }
 
-        return Server(id, type, metadata, hostname, frontend);
+        auto sv = Server((Server::Kind)frontend, id, type, hostname)
+            .WithRawMetadata(metadata);
+
+        return sv;
     } catch (const json::json_exception& exc) {
         _log->error("Failed to parse server json ({}): {}", jsonStr, exc.what());
         return boost::none;

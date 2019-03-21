@@ -47,7 +47,7 @@ FromPitayaServer(const pitaya::Server& pServer)
     server->type = ConvertToCString(pServer.Type());
     server->metadata = ConvertToCString(pServer.Metadata());
     server->hostname = ConvertToCString(pServer.Hostname());
-    server->frontend = pServer.Frontend();
+    server->frontend = pServer.IsFrontend();
     return server;
 }
 
@@ -165,11 +165,14 @@ using ClusterPtr = void*;
 static pitaya::Server
 CServerToServer(CServer* sv)
 {
-    return Server(sv->id ? std::string(sv->id) : "",
-                  sv->type ? std::string(sv->type) : "",
-                  sv->metadata ? std::string(sv->metadata) : "",
-                  sv->hostname ? std::string(sv->hostname) : "",
-                  sv->frontend);
+    auto id = sv->id ? std::string(sv->id) : "";
+    auto type = sv->type ? std::string(sv->type) : "";
+    auto hostname = sv->hostname ? std::string(sv->hostname) : "";
+    auto metadata = sv->metadata ? std::string(sv->metadata) : "";
+
+    auto s = pitaya::Server((Server::Kind)sv->frontend, id, type, hostname)
+        .WithRawMetadata(metadata);
+    return s;
 }
 
 static void
@@ -282,7 +285,7 @@ extern "C"
         }
 
         pitaya::Server server = maybeServer.value();
-        retServer->frontend = server.Frontend(); // FromPitayaServer(server);
+        retServer->frontend = server.IsFrontend(); // FromPitayaServer(server);
         retServer->hostname = ConvertToCString(server.Hostname());
         retServer->id = ConvertToCString(server.Id());
         retServer->metadata = ConvertToCString(server.Metadata());
