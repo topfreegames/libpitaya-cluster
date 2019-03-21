@@ -1,9 +1,10 @@
-#include "pitaya/etcdv3_service_discovery.h"
-#include "pitaya/etcdv3_service_discovery/config.h"
-#include "mock_etcd_client.h"
+#include "test_common.h"
 
 #include "pitaya.h"
-#include "test_common.h"
+#include "pitaya/etcdv3_service_discovery.h"
+#include "pitaya/etcdv3_service_discovery/config.h"
+
+#include "mock_etcd_client.h"
 
 using namespace pitaya;
 using namespace etcdv3_service_discovery;
@@ -16,10 +17,7 @@ public:
     {
         _mockEtcdClient = new MockEtcdClient();
 
-        _server = Server();
-        _server.frontend = false;
-        _server.id = "my-server-id";
-        _server.type = "connector";
+        _server = Server(Server::Kind::Backend, "my-server-id", "connector");
 
         _config = Config();
         _config.etcdPrefix = "/pitaya";
@@ -29,7 +27,7 @@ public:
         spdlog::set_level(spdlog::level::critical);
     }
 
-    void TearDown() override { }
+    void TearDown() override {}
 
 protected:
     std::unique_ptr<etcdv3_service_discovery::Etcdv3ServiceDiscovery> _serviceDiscovery;
@@ -76,7 +74,8 @@ TEST_F(Etcdv3ServiceDiscoveryTest, NoneIsReturnedWhenThereAreNoServers)
         EXPECT_CALL(*_mockEtcdClient, StopLeaseKeepAlive());
     }
 
-    _serviceDiscovery = std::unique_ptr<Etcdv3ServiceDiscovery>(new Etcdv3ServiceDiscovery(_config, _server, std::unique_ptr<EtcdClient>(_mockEtcdClient)));
+    _serviceDiscovery = std::unique_ptr<Etcdv3ServiceDiscovery>(
+        new Etcdv3ServiceDiscovery(_config, _server, std::unique_ptr<EtcdClient>(_mockEtcdClient)));
 
     ASSERT_NE(_mockEtcdClient->onWatch, nullptr);
 

@@ -13,6 +13,7 @@ public:
     MOCK_METHOD1(GetServerById, boost::optional<pitaya::Server>(const std::string& id));
     MOCK_METHOD1(GetServersByType, std::vector<pitaya::Server>(const std::string& type));
     MOCK_METHOD1(AddListener, void(pitaya::service_discovery::Listener* listener));
+    MOCK_METHOD1(RemoveListener, void(pitaya::service_discovery::Listener* listener));
 };
 
 #endif // PITAYA_MOCK_SERVICE_DISCOVERY_H

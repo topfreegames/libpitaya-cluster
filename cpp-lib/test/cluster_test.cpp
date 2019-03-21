@@ -30,10 +30,7 @@ public:
         _mockRpcSv = new MockRpcServer(RpcFunc);
         _mockRpcClient = new MockRpcClient();
 
-        _server = Server();
-        _server.frontend = false;
-        _server.id = "my-server-id";
-        _server.type = "connector";
+        _server = Server(Server::Kind::Backend, "my-server-id", "connector");
 
         pitaya::Cluster::Instance().Initialize(_server,
                                                std::shared_ptr<ServiceDiscovery>(_mockSd),
@@ -54,11 +51,7 @@ protected:
 
 TEST_F(ClusterTest, RpcsCanBeDoneSuccessfuly)
 {
-    Server serverToReturn;
-    serverToReturn.frontend = false;
-    serverToReturn.hostname = "random-host";
-    serverToReturn.id = "my-server-id";
-    serverToReturn.type = "connector";
+    Server serverToReturn(Server::Kind::Backend, "my-server-id", "connector", "random-host");
 
     Sequence seq;
 
@@ -112,11 +105,7 @@ TEST_F(ClusterTest, FailsWhenNoServerIsFound)
 
 TEST_F(ClusterTest, RpcReturnsErrorWhenTheCallFails)
 {
-    Server serverToReturn;
-    serverToReturn.frontend = false;
-    serverToReturn.hostname = "random-host";
-    serverToReturn.id = "my-server-id";
-    serverToReturn.type = "connector";
+    Server serverToReturn(Server::Kind::Backend, "my-server-id", "connector", "random-host");
 
     Sequence seq;
 
