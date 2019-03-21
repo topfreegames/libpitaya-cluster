@@ -46,6 +46,8 @@ option(BUILD_MACOSX_BUNDLE "Should build a bundle for Macosx" OFF)
 if(BUILD_MACOSX_BUNDLE)
     message(STATUS "Setting library to MODULE")
     set(LIB_TYPE MODULE)
+elseif(BUILD_TESTING)
+    set(LIB_TYPE STATIC)
 else()
     set(LIB_TYPE SHARED)
 endif()
@@ -163,6 +165,14 @@ if(BUILD_TESTING AND NOT BUILD_MACOSX_BUNDLE)
         test/etcdv3_service_discovery_test.cpp
         test/utils_test.cpp
         test/main_test.cpp)
+
+    message(WARNING "Adding profiling data into the library and the tests executable, do not ship this library to production (compile with -DBUILD_TESTING=OFF)")
+
+    target_compile_options(pitaya_cluster
+      PRIVATE -fprofile-instr-generate -fcoverage-mapping -O0)
+
+    target_link_libraries(pitaya_cluster
+      PRIVATE -fprofile-instr-generate -fcoverage-mapping)
 
     target_include_directories(pitaya_cluster_tests PUBLIC src)
 
