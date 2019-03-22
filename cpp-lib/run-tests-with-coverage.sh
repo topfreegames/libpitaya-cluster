@@ -8,6 +8,8 @@ fi
 
 tests_executable=$(realpath $1)
 
+shift 1
+
 if [[ ! -f $tests_executable ]];
 then
     echo "The executable $tests_executable does not exist, have you tried building the project first?"
@@ -17,9 +19,19 @@ fi
 tests_executable_dir=$(dirname $tests_executable)
 tests_profraw=$tests_executable_dir/default.profraw
 
+# Run the executable passing the path to default.profraw to llvm
+echo "Running the tests..."
+LLVM_PROFILE_FILE=$tests_profraw $tests_executable $@
+
+if [[ $? -ne 0 ]];
+then
+    echo "Tests failed"
+    exit 1
+fi
+
 if [[ ! -f $tests_profraw ]];
 then
-    echo "The file $tests_profraw does not exist, have you tried running the executable? (Also make sure that the project was created with -DBUILD_TESTING=ON)"
+    echo "The file $tests_profraw does not exist, make sure you are compiling with profiling enabled"
     exit 1
 fi
 
