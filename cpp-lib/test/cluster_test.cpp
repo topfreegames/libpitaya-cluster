@@ -77,9 +77,29 @@ TEST_F(ClusterTest, RpcsCanBeDoneSuccessfuly)
 
     protos::Response res;
 
-    optional<PitayaError> err = Cluster::Instance().RPC("my-server-id", "mytest.route", req, res);
+    {
+        optional<PitayaError> err = Cluster::Instance().RPC("my-server-id", "mytest.route", req, res);
+        EXPECT_FALSE(err);
+    }
 
-    EXPECT_FALSE(err);
+    EXPECT_CALL(*_mockSd, GetServersByType("mytest"))
+        .InSequence(seq)
+        .WillOnce(Return(std::vector<pitaya::Server>{serverToReturn}));
+
+    EXPECT_CALL(*_mockSd, GetServerById("my-server-id"))
+        .InSequence(seq)
+        .WillOnce(Return(serverToReturn));
+
+    EXPECT_CALL(
+        *_mockRpcClient,
+        Call(Eq(serverToReturn), Property(&protos::Request::type, Eq(protos::RPCType::User))))
+        .InSequence(seq)
+        .WillOnce(Return(resToReturn));
+
+    {
+        optional<PitayaError> err = Cluster::Instance().RPC("mytest.routehandler.route", req, res);
+        EXPECT_FALSE(err);
+    }
 }
 
 TEST_F(ClusterTest, FailsWhenNoServerIsFound)
