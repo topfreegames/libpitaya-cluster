@@ -16,4 +16,11 @@ public:
     MOCK_METHOD1(RemoveListener, void(pitaya::service_discovery::Listener* listener));
 };
 
+class MockServiceDiscoveryListener : public pitaya::service_discovery::Listener
+{
+public:
+    MOCK_METHOD1(ServerAdded, void(const pitaya::Server& server));
+    MOCK_METHOD1(ServerRemoved, void(const pitaya::Server& server));
+};
+
 #endif // PITAYA_MOCK_SERVICE_DISCOVERY_H
