@@ -16,12 +16,14 @@
 using std::string;
 using namespace pitaya;
 
+static constexpr const char* kLogTag = "nats_rpc_client";
+
 namespace pitaya {
 namespace nats {
 
 NatsRpcClient::NatsRpcClient(const NatsConfig& config, const char* loggerName)
-    : _log(loggerName ? spdlog::get(loggerName)->clone("nats_rpc_client")
-                      : spdlog::stdout_color_mt("nats_rpc_client"))
+    : _log(loggerName ? spdlog::get(loggerName)->clone(kLogTag)
+                      : spdlog::stdout_color_mt(kLogTag))
     , _opts(nullptr)
     , _nc(nullptr)
     , _timeoutMs(config.requestTimeoutMs)
@@ -54,7 +56,7 @@ NatsRpcClient::~NatsRpcClient()
 
     _log->info("rpc client shut down");
     _log->flush();
-    spdlog::drop("nats_rpc_client");
+    spdlog::drop(kLogTag);
 }
 
 protos::Response

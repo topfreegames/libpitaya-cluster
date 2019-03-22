@@ -25,6 +25,8 @@ private:
     void ThreadStart();
 
 private:
+    static constexpr const char* kLogTag = "grpc_server";
+
     std::shared_ptr<spdlog::logger> _log;
     GrpcConfig _config;
     std::unique_ptr<::grpc::Server> _grpcServer;

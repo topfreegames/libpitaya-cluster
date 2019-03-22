@@ -28,10 +28,15 @@ class PitayaGrpcImpl final : public protos::Pitaya::Service
 {
 public:
     PitayaGrpcImpl(pitaya::RpcHandlerFunc handlerFunc, const char* loggerName = nullptr)
-        : _log(loggerName ? spdlog::get(loggerName)->clone("pitaya_grpc_rpc_server_impl")
-                          : spdlog::stdout_color_mt("pitaya_grpc_rpc_server_impl"))
+        : _log(loggerName ? spdlog::get(loggerName)->clone(kLogTag)
+                          : spdlog::stdout_color_mt(kLogTag))
         , _handlerFunc(std::move(handlerFunc))
     {}
+
+    ~PitayaGrpcImpl()
+    {
+        spdlog::drop(kLogTag);
+    }
 
     grpc::Status Call(grpc::ServerContext* context,
                       const protos::Request* req,
@@ -48,6 +53,8 @@ public:
     }
 
 private:
+    static constexpr const char* kLogTag = "grpc_server_impl";
+
     std::shared_ptr<spdlog::logger> _log;
     pitaya::RpcHandlerFunc _handlerFunc;
 };
@@ -56,8 +63,8 @@ namespace pitaya {
 
 GrpcServer::GrpcServer(GrpcConfig config, RpcHandlerFunc handler, const char* loggerName)
     : RpcServer(handler)
-    , _log(loggerName ? spdlog::get(loggerName)->clone("grpc_server")
-                      : spdlog::stdout_color_mt("grpc_server"))
+    , _log(loggerName ? spdlog::get(loggerName)->clone(kLogTag)
+                      : spdlog::stdout_color_mt(kLogTag))
     , _config(std::move(config))
     , _service(new PitayaGrpcImpl(_handlerFunc, loggerName))
 {
@@ -85,6 +92,7 @@ GrpcServer::~GrpcServer()
         _grpcServer->Shutdown();
         _grpcServer->Wait();
     }
+    spdlog::drop(kLogTag);
 }
 
 void

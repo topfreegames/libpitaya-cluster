@@ -15,6 +15,8 @@
 using std::string;
 using namespace pitaya;
 
+static constexpr const char* kLogTag = "nats_rpc_server";
+
 namespace pitaya {
 namespace nats {
 
@@ -23,8 +25,8 @@ NatsRpcServer::NatsRpcServer(const Server& server,
                              RpcHandlerFunc handlerFunc,
                              const char* loggerName)
     : RpcServer(handlerFunc)
-    , _log(loggerName ? spdlog::get(loggerName)->clone("nats_rpc_server")
-                      : spdlog::stdout_color_mt("nats_rpc_server"))
+    , _log(loggerName ? spdlog::get(loggerName)->clone(kLogTag)
+                      : spdlog::stdout_color_mt(kLogTag))
     , _opts(nullptr)
     , _nc(nullptr)
     , _sub(nullptr)
@@ -64,7 +66,7 @@ NatsRpcServer::~NatsRpcServer()
 
     _log->info("rpc server shut down");
     _log->flush();
-    spdlog::drop("nats_rpc_server");
+    spdlog::drop(kLogTag);
 }
 
 void
