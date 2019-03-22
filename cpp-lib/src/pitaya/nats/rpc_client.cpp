@@ -22,8 +22,7 @@ namespace pitaya {
 namespace nats {
 
 NatsRpcClient::NatsRpcClient(const NatsConfig& config, const char* loggerName)
-    : _log(loggerName ? spdlog::get(loggerName)->clone(kLogTag)
-                      : spdlog::stdout_color_mt(kLogTag))
+    : _log(loggerName ? spdlog::get(loggerName)->clone(kLogTag) : spdlog::stdout_color_mt(kLogTag))
     , _opts(nullptr)
     , _nc(nullptr)
     , _timeoutMs(config.requestTimeoutMs)

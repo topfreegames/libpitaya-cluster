@@ -33,10 +33,7 @@ public:
         , _handlerFunc(std::move(handlerFunc))
     {}
 
-    ~PitayaGrpcImpl()
-    {
-        spdlog::drop(kLogTag);
-    }
+    ~PitayaGrpcImpl() { spdlog::drop(kLogTag); }
 
     grpc::Status Call(grpc::ServerContext* context,
                       const protos::Request* req,
@@ -63,8 +60,7 @@ namespace pitaya {
 
 GrpcServer::GrpcServer(GrpcConfig config, RpcHandlerFunc handler, const char* loggerName)
     : RpcServer(handler)
-    , _log(loggerName ? spdlog::get(loggerName)->clone(kLogTag)
-                      : spdlog::stdout_color_mt(kLogTag))
+    , _log(loggerName ? spdlog::get(loggerName)->clone(kLogTag) : spdlog::stdout_color_mt(kLogTag))
     , _config(std::move(config))
     , _service(new PitayaGrpcImpl(_handlerFunc, loggerName))
 {

@@ -41,12 +41,9 @@ Worker::Worker(const Config& config,
     }
     _etcdClient->Watch(std::bind(&Worker::OnWatch, this, _1));
     _workerThread = std::thread(&Worker::StartThread, this);
-} catch (const etcd::watch_error& exc) {
-    throw PitayaException(
-        fmt::format("Failed to initialize ServiceDiscovery watcher: {}", exc.what()));
 } catch (const spdlog::spdlog_ex& exc) {
     throw PitayaException(
-        fmt::format("Failed to initialize ServiceDiscovery watcher: {}", exc.what()));
+        fmt::format("Failed to initialize ServiceDiscoveryWorker logger: {}", exc.what()));
 }
 
 Worker::~Worker()
@@ -55,7 +52,7 @@ Worker::~Worker()
 
     {
         std::lock_guard<decltype(_jobQueue)> lock(_jobQueue);
-        _jobQueue.PushBack(JobInfo::Shutdown);
+        _jobQueue.PushBack(Job(JobInfo::Shutdown));
         _semaphore.Notify();
     }
 
@@ -106,9 +103,21 @@ Worker::StartThread()
             continue;
         }
 
-        JobInfo info = _jobQueue.PopFront();
-        switch (info) {
-            case JobInfo::EtcdReconnectionFailure:
+        Job job = _jobQueue.PopFront();
+        switch (job.info) {
+            case JobInfo::NewListener: {
+                assert(job.listener && "listener should not be null");
+                // Whenever we add a new listener, we want to call ServerAdded
+                // for all existent servers on the class.
+                for (const auto& pair : _serversById) {
+                    const Server& server = pair.second;
+                    job.listener->ServerAdded(server);
+                }
+                std::lock_guard<decltype(_listeners)> lock(_listeners);
+                _listeners.PushBack(job.listener);
+                break;
+            }
+            case JobInfo::EtcdReconnectionFailure: {
                 _log->error("Reconnection failure, {} retries left!", _numKeepAliveRetriesLeft);
                 _etcdClient->StopLeaseKeepAlive();
                 _syncServersTicker.Stop();
@@ -133,15 +142,18 @@ Worker::StartThread()
                 }
 
                 break;
-            case JobInfo::Shutdown:
+            }
+            case JobInfo::Shutdown: {
                 _log->info("Shutting down");
                 RevokeLease();
                 Shutdown();
                 _log->debug("Exiting loop");
                 return;
-            case JobInfo::WatchError:
+            }
+            case JobInfo::WatchError: {
                 _log->error("Watch error");
                 break;
+            }
         }
     }
 
@@ -164,7 +176,7 @@ Worker::StartLeaseKeepAlive()
             case EtcdLeaseKeepAliveStatus::Fail: {
                 _log->error("lease keep alive failed!");
                 std::lock_guard<decltype(_jobQueue)> lock(_jobQueue);
-                _jobQueue.PushBack(JobInfo::EtcdReconnectionFailure);
+                _jobQueue.PushBack(Job(JobInfo::EtcdReconnectionFailure));
                 _syncServersTicker.Stop();
                 _semaphore.Notify();
             } break;
@@ -411,7 +423,7 @@ Worker::OnWatch(WatchResponse res)
     if (!res.ok) {
         _log->error("OnWatch error");
         std::lock_guard<decltype(_jobQueue)> lock(_jobQueue);
-        _jobQueue.PushBack(JobInfo::WatchError);
+        _jobQueue.PushBack(Job(JobInfo::WatchError));
         _semaphore.Notify();
         return;
     }
@@ -529,15 +541,10 @@ Worker::ParseServer(const string& jsonStr)
 void
 Worker::AddListener(service_discovery::Listener* listener)
 {
-    // Whenever we add a new listener, we want to call ServerAdded
-    // for all existent servers on the class.
-    for (const auto& pair : _serversById) {
-        const Server& server = pair.second;
-        listener->ServerAdded(server);
-    }
-
-    std::lock_guard<decltype(_listeners)> lock(_listeners);
-    _listeners.PushBack(listener);
+    assert(listener && "listener should not be null");
+    std::lock_guard<decltype(_jobQueue)> lock(_jobQueue);
+    _jobQueue.PushBack(Job(JobInfo::NewListener, listener));
+    _semaphore.Notify();
 }
 
 void

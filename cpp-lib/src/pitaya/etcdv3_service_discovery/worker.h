@@ -28,7 +28,19 @@ enum class JobInfo
 {
     EtcdReconnectionFailure,
     WatchError,
+    NewListener,
     Shutdown,
+};
+
+struct Job
+{
+    JobInfo info;
+    service_discovery::Listener* listener;
+
+    explicit Job(JobInfo info, service_discovery::Listener* listener = nullptr)
+        : info(info)
+        , listener(listener)
+    {}
 };
 
 class Worker
@@ -87,7 +99,7 @@ private:
     utils::Ticker _syncServersTicker;
 
     utils::Semaphore _semaphore;
-    utils::SyncDeque<JobInfo> _jobQueue;
+    utils::SyncDeque<Job> _jobQueue;
     utils::SyncMap<std::string, pitaya::Server> _serversById;
     utils::SyncMap<std::string, std::unordered_map<std::string, pitaya::Server>> _serversByType;
 

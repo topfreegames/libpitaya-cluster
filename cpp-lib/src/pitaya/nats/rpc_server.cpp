@@ -25,8 +25,7 @@ NatsRpcServer::NatsRpcServer(const Server& server,
                              RpcHandlerFunc handlerFunc,
                              const char* loggerName)
     : RpcServer(handlerFunc)
-    , _log(loggerName ? spdlog::get(loggerName)->clone(kLogTag)
-                      : spdlog::stdout_color_mt(kLogTag))
+    , _log(loggerName ? spdlog::get(loggerName)->clone(kLogTag) : spdlog::stdout_color_mt(kLogTag))
     , _opts(nullptr)
     , _nc(nullptr)
     , _sub(nullptr)

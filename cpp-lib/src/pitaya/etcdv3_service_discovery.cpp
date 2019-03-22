@@ -31,14 +31,14 @@ Etcdv3ServiceDiscovery::Etcdv3ServiceDiscovery(const Config& config,
                                                Server server,
                                                std::unique_ptr<EtcdClient> etcdClient,
                                                const char* loggerName)
-    : _log((loggerName && spdlog::get(loggerName)) ? spdlog::get(loggerName)->clone(kLogTag)
-                                                   : spdlog::stdout_color_mt(kLogTag))
-    , _worker(new Worker(config, server, std::move(etcdClient), loggerName ? loggerName : kLogTag))
 {
     if (server.Id().empty() || server.Type().empty()) {
         throw PitayaException("Server id and type cannot be empty");
     }
-
+    _log = ((loggerName && spdlog::get(loggerName)) ? spdlog::get(loggerName)->clone(kLogTag)
+                                                    : spdlog::stdout_color_mt(kLogTag));
+    _worker = std::unique_ptr<Worker>(
+        new Worker(config, server, std::move(etcdClient), loggerName ? loggerName : kLogTag));
     _worker->WaitUntilInitialized();
 }
 
