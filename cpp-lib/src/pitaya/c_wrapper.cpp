@@ -124,16 +124,22 @@ protos::Response
 RpcCallback(protos::Request req)
 {
     protos::Response res;
+    MemoryBuffer reqBuffer;
+    size_t size = req.ByteSizeLong(); 
+    reqBuffer.data = malloc(size);
+    reqBuffer.size = size;
 
-    RPCReq cReq;
-    cReq.buffer.data = (void*)req.msg().data().data();
-    cReq.buffer.size = req.msg().data().size();
-    cReq.route = req.msg().route().c_str();
-    auto memBuf = gPinvokeCb(&cReq);
+    bool success = req.SerializeToArray(reqBuffer.data, size);
+    if (!success){
+      gLogger->error("failed to serialize protobuf request!");
+      //TODO what to do here ? error like below
+    }
+
+    auto memBuf = gPinvokeCb(&reqBuffer);
 
     // for debugging purposes, uncomment the below line
     // print_data(memBuf->data, memBuf->size);
-    bool success = res.ParseFromArray(memBuf->data, memBuf->size);
+    success = res.ParseFromArray(memBuf->data, memBuf->size);
     if (!success) {
         auto err = new protos::Error();
         err->set_code(pitaya::constants::kCodeInternalError);
@@ -143,6 +149,7 @@ RpcCallback(protos::Request req)
     // TODO hacky, OMG :O - do stress testing to see if this will leak memory
     freePinvoke(memBuf->data);
     freePinvoke(memBuf);
+    free(reqBuffer.data);
     return res;
 }
 
@@ -228,6 +235,7 @@ extern "C"
         try {
             Cluster::Instance().InitializeWithGrpc(
                 grpcConfig->ToConfig(), sdConfig->ToConfig(), server, RpcCallback, "c_wrapper");
+
             return true;
         } catch (const PitayaException& exc) {
             gLogger->error("Failed to create cluster instance: {}", exc.what());
@@ -329,11 +337,6 @@ extern "C"
         protos::Request req;
         req.set_allocated_msg(msg);
         req.set_type(protos::RPCType::User);
-
-        std::vector<uint8_t> buffer;
-        buffer.resize(req.ByteSizeLong());
-
-        req.SerializeToArray(buffer.data(), req.ByteSizeLong());
 
         protos::Response res;
 

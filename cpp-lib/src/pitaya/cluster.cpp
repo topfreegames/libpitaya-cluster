@@ -46,7 +46,7 @@ Cluster::InitializeWithGrpc(GrpcConfig config,
 
     Initialize(server,
                sd,
-               std::unique_ptr<RpcServer>(new GrpcServer(config, rpcServerHandlerFunc, loggerName)),
+               std::shared_ptr<GrpcServer>(new GrpcServer(config, rpcServerHandlerFunc, loggerName)),
                std::unique_ptr<RpcClient>(new GrpcClient(config, sd, loggerName)));
 }
 
@@ -72,7 +72,7 @@ Cluster::InitializeWithNats(nats::NatsConfig&& natsConfig,
 void
 Cluster::Initialize(Server server,
                     std::shared_ptr<service_discovery::ServiceDiscovery> sd,
-                    std::unique_ptr<RpcServer> rpcServer,
+                    std::shared_ptr<RpcServer> rpcServer,
                     std::unique_ptr<RpcClient> rpcClient,
                     const char* loggerName)
 {
@@ -135,8 +135,7 @@ Cluster::RPC(const string& server_id,
     metadata[constants::kPeerIdKey] = json::value::string(_server.Id());
     metadata[constants::kPeerServiceKey] = json::value::string(_server.Type());
     string metadataStr = metadata.serialize();
-    req.set_metadata(metadataStr);
-    req.set_type(::protos::RPCType::User);
+    req.set_metadata(metadataStr); 
 
     ret = _rpcClient->Call(sv.value(), req);
     if (ret.has_error()) {

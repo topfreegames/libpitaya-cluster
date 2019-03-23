@@ -23,6 +23,7 @@ public:
                   const char* loggerName = nullptr);
 
     ~NatsRpcServer();
+    void ThreadStart();
 
 private:
     void PrintSubStatus(natsSubscription* sub);

@@ -3,6 +3,7 @@
 
 #include "pitaya.h"
 #include "pitaya/grpc/config.h"
+#include "protos/pitaya.grpc.pb.h"
 #include "pitaya/rpc_server.h"
 #include "protos/request.pb.h"
 #include "protos/response.pb.h"
@@ -20,18 +21,20 @@ class GrpcServer : public RpcServer
 public:
     GrpcServer(GrpcConfig config, RpcHandlerFunc handler, const char* loggerName = nullptr);
     ~GrpcServer();
+    void ThreadStart();
 
 private:
-    void ThreadStart();
 
 private:
     static constexpr const char* kLogTag = "grpc_server";
 
     std::shared_ptr<spdlog::logger> _log;
     GrpcConfig _config;
+
+    std::unique_ptr<grpc::ServerCompletionQueue> cq_;
+    protos::Pitaya::AsyncService service_;
     std::unique_ptr<::grpc::Server> _grpcServer;
-    std::unique_ptr<PitayaGrpcImpl> _service;
-};
+  };
 
 } // namespace pitaya
 

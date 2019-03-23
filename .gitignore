@@ -17,6 +17,7 @@ venv
 out
 dist
 *.egg-info
+.idea
 
 NugetOutput/lib
 NugetOutput/*.nupkg
