@@ -49,7 +49,7 @@ namespace PitayaCSharpExample
 
       try
       {
-        PitayaCluster.Initialize(grpcConfig, sdConfig, sv, NativeLogLevel.Debug, "/tmp/pitaya");
+        PitayaCluster.Initialize(grpcConfig, sdConfig, sv, NativeLogLevel.Debug, "");
         //PitayaCluster.Initialize(natsConfig, sdConfig, sv, null);
       }
       catch (PitayaException exc)
@@ -67,18 +67,27 @@ namespace PitayaCSharpExample
 
       System.Threading.Thread.Sleep(1000);
 
-      try
+      for (int i = 0; i < 3; i++)
       {
-        var res = PitayaCluster.Rpc<Protos.RPCRes>(Route.FromString("csharp.testremote.remote"), null);
-        Console.WriteLine($"Code: {res.Code}");
-        Console.WriteLine($"Msg: {res.Msg}");
-      }
-      catch (PitayaException exc)
-      {
-        Console.WriteLine($"RPC failed: {exc.Message}");
+        new Thread(PitayaCluster.ListenGRPC).Start();
       }
 
-      Console.ReadKey();
+      while (true)
+      {
+        Thread.Sleep(10);
+      }
+     
+      //try
+      //{
+      //  var res = PitayaCluster.Rpc<Protos.RPCRes>(Route.FromString("csharp.testremote.remote"), null);
+      //  Console.WriteLine($"Code: {res.Code}");
+      //  Console.WriteLine($"Msg: {res.Msg}");
+      //}
+      //catch (PitayaException exc)
+      //{
+      //  Console.WriteLine($"RPC failed: {exc.Message}");
+      //}
+
       //
       //      Server sv = PitayaCluster.GetServer(serverId);
       //      Logger.Info("got server with id: {0}", sv.id);

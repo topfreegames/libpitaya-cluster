@@ -9,6 +9,7 @@ public:
     MockRpcServer(pitaya::RpcHandlerFunc handler)
         : pitaya::RpcServer(handler)
     {}
+    void ThreadStart(){}
 };
 
 #endif // MOCK_RPC_SERVER_H

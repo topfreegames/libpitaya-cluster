@@ -27,8 +27,10 @@ NewUnsupportedRpcRtype()
 
 class PitayaGrpcCall final{
 public:
-  PitayaGrpcCall(pitaya::RpcHandlerFunc handlerFunc, protos::Pitaya::AsyncService* service, ServerCompletionQueue* cq)
-    : service_(service), cq_(cq), responder_(&ctx_), status_(CREATE), _handlerFunc(std::move(handlerFunc)){
+  PitayaGrpcCall(pitaya::RpcHandlerFunc handlerFunc, std::shared_ptr<spdlog::logger> log, protos::Pitaya::AsyncService* service, ServerCompletionQueue* cq)
+    : service_(service),
+    _log(log),
+    cq_(cq), responder_(&ctx_), status_(CREATE), _handlerFunc(std::move(handlerFunc)){
       Proceed();
     }
 
@@ -47,15 +49,15 @@ public:
       // Spawn a new CallData instance to serve new clients while we process
       // the one for this CallData. The instance will deallocate itself as
       // part of its FINISH state.
-      new PitayaGrpcCall(_handlerFunc, service_, cq_);
+      new PitayaGrpcCall(_handlerFunc, _log, service_, cq_);
 
       // The actual processing.
-      *reply_ = _handlerFunc(request_);
+      reply_ = _handlerFunc(request_);
 
       // And we are done! Let the gRPC runtime know we've finished, using the
       // memory address of this instance as the uniquely identifying tag for
       // the event.
-      responder_.Finish(*reply_, Status::OK, this);
+      responder_.Finish(reply_, Status::OK, this);
       status_ = FINISH;
     } else {
       GPR_ASSERT(status_ == FINISH);
@@ -78,7 +80,7 @@ public:
     // What we get from the client.
     protos::Request request_;
     // What we send back to the client.
-    protos::Response* reply_;
+    protos::Response reply_;
 
     // The means to get back to the client.
     ServerAsyncResponseWriter<protos::Response> responder_;
@@ -88,6 +90,8 @@ public:
     CallStatus status_;  // The current serving state.
     
     pitaya::RpcHandlerFunc _handlerFunc;
+    
+    std::shared_ptr<spdlog::logger> _log;
 };
 
 
@@ -158,7 +162,7 @@ GrpcServer::ThreadStart()
 {
     _log->info("Starting grpc rpc server thread");
 
-    new PitayaGrpcCall(_handlerFunc, &service_, cq_.get());
+    new PitayaGrpcCall(_handlerFunc, _log, &service_, cq_.get());
     void* tag;  // uniquely identifies a request.
     bool ok;
     while (true) {

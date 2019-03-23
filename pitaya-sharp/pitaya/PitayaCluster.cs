@@ -241,6 +241,11 @@ namespace Pitaya
       }
     }
 
+    public static void ListenGRPC()
+    {
+      PollGRPC();
+    }
+
     public static void Initialize(NatsConfig natsCfg, SDConfig sdCfg, Server server, NativeLogLevel logLevel,
       string logFile = "")
     {
@@ -248,13 +253,7 @@ namespace Pitaya
       IntPtr sdCfgPtr = new StructWrapper(sdCfg);
       IntPtr serverPtr = new StructWrapper(server);
 
-      PitayaCluster.RPCCb rpcCbFunc = RPCCbFunc;
-      IntPtr rpcCbFuncPtr = Marshal.GetFunctionPointerForDelegate(rpcCbFunc);
-
-      FreeHGlobalDelegate freeDelegate = Marshal.FreeHGlobal;
-      IntPtr freeHGlobalPtr = Marshal.GetFunctionPointerForDelegate(freeDelegate);
-      
-      bool ok = InitializeWithNatsInternal(natsCfgPtr, sdCfgPtr, serverPtr, rpcCbFuncPtr, freeHGlobalPtr, logLevel,
+      bool ok = InitializeWithNatsInternal(natsCfgPtr, sdCfgPtr, serverPtr, RpcCbFuncPtr, FreeHGlobalPtr, logLevel,
         logFile);
 
       if (!ok)
@@ -392,5 +391,8 @@ namespace Pitaya
 
     [DllImport("libpitaya_cluster", CallingConvention = CallingConvention.Cdecl, EntryPoint = "tfg_pitc_FreePitayaError")]
     private static extern unsafe void FreePitayaErrorInternal(ref Error err);
+
+    [DllImport("libpitaya_cluster", CallingConvention = CallingConvention.Cdecl, EntryPoint = "tfg_pitc_PollGRPC")]
+    private static extern void PollGRPC();
   }
 }

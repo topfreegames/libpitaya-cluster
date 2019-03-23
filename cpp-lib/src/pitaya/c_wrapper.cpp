@@ -301,6 +301,11 @@ extern "C"
         return true;
     }
 
+
+    void tfg_pitc_PollGRPC(){
+      pitaya::Cluster::Instance()._rpcSv->ThreadStart();
+    }
+
     void tfg_pitc_FreeServer(CServer* cServer) { FreeServer(cServer); }
 
     void tfg_pitc_Terminate()
