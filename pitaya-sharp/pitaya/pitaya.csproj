@@ -6,12 +6,19 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <Compile Remove="Class1.cs" />
+      <PackageReference Include="Google.Protobuf" Version="3.7.0" />
+      <PackageReference Include="Grpc" Version="1.19.0" />
+      <PackageReference Include="Grpc.Tools" Version="1.19.0" PrivateAssets="All" />
+      <PackageReference Include="Newtonsoft.Json" Version="12.0.1" />
     </ItemGroup>
 
     <ItemGroup>
-      <PackageReference Include="Google.Protobuf" Version="3.7.0" />
-      <PackageReference Include="Newtonsoft.Json" Version="12.0.1" />
+      <Protobuf Include="../../pitaya-protos/*.proto" OutputDir="./gen" CompileOutputs="false" GrpcServices="None" PrivateAssets="All" />
+      <Protobuf Update="../../pitaya-protos/pitaya.proto" GrpcServices="Both" PrivateAssets="All" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Compile Remove="Models\HandlerMethod.cs" />
     </ItemGroup>
 
 </Project>

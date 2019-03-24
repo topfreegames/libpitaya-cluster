@@ -5,7 +5,7 @@ using Pitaya.Models;
 namespace PitayaCSharpExample
 {
   [Remote]
-  class TestRemote : BaseRemote
+  class TestRemote : BaseRemoteMethod
   {
     public Protos.RPCRes remote(Protos.RPCMsg msg) {
       Protos.RPCRes response = new Protos.RPCRes();

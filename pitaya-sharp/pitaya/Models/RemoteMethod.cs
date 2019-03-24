@@ -1,20 +1,21 @@
 using System;
 using System.Reflection;
+using pitaya.Models;
 
 namespace Pitaya
 {
   public class RemoteMethod
   {
-    public BaseRemote obj;
-    public MethodBase method;
-    public Type returnType;
-    public Type argType;
+    public readonly IBaseRemote Obj;
+    internal MethodBase Method { get; }
+    internal Type ReturnType { get; }
+    internal Type ArgType { get; }
 
-    public RemoteMethod(BaseRemote obj, MethodBase method, Type returnType, Type argType){
-      this.obj = obj;
-      this.method = method;
-      this.returnType = returnType;
-      this.argType = argType;
+    public RemoteMethod(IBaseRemote obj, MethodBase method, Type returnType, Type argType){
+      Obj = obj;
+      Method = method;
+      ReturnType = returnType;
+      ArgType = argType;
     }
   }
 }

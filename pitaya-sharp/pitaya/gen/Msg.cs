@@ -281,7 +281,7 @@ namespace Protos {
             break;
           }
           case 40: {
-            Type = (global::Protos.MsgType) input.ReadEnum();
+            type_ = (global::Protos.MsgType) input.ReadEnum();
             break;
           }
         }

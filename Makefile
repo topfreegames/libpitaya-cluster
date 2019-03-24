@@ -55,9 +55,9 @@ submodules:
 	@git submodule update --init --recursive --remote
 
 protos-compile: submodules
-	@protoc --csharp_out=./csharp-example/csharp-example/gen/ ./go-server/protos/*.proto
+	@protoc --csharp_out=./pitaya-sharp/exampleapp/gen/ ./go-server/protos/*.proto
 	@protoc --csharp_out=./unity-example/Assets/Gen/ ./go-server/protos/*.proto
-	@protoc --proto_path=pitaya-protos --csharp_out=./csharp-lib/cluster-lib/gen ./pitaya-protos/*.proto
+	@protoc --proto_path=pitaya-protos --csharp_out=./pitaya-sharp/pitaya/gen ./pitaya-protos/*.proto
 	@protoc --proto_path=pitaya-protos --python_out=./python-lib/pitayaserver/gen ./pitaya-protos/*.proto
 	@protoc --proto_path=./go-server/protos --python_out=./python-lib/pitayaserver/gen ./go-server/protos/cluster.proto
 	@sed -i '.old' 's/^\(import.*_pb2\)/from . \1/' ./python-lib/pitayaserver/gen/*.py && rm ./python-lib/pitayaserver/gen/*.old ## dirty python hack, see https://github.com/protocolbuffers/protobuf/issues/1491

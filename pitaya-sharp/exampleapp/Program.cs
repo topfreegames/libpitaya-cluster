@@ -34,7 +34,7 @@ namespace PitayaCSharpExample
 
       NatsConfig natsConfig = new NatsConfig("127.0.0.1:4222", 2000, 1000, 3, 100);
 
-      GrpcConfig grpcConfig = new GrpcConfig("127.0.0.1", 58800, 2);
+      GrpcConfig grpcConfig = new GrpcConfig("127.0.0.1", 5444, 2);
 
       PitayaCluster cluster = null;
 

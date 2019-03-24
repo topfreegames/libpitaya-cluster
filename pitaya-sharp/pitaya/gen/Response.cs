@@ -168,7 +168,7 @@ namespace Protos {
       }
       if (other.error_ != null) {
         if (error_ == null) {
-          Error = new global::Protos.Error();
+          error_ = new global::Protos.Error();
         }
         Error.MergeFrom(other.Error);
       }
@@ -189,9 +189,9 @@ namespace Protos {
           }
           case 18: {
             if (error_ == null) {
-              Error = new global::Protos.Error();
+              error_ = new global::Protos.Error();
             }
-            input.ReadMessage(Error);
+            input.ReadMessage(error_);
             break;
           }
         }

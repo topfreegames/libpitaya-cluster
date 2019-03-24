@@ -7,7 +7,7 @@ using Session = Pitaya.Models.Session;
 
 namespace PitayaCSharpExample.Handlers
 {
-  class TestHandler : BaseHandler
+  class TestHandler : BaseHandlerMethod
   {
     public RPCRes entry(Session session, Protos.RPCMsg msg) {
       Protos.RPCRes response = new Protos.RPCRes();

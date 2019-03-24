@@ -3,12 +3,14 @@ using System.IO;
 using System.Runtime.InteropServices;
 using Google.Protobuf;
 using System.Collections.Generic;
+using Grpc.Core;
 using Pitaya.Models;
 using Protos;
 using static Pitaya.Utils.Utils;
 
 // TODO remove try catches
 // TODO json support
+// TODO remove GRPC Server from cpp lib
 namespace Pitaya
 {
   public class PitayaCluster
@@ -29,12 +31,8 @@ namespace Pitaya
       
     private delegate void OnSignalFunc();
 
-    public delegate void LogHandler(string msg);
-
-    public delegate void SignalHandler();
-
-    private static Dictionary<string, RemoteMethod> _remotesDict = new Dictionary<string, RemoteMethod>();
-    private static Dictionary<string, HandlerMethod> _handlersDict = new Dictionary<string, HandlerMethod>();
+    private static readonly Dictionary<string, RemoteMethod> RemotesDict = new Dictionary<string, RemoteMethod>();
+    private static readonly Dictionary<string, RemoteMethod> HandlersDict = new Dictionary<string, RemoteMethod>();
 
     private static Action _onSignalEvent;
 
@@ -66,28 +64,40 @@ namespace Pitaya
       return ptr;
     }
 
+    private static IntPtr zeroPtr = IntPtr.Zero;
     // TODO can we make this faster with some delegate-fu?
     private static IntPtr RPCCbFunc(IntPtr bufferPtr)
     {
-      // TODO break this awful method
-      var buffer = (MemoryBuffer) Marshal.PtrToStructure(bufferPtr, typeof(MemoryBuffer));
-      Request req = new Request();
-      req.MergeFrom(new CodedInputStream(buffer.GetData()));
+      return zeroPtr;
+      //var buffer = (MemoryBuffer) Marshal.PtrToStructure(bufferPtr, typeof(MemoryBuffer));
+      //Request req = new Request();
+      //req.MergeFrom(new CodedInputStream(buffer.GetData()));
 
-      //Logger.Debug($"called with type: {req.Type} route: {req.Msg.Route}");
+      //Response response;
+      //switch (req.Type)
+      //{
+      //  case RPCType.User:
+      //    response = HandleRpc(req, RPCType.User);
+      //    break;
+      //  case RPCType.Sys:
+      //    response = HandleRpc(req, RPCType.Sys);
+      //    break;
+      //  default:
+      //    throw new Exception($"invalid rpc type, argument:{req.Type}");
+      //}
+      //
+      //var res = new MemoryBuffer();
+      //IntPtr pnt = Marshal.AllocHGlobal(Marshal.SizeOf(res));
 
-      switch (req.Type)
-      {
-        case RPCType.User:
-          return HandleRPCUser(req);
-        case RPCType.Sys:
-          return HandleRPCSys(req);
-        default:
-          throw new Exception($"invalid rpc type, argument:{req.Type}");
-      }
+      //byte[] responseBytes = ProtoMessageToByteArray(response);
+      //res.data = ByteArrayToIntPtr(responseBytes);
+      //res.size = responseBytes.Length;
+      //Marshal.StructureToPtr(res, pnt, false);
+      //
+      //return pnt;
     }
 
-    private static IntPtr HandleRPCSys(Protos.Request req)
+    internal static Response HandleRpc(Protos.Request req, RPCType type)
     {
 
       byte[] data = req.Msg.Data.ToByteArray();
@@ -98,21 +108,25 @@ namespace Pitaya
       var s = new Models.Session(req.Session, req.FrontendID);
       var response = new Protos.Response();
 
-      var res = new MemoryBuffer();
-      IntPtr pnt = Marshal.AllocHGlobal(Marshal.SizeOf(res));
-      if (!_handlersDict.ContainsKey(handlerName))
+      RemoteMethod handler;
+      if (type == RPCType.Sys)
       {
-        response = GetErrorResponse("PIT-404", $"handler not found! handler name: {handlerName}");
-        byte[] responseBytes = ProtoMessageToByteArray(response);
-        res.data = ByteArrayToIntPtr(responseBytes);
-        res.size = responseBytes.Length;
-        Marshal.StructureToPtr(res, pnt, false);
-        return pnt;
+          if (!HandlersDict.ContainsKey(handlerName))
+          {
+            response = GetErrorResponse("PIT-404", $"remote/handler not found! remote/handler name: {handlerName}");
+            return response;
+          }       
+          handler = HandlersDict[handlerName];
+      } else
+      {
+          if (!RemotesDict.ContainsKey(handlerName))
+          {
+            response = GetErrorResponse("PIT-404", $"remote/handler not found! remote/handler name: {handlerName}");
+            return response;
+          }       
+          handler = RemotesDict[handlerName];
       }
-
-      HandlerMethod handler = _handlersDict[handlerName];
-      //Logger.Debug($"found delegate: {handler}");
-
+      
       try
       {
         IMessage ans;
@@ -126,14 +140,9 @@ namespace Pitaya
         {
             ans = (IMessage) handler.Method.Invoke(handler.Obj, new object[] {s});
         }
-        // invoke is slow :/
         byte[] ansBytes = ProtoMessageToByteArray(ans);
         response.Data = ByteString.CopyFrom(ansBytes);
-        byte[] responseBytes = ProtoMessageToByteArray(response);
-        res.data = ByteArrayToIntPtr(responseBytes);
-        res.size = responseBytes.Length;
-        Marshal.StructureToPtr(res, pnt, false);
-        return pnt;
+        return response;
       }
       catch (Exception e)
       {
@@ -141,63 +150,7 @@ namespace Pitaya
           Logger.Error("Exception thrown in handler, error:{0}",
             e.InnerException.Message); // TODO externalize method and only print stacktrace when debug
         response = GetErrorResponse("PIT-500", e.Message);
-        byte[] responseBytes = ProtoMessageToByteArray(response);
-        res.data = ByteArrayToIntPtr(responseBytes);
-        res.size = responseBytes.Length;
-        Marshal.StructureToPtr(res, pnt, false);
-        return pnt;
-      }
-    }
-
-    private static IntPtr HandleRPCUser(Protos.Request req)
-    {
-      byte[] data = req.Msg.Data.ToByteArray();
-      Route route = Route.FromString(req.Msg.Route);
-
-      string remoteName = $"{route.service}.{route.method}";
-      var response = new Protos.Response();
-
-      var res = new MemoryBuffer();
-      IntPtr pnt = Marshal.AllocHGlobal(Marshal.SizeOf(res));
-
-      if (!_remotesDict.ContainsKey(remoteName))
-      {
-        response = GetErrorResponse("PIT-404", $"remote not found! remote name: {remoteName}");
-        byte[] responseBytes = ProtoMessageToByteArray(response);
-        res.data = ByteArrayToIntPtr(responseBytes);
-        res.size = responseBytes.Length;
-        Marshal.StructureToPtr(res, pnt, false);
-        return pnt;
-      }
-
-      RemoteMethod remote = _remotesDict[remoteName];
-      Logger.Debug($"found delegate: {remote}");
-
-      try
-      {
-        var arg = (IMessage) Activator.CreateInstance(remote.argType);
-        arg.MergeFrom(new CodedInputStream(data));
-        // invoke is slow :/
-        var ans = (IMessage) remote.method.Invoke(remote.obj, new object[] {arg});
-        byte[] ansBytes = ProtoMessageToByteArray(ans);
-        response.Data = ByteString.CopyFrom(ansBytes);
-        byte[] responseBytes = ProtoMessageToByteArray(response);
-        res.data = ByteArrayToIntPtr(responseBytes);
-        res.size = responseBytes.Length;
-        Marshal.StructureToPtr(res, pnt, false);
-        return pnt;
-      }
-      catch (Exception e)
-      {
-        if (e.InnerException != null)
-          Logger.Error("Exception thrown in handler, error:{0}",
-            e.InnerException.Message);
-        response = GetErrorResponse("PIT-500", e.Message);
-        byte[] responseBytes = ProtoMessageToByteArray(response);
-        res.data = ByteArrayToIntPtr(responseBytes);
-        res.size = responseBytes.Length;
-        Marshal.StructureToPtr(res, pnt, false);
-        return pnt;
+        return response;
       }
     }
 
@@ -234,6 +187,14 @@ namespace Pitaya
       bool ok = InitializeWithGrpcInternal(grpcCfgPtr, sdCfgPtr, serverPtr, RpcCbFuncPtr, FreeHGlobalPtr, logLevel,
         logFile);
       
+      //Grpc.Core.Server sv = new Grpc.Core.Server
+      //{
+      //  Services = { Protos.Pitaya.BindService(new PitayaServerImpl())},
+      //  Ports = { new ServerPort("localhost", 5444, ServerCredentials.Insecure)}
+      //}; 
+      
+      //sv.Start();
+      
       if (!ok)
       {
         throw new PitayaException("Initialization failed");
@@ -261,57 +222,57 @@ namespace Pitaya
       }
     }
 
-    public static void RegisterRemote(BaseRemote remote)
+    public static void RegisterRemote(BaseRemoteMethod remoteMethod)
     {
-      string className = remote.GetName();
-      RegisterRemote(remote, className, DefaultRemoteNameFunc);
+      string className = remoteMethod.GetName();
+      RegisterRemote(remoteMethod, className, DefaultRemoteNameFunc);
     }
 
-    public static void RegisterRemote(BaseRemote remote, string name)
+    public static void RegisterRemote(BaseRemoteMethod remoteMethod, string name)
     {
-      RegisterRemote(remote, name, DefaultRemoteNameFunc);
+      RegisterRemote(remoteMethod, name, DefaultRemoteNameFunc);
     }
 
-    public static void RegisterRemote(BaseRemote remote, string name, RemoteNameFunc remoteNameFunc) // TODO remote function name func
+    public static void RegisterRemote(BaseRemoteMethod remoteMethod, string name, RemoteNameFunc remoteNameFunc) // TODO remote function name func
     {
-      Dictionary<string, RemoteMethod> m = remote.getRemotesMap();
+      Dictionary<string, RemoteMethod> m = remoteMethod.getRemotesMap();
       foreach (KeyValuePair<string, RemoteMethod> kvp in m)
       {
         var rn = remoteNameFunc(kvp.Key);
         var remoteName = $"{name}.{rn}";
-        if (_remotesDict.ContainsKey(remoteName))
+        if (RemotesDict.ContainsKey(remoteName))
         {
           throw new PitayaException($"tried to register same remote twice! remote name: {remoteName}");
         }
         Logger.Info("registering remote {0}", remoteName);
-        _remotesDict[remoteName] = kvp.Value;
+        RemotesDict[remoteName] = kvp.Value;
       }
     }
     
-    public static void RegisterHandler(BaseHandler handler)
+    public static void RegisterHandler(BaseHandlerMethod handlerMethod)
     {
-      string className = handler.GetName();
-      RegisterHandler(handler, className, DefaultRemoteNameFunc);
+      string className = handlerMethod.GetName();
+      RegisterHandler(handlerMethod, className, DefaultRemoteNameFunc);
     }
 
-    public static void RegisterHandler(BaseHandler handler, string name)
+    public static void RegisterHandler(BaseHandlerMethod handlerMethod, string name)
     {
-      RegisterHandler(handler, name, DefaultRemoteNameFunc);
+      RegisterHandler(handlerMethod, name, DefaultRemoteNameFunc);
     }
 
-    public static void RegisterHandler(BaseHandler handler, string name, RemoteNameFunc remoteNameFunc) // TODO remote function name func
+    public static void RegisterHandler(BaseHandlerMethod handlerMethod, string name, RemoteNameFunc remoteNameFunc) // TODO remote function name func
     {
-      Dictionary<string, HandlerMethod> m = handler.getHandlerMap();
-      foreach (KeyValuePair<string, HandlerMethod> kvp in m)
+      Dictionary<string, RemoteMethod> m = handlerMethod.getRemotesMap();
+      foreach (KeyValuePair<string, RemoteMethod> kvp in m)
       {
         var rn = remoteNameFunc(kvp.Key);
         var handlerName = $"{name}.{rn}";
-        if (_handlersDict.ContainsKey(handlerName))
+        if (HandlersDict.ContainsKey(handlerName))
         {
           throw new PitayaException($"tried to register same remote twice! remote name: {handlerName}");
         }
         Logger.Info("registering handler {0}", handlerName);
-        _handlersDict[handlerName] = kvp.Value;
+        HandlersDict[handlerName] = kvp.Value;
       }
     }
 
