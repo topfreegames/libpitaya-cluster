@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using Google.Protobuf;
 using Pitaya;
@@ -13,6 +14,7 @@ namespace PitayaCSharpExample.Handlers
       Protos.RPCRes response = new Protos.RPCRes();
       response.Msg = String.Format("hello from csharp handler!!! :) {0}", System.Guid.NewGuid().ToString());
       response.Code = 200;
+      Thread.Sleep(10);
       return response;
     }
     

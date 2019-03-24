@@ -3,14 +3,12 @@ using System.IO;
 using System.Runtime.InteropServices;
 using Google.Protobuf;
 using System.Collections.Generic;
-using Grpc.Core;
 using Pitaya.Models;
 using Protos;
 using static Pitaya.Utils.Utils;
 
 // TODO remove try catches
 // TODO json support
-// TODO remove GRPC Server from cpp lib
 namespace Pitaya
 {
   public class PitayaCluster
@@ -68,33 +66,32 @@ namespace Pitaya
     // TODO can we make this faster with some delegate-fu?
     private static IntPtr RPCCbFunc(IntPtr bufferPtr)
     {
-      return zeroPtr;
-      //var buffer = (MemoryBuffer) Marshal.PtrToStructure(bufferPtr, typeof(MemoryBuffer));
-      //Request req = new Request();
-      //req.MergeFrom(new CodedInputStream(buffer.GetData()));
+      var buffer = (MemoryBuffer) Marshal.PtrToStructure(bufferPtr, typeof(MemoryBuffer));
+      Request req = new Request();
+      req.MergeFrom(new CodedInputStream(buffer.GetData()));
 
-      //Response response;
-      //switch (req.Type)
-      //{
-      //  case RPCType.User:
-      //    response = HandleRpc(req, RPCType.User);
-      //    break;
-      //  case RPCType.Sys:
-      //    response = HandleRpc(req, RPCType.Sys);
-      //    break;
-      //  default:
-      //    throw new Exception($"invalid rpc type, argument:{req.Type}");
-      //}
-      //
-      //var res = new MemoryBuffer();
-      //IntPtr pnt = Marshal.AllocHGlobal(Marshal.SizeOf(res));
+      Response response;
+      switch (req.Type)
+      {
+        case RPCType.User:
+          response = HandleRpc(req, RPCType.User);
+          break;
+        case RPCType.Sys:
+          response = HandleRpc(req, RPCType.Sys);
+          break;
+        default:
+          throw new Exception($"invalid rpc type, argument:{req.Type}");
+      }
+      
+      var res = new MemoryBuffer();
+      IntPtr pnt = Marshal.AllocHGlobal(Marshal.SizeOf(res));
 
-      //byte[] responseBytes = ProtoMessageToByteArray(response);
-      //res.data = ByteArrayToIntPtr(responseBytes);
-      //res.size = responseBytes.Length;
-      //Marshal.StructureToPtr(res, pnt, false);
-      //
-      //return pnt;
+      byte[] responseBytes = ProtoMessageToByteArray(response);
+      res.data = ByteArrayToIntPtr(responseBytes);
+      res.size = responseBytes.Length;
+      Marshal.StructureToPtr(res, pnt, false);
+      
+      return pnt;
     }
 
     internal static Response HandleRpc(Protos.Request req, RPCType type)
@@ -186,15 +183,7 @@ namespace Pitaya
       
       bool ok = InitializeWithGrpcInternal(grpcCfgPtr, sdCfgPtr, serverPtr, RpcCbFuncPtr, FreeHGlobalPtr, logLevel,
         logFile);
-      
-      //Grpc.Core.Server sv = new Grpc.Core.Server
-      //{
-      //  Services = { Protos.Pitaya.BindService(new PitayaServerImpl())},
-      //  Ports = { new ServerPort("localhost", 5444, ServerCredentials.Insecure)}
-      //}; 
-      
-      //sv.Start();
-      
+
       if (!ok)
       {
         throw new PitayaException("Initialization failed");

@@ -72,7 +72,6 @@ void loopSendRpc(shared_ptr<spdlog::logger> logger, int tid){
   req.set_frontendid("testfid");
   protos::Response res;
   while(true){
-    std::this_thread::sleep_for(std::chrono::milliseconds(10));
     auto err = Cluster::Instance().RPC("csharp.TestHandler.entry", req, res);
     if (err) {
       cout << "received error:" << err.value().msg << endl;

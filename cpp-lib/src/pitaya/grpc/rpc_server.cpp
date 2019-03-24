@@ -64,6 +64,8 @@ GrpcServer::GrpcServer(GrpcConfig config, RpcHandlerFunc handler, const char* lo
     _log->debug("Creating gRPC server at address {}", address);
 
     ServerBuilder builder;
+    builder.SetSyncServerOption(ServerBuilder::SyncServerOption::NUM_CQS, 8); // TODO set to num cpu
+    builder.SetSyncServerOption(ServerBuilder::SyncServerOption::MAX_POLLERS, 8); // TODO set to num cpu
     builder.AddListeningPort(address, ::grpc::InsecureServerCredentials());
 
     builder.RegisterService(_service.get());
