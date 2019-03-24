@@ -51,7 +51,7 @@ public:
     std::shared_ptr<RpcServer> _rpcSv;
     void Initialize(Server server,
                     std::shared_ptr<service_discovery::ServiceDiscovery> sd,
-                    std::shared_ptr<RpcServer> rpcServer,
+                    std::unique_ptr<RpcServer> rpcServer,
                     std::unique_ptr<RpcClient> rpcClient,
                     const char* loggerName = nullptr);
 

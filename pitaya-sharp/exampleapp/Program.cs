@@ -67,11 +67,6 @@ namespace PitayaCSharpExample
 
       System.Threading.Thread.Sleep(1000);
 
-      for (int i = 0; i < 3; i++)
-      {
-        new Thread(PitayaCluster.ListenGRPC).Start();
-      }
-
       while (true)
       {
         Thread.Sleep(10);

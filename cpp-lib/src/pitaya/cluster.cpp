@@ -46,7 +46,7 @@ Cluster::InitializeWithGrpc(GrpcConfig config,
 
     Initialize(server,
                sd,
-               std::shared_ptr<GrpcServer>(new GrpcServer(config, rpcServerHandlerFunc, loggerName)),
+               std::unique_ptr<GrpcServer>(new GrpcServer(config, rpcServerHandlerFunc, loggerName)),
                std::unique_ptr<RpcClient>(new GrpcClient(config, sd, loggerName)));
 }
 
@@ -72,7 +72,7 @@ Cluster::InitializeWithNats(nats::NatsConfig&& natsConfig,
 void
 Cluster::Initialize(Server server,
                     std::shared_ptr<service_discovery::ServiceDiscovery> sd,
-                    std::shared_ptr<RpcServer> rpcServer,
+                    std::unique_ptr<RpcServer> rpcServer,
                     std::unique_ptr<RpcClient> rpcClient,
                     const char* loggerName)
 {

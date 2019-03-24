@@ -33,6 +33,7 @@ private:
 
     std::unique_ptr<grpc::ServerCompletionQueue> cq_;
     protos::Pitaya::AsyncService service_;
+    std::unique_ptr<PitayaGrpcImpl> _service;
     std::unique_ptr<::grpc::Server> _grpcServer;
   };
 

@@ -56,6 +56,32 @@ void print()
   }
 }
 
+void loopSendRpc(shared_ptr<spdlog::logger> logger, int tid){ 
+  auto msg = new protos::Msg();
+  auto session = new protos::Session();
+  session->set_id(1);
+  session->set_uid("uid123");
+
+  msg->set_route("csharp.TestHandler.entry");
+
+  protos::Request req;
+  req.set_allocated_session(session);
+
+  req.set_type(protos::RPCType::Sys);
+  req.set_allocated_msg(msg);
+  req.set_frontendid("testfid");
+  protos::Response res;
+  while(true){
+    auto err = Cluster::Instance().RPC("csharp.TestHandler.entry", req, res);
+    if (err) {
+      cout << "received error:" << err.value().msg << endl;
+    } else {
+      //cout << "received answer: " << res.data() << endl;
+    }
+    qps++;
+  }
+}
+
 int
 main()
 {
@@ -94,36 +120,14 @@ main()
 
         {
             // INIT
-            auto msg = new protos::Msg();
-            auto session = new protos::Session();
-            session->set_id(1);
-            session->set_uid("uid123");
-
-            msg->set_route("csharp.TestHandler.entry");
-
-            protos::Request req;
-            req.set_allocated_session(session);
-
-            req.set_type(protos::RPCType::Sys);
-            req.set_allocated_msg(msg);
-            req.set_frontendid("testfid");
-
-            std::vector<uint8_t> buffer(req.ByteSizeLong());
-            req.SerializeToArray(buffer.data(), buffer.size());
-
-            std::thread thr(print);
-            cin >> x;
+            thread thr(print);
+            std::this_thread::sleep_for(std::chrono::seconds(1));
             // FINISH
-            while(true){
-              protos::Response res;
-              auto err = Cluster::Instance().RPC("csharp.TestHandler.entry", req, res);
-              if (err) {
-                  cout << "received error:" << err.value().msg << endl;
-              } else {
-                  //cout << "received answer: " << res.data() << endl;
-              }
-              qps++;
+            thread threads[1];
+            for (int i = 0 ; i < 1; i ++){
+              threads[i] = thread(loopSendRpc, logger, i);
             }
+            thr.join();
         }
 
 

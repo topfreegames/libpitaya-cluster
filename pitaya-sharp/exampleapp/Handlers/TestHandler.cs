@@ -1,15 +1,16 @@
 using System;
-using System.Threading;
+using System.Threading.Tasks;
+using Google.Protobuf;
 using Pitaya;
-using Pitaya.Models;
+using Protos;
+using Session = Pitaya.Models.Session;
 
 namespace PitayaCSharpExample.Handlers
 {
   class TestHandler : BaseHandler
   {
-    public Protos.RPCRes entry(Session session, Protos.RPCMsg msg) {
+    public RPCRes entry(Session session, Protos.RPCMsg msg) {
       Protos.RPCRes response = new Protos.RPCRes();
-      Thread.Sleep(10);
       response.Msg = String.Format("hello from csharp handler!!! :) {0}", System.Guid.NewGuid().ToString());
       response.Code = 200;
       return response;

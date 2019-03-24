@@ -149,7 +149,5 @@ NatsRpcServer::ClosedCb(natsConnection* nc, void* closure)
     // TODO: exit server here, but need to do this gracefully
 }
 
-void NatsRpcServer::ThreadStart(){}
-
 } // namespace nats
 } // namespace pitaya

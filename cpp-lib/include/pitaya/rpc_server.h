@@ -13,7 +13,6 @@ public:
     {}
 
     virtual ~RpcServer() = default;
-    virtual void ThreadStart() = 0;
 
 protected:
     pitaya::RpcHandlerFunc _handlerFunc;
