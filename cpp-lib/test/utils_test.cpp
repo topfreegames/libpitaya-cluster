@@ -1,12 +1,15 @@
 #include "test_common.h"
 
 #include "pitaya.h"
+#include "pitaya/constants.h"
 #include "pitaya/etcdv3_service_discovery.h"
 #include "pitaya/etcdv3_service_discovery/config.h"
 #include "pitaya/utils.h"
+#include "pitaya/utils/grpc.h"
 
 #include "mock_etcd_client.h"
 
+using namespace pitaya::constants;
 using namespace pitaya::utils;
 using namespace ::testing;
 
@@ -60,5 +63,50 @@ TEST(ParseEtcdKeyTest, ReturnsTrueWhenKeyIsValid)
         ASSERT_TRUE(ok);
         EXPECT_EQ(serverType, el.retType);
         EXPECT_EQ(serverId, el.retId);
+    }
+}
+
+TEST(GetGrpcAddressFromServerTest, ThrowsOnFailure)
+{
+    pitaya::Server arr[] = {
+        pitaya::Server(pitaya::Server::Kind::Backend, "id", "type"),
+        pitaya::Server(pitaya::Server::Kind::Backend, "id", "type")
+            .WithRawMetadata("{\"broken-json"),
+        pitaya::Server(pitaya::Server::Kind::Backend, "id", "type")
+            .AddMetadata(kGrpcHostKey, "random-host"),
+        pitaya::Server(pitaya::Server::Kind::Backend, "id", "type")
+            .AddMetadata(kGrpcPortKey, "random-port"),
+        pitaya::Server(pitaya::Server::Kind::Backend, "id", "type")
+            .WithRawMetadata("[\"array\"]"),
+    };
+
+    for (const auto& server : arr) {
+        EXPECT_THROW(GetGrpcAddressFromServer(server), pitaya::PitayaException);
+    }
+}
+
+TEST(GetGrpcAddressFromServerTest, ReturnsTheFullAddress)
+{
+    struct
+    {
+        std::string host;
+        std::string port;
+        pitaya::Server server;
+    } arr[] = {
+        { "random-host",
+          "3030",
+          pitaya::Server(pitaya::Server::Kind::Backend, "id", "type")
+              .AddMetadata(kGrpcHostKey, "random-host")
+              .AddMetadata(kGrpcPortKey, "3030") },
+        { "tututu",
+          "3030",
+          pitaya::Server(pitaya::Server::Kind::Backend, "id", "type")
+              .AddMetadata(kGrpcHostKey, "tututu")
+              .AddMetadata(kGrpcPortKey, "3030") },
+    };
+
+    for (const auto& entry : arr) {
+        auto address = GetGrpcAddressFromServer(entry.server);
+        EXPECT_EQ(address, entry.host + ":" + entry.port);
     }
 }

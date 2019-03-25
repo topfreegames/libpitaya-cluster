@@ -5,7 +5,7 @@
 
 namespace json = web::json;
 
-void
+pitaya::Server&
 pitaya::Server::AddMetadata(const std::string& key, const std::string& val)
 {
     json::value metadataJson;
@@ -22,6 +22,8 @@ pitaya::Server::AddMetadata(const std::string& key, const std::string& val)
     metadataJson[key] = json::value::string(val);
 
     _metadata = metadataJson.serialize();
+
+    return *this;
 }
 
 pitaya::Route::Route(const std::string& route_str)
