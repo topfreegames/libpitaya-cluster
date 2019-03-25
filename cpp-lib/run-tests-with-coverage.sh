@@ -37,8 +37,13 @@ fi
 
 tests_profdata=$tests_executable_dir/default.profdata
 
+# Find all relevant files for the test coverage
+relevant_include_files=$(find include -path "include/pitaya/protos" -prune -o -type f -print)
+
+echo Relevant files are $relevant_include_files
+
 xcrun llvm-profdata merge $tests_profraw -o $tests_profdata
-xcrun llvm-cov show $tests_executable -instr-profile=$tests_profdata -format=html -output-dir=$tests_executable_dir/coverage $(pwd)/src $(pwd)/include/pitaya
+xcrun llvm-cov show $tests_executable -instr-profile=$tests_profdata -format=html -output-dir=$tests_executable_dir/coverage $(pwd)/src $relevant_include_files
 
 echo "Generated HTML coverage report at $tests_executable_dir/coverage"
 

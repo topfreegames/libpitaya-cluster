@@ -52,9 +52,15 @@ run-go-server:
 	@go run ./go-server/main.go
 
 submodules:
-	@git submodule update --init --recursive --remote
+	@git submodule update --init --recursive --remote pitaya-protos
 
-protos-compile: submodules
+protos-compile-cpp: submodules
+	@mkdir -p ./cpp-lib/include/pitaya/protos
+	@protoc -I pitaya-protos --grpc_out=generate_mock_code=true:./cpp-lib/include/pitaya/protos \
+		--plugin=protoc-gen-grpc=$(shell which grpc_cpp_plugin) ./pitaya-protos/*.proto \
+		--cpp_out=./cpp-lib/include/pitaya/protos
+
+protos-compile: protos-compile-cpp
 	@protoc --csharp_out=./csharp-example/csharp-example/gen/ ./go-server/protos/*.proto
 	@protoc --csharp_out=./unity-example/Assets/Gen/ ./go-server/protos/*.proto
 	@protoc --proto_path=pitaya-protos --csharp_out=./csharp-lib/cluster-lib/gen ./pitaya-protos/*.proto

@@ -2,8 +2,8 @@
 
 #include "pitaya.h"
 #include "pitaya/utils.h"
-#include "protos/request.pb.h"
-#include "protos/response.pb.h"
+#include "pitaya/protos/request.pb.h"
+#include "pitaya/protos/response.pb.h"
 
 #include "spdlog/sinks/stdout_color_sinks.h"
 

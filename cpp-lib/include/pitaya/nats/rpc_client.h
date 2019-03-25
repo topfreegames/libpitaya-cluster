@@ -4,8 +4,8 @@
 #include "pitaya.h"
 #include "pitaya/nats/config.h"
 #include "pitaya/rpc_client.h"
-#include "protos/request.pb.h"
-#include "protos/response.pb.h"
+#include "pitaya/protos/request.pb.h"
+#include "pitaya/protos/response.pb.h"
 #include "spdlog/spdlog.h"
 
 #include <nats/nats.h>

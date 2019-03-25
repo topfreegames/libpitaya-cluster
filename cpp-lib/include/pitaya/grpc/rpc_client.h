@@ -5,7 +5,7 @@
 #include "pitaya/rpc_client.h"
 #include "pitaya/service_discovery.h"
 #include "pitaya/utils/sync_map.h"
-#include "protos/pitaya.grpc.pb.h"
+#include "pitaya/protos/pitaya.grpc.pb.h"
 #include "spdlog/spdlog.h"
 
 #include <chrono>

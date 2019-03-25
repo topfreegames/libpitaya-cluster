@@ -2,7 +2,7 @@
 
 #include "pitaya/constants.h"
 #include "pitaya/utils/grpc.h"
-#include "protos/pitaya.grpc.pb.h"
+#include "pitaya/protos/pitaya.grpc.pb.h"
 #include "spdlog/spdlog.h"
 
 #include "spdlog/sinks/stdout_color_sinks.h"

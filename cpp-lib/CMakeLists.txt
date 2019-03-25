@@ -53,7 +53,7 @@ else()
 endif()
 
 file(GLOB protobuf_files
-    "include/protos/*")
+    "include/pitaya/protos/*")
 
 add_library(pitaya_cluster ${LIB_TYPE}
     include/pitaya.h

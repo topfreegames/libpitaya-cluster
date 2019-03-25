@@ -7,7 +7,7 @@
 #include "pitaya/nats/rpc_client.h"
 #include "pitaya/nats/rpc_server.h"
 #include "pitaya/utils.h"
-#include "protos/msg.pb.h"
+#include "pitaya/protos/msg.pb.h"
 
 #include <cpprest/json.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
@@ -34,8 +34,9 @@ Cluster::InitializeWithGrpc(GrpcConfig config,
     // In order to other servers know how to connect to our grpc server,
     // we need to publish our host and port as metadata of the server.
     // This needs to happen before the ServiceDiscovery is created.
-    server.WithMetadata(constants::kGrpcHostKey, config.host);
-    server.WithMetadata(constants::kGrpcPortKey, std::to_string(config.port));
+    server
+        .WithMetadata(constants::kGrpcHostKey, config.host)
+        .WithMetadata(constants::kGrpcPortKey, std::to_string(config.port));
 
     auto sd = std::shared_ptr<ServiceDiscovery>(new Etcdv3ServiceDiscovery(
         std::move(sdConfig),

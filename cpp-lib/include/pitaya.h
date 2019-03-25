@@ -1,8 +1,8 @@
 #ifndef PITAYA_H
 #define PITAYA_H
 
-#include "protos/request.pb.h"
-#include "protos/response.pb.h"
+#include "pitaya/protos/request.pb.h"
+#include "pitaya/protos/response.pb.h"
 
 #include <functional>
 #include <ostream>
