@@ -139,7 +139,7 @@ Cluster::SendPushToUser(
 
     _log->debug("Successfuly sent push: {}", ret.data());
 
-    return boost::none;
+    return boost::none; 
 }
 
 optional<PitayaError>

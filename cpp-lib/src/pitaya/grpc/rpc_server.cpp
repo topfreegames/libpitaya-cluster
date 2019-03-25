@@ -61,12 +61,13 @@ GrpcServer::GrpcServer(GrpcConfig config, RpcHandlerFunc handler, const char* lo
 {
     const auto address = _config.host + ":" + std::to_string(_config.port);
 
-    _log->debug("Creating gRPC server at address {}", address);
-
     ServerBuilder builder;
-    builder.SetSyncServerOption(ServerBuilder::SyncServerOption::NUM_CQS, 8); // TODO set to num cpu
-    builder.SetSyncServerOption(ServerBuilder::SyncServerOption::MAX_POLLERS, 8); // TODO set to num cpu
+    unsigned concurentThreadsSupported = std::thread::hardware_concurrency();
+    builder.SetSyncServerOption(ServerBuilder::SyncServerOption::NUM_CQS, concurentThreadsSupported);
+    builder.SetSyncServerOption(ServerBuilder::SyncServerOption::MAX_POLLERS, concurentThreadsSupported);
     builder.AddListeningPort(address, ::grpc::InsecureServerCredentials());
+    
+    _log->debug("Creating gRPC server at address {} with {} cqs and pollers", address, concurentThreadsSupported);
 
     builder.RegisterService(_service.get());
 

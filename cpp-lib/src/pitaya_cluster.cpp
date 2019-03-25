@@ -123,8 +123,8 @@ main()
             thread thr(print);
             std::this_thread::sleep_for(std::chrono::seconds(1));
             // FINISH
-            thread threads[2];
-            for (int i = 0 ; i < 2; i ++){
+            thread threads[1];
+            for (int i = 0 ; i < 1; i ++){
               threads[i] = thread(loopSendRpc, logger, i);
             }
             thr.join();
