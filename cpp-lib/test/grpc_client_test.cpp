@@ -74,7 +74,7 @@ TEST_F(GrpcClientTest, ServersWithoutGrpcSupportAreIgnored)
     }
     {
         auto server = pitaya::Server(pitaya::Server::Kind::Frontend, "server-id", "server-type")
-            .AddMetadata(pitaya::constants::kGrpcHostKey, "host");
+            .WithMetadata(pitaya::constants::kGrpcHostKey, "host");
 
         _client->ServerAdded(server);
 
@@ -86,7 +86,7 @@ TEST_F(GrpcClientTest, ServersWithoutGrpcSupportAreIgnored)
     }
     {
         auto server = pitaya::Server(pitaya::Server::Kind::Frontend, "server-id", "server-type")
-            .AddMetadata(pitaya::constants::kGrpcPortKey, "3030");
+            .WithMetadata(pitaya::constants::kGrpcPortKey, "3030");
 
         _client->ServerAdded(server);
 
@@ -109,8 +109,8 @@ TEST_F(GrpcClientTest, ServersThatFailToConnectAreNotIgnored)
     _config.connectionTimeout = std::chrono::seconds(1);
 
     auto server = pitaya::Server(pitaya::Server::Kind::Frontend, "server-id", "server-type")
-        .AddMetadata(pitaya::constants::kGrpcHostKey, "localhost")
-        .AddMetadata(pitaya::constants::kGrpcPortKey, "3030");
+        .WithMetadata(pitaya::constants::kGrpcHostKey, "localhost")
+        .WithMetadata(pitaya::constants::kGrpcPortKey, "3030");
 
     _client->ServerAdded(server);
 

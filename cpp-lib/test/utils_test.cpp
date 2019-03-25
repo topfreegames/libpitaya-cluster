@@ -73,9 +73,9 @@ TEST(GetGrpcAddressFromServerTest, ThrowsOnFailure)
         pitaya::Server(pitaya::Server::Kind::Backend, "id", "type")
             .WithRawMetadata("{\"broken-json"),
         pitaya::Server(pitaya::Server::Kind::Backend, "id", "type")
-            .AddMetadata(kGrpcHostKey, "random-host"),
+            .WithMetadata(kGrpcHostKey, "random-host"),
         pitaya::Server(pitaya::Server::Kind::Backend, "id", "type")
-            .AddMetadata(kGrpcPortKey, "random-port"),
+            .WithMetadata(kGrpcPortKey, "random-port"),
         pitaya::Server(pitaya::Server::Kind::Backend, "id", "type").WithRawMetadata("[\"array\"]"),
     };
 
@@ -95,13 +95,13 @@ TEST(GetGrpcAddressFromServerTest, ReturnsTheFullAddress)
         { "random-host",
           "3030",
           pitaya::Server(pitaya::Server::Kind::Backend, "id", "type")
-              .AddMetadata(kGrpcHostKey, "random-host")
-              .AddMetadata(kGrpcPortKey, "3030") },
+              .WithMetadata(kGrpcHostKey, "random-host")
+              .WithMetadata(kGrpcPortKey, "3030") },
         { "tututu",
           "3030",
           pitaya::Server(pitaya::Server::Kind::Backend, "id", "type")
-              .AddMetadata(kGrpcHostKey, "tututu")
-              .AddMetadata(kGrpcPortKey, "3030") },
+              .WithMetadata(kGrpcHostKey, "tututu")
+              .WithMetadata(kGrpcPortKey, "3030") },
     };
 
     for (const auto& entry : arr) {

@@ -6,7 +6,7 @@
 namespace json = web::json;
 
 pitaya::Server&
-pitaya::Server::AddMetadata(const std::string& key, const std::string& val)
+pitaya::Server::WithMetadata(const std::string& key, const std::string& val)
 {
     json::value metadataJson;
     if (_metadata.empty()) {

@@ -34,8 +34,8 @@ Cluster::InitializeWithGrpc(GrpcConfig config,
     // In order to other servers know how to connect to our grpc server,
     // we need to publish our host and port as metadata of the server.
     // This needs to happen before the ServiceDiscovery is created.
-    server.AddMetadata(constants::kGrpcHostKey, config.host);
-    server.AddMetadata(constants::kGrpcPortKey, std::to_string(config.port));
+    server.WithMetadata(constants::kGrpcHostKey, config.host);
+    server.WithMetadata(constants::kGrpcPortKey, std::to_string(config.port));
 
     auto sd = std::shared_ptr<ServiceDiscovery>(new Etcdv3ServiceDiscovery(
         std::move(sdConfig),

@@ -64,7 +64,7 @@ public:
         , _frontend(static_cast<int>(kind))
     {}
 
-    Server& AddMetadata(const std::string& key, const std::string& val);
+    Server& WithMetadata(const std::string& key, const std::string& val);
 
     Server& WithRawMetadata(std::string metadata)
     {
