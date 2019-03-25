@@ -14,11 +14,13 @@ using grpc::Channel;
 
 namespace pitaya {
 
+static constexpr const char* kLogTag = "grpc_client";
+
 GrpcClient::GrpcClient(GrpcConfig config,
                        std::shared_ptr<service_discovery::ServiceDiscovery> serviceDiscovery,
                        const char* loggerName)
-    : _log(loggerName ? spdlog::get(loggerName)->clone("grpc_client")
-                      : spdlog::stdout_color_mt("grpc_client"))
+    : _log(loggerName ? spdlog::get(loggerName)->clone(kLogTag)
+                      : spdlog::stdout_color_mt(kLogTag))
     , _config(std::move(config))
     , _serviceDiscovery(std::move(serviceDiscovery))
 {
@@ -32,6 +34,7 @@ GrpcClient::~GrpcClient()
 {
     _log->info("Unregistering gRPC client as a listener to the service discovery");
     _serviceDiscovery->RemoveListener(this);
+    spdlog::drop(kLogTag);
 }
 
 static protos::Response
@@ -51,7 +54,6 @@ GrpcClient::Call(const pitaya::Server& target, const protos::Request& req)
 {
     // In order to send an rpc to a server, we need to first find the connection to the
     // server in the map.
-
     {
         std::lock_guard<decltype(_stubsForServers)> lock(_stubsForServers);
         if (_stubsForServers.Find(target.Id()) == _stubsForServers.end()) {

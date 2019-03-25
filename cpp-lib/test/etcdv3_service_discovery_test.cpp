@@ -85,10 +85,13 @@ TEST_F(Etcdv3ServiceDiscoveryTest, ThrowsIfInvalidServerPassed)
         { "", "mytype" },
     };
 
-    auto MakeServiceDiscovery = [this](const std::string& serverId, const std::string& serverType) -> std::unique_ptr<Etcdv3ServiceDiscovery> {
-        return std::unique_ptr<Etcdv3ServiceDiscovery>(new Etcdv3ServiceDiscovery(_config,
-                                                                                  Server(Server::Kind::Frontend, serverId, serverType),
-                                                                                  std::unique_ptr<EtcdClient>(new MockEtcdClient())));
+    auto MakeServiceDiscovery =
+        [this](const std::string& serverId,
+               const std::string& serverType) -> std::unique_ptr<Etcdv3ServiceDiscovery> {
+        return std::unique_ptr<Etcdv3ServiceDiscovery>(
+            new Etcdv3ServiceDiscovery(_config,
+                                       Server(Server::Kind::Frontend, serverId, serverType),
+                                       std::unique_ptr<EtcdClient>(new MockEtcdClient())));
     };
 
     for (const auto& pair : arr) {

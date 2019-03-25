@@ -76,8 +76,7 @@ TEST(GetGrpcAddressFromServerTest, ThrowsOnFailure)
             .AddMetadata(kGrpcHostKey, "random-host"),
         pitaya::Server(pitaya::Server::Kind::Backend, "id", "type")
             .AddMetadata(kGrpcPortKey, "random-port"),
-        pitaya::Server(pitaya::Server::Kind::Backend, "id", "type")
-            .WithRawMetadata("[\"array\"]"),
+        pitaya::Server(pitaya::Server::Kind::Backend, "id", "type").WithRawMetadata("[\"array\"]"),
     };
 
     for (const auto& server : arr) {
