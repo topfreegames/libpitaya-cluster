@@ -79,14 +79,19 @@ public:
     boost::optional<PitayaError> RPC(const std::string& route,
                                      protos::Request& req,
                                      protos::Response& ret);
-
+    
     boost::optional<PitayaError>
-    SendPushToUser(const std::string& user_id,
-                   const std::string& server_id,
+    SendPushToUser(const std::string& server_id,
                    const std::string& server_type,
                    protos::Push& push,
                    protos::Response& ret);
-
+    
+    boost::optional<PitayaError>
+    SendKickToUser(const std::string& server_id,
+                   const std::string& server_type,
+                   protos::KickMsg& kick,
+                   protos::Response& ret);
+    
 private:
     std::shared_ptr<spdlog::logger> _log;
     std::shared_ptr<service_discovery::ServiceDiscovery> _sd;

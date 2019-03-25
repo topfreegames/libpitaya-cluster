@@ -280,7 +280,7 @@ namespace Pitaya
       return retServer;
     }
 
-    public static unsafe Response SendPushToUser(string userId, string frontendId, string serverType, Push push)
+    public static unsafe bool SendPushToUser(string userId, string frontendId, string serverType, Push push)
     {
       bool ok = false;
       MemoryBuffer inMemBuf = new MemoryBuffer();
@@ -300,12 +300,11 @@ namespace Pitaya
           ok = PushInternal(userId, frontendId, serverType, pnt, &outMemBufPtr, ref retError);
           if (!ok) // error
           {
-            throw new PitayaException($"Push failed: ({retError.code}: {retError.msg})"); //TODO exception or error?
+            Logger.Error($"Push failed: ({retError.code}: {retError.msg})");
+            return false;
           }
 
-          Response response = new Response();
-          response.MergeFrom(new CodedInputStream(outMemBufPtr->GetData()));
-          return response;
+          return true;
         }
       }
       finally

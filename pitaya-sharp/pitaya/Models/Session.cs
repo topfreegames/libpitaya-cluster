@@ -112,40 +112,16 @@ namespace Pitaya.Models
 
         public bool Push(Protos.Push push)
         {
-            try
-            {
-                PitayaCluster.SendPushToUser(Uid, _frontendId, "", push);
-                return true;
-            }
-            catch (Exception e) // TODO how to deal with errors?
-            {
-                return false;
-            }
+            return PitayaCluster.SendPushToUser(Uid, _frontendId, "", push);
         }
         public bool Push(Protos.Push push, string svType)
         {
-            try
-            {
-                PitayaCluster.SendPushToUser(Uid, "", svType, push);
-                return true;
-            }
-            catch (Exception e)
-            {
-                return false;
-            }
+            return PitayaCluster.SendPushToUser(Uid, "", svType, push);
         }
         
         public bool Push(Protos.Push push, string svType, string svId)
         {
-            try
-            {
-                PitayaCluster.SendPushToUser(Uid, svId, svType, push);
-                return true;
-            }
-            catch (Exception e)
-            {
-                return false;
-            }
+            return PitayaCluster.SendPushToUser(Uid, svId, svType, push);
         }
     }
 }

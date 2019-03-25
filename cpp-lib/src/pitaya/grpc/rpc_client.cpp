@@ -134,7 +134,7 @@ GrpcClient::ServerRemoved(const pitaya::Server& server)
 }
 
 protos::Response
-GrpcClient::SendPushToUser(const std::string& user_id, const std::string& server_id, const std::string& server_type, const protos::Push& push) {
+GrpcClient::SendPushToUser(const std::string& server_id, const std::string& server_type, const protos::Push& push) {
     if (server_id.empty()){
       //TODO implement this with binding storage
     } 
