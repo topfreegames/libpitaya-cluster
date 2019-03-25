@@ -284,7 +284,7 @@ namespace Pitaya
     {
       bool ok = false;
       MemoryBuffer inMemBuf = new MemoryBuffer();
-      MemoryBuffer* outMemBufPtr;
+      MemoryBuffer* outMemBufPtr = null;
       var retError = new Error();
 
       IntPtr pnt = Marshal.AllocHGlobal(Marshal.SizeOf(inMemBuf));
@@ -305,13 +305,13 @@ namespace Pitaya
 
           Response response = new Response();
           response.MergeFrom(new CodedInputStream(outMemBufPtr->GetData()));
-          FreeMemoryBufferInternal(outMemBufPtr);
           return response;
         }
       }
       finally
       {
         Marshal.FreeHGlobal(pnt);
+        if (outMemBufPtr != null) FreeMemoryBufferInternal(outMemBufPtr);
       }
     }
 
@@ -321,20 +321,26 @@ namespace Pitaya
       MemoryBuffer* memBufPtr = null;
       var retError = new Error();
 
-      var data = ProtoMessageToByteArray(msg);
-      fixed (byte* p = data)
+      try
       {
-        ok = RPCInternal(serverId, route.ToString(), (IntPtr)p, data.Length, &memBufPtr, ref retError);
-      }
+        var data = ProtoMessageToByteArray(msg);
+        fixed (byte* p = data)
+        {
+          ok = RPCInternal(serverId, route.ToString(), (IntPtr) p, data.Length, &memBufPtr, ref retError);
+        }
 
-      if (!ok) // error
+        if (!ok) // error
+        {
+          throw new PitayaException($"RPC call failed: ({retError.code}: {retError.msg})");
+        }
+
+        var protoRet = GetProtoMessageFromMemoryBuffer<T>(*memBufPtr);
+        return protoRet;
+      }
+      finally
       {
-        throw new PitayaException($"RPC call failed: ({retError.code}: {retError.msg})");
+        if(memBufPtr != null) FreeMemoryBufferInternal(memBufPtr);
       }
-
-      var protoRet = GetProtoMessageFromMemoryBuffer<T>(*memBufPtr);
-      FreeMemoryBufferInternal(memBufPtr);
-      return protoRet;
     }
 
     public static T Rpc<T>(Route route, IMessage msg)
