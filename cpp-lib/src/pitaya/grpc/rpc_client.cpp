@@ -91,17 +91,17 @@ void
 GrpcClient::ServerAdded(const pitaya::Server& server)
 {
     if (server.Metadata() == "") {
-        _log->debug("Ignoring server {}, since it does not support gRPC", server.Id());
+        // Ignore the server, since it has no metadata.
         return;
     }
 
     // First, we need to get the server host (address and port)
-
     std::string address;
     try {
         address = utils::GetGrpcAddressFromServer(server);
     } catch (const PitayaException& exc) {
-        _log->warn("Cannot fetch gRPC info from server {}: {}", server.Id(), exc.what());
+        // We were not able to fetch the address from the server,
+        // therefore we just ignoore it.
         return;
     }
 
