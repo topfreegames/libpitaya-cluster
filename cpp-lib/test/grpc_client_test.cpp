@@ -7,6 +7,8 @@
 #include "mock_service_discovery.h"
 #include "mock_etcd_client.h"
 
+#include <regex>
+
 using namespace testing;
 using namespace pitaya::service_discovery;
 
@@ -68,7 +70,7 @@ TEST_F(GrpcClientTest, ServersWithoutGrpcSupportAreIgnored)
         auto res = _client->Call(server, req);
         ASSERT_TRUE(res.has_error());
         EXPECT_EQ(res.error().code(), pitaya::constants::kCodeInternalError);
-        EXPECT_FALSE(res.error().msg().empty());
+        EXPECT_TRUE(std::regex_search(res.error().msg(), std::regex("is not added to the connections map")));
     }
     {
         auto server = pitaya::Server(pitaya::Server::Kind::Frontend, "server-id", "server-type")
@@ -80,7 +82,7 @@ TEST_F(GrpcClientTest, ServersWithoutGrpcSupportAreIgnored)
         auto res = _client->Call(server, req);
         ASSERT_TRUE(res.has_error());
         EXPECT_EQ(res.error().code(), pitaya::constants::kCodeInternalError);
-        EXPECT_FALSE(res.error().msg().empty());
+        EXPECT_TRUE(std::regex_search(res.error().msg(), std::regex("is not added to the connections map")));
     }
     {
         auto server = pitaya::Server(pitaya::Server::Kind::Frontend, "server-id", "server-type")
@@ -92,7 +94,7 @@ TEST_F(GrpcClientTest, ServersWithoutGrpcSupportAreIgnored)
         auto res = _client->Call(server, req);
         ASSERT_TRUE(res.has_error());
         EXPECT_EQ(res.error().code(), pitaya::constants::kCodeInternalError);
-        EXPECT_FALSE(res.error().msg().empty());
+        EXPECT_TRUE(std::regex_search(res.error().msg(), std::regex("is not added to the connections map")));
     }
 }
 
@@ -116,5 +118,5 @@ TEST_F(GrpcClientTest, ServersThatFailToConnectAreNotIgnored)
     auto res = _client->Call(server, req);
     ASSERT_TRUE(res.has_error());
     EXPECT_EQ(res.error().code(), pitaya::constants::kCodeInternalError);
-    EXPECT_FALSE(res.error().msg().empty());
+    EXPECT_TRUE(std::regex_search(res.error().msg(), std::regex("Call RPC failed")));
 }
