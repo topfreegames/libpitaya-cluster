@@ -280,7 +280,7 @@ namespace Pitaya
       return retServer;
     }
 
-    public static unsafe bool SendPushToUser(string userId, string frontendId, string serverType, Push push)
+    public static unsafe bool SendPushToUser(string frontendId, string serverType, Push push)
     {
       bool ok = false;
       MemoryBuffer inMemBuf = new MemoryBuffer();
@@ -297,7 +297,7 @@ namespace Pitaya
           inMemBuf.size = data.Length;
 
           Marshal.StructureToPtr(inMemBuf, pnt, false);
-          ok = PushInternal(userId, frontendId, serverType, pnt, &outMemBufPtr, ref retError);
+          ok = PushInternal(frontendId, serverType, pnt, &outMemBufPtr, ref retError);
           if (!ok) // error
           {
             Logger.Error($"Push failed: ({retError.code}: {retError.msg})");
@@ -310,6 +310,43 @@ namespace Pitaya
       finally
       {
         Marshal.FreeHGlobal(pnt);
+        if (outMemBufPtr != null) FreeMemoryBufferInternal(outMemBufPtr);
+      }
+    }
+    
+    public static unsafe bool SendKickToUser(string frontendId, string serverType, KickMsg kick)
+    {
+      bool ok = false;
+      MemoryBuffer inMemBuf = new MemoryBuffer();
+      MemoryBuffer* outMemBufPtr = null;
+      var retError = new Error();
+
+      IntPtr pnt = Marshal.AllocHGlobal(Marshal.SizeOf(inMemBuf));
+      try
+      {
+        var data = ProtoMessageToByteArray(kick);
+        fixed (byte* p = data)
+        {
+          inMemBuf.data = (IntPtr) p;
+          inMemBuf.size = data.Length;
+
+          Marshal.StructureToPtr(inMemBuf, pnt, false);
+          ok = KickInternal(frontendId, serverType, pnt, &outMemBufPtr, ref retError);
+          if (!ok) // error
+          {
+            Logger.Error($"Push failed: ({retError.code}: {retError.msg})");
+            return false;
+          }
+
+          var kickAns = new KickAnswer();
+          kickAns.MergeFrom(new CodedInputStream(outMemBufPtr->GetData()));
+          
+          return kickAns.Kicked;
+        }
+      }
+      finally
+      {
+       Marshal.FreeHGlobal(pnt);
         if (outMemBufPtr != null) FreeMemoryBufferInternal(outMemBufPtr);
       }
     }
@@ -378,6 +415,9 @@ namespace Pitaya
     private static extern void PollGRPC();
     
     [DllImport("libpitaya_cluster", CallingConvention = CallingConvention.Cdecl, EntryPoint = "tfg_pitc_SendPushToUser")]
-    private static extern unsafe bool PushInternal(string userId, string serverId, string serverType, IntPtr pushData, MemoryBuffer** buffer, ref Error retErr);
+    private static extern unsafe bool PushInternal(string serverId, string serverType, IntPtr pushData, MemoryBuffer** buffer, ref Error retErr);
+    
+    [DllImport("libpitaya_cluster", CallingConvention = CallingConvention.Cdecl, EntryPoint = "tfg_pitc_SendKickToUser")]
+    private static extern unsafe bool KickInternal(string serverId, string serverType, IntPtr pushData, MemoryBuffer** buffer, ref Error retErr);
   }
 }

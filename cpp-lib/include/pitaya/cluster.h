@@ -90,7 +90,7 @@ public:
     SendKickToUser(const std::string& server_id,
                    const std::string& server_type,
                    protos::KickMsg& kick,
-                   protos::Response& ret);
+                   protos::KickAnswer& ret);
     
 private:
     std::shared_ptr<spdlog::logger> _log;

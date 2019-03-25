@@ -124,7 +124,7 @@ Cluster::SendPushToUser(
              protos::Response& ret)
 {
     _log->debug("Sending push to user {} on server {}", push.uid(), server_id);
-    // TODO if no server id sent still go
+    // TODO if no server id sent still goq
     auto sv = _sd->GetServerById(server_id);
     if (!sv) {
         _log->error("Did not find server id {}", server_id);
@@ -146,7 +146,7 @@ optional<PitayaError>
 Cluster::SendKickToUser(const string& server_id,
                         const string& server_type,
                         protos::KickMsg& kick,
-                        protos::Response& ret)
+                        protos::KickAnswer& ret)
 {
     _log->debug("Sending kick to user {} on server {}", kick.userid(), server_id);
     // TODO if no server id sent still go
@@ -156,13 +156,8 @@ Cluster::SendKickToUser(const string& server_id,
         return pitaya::PitayaError(constants::kCodeNotFound, "server not found");
     }
     
-    ret = _rpcClient->SendPushToUser(user_id, sv.value().Id(), sv.value().Type(), push);
-    if (ret.has_error()) {
-        _log->error("Received error sending push: {}", ret.error().msg());
-        return pitaya::PitayaError(ret.error().code(), ret.error().msg());
-    }
-    
-    _log->debug("Successfuly sent push: {}", ret.data());
+    ret = _rpcClient->SendKickToUser(sv.value().Id(), sv.value().Type(), kick);    
+    _log->debug("successfuly sent kick: kicked: {}", ret.kicked());
     
     return boost::none;
 }

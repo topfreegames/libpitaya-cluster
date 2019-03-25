@@ -5,6 +5,7 @@
 #include "pitaya/nats/config.h"
 #include "pitaya/utils.h"
 #include "protos/request.pb.h"
+#include "protos/kick.pb.h"
 #include "protos/response.pb.h"
 
 #include "spdlog/sinks/stdout_color_sinks.h"
@@ -111,8 +112,17 @@ NatsRpcClient::ClosedCb(natsConnection* nc, void* closure)
     // TODO: exit server here, but need to do this gracefully
 }
 
+protos::KickAnswer
+NatsRpcClient::SendKickToUser(const std::string& server_id, const std::string& server_type, const protos::KickMsg& kick){
+    // TODO needs implementation
+    _log->error("method not implemented");
+    protos::KickAnswer ans;
+    ans.set_kicked(false);
+    return ans;
+}
+    
 protos::Response
-NatsRpcClient::SendPushToUser(const std::string& user_id, const std::string& server_id, const std::string& server_type, const protos::Push& push){
+NatsRpcClient::SendPushToUser(const std::string& server_id, const std::string& server_type, const protos::Push& push){
 {
     //TODO implement here
     protos::Response res;

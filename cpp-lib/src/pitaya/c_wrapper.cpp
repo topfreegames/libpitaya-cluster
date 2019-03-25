@@ -328,8 +328,7 @@ extern "C"
         return true;
     }
     
-    bool tfg_pitc_SendPushToUser(const char *user_id,
-                                 const char *server_id,
+    bool tfg_pitc_SendPushToUser(const char *server_id,
                                  const char *server_type,
                                  MemoryBuffer* memBuf,
                                  MemoryBuffer** outBuf,
@@ -345,7 +344,7 @@ extern "C"
             return false;
         }
         
-        auto err = Cluster::Instance().SendPushToUser(user_id, server_id, server_type, push, res);
+        auto err = Cluster::Instance().SendPushToUser(server_id, server_type, push, res);
 
         if (err) {
             retErr->code = ConvertToCString(err->code);
@@ -363,7 +362,7 @@ extern "C"
                                  CPitayaError* retErr)
     {
         protos::KickMsg kick;
-        protos::Response res;
+        protos::KickAnswer res;
         
         bool success = kick.ParseFromArray(memBuf->data, memBuf->size);
         if (!success) {
@@ -372,15 +371,28 @@ extern "C"
             return false;
         }
         
-        auto err = Cluster::Instance().SendPushToUser(server_id, server_type, push, res);
+        auto err = Cluster::Instance().SendKickToUser(server_id, server_type, kick, res);
         
         if (err) {
             retErr->code = ConvertToCString(err->code);
             retErr->msg = ConvertToCString(err->msg);
             return false;
         }
+
+        size_t size = res.ByteSizeLong();
+        uint8_t* bin = new uint8_t[size];
         
-        return sendResponseToManaged(outBuf, res, retErr);
+        if (!res.SerializeToArray(bin, size)) {
+            retErr->code = ConvertToCString(pitaya::constants::kCodeInternalError);
+            retErr->msg = ConvertToCString("failed to serialize kick ans");
+            return false;
+        }
+        
+        *outBuf = new MemoryBuffer;
+        (*outBuf)->size = size;
+        (*outBuf)->data = bin;
+        
+        return true;
     }
     
     bool tfg_pitc_RPC(const char* serverId,

@@ -154,4 +154,26 @@ GrpcClient::SendPushToUser(const std::string& server_id, const std::string& serv
 
 }
 
+protos::KickAnswer
+GrpcClient::SendKickToUser(const std::string& server_id, const std::string& server_type, const protos::KickMsg& kick) {
+    if (server_id.empty()){
+        //TODO implement this with binding storage
+    }
+    std::lock_guard<decltype(_stubsForServers)> lock(_stubsForServers);
+    protos::Pitaya::Stub* stub = _stubsForServers[server_id].get();
+    
+    protos::KickAnswer kickAns;
+    ::grpc::ClientContext context;
+    auto status = stub->KickUser(&context, kick, &kickAns);
+    
+    if (!status.ok()) {
+        auto msg = fmt::format("Kick failed: {}", status.error_message());
+        kickAns.set_kicked(false);
+        return kickAns;
+    }
+    
+    return kickAns;
+    
+}
+
 } // namespace pitaya

@@ -112,16 +112,31 @@ namespace Pitaya.Models
 
         public bool Push(Protos.Push push)
         {
-            return PitayaCluster.SendPushToUser(Uid, _frontendId, "", push);
+            return PitayaCluster.SendPushToUser(_frontendId, "", push);
         }
         public bool Push(Protos.Push push, string svType)
         {
-            return PitayaCluster.SendPushToUser(Uid, "", svType, push);
+            return PitayaCluster.SendPushToUser("", svType, push);
         }
         
         public bool Push(Protos.Push push, string svType, string svId)
         {
-            return PitayaCluster.SendPushToUser(Uid, svId, svType, push);
+            return PitayaCluster.SendPushToUser(svId, svType, push);
+        }
+
+        public bool Kick()
+        {
+            return PitayaCluster.SendKickToUser(_frontendId, "", new KickMsg
+            {
+                UserId = Uid
+            });
+        }
+        public bool Kick(string svType)
+        {
+            return PitayaCluster.SendKickToUser("", svType, new KickMsg
+            {
+                UserId = Uid
+            });
         }
     }
 }

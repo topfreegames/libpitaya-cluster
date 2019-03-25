@@ -12,17 +12,10 @@ namespace PitayaCSharpExample.Handlers
 {
   class TestHandler : BaseHandlerMethod
   {
-    private HttpClient client = new HttpClient();
-    private String Get(String url)
-    {    
-      var content = client.GetStringAsync(url);
-      return content.Result;
-    }
-    public RPCRes entry(Session session, Protos.RPCMsg msg) {
+   public RPCRes entry(Session session, Protos.RPCMsg msg) {
       Protos.RPCRes response = new Protos.RPCRes();
       response.Msg = String.Format("hello from csharp handler!!! :) {0}", System.Guid.NewGuid().ToString());
       response.Code = 200;
-      string bla = Get("http://localhost:8080");
       return response;
     }
     
@@ -60,5 +53,14 @@ namespace PitayaCSharpExample.Handlers
         Logger.Error("push to user failed!");
       }
     }
+    public void testKick(Session session)
+    {
+      var ok = session.Kick();
+      if (!ok)
+      {
+        Logger.Error("kick user failed!");
+      }
+    }
+
   }
 }
