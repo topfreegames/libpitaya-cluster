@@ -311,6 +311,51 @@ extern "C"
         spdlog::drop_all();
     }
 
+    bool tfg_pitc_SendPushToUser(const char *user_id,
+                                 const char *server_id,
+                                 const char *server_type,
+                                 MemoryBuffer* memBuf,
+                                 MemoryBuffer** outBuf,
+                                 CPitayaError* retErr)
+    {
+        protos::Push push;
+
+        protos::Response res;
+
+        bool success = push.ParseFromArray(memBuf->data, memBuf->size);
+        if (!success) {
+            auto err = new protos::Error();
+            err->set_code(pitaya::constants::kCodeInternalError);
+            err->set_msg("failed to deserialize push");
+            res.set_allocated_error(err);
+        }
+        
+        auto err = Cluster::Instance().SendPushToUser(user_id, server_id, server_type, push, res);
+
+        if (err) {
+            retErr->code = ConvertToCString(err->code);
+            retErr->msg = ConvertToCString(err->msg);
+            gLogger->error("received error on Push: {}: {}", retErr->code, retErr->msg);
+            return false;
+        }
+        
+        size_t size = res.ByteSizeLong();
+        uint8_t* bin = new uint8_t[size];
+        
+        if (!res.SerializeToArray(bin, size)) {
+            gLogger->error("Error serializing Push response");
+            retErr->code = ConvertToCString(constants::kCodeInternalError);
+            retErr->msg = ConvertToCString("Error serializing Push response");
+            return false;
+        }
+        
+        *outBuf = new MemoryBuffer;
+        (*outBuf)->size = size;
+        (*outBuf)->data = bin;
+        
+        return true;
+    }
+
     bool tfg_pitc_RPC(const char* serverId,
                       const char* route,
                       void* data,

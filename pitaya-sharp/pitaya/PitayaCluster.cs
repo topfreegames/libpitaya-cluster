@@ -62,8 +62,6 @@ namespace Pitaya
       return ptr;
     }
 
-    private static IntPtr zeroPtr = IntPtr.Zero;
-    // TODO can we make this faster with some delegate-fu?
     private static IntPtr RPCCbFunc(IntPtr bufferPtr)
     {
       var buffer = (MemoryBuffer) Marshal.PtrToStructure(bufferPtr, typeof(MemoryBuffer));
@@ -190,11 +188,6 @@ namespace Pitaya
       }
     }
 
-    public static void ListenGRPC()
-    {
-      PollGRPC();
-    }
-
     public static void Initialize(NatsConfig natsCfg, SDConfig sdCfg, Server server, NativeLogLevel logLevel,
       string logFile = "")
     {
@@ -287,6 +280,41 @@ namespace Pitaya
       return retServer;
     }
 
+    public static unsafe Response SendPushToUser(string userId, string frontendId, string serverType, Push push)
+    {
+      bool ok = false;
+      MemoryBuffer inMemBuf = new MemoryBuffer();
+      MemoryBuffer* outMemBufPtr;
+      var retError = new Error();
+
+      IntPtr pnt = Marshal.AllocHGlobal(Marshal.SizeOf(inMemBuf));
+      try
+      {
+        var data = ProtoMessageToByteArray(push);
+        fixed (byte* p = data)
+        {
+          inMemBuf.data = (IntPtr) p;
+          inMemBuf.size = data.Length;
+
+          Marshal.StructureToPtr(inMemBuf, pnt, false);
+          ok = PushInternal(userId, frontendId, serverType, pnt, &outMemBufPtr, ref retError);
+          if (!ok) // error
+          {
+            throw new PitayaException($"Push failed: ({retError.code}: {retError.msg})"); //TODO exception or error?
+          }
+
+          Response response = new Response();
+          response.MergeFrom(new CodedInputStream(outMemBufPtr->GetData()));
+          FreeMemoryBufferInternal(outMemBufPtr);
+          return response;
+        }
+      }
+      finally
+      {
+        Marshal.FreeHGlobal(pnt);
+      }
+    }
+
     public static unsafe T Rpc<T>(string serverId, Route route, IMessage msg)
     {
       bool ok = false;
@@ -343,5 +371,8 @@ namespace Pitaya
 
     [DllImport("libpitaya_cluster", CallingConvention = CallingConvention.Cdecl, EntryPoint = "tfg_pitc_PollGRPC")]
     private static extern void PollGRPC();
+    
+    [DllImport("libpitaya_cluster", CallingConvention = CallingConvention.Cdecl, EntryPoint = "tfg_pitc_SendPushToUser")]
+    private static extern unsafe bool PushInternal(string userId, string serverId, string serverType, IntPtr pushData, MemoryBuffer** buffer, ref Error retErr);
   }
 }

@@ -117,6 +117,33 @@ Cluster::RPC(const string& route, protos::Request& req, protos::Response& ret)
 }
 
 optional<PitayaError>
+Cluster::SendPushToUser(const string& user_id,
+             const string& server_id,
+             const string& server_type,
+             protos::Push& push,
+             protos::Response& ret)
+{
+    _log->debug("Sending push to user {} on server {}", user_id, server_id);
+    // TODO if no server id sent still go
+    auto sv = _sd->GetServerById(server_id);
+    if (!sv) {
+        _log->error("Did not find server id {}", server_id);
+        return pitaya::PitayaError(constants::kCodeNotFound, "server not found");
+    }
+
+    ret = _rpcClient->SendPushToUser(user_id, sv.value().Id(), sv.value().Type(), push);
+    if (ret.has_error()) {
+        _log->error("Received error sending push: {}", ret.error().msg());
+        return pitaya::PitayaError(ret.error().code(), ret.error().msg());
+    }
+
+    _log->debug("Successfuly sent push: {}", ret.data());
+
+    return boost::none;
+}
+
+
+optional<PitayaError>
 Cluster::RPC(const string& server_id,
              const string& route,
              protos::Request& req,

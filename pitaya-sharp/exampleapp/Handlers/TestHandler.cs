@@ -3,6 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Google.Protobuf;
 using Pitaya;
+using Pitaya.Models;
 using Protos;
 using Session = Pitaya.Models.Session;
 
@@ -14,7 +15,6 @@ namespace PitayaCSharpExample.Handlers
       Protos.RPCRes response = new Protos.RPCRes();
       response.Msg = String.Format("hello from csharp handler!!! :) {0}", System.Guid.NewGuid().ToString());
       response.Code = 200;
-      Thread.Sleep(10);
       return response;
     }
     
@@ -37,9 +37,20 @@ namespace PitayaCSharpExample.Handlers
       session.PushToFrontend();
     }
 
-    public void testNotify(Session session)
+    public void testPush(Session session)
     {
       Console.WriteLine("got empty notify");
+      Push push = new Push
+      {
+        Uid = session.Uid,
+        Route = "test.route",
+        Data = ByteString.CopyFromUtf8("teste felipe")
+      };
+      var ok = session.Push(push);
+      if (!ok)
+      {
+        Logger.Error("push to user failed!");
+      }
     }
   }
 }

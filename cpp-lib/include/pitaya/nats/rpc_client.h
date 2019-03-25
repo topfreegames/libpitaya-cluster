@@ -20,6 +20,7 @@ public:
     NatsRpcClient(const NatsConfig& config, const char* loggerName = nullptr);
     ~NatsRpcClient();
     protos::Response Call(const pitaya::Server& target, const protos::Request& req) override;
+    protos::Response SendPushToUser(const std::string& user_id, const std::string& server_id, const std::string& server_type, const protos::Push& push) override;
 
 private:
     std::shared_ptr<spdlog::logger> _log;

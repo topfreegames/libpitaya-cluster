@@ -10,16 +10,16 @@ namespace Pitaya.Models
     public class Session
     {
         private Int64 _id;
-        private string _uid;
         private string _frontendId;
         private Dictionary<string, object> _data;
         private string _rawData;
         public string RawData => _rawData;
+        public string Uid { get; private set; }
 
         public Session(Protos.Session sessionProto)
         {
             _id = sessionProto.Id;
-            _uid = sessionProto.Uid;
+            Uid = sessionProto.Uid;
             _rawData = sessionProto.Data.ToStringUtf8();
             _data = JsonConvert.DeserializeObject<Dictionary<string, object>>(_rawData);
         }
@@ -31,7 +31,7 @@ namespace Pitaya.Models
 
         public override string ToString()
         {
-            return $"ID: {_id}, UID: {_uid}, Data: {_rawData}";
+            return $"ID: {_id}, UID: {Uid}, Data: {_rawData}";
         }
 
         public void Set(string key, object value)
@@ -78,11 +78,11 @@ namespace Pitaya.Models
 
         public void Bind(string uid)
         {
-            if (_uid != "")
+            if (Uid != "")
             {
                 throw new Exception("session already bound!");
             }
-            _uid = uid;
+            Uid = uid;
             // TODO only if server type is backend
             // TODO bind callbacks
             if (!string.IsNullOrEmpty(_frontendId)){
@@ -100,7 +100,7 @@ namespace Pitaya.Models
             var sessionProto = new Protos.Session
             {
                 Id = _id,
-                Uid = _uid
+                Uid = Uid
             };
             if (includeData)
             {
@@ -108,6 +108,44 @@ namespace Pitaya.Models
             }
             Console.WriteLine($"sending {sessionProto}");
             PitayaCluster.Rpc<Response>(_frontendId, Route.FromString(route), sessionProto);
+        }
+
+        public bool Push(Protos.Push push)
+        {
+            try
+            {
+                PitayaCluster.SendPushToUser(Uid, _frontendId, "", push);
+                return true;
+            }
+            catch (Exception e) // TODO how to deal with errors?
+            {
+                return false;
+            }
+        }
+        public bool Push(Protos.Push push, string svType)
+        {
+            try
+            {
+                PitayaCluster.SendPushToUser(Uid, "", svType, push);
+                return true;
+            }
+            catch (Exception e)
+            {
+                return false;
+            }
+        }
+        
+        public bool Push(Protos.Push push, string svType, string svId)
+        {
+            try
+            {
+                PitayaCluster.SendPushToUser(Uid, svId, svType, push);
+                return true;
+            }
+            catch (Exception e)
+            {
+                return false;
+            }
         }
     }
 }

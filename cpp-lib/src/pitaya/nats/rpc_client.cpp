@@ -8,7 +8,6 @@
 #include "protos/response.pb.h"
 
 #include "spdlog/sinks/stdout_color_sinks.h"
-
 #include <iostream>
 #include <nats/nats.h>
 #include <string>
@@ -110,6 +109,20 @@ NatsRpcClient::ClosedCb(natsConnection* nc, void* closure)
     auto instance = reinterpret_cast<NatsRpcClient*>(closure);
     instance->_log->error("failed all nats reconnection attempts!");
     // TODO: exit server here, but need to do this gracefully
+}
+
+protos::Response
+NatsRpcClient::SendPushToUser(const std::string& user_id, const std::string& server_id, const std::string& server_type, const protos::Push& push){
+{
+    //TODO implement here
+    protos::Response res;
+    auto err = new protos::Error();
+    err->set_code(pitaya::constants::kCodeNotImplemented);
+    err->set_msg("method not implemented");
+    res.set_allocated_error(err);
+
+    return res;
+}
 }
 
 } // namespace nats

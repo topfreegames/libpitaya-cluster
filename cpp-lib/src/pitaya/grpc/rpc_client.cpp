@@ -133,4 +133,25 @@ GrpcClient::ServerRemoved(const pitaya::Server& server)
     _log->debug("Removed server {}", server.Id());
 }
 
+protos::Response
+GrpcClient::SendPushToUser(const std::string& user_id, const std::string& server_id, const std::string& server_type, const protos::Push& push) {
+    if (server_id.empty()){
+      //TODO implement this with binding storage
+    } 
+    std::lock_guard<decltype(_stubsForServers)> lock(_stubsForServers);
+    protos::Pitaya::Stub* stub = _stubsForServers[server_id].get();
+
+    protos::Response res;
+    ::grpc::ClientContext context;
+    auto status = stub->PushToUser(&context, push, &res);
+
+    if (!status.ok()) {
+        auto msg = fmt::format("Push failed: {}", status.error_message());
+        return NewErrorResponse(msg);
+    }
+
+    return res;
+
+}
+
 } // namespace pitaya

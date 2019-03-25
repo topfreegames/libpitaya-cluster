@@ -7,6 +7,7 @@ namespace pitaya {
 namespace constants {
 
 static constexpr const char* kCodeNotFound = "PIT-404";
+static constexpr const char* kCodeNotImplemented = "PIT-501";
 static constexpr const char* kCodeInternalError = "PIT-500";
 static constexpr const char* kCodeTimeout = "PIT-504";
 static constexpr const char* kCodeUnprocessableEntity = "PIT-422";
