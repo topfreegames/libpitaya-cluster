@@ -11,8 +11,6 @@
 #include <functional>
 #include <grpcpp/server_builder.h>
 
-using ::grpc::ServerBuilder;
-
 static protos::Response
 NewUnsupportedRpcRtype()
 {
@@ -27,7 +25,7 @@ NewUnsupportedRpcRtype()
 class PitayaGrpcImpl final : public protos::Pitaya::Service
 {
 public:
-    PitayaGrpcImpl(pitaya::RpcHandlerFunc handlerFunc, const char* loggerName = nullptr)
+    explicit PitayaGrpcImpl(pitaya::RpcHandlerFunc handlerFunc, const char* loggerName = nullptr)
         : _log(loggerName ? spdlog::get(loggerName)->clone(kLogTag)
                           : spdlog::stdout_color_mt(kLogTag))
         , _handlerFunc(std::move(handlerFunc))
@@ -58,6 +56,8 @@ private:
 
 namespace pitaya {
 
+static constexpr const char* kLogTag = "grpc_server";
+
 GrpcServer::GrpcServer(GrpcConfig config, RpcHandlerFunc handler, const char* loggerName)
     : RpcServer(handler)
     , _log(loggerName ? spdlog::get(loggerName)->clone(kLogTag) : spdlog::stdout_color_mt(kLogTag))
@@ -68,17 +68,17 @@ GrpcServer::GrpcServer(GrpcConfig config, RpcHandlerFunc handler, const char* lo
 
     _log->debug("Creating gRPC server at address {}", address);
 
-    ServerBuilder builder;
-    builder.AddListeningPort(address, ::grpc::InsecureServerCredentials());
+    grpc::ServerBuilder builder;
+    builder.AddListeningPort(address, grpc::InsecureServerCredentials());
     builder.RegisterService(_service.get());
 
-    _grpcServer = std::unique_ptr<::grpc::Server>(builder.BuildAndStart());
+    _grpcServer = std::unique_ptr<grpc::Server>(builder.BuildAndStart());
 
-    if (_grpcServer) {
-        _log->info("gRPC server started at: {}", address);
-    } else {
-        _log->error("Failed to start gRPC server at address {}", address);
+    if (!_grpcServer) {
+        throw PitayaException(fmt::format("Failed to start gRPC server at address {}", address));
     }
+
+    _log->info("gRPC server started at: {}", address);
 }
 
 GrpcServer::~GrpcServer()
@@ -89,12 +89,6 @@ GrpcServer::~GrpcServer()
         _grpcServer->Wait();
     }
     spdlog::drop(kLogTag);
-}
-
-void
-GrpcServer::ThreadStart()
-{
-    _log->info("Starting grpc rpc server thread");
 }
 
 } // namespace pitaya
