@@ -1,7 +1,7 @@
 {
   "runtimeTarget": {
     "name": ".NETStandard,Version=v2.0/",
-    "signature": "1d1311b68b8a907a0c2563f1c3dcbf35744f41da"
+    "signature": "856a7ea7a63ba96a049b9aa7ab74626087e7f2a8"
   },
   "compilationOptions": {},
   "targets": {
@@ -12,6 +12,7 @@
           "Google.Protobuf": "3.7.0",
           "Grpc": "1.19.0",
           "Grpc.Tools": "1.19.0",
+          "Microsoft.CSharp": "4.6.0-preview3.19128.7",
           "NETStandard.Library": "2.0.3",
           "Newtonsoft.Json": "12.0.1"
         },
@@ -64,6 +65,14 @@
         }
       },
       "Grpc.Tools/1.19.0": {},
+      "Microsoft.CSharp/4.6.0-preview3.19128.7": {
+        "runtime": {
+          "lib/netstandard2.0/Microsoft.CSharp.dll": {
+            "assemblyVersion": "4.0.4.0",
+            "fileVersion": "4.7.19.12807"
+          }
+        }
+      },
       "Microsoft.NETCore.Platforms/1.1.0": {},
       "Microsoft.NETCore.Targets/1.0.1": {},
       "NETStandard.Library/2.0.3": {
@@ -217,6 +226,13 @@
       "sha512": "sha512-Ddt/Ab9836hZIgUe/+QGuou3aNUya4b2okWXR5/NDAOr/b/dnfplZ+/T4L9wBNiEGKx4P8DDnLzRXyNqQPDJzA==",
       "path": "grpc.tools/1.19.0",
       "hashPath": "grpc.tools.1.19.0.nupkg.sha512"
+    },
+    "Microsoft.CSharp/4.6.0-preview3.19128.7": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-EOR2xORqtMnhyntTsXlLJg98bNifPodHxnL55eiG3SOeJ/wx4YTqw0hQ8DBS5eaqBuLS2SyquiR+6Z/P5lyAdA==",
+      "path": "microsoft.csharp/4.6.0-preview3.19128.7",
+      "hashPath": "microsoft.csharp.4.6.0-preview3.19128.7.nupkg.sha512"
     },
     "Microsoft.NETCore.Platforms/1.1.0": {
       "type": "package",
