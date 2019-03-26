@@ -1,9 +1,9 @@
 #include "pitaya/nats/rpc_server.h"
 
 #include "pitaya.h"
-#include "pitaya/utils.h"
 #include "pitaya/protos/request.pb.h"
 #include "pitaya/protos/response.pb.h"
+#include "pitaya/utils.h"
 
 #include "spdlog/sinks/stdout_color_sinks.h"
 

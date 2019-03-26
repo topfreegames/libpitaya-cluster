@@ -3,9 +3,9 @@
 #include "pitaya.h"
 #include "pitaya/constants.h"
 #include "pitaya/nats/config.h"
-#include "pitaya/utils.h"
 #include "pitaya/protos/request.pb.h"
 #include "pitaya/protos/response.pb.h"
+#include "pitaya/utils.h"
 
 #include "spdlog/sinks/stdout_color_sinks.h"
 

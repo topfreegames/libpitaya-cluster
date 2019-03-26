@@ -3,9 +3,9 @@
 
 #include "pitaya.h"
 #include "pitaya/grpc/config.h"
-#include "pitaya/rpc_server.h"
 #include "pitaya/protos/request.pb.h"
 #include "pitaya/protos/response.pb.h"
+#include "pitaya/rpc_server.h"
 
 #include "spdlog/logger.h"
 

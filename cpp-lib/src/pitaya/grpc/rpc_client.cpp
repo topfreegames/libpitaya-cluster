@@ -10,7 +10,6 @@
 #include <grpcpp/create_channel.h>
 
 namespace json = web::json;
-using grpc::Channel;
 
 namespace pitaya {
 
@@ -18,11 +17,12 @@ static constexpr const char* kLogTag = "grpc_client";
 
 GrpcClient::GrpcClient(GrpcConfig config,
                        std::shared_ptr<service_discovery::ServiceDiscovery> serviceDiscovery,
+                       CreateStubFunc createStub,
                        const char* loggerName)
-    : _log(loggerName ? spdlog::get(loggerName)->clone(kLogTag)
-                      : spdlog::stdout_color_mt(kLogTag))
+    : _log(loggerName ? spdlog::get(loggerName)->clone(kLogTag) : spdlog::stdout_color_mt(kLogTag))
     , _config(std::move(config))
     , _serviceDiscovery(std::move(serviceDiscovery))
+    , _createStub(std::move(createStub))
 {
     assert(_serviceDiscovery != nullptr);
     _log->info("Registering gRPC client as a listener to the service discovery");
@@ -67,10 +67,10 @@ GrpcClient::Call(const pitaya::Server& target, const protos::Request& req)
     // The stub is contained in the map. We then retrieve it and call the desired RPC function.
     {
         std::lock_guard<decltype(_stubsForServers)> lock(_stubsForServers);
-        protos::Pitaya::Stub* stub = _stubsForServers[target.Id()].get();
+        protos::Pitaya::StubInterface* stub = _stubsForServers[target.Id()].get();
 
         protos::Response res;
-        ::grpc::ClientContext context;
+        grpc::ClientContext context;
         auto status = stub->Call(&context, req, &res);
 
         if (!status.ok()) {
@@ -105,7 +105,7 @@ GrpcClient::ServerAdded(const pitaya::Server& server)
         return;
     }
 
-    auto channel = ::grpc::CreateChannel(address, ::grpc::InsecureChannelCredentials());
+    auto channel = grpc::CreateChannel(address, ::grpc::InsecureChannelCredentials());
 
     if (channel->WaitForConnected(std::chrono::system_clock::now() + _config.connectionTimeout)) {
         _log->info("Successfully connected to gPRC server at {}", address);
@@ -113,7 +113,7 @@ GrpcClient::ServerAdded(const pitaya::Server& server)
         _log->warn("Failed to connect to gRPC server at {}", address);
     }
 
-    auto stub = protos::Pitaya::NewStub(std::move(channel));
+    auto stub = _createStub(std::move(channel));
 
     std::lock_guard<decltype(_stubsForServers)> lock(_stubsForServers);
     _stubsForServers[server.Id()] = std::move(stub);
