@@ -72,12 +72,13 @@ namespace Pitaya
 
             string handlerName = $"{route.service}.{route.method}";
 
-            var s = new Models.Session(req.Session, req.FrontendID);
+            Models.Session s = null;
             var response = new Protos.Response();
 
             RemoteMethod handler;
             if (type == RPCType.Sys)
             {
+                s = new Models.Session(req.Session, req.FrontendID);
                 if (!HandlersDict.ContainsKey(handlerName))
                 {
                     response = GetErrorResponse("PIT-404", $"remote/handler not found! remote/handler name: {handlerName}");
@@ -101,11 +102,17 @@ namespace Pitaya
                 {
                     var arg = (IMessage) Activator.CreateInstance(handler.ArgType);
                     arg.MergeFrom(new CodedInputStream(data));
-                    ans = handler.Method.Invoke(handler.Obj, new object[]{s, arg});
+                    if (type == RPCType.Sys)
+                        ans = handler.Method.Invoke(handler.Obj, new object[]{s, arg});
+                    else
+                        ans = handler.Method.Invoke(handler.Obj, new object[]{arg});
                 }
                 else
                 {
-                    ans = handler.Method.Invoke(handler.Obj, new object[]{s});
+                    if (type == RPCType.Sys)
+                        ans = handler.Method.Invoke(handler.Obj, new object[]{s});
+                    else
+                        ans = handler.Method.Invoke(handler.Obj, new object[]{});
                 }
                 IMessage msg = null;
                 if (handler.ReturnType != null)
