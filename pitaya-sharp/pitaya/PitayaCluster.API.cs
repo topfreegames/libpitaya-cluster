@@ -110,7 +110,7 @@ namespace Pitaya
             RegisterHandler(handlerMethod, name, DefaultRemoteNameFunc);
         }
 
-        public static void RegisterHandler(BaseHandlerMethod handlerMethod, string name, RemoteNameFunc remoteNameFunc) // TODO remote function name func
+        public static void RegisterHandler(BaseHandlerMethod handlerMethod, string name, RemoteNameFunc remoteNameFunc)
         {
             Dictionary<string, RemoteMethod> m = handlerMethod.getRemotesMap();
             foreach (KeyValuePair<string, RemoteMethod> kvp in m)
