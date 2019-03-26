@@ -17,6 +17,18 @@ static constexpr const char* kLogTag = "grpc_client";
 
 GrpcClient::GrpcClient(GrpcConfig config,
                        std::shared_ptr<service_discovery::ServiceDiscovery> serviceDiscovery,
+                       const char* loggerName)
+    : GrpcClient(config,
+                 std::move(serviceDiscovery),
+                 [](std::shared_ptr<grpc::ChannelInterface> channel)
+                     -> std::unique_ptr<protos::Pitaya::StubInterface> {
+                     return protos::Pitaya::NewStub(std::move(channel));
+                 },
+                 loggerName)
+{}
+
+GrpcClient::GrpcClient(GrpcConfig config,
+                       std::shared_ptr<service_discovery::ServiceDiscovery> serviceDiscovery,
                        CreateStubFunc createStub,
                        const char* loggerName)
     : _log(loggerName ? spdlog::get(loggerName)->clone(kLogTag) : spdlog::stdout_color_mt(kLogTag))

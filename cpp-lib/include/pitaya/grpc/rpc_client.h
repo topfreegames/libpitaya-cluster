@@ -26,6 +26,9 @@ public:
                std::shared_ptr<service_discovery::ServiceDiscovery> serviceDiscovery,
                CreateStubFunc createStub,
                const char* loggerName = nullptr);
+    GrpcClient(GrpcConfig config,
+               std::shared_ptr<service_discovery::ServiceDiscovery> serviceDiscovery,
+               const char* loggerName = nullptr);
     ~GrpcClient();
     protos::Response Call(const pitaya::Server& target, const protos::Request& req) override;
 
