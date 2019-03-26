@@ -1,5 +1,5 @@
 SRC_FILES = $(shell find src test -name '*.cpp')
-HDR_FILES = $(shell find include test -not -path 'include/protos/*' -not -path 'test/doctest.h' -name '*.h')
+HDR_FILES = $(shell find include test -not -path 'include/pitaya/protos/*' -not -path 'test/doctest.h' -name '*.h')
 
 format:
 	@for f in ${SRC_FILES} ; do \
