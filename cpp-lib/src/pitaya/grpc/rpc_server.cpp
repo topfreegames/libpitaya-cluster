@@ -60,24 +60,20 @@ static constexpr const char* kLogTag = "grpc_server";
 
 GrpcServer::GrpcServer(GrpcConfig config, RpcHandlerFunc handler, const char* loggerName)
     : RpcServer(handler)
-    , _log(loggerName ? spdlog::get(loggerName)->clone(kLogTag) : spdlog::stdout_color_mt(kLogTag))
     , _config(std::move(config))
     , _service(new PitayaGrpcImpl(_handlerFunc, loggerName))
 {
     const auto address = _config.host + ":" + std::to_string(_config.port);
-
-    _log->debug("Creating gRPC server at address {}", address);
 
     grpc::ServerBuilder builder;
     builder.AddListeningPort(address, grpc::InsecureServerCredentials());
     builder.RegisterService(_service.get());
 
     _grpcServer = std::unique_ptr<grpc::Server>(builder.BuildAndStart());
-
     if (!_grpcServer) {
         throw PitayaException(fmt::format("Failed to start gRPC server at address {}", address));
     }
-
+    _log = loggerName ? spdlog::get(loggerName)->clone(kLogTag) : spdlog::stdout_color_mt(kLogTag);
     _log->info("gRPC server started at: {}", address);
 }
 
