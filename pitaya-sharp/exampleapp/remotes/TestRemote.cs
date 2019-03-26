@@ -1,17 +1,17 @@
-using System;
 using System.Threading.Tasks;
-using Pitaya;
 using Pitaya.Models;
 
-namespace PitayaCSharpExample
+namespace exampleapp.remotes
 {
+#pragma warning disable 1998
     class TestRemote : BaseRemoteMethod
     {
-        public Task<Protos.RPCRes> remote(Protos.RPCMsg msg) {
-            Protos.RPCRes response = new Protos.RPCRes();
-            response.Msg = String.Format("hello from csharp :) {0}", System.Guid.NewGuid().ToString());
-            response.Code = 200;
-            return Task.FromResult(response);
+        public async Task<Protos.RPCRes> Remote(Protos.RPCMsg msg) {
+            var response = new Protos.RPCRes
+            {
+                Msg = $"hello from csharp :) {System.Guid.NewGuid().ToString()}", Code = 200
+            };
+            return response;
         }
     }
 }

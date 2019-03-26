@@ -8,7 +8,6 @@ using Pitaya.Models;
 
 namespace Pitaya.Utils {
 
-    public delegate object DMDelegate(object target, object[] parameters);
     public static class Utils {
 
         public static string DefaultRemoteNameFunc(string methodName){
