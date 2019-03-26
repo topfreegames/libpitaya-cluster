@@ -1,9 +1,9 @@
 using System;
 using System.Threading.Tasks;
 using Google.Protobuf;
-using Pitaya.Models;
+using NPitaya.Models;
 using Protos;
-using Session = Pitaya.Models.Session;
+using Session = NPitaya.Models.Session;
 
 #pragma warning disable 1998
 namespace exampleapp.Handlers

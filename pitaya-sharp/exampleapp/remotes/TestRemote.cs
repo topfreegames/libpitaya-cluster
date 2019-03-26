@@ -1,5 +1,5 @@
 using System.Threading.Tasks;
-using Pitaya.Models;
+using NPitaya.Models;
 
 namespace exampleapp.remotes
 {

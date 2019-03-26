@@ -2,8 +2,8 @@
 using System.Threading;
 using exampleapp.Handlers;
 using exampleapp.remotes;
-using Pitaya;
-using Pitaya.Models;
+using NPitaya;
+using NPitaya.Models;
 
 namespace PitayaCSharpExample
 {
