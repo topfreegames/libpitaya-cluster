@@ -155,17 +155,15 @@ namespace Pitaya
             MemoryBuffer* outMemBufPtr = null;
             var retError = new Error();
 
-            IntPtr pnt = Marshal.AllocHGlobal(Marshal.SizeOf(inMemBuf));
-            try
-            {
+            try{
                 var data = ProtoMessageToByteArray(push);
                 fixed (byte* p = data)
                 {
                     inMemBuf.data = (IntPtr) p;
                     inMemBuf.size = data.Length;
+                    IntPtr inMemBufPtr = new StructWrapper(inMemBuf);
 
-                    Marshal.StructureToPtr(inMemBuf, pnt, false);
-                    ok = PushInternal(frontendId, serverType, pnt, &outMemBufPtr, ref retError);
+                    ok = PushInternal(frontendId, serverType, inMemBufPtr, &outMemBufPtr, ref retError);
                     if (!ok) // error
                     {
                         Logger.Error($"Push failed: ({retError.code}: {retError.msg})");
@@ -177,7 +175,6 @@ namespace Pitaya
             }
             finally
             {
-                Marshal.FreeHGlobal(pnt);
                 if (outMemBufPtr != null) FreeMemoryBufferInternal(outMemBufPtr);
             }
         }
@@ -189,7 +186,6 @@ namespace Pitaya
             MemoryBuffer* outMemBufPtr = null;
             var retError = new Error();
 
-            IntPtr pnt = Marshal.AllocHGlobal(Marshal.SizeOf(inMemBuf));
             try
             {
                 var data = ProtoMessageToByteArray(kick);
@@ -197,9 +193,8 @@ namespace Pitaya
                 {
                     inMemBuf.data = (IntPtr) p;
                     inMemBuf.size = data.Length;
-
-                    Marshal.StructureToPtr(inMemBuf, pnt, false);
-                    ok = KickInternal(frontendId, serverType, pnt, &outMemBufPtr, ref retError);
+                    IntPtr inMemBufPtr = new StructWrapper(inMemBuf);
+                    ok = KickInternal(frontendId, serverType, inMemBufPtr, &outMemBufPtr, ref retError);
                     if (!ok) // error
                     {
                         Logger.Error($"Push failed: ({retError.code}: {retError.msg})");
@@ -214,7 +209,6 @@ namespace Pitaya
             }
             finally
             {
-                Marshal.FreeHGlobal(pnt);
                 if (outMemBufPtr != null) FreeMemoryBufferInternal(outMemBufPtr);
             }
         }

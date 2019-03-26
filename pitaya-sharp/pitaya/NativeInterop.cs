@@ -136,21 +136,6 @@ namespace Pitaya
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    public struct RPCReq
-    {
-        [MarshalAs(UnmanagedType.LPStruct)]
-        public MemoryBuffer buffer;
-
-        [MarshalAs(UnmanagedType.LPStr)]
-        public string route;
-
-        public byte[] GetReqData()
-        {
-            return buffer.GetData();
-        }
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
     public struct MemoryBuffer
     {
         public IntPtr data;
@@ -184,37 +169,6 @@ namespace Pitaya
         }
     }
 
-    public struct GrpcRPCClientConfig
-    {
-        [MarshalAs(UnmanagedType.LPStr)]
-        public string etcdEndpoints;
-        public string etcdPrefix;
-        public int requestTimeoutMs;
-        public int dialTimeoutMs;
-        public int etcdDialTimeoutMs;
-        public int etcdLeaseTTLS;
-
-        public GrpcRPCClientConfig(int requestTimeoutMs, int dialTimeoutMs, string etcdEndpoints, string etcdPrefix, int etcdDialTimeoutMs = 10000, int etcdLeaseTTLS = 60)
-        {
-            this.requestTimeoutMs = requestTimeoutMs;
-            this.dialTimeoutMs = dialTimeoutMs;
-            this.etcdEndpoints = etcdEndpoints;
-            this.etcdPrefix = etcdPrefix;
-            this.etcdDialTimeoutMs = etcdDialTimeoutMs;
-            this.etcdLeaseTTLS = etcdLeaseTTLS;
-        }
-    }
-
-    public struct GrpcRPCServerConfig
-    {
-        [MarshalAs(UnmanagedType.LPStr)]
-        public int port;
-
-        public GrpcRPCServerConfig(int port)
-        {
-            this.port = port;
-        }
-    }
 }
 
 class StructWrapper : IDisposable
