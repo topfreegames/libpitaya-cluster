@@ -1,7 +1,7 @@
 {
   "runtimeTarget": {
     "name": ".NETCoreApp,Version=v2.2",
-    "signature": "8aa8792fc3fda6b7eb9d19f9a78ff0a18a72cf68"
+    "signature": "74489e3d80433fd1a3132148ac3adcc1b0d3580c"
   },
   "compilationOptions": {},
   "targets": {
@@ -23,19 +23,10 @@
         }
       },
       "Microsoft.CSharp/4.5.0": {},
-      "Newtonsoft.Json/12.0.1": {
-        "runtime": {
-          "lib/netstandard2.0/Newtonsoft.Json.dll": {
-            "assemblyVersion": "12.0.0.0",
-            "fileVersion": "12.0.1.22727"
-          }
-        }
-      },
       "NPitaya/0.1.0": {
         "dependencies": {
           "Google.Protobuf": "3.7.0",
-          "Microsoft.CSharp": "4.5.0",
-          "Newtonsoft.Json": "12.0.1"
+          "Microsoft.CSharp": "4.5.0"
         },
         "runtime": {
           "npitaya.dll": {}
@@ -62,13 +53,6 @@
       "sha512": "sha512-kaj6Wb4qoMuH3HySFJhxwQfe8R/sJsNJnANrvv8WdFPMoNbKY5htfNscv+LHCu5ipz+49m2e+WQXpLXr9XYemQ==",
       "path": "microsoft.csharp/4.5.0",
       "hashPath": "microsoft.csharp.4.5.0.nupkg.sha512"
-    },
-    "Newtonsoft.Json/12.0.1": {
-      "type": "package",
-      "serviceable": true,
-      "sha512": "sha512-pBR3wCgYWZGiaZDYP+HHYnalVnPJlpP1q55qvVb+adrDHmFMDc1NAKio61xTwftK3Pw5h7TZJPJEEVMd6ty8rg==",
-      "path": "newtonsoft.json/12.0.1",
-      "hashPath": "newtonsoft.json.12.0.1.nupkg.sha512"
     },
     "NPitaya/0.1.0": {
       "type": "project",

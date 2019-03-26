@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
 using Google.Protobuf;
-using Newtonsoft.Json;
 using NPitaya.Constants;
+using PitayaSimpleJson;
 using Protos;
 
 namespace NPitaya.Models
@@ -21,7 +21,7 @@ namespace NPitaya.Models
             _id = sessionProto.Id;
             Uid = sessionProto.Uid;
             _rawData = sessionProto.Data.ToStringUtf8();
-            _data = JsonConvert.DeserializeObject<Dictionary<string, object>>(_rawData);
+            _data = SimpleJson.DeserializeObject<Dictionary<string, object>>(_rawData);
         }
 
         public Session(Protos.Session sessionProto, string frontendId):this(sessionProto)
@@ -37,7 +37,7 @@ namespace NPitaya.Models
         public void Set(string key, object value)
         {
             _data[key] = value;
-            _rawData = JsonConvert.SerializeObject(_data);
+            _rawData = SimpleJson.SerializeObject(_data);
         }
 
         public object GetObject(string key)
