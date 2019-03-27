@@ -35,7 +35,7 @@ require (
 	github.com/spf13/pflag v1.0.1
 	github.com/spf13/viper v1.0.2
 	github.com/topfreegames/go-workers v1.0.0 // indirect
-	github.com/topfreegames/pitaya v0.11.0
+	github.com/topfreegames/pitaya v0.12.0
 	github.com/uber/jaeger-client-go v2.14.0+incompatible
 	github.com/uber/jaeger-lib v1.5.0
 	golang.org/x/crypto v0.0.0-20180723164146-c126467f60eb

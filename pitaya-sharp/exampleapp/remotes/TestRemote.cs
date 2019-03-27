@@ -6,7 +6,7 @@ namespace exampleapp.remotes
 #pragma warning disable 1998
     class TestRemote : BaseRemoteMethod
     {
-        public async Task<Protos.RPCRes> Remote(Protos.RPCMsg msg) {
+        public Protos.RPCRes Remote(Protos.RPCMsg msg) {
             var response = new Protos.RPCRes
             {
                 Msg = $"hello from csharp :) {System.Guid.NewGuid().ToString()}", Code = 200

@@ -1,7 +1,7 @@
 {
   "runtimeTarget": {
     "name": ".NETStandard,Version=v2.0/",
-    "signature": "fdb542ed2e850e53a57c4e1d3d64f21b04eb2da0"
+    "signature": "e364a7fa26a57cab661f18fe5e0ca070222e07d2"
   },
   "compilationOptions": {},
   "targets": {
@@ -10,7 +10,6 @@
       "npitaya/1.0.0": {
         "dependencies": {
           "Google.Protobuf": "3.7.0",
-          "Microsoft.CSharp": "4.5.0",
           "NETStandard.Library": "2.0.3"
         },
         "runtime": {
@@ -25,14 +24,6 @@
           "lib/netstandard1.0/Google.Protobuf.dll": {
             "assemblyVersion": "3.7.0.0",
             "fileVersion": "3.7.0.0"
-          }
-        }
-      },
-      "Microsoft.CSharp/4.5.0": {
-        "runtime": {
-          "lib/netstandard2.0/Microsoft.CSharp.dll": {
-            "assemblyVersion": "4.0.4.0",
-            "fileVersion": "4.6.26515.6"
           }
         }
       },
@@ -56,13 +47,6 @@
       "sha512": "sha512-iGSH+kB233wWy4VjEC+7KrMJTD3K7Nw2VpnboSgbyU1SrCQZUVpKdJ7NKDZVL7JvFYBiUq4VRMgC0OAXxJAvjA==",
       "path": "google.protobuf/3.7.0",
       "hashPath": "google.protobuf.3.7.0.nupkg.sha512"
-    },
-    "Microsoft.CSharp/4.5.0": {
-      "type": "package",
-      "serviceable": true,
-      "sha512": "sha512-kaj6Wb4qoMuH3HySFJhxwQfe8R/sJsNJnANrvv8WdFPMoNbKY5htfNscv+LHCu5ipz+49m2e+WQXpLXr9XYemQ==",
-      "path": "microsoft.csharp/4.5.0",
-      "hashPath": "microsoft.csharp.4.5.0.nupkg.sha512"
     },
     "Microsoft.NETCore.Platforms/1.1.0": {
       "type": "package",

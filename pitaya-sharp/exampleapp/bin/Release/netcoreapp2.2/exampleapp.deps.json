@@ -1,7 +1,7 @@
 {
   "runtimeTarget": {
     "name": ".NETCoreApp,Version=v2.2",
-    "signature": "74489e3d80433fd1a3132148ac3adcc1b0d3580c"
+    "signature": "d3e4112c2eafff4a8dd111fb4906e6778bf88f83"
   },
   "compilationOptions": {},
   "targets": {
@@ -22,11 +22,9 @@
           }
         }
       },
-      "Microsoft.CSharp/4.5.0": {},
       "NPitaya/0.1.0": {
         "dependencies": {
-          "Google.Protobuf": "3.7.0",
-          "Microsoft.CSharp": "4.5.0"
+          "Google.Protobuf": "3.7.0"
         },
         "runtime": {
           "npitaya.dll": {}
@@ -46,13 +44,6 @@
       "sha512": "sha512-iGSH+kB233wWy4VjEC+7KrMJTD3K7Nw2VpnboSgbyU1SrCQZUVpKdJ7NKDZVL7JvFYBiUq4VRMgC0OAXxJAvjA==",
       "path": "google.protobuf/3.7.0",
       "hashPath": "google.protobuf.3.7.0.nupkg.sha512"
-    },
-    "Microsoft.CSharp/4.5.0": {
-      "type": "package",
-      "serviceable": true,
-      "sha512": "sha512-kaj6Wb4qoMuH3HySFJhxwQfe8R/sJsNJnANrvv8WdFPMoNbKY5htfNscv+LHCu5ipz+49m2e+WQXpLXr9XYemQ==",
-      "path": "microsoft.csharp/4.5.0",
-      "hashPath": "microsoft.csharp.4.5.0.nupkg.sha512"
     },
     "NPitaya/0.1.0": {
       "type": "project",

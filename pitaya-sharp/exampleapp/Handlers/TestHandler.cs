@@ -10,7 +10,7 @@ namespace exampleapp.Handlers
 {
     class TestHandler : BaseHandlerMethod
     {
-        public async Task<RPCRes> Entry(Session session, Protos.RPCMsg msg) {
+        public RPCRes Entry(Session session, Protos.RPCMsg msg) {
             var response = new Protos.RPCRes
             {
                 Msg = $"hello from csharp handler!!! :) {System.Guid.NewGuid().ToString()}",
@@ -19,7 +19,7 @@ namespace exampleapp.Handlers
             return response;
         }
     
-        public async Task NotifyBind(Session session, Protos.RPCMsg msg) {
+        public void NotifyBind(Session session, Protos.RPCMsg msg) {
             var response = new Protos.RPCRes
             {
                 Msg = $"hello from csharp handler!!! :) {System.Guid.NewGuid().ToString()}",
@@ -32,7 +32,7 @@ namespace exampleapp.Handlers
             Console.WriteLine("handler executed with session ipversion {0}", session.GetString("ipversion"));
         }
 
-        public async Task SetSessionDataTest(Session session, Protos.RPCMsg msg)
+        public void SetSessionDataTest(Session session, Protos.RPCMsg msg)
         {
             session.Set("msg", "testingMsg");
             session.Set("int", 3);
@@ -40,7 +40,7 @@ namespace exampleapp.Handlers
             session.PushToFrontend();
         }
 
-        public async Task TestPush(Session session)
+        public void TestPush(Session session)
         {
             Console.WriteLine("got empty notify");
             Push push = new Push
@@ -55,7 +55,7 @@ namespace exampleapp.Handlers
                 Logger.Error("push to user failed!");
             }
         }
-        public async Task TestKick(Session session)
+        public void TestKick(Session session)
         {
             var ok = session.Kick();
             if (!ok)

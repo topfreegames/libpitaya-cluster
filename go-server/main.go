@@ -70,8 +70,8 @@ func main() {
 	confs.Set("pitaya.cluster.rpc.server.grpc.port", 3939)
 
 	meta := map[string]string{
-		"grpc-host": "127.0.0.1",
-		"grpc-port": "3939",
+		"grpcHost": "127.0.0.1",
+		"grpcPort": "3939",
 	}
 
 	pitaya.Configure(true, svType, pitaya.Cluster, meta, confs)

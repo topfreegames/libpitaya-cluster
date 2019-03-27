@@ -137,7 +137,17 @@ protos::Response
 GrpcClient::SendPushToUser(const std::string& server_id, const std::string& server_type, const protos::Push& push) {
     if (server_id.empty()){
       //TODO implement this with binding storage
-    } 
+    }
+    
+    {
+        std::lock_guard<decltype(_stubsForServers)> lock(_stubsForServers);
+        if (_stubsForServers.Find(server_id) == _stubsForServers.end()) {
+            auto msg = fmt::format("Cannot push to server {}, since it is not added to the connections map", server_id);
+            _log->error(msg);
+            return NewErrorResponse(msg);
+        }
+    }
+    
     std::lock_guard<decltype(_stubsForServers)> lock(_stubsForServers);
     protos::Pitaya::Stub* stub = _stubsForServers[server_id].get();
 
@@ -156,13 +166,24 @@ GrpcClient::SendPushToUser(const std::string& server_id, const std::string& serv
 
 protos::KickAnswer
 GrpcClient::SendKickToUser(const std::string& server_id, const std::string& server_type, const protos::KickMsg& kick) {
+    protos::KickAnswer kickAns;
     if (server_id.empty()){
         //TODO implement this with binding storage
     }
+    
+    {
+        std::lock_guard<decltype(_stubsForServers)> lock(_stubsForServers);
+        if (_stubsForServers.Find(server_id) == _stubsForServers.end()) {
+            auto msg = fmt::format("Cannot kick on server {}, since it is not added to the connections map", server_id);
+            _log->error(msg);
+            kickAns.set_kicked(false);
+            return kickAns;
+        }
+    }
+    
     std::lock_guard<decltype(_stubsForServers)> lock(_stubsForServers);
     protos::Pitaya::Stub* stub = _stubsForServers[server_id].get();
     
-    protos::KickAnswer kickAns;
     ::grpc::ClientContext context;
     auto status = stub->KickUser(&context, kick, &kickAns);
     

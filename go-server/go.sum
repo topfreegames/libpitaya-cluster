@@ -70,6 +70,8 @@ github.com/topfreegames/pitaya v0.0.0-20180726140035-3658e3a90eda h1:jRWQQcKcuSP
 github.com/topfreegames/pitaya v0.0.0-20180726140035-3658e3a90eda/go.mod h1:solnIwRjTPpB+pMDrjSjAjNcM3JVDKtR/d9qTb28jik=
 github.com/topfreegames/pitaya v0.11.0 h1:3M6tjAOlAt9+4chcKDkSmqFSDXxc9Uq8LMWqlE4OSsA=
 github.com/topfreegames/pitaya v0.11.0/go.mod h1:solnIwRjTPpB+pMDrjSjAjNcM3JVDKtR/d9qTb28jik=
+github.com/topfreegames/pitaya v0.12.0 h1:yaqaRWbZlyj+gU/BirbsyX7Cs8Ugk+z9zG8ElnKpcZM=
+github.com/topfreegames/pitaya v0.12.0/go.mod h1:solnIwRjTPpB+pMDrjSjAjNcM3JVDKtR/d9qTb28jik=
 github.com/uber/jaeger-client-go v2.14.0+incompatible h1:1KGTNRby0tDiVDDhvzL0pz0N26M9DobVCfSqz4Z/UPc=
 github.com/uber/jaeger-client-go v2.14.0+incompatible/go.mod h1:WVhlPFC8FDjOFMMWRy2pZqQJSXxYSwNYOkTr/Z6d3Kk=
 github.com/uber/jaeger-lib v1.5.0 h1:OHbgr8l656Ub3Fw5k9SWnBfIEwvoHQ+W2y+Aa9D1Uyo=

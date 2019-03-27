@@ -62,7 +62,7 @@ void loopSendRpc(shared_ptr<spdlog::logger> logger, int tid){
   session->set_id(1);
   session->set_uid("uid123");
 
-  msg->set_route("csharp.TestHandler.entry");
+  msg->set_route("csharp.testHandler.entry");
 
   protos::Request req;
   req.set_allocated_session(session);
@@ -72,7 +72,7 @@ void loopSendRpc(shared_ptr<spdlog::logger> logger, int tid){
   req.set_frontendid("testfid");
   protos::Response res;
   while(true){
-    auto err = Cluster::Instance().RPC("csharp.TestHandler.entry", req, res);
+    auto err = Cluster::Instance().RPC("csharp.testHandler.entry", req, res);
     if (err) {
       cout << "received error:" << err.value().msg << endl;
     } else {
