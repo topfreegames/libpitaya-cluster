@@ -27,7 +27,7 @@
 //#define SIMPLE_JSON_DYNAMIC
 
 // NOTE: uncomment the following line to enable DataContract support.
-//#define SIMPLE_JSON_DATACONTRACT
+#define SIMPLE_JSON_DATACONTRACT
 
 // NOTE: uncomment the following line to use Reflection.Emit (better performance) instead of method.invoke().
 // don't enable ReflectionEmit for WinRT, Silverlight and WP7.

@@ -1,4 +1,5 @@
 using System;
+using System.Runtime.Serialization;
 using System.Text;
 using System.Threading.Tasks;
 using Google.Protobuf;
@@ -59,10 +60,13 @@ namespace exampleapp.Handlers
             }
         }
 
+        [DataContract]
         public class TestClass
         {
-            public string msg;
-            public int code;
+            [DataMember(Name = "msg")]
+            public string Msg;
+            [DataMember(Name = "code")]
+            public int Code;
         }
 
         public TestClass OnlyValidWithJson(PitayaSession s, TestClass t)
