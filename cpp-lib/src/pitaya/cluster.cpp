@@ -58,7 +58,7 @@ Cluster::InitializeWithGrpc(GrpcConfig config,
 }
 
 void
-Cluster::InitializeWithNats(nats::NatsConfig&& natsConfig,
+Cluster::InitializeWithNats(NatsConfig&& natsConfig,
                             etcdv3_service_discovery::Config&& sdConfig,
                             Server server,
                             RpcHandlerFunc rpcServerHandlerFunc,
@@ -73,7 +73,7 @@ Cluster::InitializeWithNats(nats::NatsConfig&& natsConfig,
                    loggerName)),
                std::unique_ptr<RpcServer>(
                    new nats::NatsRpcServer(server, natsConfig, rpcServerHandlerFunc, loggerName)),
-               std::unique_ptr<RpcClient>(new nats::NatsRpcClient(natsConfig, loggerName)));
+               std::unique_ptr<RpcClient>(new NatsRpcClient(natsConfig, loggerName)));
 }
 
 void

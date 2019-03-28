@@ -4,7 +4,6 @@
 #include <string>
 
 namespace pitaya {
-namespace nats {
 
 struct NatsConfig
 {
@@ -36,7 +35,6 @@ struct NatsConfig
     {}
 };
 
-} // namespace nats
 } // namespace pitaya
 
 #endif // PITAYA_NATS_CONFIG_H

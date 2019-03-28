@@ -55,7 +55,7 @@ public:
                     std::unique_ptr<RpcClient> rpcClient,
                     const char* loggerName = nullptr);
 
-    void InitializeWithNats(nats::NatsConfig&& natsConfig,
+    void InitializeWithNats(NatsConfig&& natsConfig,
                             etcdv3_service_discovery::Config&& sdConfig,
                             Server server,
                             RpcHandlerFunc rpcServerHandlerFunc,

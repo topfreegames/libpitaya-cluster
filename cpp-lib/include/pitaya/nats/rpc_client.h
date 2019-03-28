@@ -12,7 +12,6 @@
 #include <string>
 
 namespace pitaya {
-namespace nats {
 
 class NatsRpcClient : public RpcClient
 {
@@ -40,7 +39,6 @@ private:
                               void* closure); // called when the connection is repaired
 };
 
-} // namespace nats
 } // namespace pitaya
 
 #endif // PITAYA_NATS_RPC_CLIENT_H

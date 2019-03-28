@@ -20,7 +20,6 @@ using namespace pitaya;
 static constexpr const char* kLogTag = "nats_rpc_client";
 
 namespace pitaya {
-namespace nats {
 
 NatsRpcClient::NatsRpcClient(const NatsConfig& config, const char* loggerName)
     : _log(loggerName ? spdlog::get(loggerName)->clone(kLogTag) : spdlog::stdout_color_mt(kLogTag))
@@ -142,5 +141,4 @@ NatsRpcClient::SendPushToUser(const std::string& server_id,
     }
 }
 
-} // namespace nats
 } // namespace pitaya

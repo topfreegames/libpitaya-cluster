@@ -21,7 +21,6 @@ using namespace std;
 using namespace pitaya;
 using namespace pitaya::service_discovery;
 using namespace pitaya::etcdv3_service_discovery;
-using pitaya::nats::NatsConfig;
 
 static char*
 ConvertToCString(const std::string& str)
