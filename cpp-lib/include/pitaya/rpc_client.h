@@ -2,10 +2,10 @@
 #define PITAYA_RPC_CLIENT_H
 
 #include "pitaya.h"
-#include "protos/kick.pb.h"
-#include "protos/push.pb.h"
-#include "protos/request.pb.h"
-#include "protos/response.pb.h"
+#include "pitaya/protos/kick.pb.h"
+#include "pitaya/protos/push.pb.h"
+#include "pitaya/protos/request.pb.h"
+#include "pitaya/protos/response.pb.h"
 
 namespace pitaya {
 

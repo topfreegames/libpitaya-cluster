@@ -5,11 +5,11 @@
 #include "pitaya/etcdv3_service_discovery/config.h"
 #include "pitaya/grpc/config.h"
 #include "pitaya/nats/config.h"
+#include "pitaya/protos/request.pb.h"
+#include "pitaya/protos/response.pb.h"
 #include "pitaya/rpc_client.h"
 #include "pitaya/rpc_server.h"
 #include "pitaya/service_discovery.h"
-#include "protos/request.pb.h"
-#include "protos/response.pb.h"
 #include "spdlog/spdlog.h"
 
 #include <boost/optional.hpp>

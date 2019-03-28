@@ -7,9 +7,9 @@
 #include "pitaya/grpc/rpc_server.h"
 #include "pitaya/nats/rpc_client.h"
 #include "pitaya/nats/rpc_server.h"
+#include "pitaya/protos/msg.pb.h"
+#include "pitaya/protos/request.pb.h"
 #include "pitaya/service_discovery.h"
-#include "protos/msg.pb.h"
-#include "protos/request.pb.h"
 
 #include <chrono>
 #include <exception>
