@@ -52,13 +52,13 @@ namespace NPitaya
 
             string handlerName = $"{route.service}.{route.method}";
 
-            Models.Session s = null;
+            Models.PitayaSession s = null;
             var response = new Protos.Response();
 
             RemoteMethod handler;
             if (type == RPCType.Sys)
             {
-                s = new Models.Session(req.Session, req.FrontendID);
+                s = new Models.PitayaSession(req.Session, req.FrontendID);
                 if (!HandlersDict.ContainsKey(handlerName))
                 {
                     response = GetErrorResponse("PIT-404", $"remote/handler not found! remote/handler name: {handlerName}");

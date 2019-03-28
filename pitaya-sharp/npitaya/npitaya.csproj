@@ -22,7 +22,6 @@
 
     <ItemGroup>
       <Protobuf Include="../../pitaya-protos/*.proto" OutputDir="./src/gen" CompileOutputs="false" PrivateAssets="All" />
-      <Protobuf Update="../../pitaya-protos/pitaya.proto" PrivateAssets="All" />
     </ItemGroup>
 
     <ItemGroup>

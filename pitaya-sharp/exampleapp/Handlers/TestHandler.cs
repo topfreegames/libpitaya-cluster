@@ -3,14 +3,13 @@ using System.Threading.Tasks;
 using Google.Protobuf;
 using NPitaya.Models;
 using Protos;
-using Session = NPitaya.Models.Session;
 
 #pragma warning disable 1998
 namespace exampleapp.Handlers
 {
-    class TestHandler : BaseHandlerMethod
+    class TestHandler : BaseHandler
     {
-        public RPCRes Entry(Session session, Protos.RPCMsg msg) {
+        public RPCRes Entry(PitayaSession pitayaSession, Protos.RPCMsg msg) {
             var response = new Protos.RPCRes
             {
                 Msg = $"hello from csharp handler!!! :) {System.Guid.NewGuid().ToString()}",
@@ -19,45 +18,45 @@ namespace exampleapp.Handlers
             return response;
         }
     
-        public void NotifyBind(Session session, Protos.RPCMsg msg) {
+        public void NotifyBind(PitayaSession pitayaSession, Protos.RPCMsg msg) {
             var response = new Protos.RPCRes
             {
                 Msg = $"hello from csharp handler!!! :) {System.Guid.NewGuid().ToString()}",
                 Code = 200
             };
 
-            session.Bind("uidbla");
+            pitayaSession.Bind("uidbla");
 
             Console.WriteLine("handler executed with arg {0}", msg);
-            Console.WriteLine("handler executed with session ipversion {0}", session.GetString("ipversion"));
+            Console.WriteLine("handler executed with session ipversion {0}", pitayaSession.GetString("ipversion"));
         }
 
-        public void SetSessionDataTest(Session session, Protos.RPCMsg msg)
+        public void SetSessionDataTest(PitayaSession pitayaSession, Protos.RPCMsg msg)
         {
-            session.Set("msg", "testingMsg");
-            session.Set("int", 3);
-            session.Set("double", 3.33);
-            session.PushToFrontend();
+            pitayaSession.Set("msg", "testingMsg");
+            pitayaSession.Set("int", 3);
+            pitayaSession.Set("double", 3.33);
+            pitayaSession.PushToFrontend();
         }
 
-        public void TestPush(Session session)
+        public void TestPush(PitayaSession pitayaSession)
         {
             Console.WriteLine("got empty notify");
             Push push = new Push
             {
-                Uid = session.Uid,
+                Uid = pitayaSession.Uid,
                 Route = "test.route",
                 Data = ByteString.CopyFromUtf8("teste felipe")
             };
-            var ok = session.Push(push);
+            var ok = pitayaSession.Push(push);
             if (!ok)
             {
                 Logger.Error("push to user failed!");
             }
         }
-        public void TestKick(Session session)
+        public void TestKick(PitayaSession pitayaSession)
         {
-            var ok = session.Kick();
+            var ok = pitayaSession.Kick();
             if (!ok)
             {
                 Logger.Error("kick user failed!");

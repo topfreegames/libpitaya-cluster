@@ -73,22 +73,22 @@ namespace NPitaya
             }
         }
 
-        public static void RegisterRemote(BaseRemoteMethod remoteMethod)
+        public static void RegisterRemote(BaseRemote remote)
         {
-            string className = DefaultRemoteNameFunc(remoteMethod.GetName());
-            RegisterRemote(remoteMethod, className, DefaultRemoteNameFunc);
+            string className = DefaultRemoteNameFunc(remote.GetName());
+            RegisterRemote(remote, className, DefaultRemoteNameFunc);
         }
 
-        public static void RegisterRemote(BaseRemoteMethod remoteMethod, string name)
+        public static void RegisterRemote(BaseRemote remote, string name)
         {
-            RegisterRemote(remoteMethod, name, DefaultRemoteNameFunc);
+            RegisterRemote(remote, name, DefaultRemoteNameFunc);
         }
 
         public static void
-            RegisterRemote(BaseRemoteMethod remoteMethod, string name,
+            RegisterRemote(BaseRemote remote, string name,
                 RemoteNameFunc remoteNameFunc) // TODO remote function name func
         {
-            Dictionary<string, RemoteMethod> m = remoteMethod.getRemotesMap();
+            Dictionary<string, RemoteMethod> m = remote.getRemotesMap();
             foreach (KeyValuePair<string, RemoteMethod> kvp in m)
             {
                 var rn = remoteNameFunc(kvp.Key);
@@ -103,20 +103,20 @@ namespace NPitaya
             }
         }
 
-        public static void RegisterHandler(BaseHandlerMethod handlerMethod)
+        public static void RegisterHandler(BaseHandler handler)
         {
-            string className = DefaultRemoteNameFunc(handlerMethod.GetName());
-            RegisterHandler(handlerMethod, className, DefaultRemoteNameFunc);
+            string className = DefaultRemoteNameFunc(handler.GetName());
+            RegisterHandler(handler, className, DefaultRemoteNameFunc);
         }
 
-        public static void RegisterHandler(BaseHandlerMethod handlerMethod, string name)
+        public static void RegisterHandler(BaseHandler handler, string name)
         {
-            RegisterHandler(handlerMethod, name, DefaultRemoteNameFunc);
+            RegisterHandler(handler, name, DefaultRemoteNameFunc);
         }
 
-        public static void RegisterHandler(BaseHandlerMethod handlerMethod, string name, RemoteNameFunc remoteNameFunc)
+        public static void RegisterHandler(BaseHandler handler, string name, RemoteNameFunc remoteNameFunc)
         {
-            Dictionary<string, RemoteMethod> m = handlerMethod.getRemotesMap();
+            Dictionary<string, RemoteMethod> m = handler.getRemotesMap();
             foreach (KeyValuePair<string, RemoteMethod> kvp in m)
             {
                 var rn = remoteNameFunc(kvp.Key);
