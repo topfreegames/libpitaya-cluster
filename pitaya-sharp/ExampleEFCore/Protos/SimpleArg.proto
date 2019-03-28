@@ -1,7 +1,0 @@
-syntax = "proto3";
-
-package Gen.Protos;
-
-message SimpleArg {
-    string arg = 1;
-}

@@ -11,6 +11,11 @@ namespace ExampleORM.Servers.BusinessLogic.Handlers
 {
     public class UserHandler: BaseHandler
     {
+        private Models.User GetUserFromToken(Guid token, ExampleContext ctx)
+        {
+            return ctx.Users.Single(u => u.Token == token);
+        }
+        
         private User ModelsUserToProtosUser(Models.User modelsUser)
         {
             return new User
@@ -27,14 +32,7 @@ namespace ExampleORM.Servers.BusinessLogic.Handlers
             {
                 if (args.Token.Length > 0)
                 {
-                    var user = context.Users.Single(u => u.Token == Guid.Parse(args.Token));
-                    // if user is found, return it!
-                    if (user != null)
-                    {
-                        return ModelsUserToProtosUser(user);
-                    }
-
-                    throw new PitayaException("user not found!");
+                    return ModelsUserToProtosUser(GetUserFromToken(new Guid(args.Token), context));
                 }
 
                 // if token was not sent, create an user and return!
@@ -45,9 +43,19 @@ namespace ExampleORM.Servers.BusinessLogic.Handlers
             }
         }
 
-        public Answer ChangeName(Session session, SimpleArg arg)
+        public Answer ChangeName(PitayaSession session, ChangeNameArgs arg)
         {
-            return null;
+            using (var context = new ExampleContext())
+            {
+                var userModel = GetUserFromToken(new Guid(arg.Token), context);
+                userModel.Name = arg.Name;
+                context.Update(userModel);
+                context.SaveChanges();
+                return new Answer
+                {
+                    Code = "OK!"
+                };
+            }
         }
     }
 }
