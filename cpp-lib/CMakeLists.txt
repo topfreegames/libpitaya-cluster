@@ -87,6 +87,9 @@ add_library(pitaya_cluster ${LIB_TYPE}
     src/pitaya/etcdv3_service_discovery.cpp
     src/pitaya/etcdv3_service_discovery/worker.cpp
     src/pitaya/etcdv3_service_discovery/worker.h
+    src/pitaya/binding_storage.h
+    src/pitaya/etcd_binding_storage.h
+    src/pitaya/etcd_binding_storage.cpp
     src/pitaya/nats/rpc_server.cpp
     src/pitaya/nats/rpc_client.cpp
     src/pitaya/grpc/rpc_client.cpp
