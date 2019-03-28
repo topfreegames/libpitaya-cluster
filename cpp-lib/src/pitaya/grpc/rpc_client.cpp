@@ -148,20 +148,25 @@ GrpcClient::ServerRemoved(const pitaya::Server& server)
 }
 
 protos::Response
-GrpcClient::SendPushToUser(const std::string& server_id, const std::string& server_type, const protos::Push& push) {
-    if (server_id.empty()){
-      //TODO implement this with binding storage
+GrpcClient::SendPushToUser(const std::string& server_id,
+                           const std::string& server_type,
+                           const protos::Push& push)
+{
+    if (server_id.empty()) {
+        // TODO implement this with binding storage
     }
-    
+
     {
         std::lock_guard<decltype(_stubsForServers)> lock(_stubsForServers);
         if (_stubsForServers.Find(server_id) == _stubsForServers.end()) {
-            auto msg = fmt::format("Cannot push to server {}, since it is not added to the connections map", server_id);
+            auto msg = fmt::format(
+                "Cannot push to server {}, since it is not added to the connections map",
+                server_id);
             _log->error(msg);
             return NewErrorResponse(msg);
         }
     }
-    
+
     std::lock_guard<decltype(_stubsForServers)> lock(_stubsForServers);
     protos::Pitaya::StubInterface* stub = _stubsForServers[server_id].get();
 
@@ -175,40 +180,43 @@ GrpcClient::SendPushToUser(const std::string& server_id, const std::string& serv
     }
 
     return res;
-
 }
 
 protos::KickAnswer
-GrpcClient::SendKickToUser(const std::string& server_id, const std::string& server_type, const protos::KickMsg& kick) {
+GrpcClient::SendKickToUser(const std::string& server_id,
+                           const std::string& server_type,
+                           const protos::KickMsg& kick)
+{
     protos::KickAnswer kickAns;
-    if (server_id.empty()){
-        //TODO implement this with binding storage
+    if (server_id.empty()) {
+        // TODO implement this with binding storage
     }
-    
+
     {
         std::lock_guard<decltype(_stubsForServers)> lock(_stubsForServers);
         if (_stubsForServers.Find(server_id) == _stubsForServers.end()) {
-            auto msg = fmt::format("Cannot kick on server {}, since it is not added to the connections map", server_id);
+            auto msg = fmt::format(
+                "Cannot kick on server {}, since it is not added to the connections map",
+                server_id);
             _log->error(msg);
             kickAns.set_kicked(false);
             return kickAns;
         }
     }
-    
+
     std::lock_guard<decltype(_stubsForServers)> lock(_stubsForServers);
     protos::Pitaya::StubInterface* stub = _stubsForServers[server_id].get();
 
     ::grpc::ClientContext context;
     auto status = stub->KickUser(&context, kick, &kickAns);
-    
+
     if (!status.ok()) {
         auto msg = fmt::format("Kick failed: {}", status.error_message());
         kickAns.set_kicked(false);
         return kickAns;
     }
-    
+
     return kickAns;
-    
 }
 
 } // namespace pitaya

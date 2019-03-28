@@ -63,10 +63,12 @@ GrpcServer::GrpcServer(GrpcConfig config, RpcHandlerFunc handler, const char* lo
     builder.AddListeningPort(address, grpc::InsecureServerCredentials());
 
     unsigned concurentThreadsSupported = std::thread::hardware_concurrency();
-    builder.SetSyncServerOption(grpc::ServerBuilder::SyncServerOption::NUM_CQS, concurentThreadsSupported);
-    builder.SetSyncServerOption(grpc::ServerBuilder::SyncServerOption::MAX_POLLERS, concurentThreadsSupported);
+    builder.SetSyncServerOption(grpc::ServerBuilder::SyncServerOption::NUM_CQS,
+                                concurentThreadsSupported);
+    builder.SetSyncServerOption(grpc::ServerBuilder::SyncServerOption::MAX_POLLERS,
+                                concurentThreadsSupported);
     builder.AddListeningPort(address, ::grpc::InsecureServerCredentials());
-    
+
     builder.RegisterService(_service.get());
 
     _grpcServer = std::unique_ptr<grpc::Server>(builder.BuildAndStart());
@@ -74,7 +76,9 @@ GrpcServer::GrpcServer(GrpcConfig config, RpcHandlerFunc handler, const char* lo
         throw PitayaException(fmt::format("Failed to start gRPC server at address {}", address));
     }
     _log = loggerName ? spdlog::get(loggerName)->clone(kLogTag) : spdlog::stdout_color_mt(kLogTag);
-    _log->debug("Creating gRPC server at address {} with {} cqs and pollers", address, concurentThreadsSupported);
+    _log->debug("Creating gRPC server at address {} with {} cqs and pollers",
+                address,
+                concurentThreadsSupported);
     _log->info("gRPC server started at: {}", address);
 }
 

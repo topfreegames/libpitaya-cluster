@@ -25,8 +25,8 @@ public:
         _config.port = 58000;
 
         _server = pitaya::Server(pitaya::Server::Kind::Frontend, "serverid", "servertype")
-                    .WithMetadata(pitaya::constants::kGrpcHostKey, _config.host)
-                    .WithMetadata(pitaya::constants::kGrpcPortKey, std::to_string(_config.port));
+                      .WithMetadata(pitaya::constants::kGrpcHostKey, _config.host)
+                      .WithMetadata(pitaya::constants::kGrpcPortKey, std::to_string(_config.port));
     }
 
     std::unique_ptr<pitaya::GrpcServer> CreateServer(pitaya::RpcHandlerFunc handler)
@@ -38,7 +38,8 @@ public:
     std::unique_ptr<pitaya::GrpcClient> CreateClient()
     {
         _mockSd = new NiceMock<MockServiceDiscovery>();
-        return std::unique_ptr<pitaya::GrpcClient>(new pitaya::GrpcClient(_config, std::shared_ptr<ServiceDiscovery>(_mockSd)));
+        return std::unique_ptr<pitaya::GrpcClient>(
+            new pitaya::GrpcClient(_config, std::shared_ptr<ServiceDiscovery>(_mockSd)));
     }
 
     void TearDown() override { _client.reset(); }

@@ -5,9 +5,9 @@
 
 #include <assert.h>
 #include <boost/format.hpp>
+#include <mutex>
 #include <random>
 #include <string>
-#include <mutex>
 #include <thread>
 #include <unordered_map>
 
@@ -71,7 +71,9 @@ ParseEtcdKey(const string& key, const string& etcdPrefix, string& serverType, st
     return true;
 }
 
-std::size_t get_thread_id() noexcept {
+std::size_t
+get_thread_id() noexcept
+{
     static std::size_t thread_idx = 0;
     static std::mutex thread_mutex;
     static std::unordered_map<std::thread::id, std::size_t> thread_ids;

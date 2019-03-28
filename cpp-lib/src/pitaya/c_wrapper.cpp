@@ -125,14 +125,14 @@ RpcCallback(protos::Request req)
 {
     protos::Response res;
     MemoryBuffer reqBuffer;
-    size_t size = req.ByteSizeLong(); 
+    size_t size = req.ByteSizeLong();
     reqBuffer.data = malloc(size);
     reqBuffer.size = size;
 
     bool success = req.SerializeToArray(reqBuffer.data, size);
-    if (!success){
-      gLogger->error("failed to serialize protobuf request!");
-      //TODO what to do here ? error like below
+    if (!success) {
+        gLogger->error("failed to serialize protobuf request!");
+        // TODO what to do here ? error like below
     }
 
     auto memBuf = gPinvokeCb(&reqBuffer);
@@ -311,25 +311,28 @@ extern "C"
         spdlog::drop_all();
     }
 
-    static bool sendResponseToManaged(MemoryBuffer **outBuf, const protos::Response &res, CPitayaError *&retErr) {
+    static bool sendResponseToManaged(MemoryBuffer** outBuf,
+                                      const protos::Response& res,
+                                      CPitayaError*& retErr)
+    {
         size_t size = res.ByteSizeLong();
         uint8_t* bin = new uint8_t[size];
-        
+
         if (!res.SerializeToArray(bin, size)) {
             retErr->code = ConvertToCString(constants::kCodeInternalError);
             retErr->msg = ConvertToCString("Error serializing response");
             return false;
         }
-        
+
         *outBuf = new MemoryBuffer;
         (*outBuf)->size = size;
         (*outBuf)->data = bin;
-        
+
         return true;
     }
-    
-    bool tfg_pitc_SendPushToUser(const char *server_id,
-                                 const char *server_type,
+
+    bool tfg_pitc_SendPushToUser(const char* server_id,
+                                 const char* server_type,
                                  MemoryBuffer* memBuf,
                                  MemoryBuffer** outBuf,
                                  CPitayaError* retErr)
@@ -343,7 +346,7 @@ extern "C"
             retErr->msg = ConvertToCString("failed to deserialize push");
             return false;
         }
-        
+
         auto err = Cluster::Instance().SendPushToUser(server_id, server_type, push, res);
 
         if (err) {
@@ -351,28 +354,28 @@ extern "C"
             retErr->msg = ConvertToCString(err->msg);
             return false;
         }
-        
+
         return sendResponseToManaged(outBuf, res, retErr);
     }
 
-    bool tfg_pitc_SendKickToUser(const char *server_id,
-                                 const char *server_type,
+    bool tfg_pitc_SendKickToUser(const char* server_id,
+                                 const char* server_type,
                                  MemoryBuffer* memBuf,
                                  MemoryBuffer** outBuf,
                                  CPitayaError* retErr)
     {
         protos::KickMsg kick;
         protos::KickAnswer res;
-        
+
         bool success = kick.ParseFromArray(memBuf->data, memBuf->size);
         if (!success) {
             retErr->code = ConvertToCString(pitaya::constants::kCodeInternalError);
             retErr->msg = ConvertToCString("failed to deserialize kick msg");
             return false;
         }
-        
+
         auto err = Cluster::Instance().SendKickToUser(server_id, server_type, kick, res);
-        
+
         if (err) {
             retErr->code = ConvertToCString(err->code);
             retErr->msg = ConvertToCString(err->msg);
@@ -381,20 +384,20 @@ extern "C"
 
         size_t size = res.ByteSizeLong();
         uint8_t* bin = new uint8_t[size];
-        
+
         if (!res.SerializeToArray(bin, size)) {
             retErr->code = ConvertToCString(pitaya::constants::kCodeInternalError);
             retErr->msg = ConvertToCString("failed to serialize kick ans");
             return false;
         }
-        
+
         *outBuf = new MemoryBuffer;
         (*outBuf)->size = size;
         (*outBuf)->data = bin;
-        
+
         return true;
     }
-    
+
     bool tfg_pitc_RPC(const char* serverId,
                       const char* route,
                       void* data,

@@ -3,11 +3,13 @@
 #include "pitaya.h"
 #include "pitaya/constants.h"
 #include "pitaya/nats/config.h"
+#include "pitaya/protos/kick.pb.h"
 #include "pitaya/protos/request.pb.h"
 #include "pitaya/protos/response.pb.h"
 #include "pitaya/utils.h"
-#include "pitaya/protos/kick.pb.h"
+
 #include "spdlog/sinks/stdout_color_sinks.h"
+
 #include <iostream>
 #include <nats/nats.h>
 #include <string>
@@ -112,26 +114,32 @@ NatsRpcClient::ClosedCb(natsConnection* nc, void* closure)
 }
 
 protos::KickAnswer
-NatsRpcClient::SendKickToUser(const std::string& server_id, const std::string& server_type, const protos::KickMsg& kick){
+NatsRpcClient::SendKickToUser(const std::string& server_id,
+                              const std::string& server_type,
+                              const protos::KickMsg& kick)
+{
     // TODO needs implementation
     _log->error("method not implemented");
     protos::KickAnswer ans;
     ans.set_kicked(false);
     return ans;
 }
-    
-protos::Response
-NatsRpcClient::SendPushToUser(const std::string& server_id, const std::string& server_type, const protos::Push& push){
-{
-    //TODO implement here
-    protos::Response res;
-    auto err = new protos::Error();
-    err->set_code(pitaya::constants::kCodeNotImplemented);
-    err->set_msg("method not implemented");
-    res.set_allocated_error(err);
 
-    return res;
-}
+protos::Response
+NatsRpcClient::SendPushToUser(const std::string& server_id,
+                              const std::string& server_type,
+                              const protos::Push& push)
+{
+    {
+        // TODO implement here
+        protos::Response res;
+        auto err = new protos::Error();
+        err->set_code(pitaya::constants::kCodeNotImplemented);
+        err->set_msg("method not implemented");
+        res.set_allocated_error(err);
+
+        return res;
+    }
 }
 
 } // namespace nats

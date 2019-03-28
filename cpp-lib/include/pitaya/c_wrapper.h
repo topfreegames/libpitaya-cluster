@@ -68,7 +68,7 @@ extern "C"
     };
 
     // TODO delete if not necesary
-    //struct CMessage {
+    // struct CMessage {
     //    int64_t id;
     //    const char * route;
     //    MemoryBuffer buffer;
@@ -76,13 +76,13 @@ extern "C"
     //    MsgType type;
     //}
 
-    //struct CSession {
+    // struct CSession {
     //    int64_t id;
     //    const char * uid;
     //    MemoryBuffer data;
     //}
 
-    //struct CRequest
+    // struct CRequest
     //{
     //    RPCType type;
     //    CMessage msg;
