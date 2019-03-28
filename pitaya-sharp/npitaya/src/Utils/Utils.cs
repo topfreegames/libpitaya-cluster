@@ -33,21 +33,6 @@ namespace NPitaya.Utils {
             return response;
         }
 
-        internal static byte[] ProtoMessageToByteArray(IMessage msg)
-        {
-            if (msg == null)
-            {
-                return new byte[] { };
-            }
-
-            var mem = new MemoryStream();
-            var o = new CodedOutputStream(mem);
-            msg.WriteTo(o);
-            o.Flush();
-            mem.Close();
-            return mem.ToArray();
-        }
-
         internal static IntPtr ByteArrayToIntPtr(byte[] data)
         {
             IntPtr ptr = Marshal.AllocHGlobal(data.Length);

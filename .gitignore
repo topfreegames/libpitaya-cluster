@@ -51,3 +51,6 @@ sysinfo.txt
 
 go-server/vendor
 _build
+
+*.profraw
+*.profdata

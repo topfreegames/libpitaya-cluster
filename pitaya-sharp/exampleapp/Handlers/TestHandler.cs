@@ -1,4 +1,5 @@
 using System;
+using System.Text;
 using System.Threading.Tasks;
 using Google.Protobuf;
 using NPitaya.Models;
@@ -42,13 +43,8 @@ namespace exampleapp.Handlers
         public void TestPush(PitayaSession pitayaSession)
         {
             Console.WriteLine("got empty notify");
-            Push push = new Push
-            {
-                Uid = pitayaSession.Uid,
-                Route = "test.route",
-                Data = ByteString.CopyFromUtf8("teste felipe")
-            };
-            var ok = pitayaSession.Push(push);
+            var msg = Encoding.UTF8.GetBytes("test felipe");
+            var ok = pitayaSession.Push(new RPCRes{Code = 200, Msg = "testFelipe"}, "test.route");
             if (!ok)
             {
                 Logger.Error("push to user failed!");
@@ -61,6 +57,17 @@ namespace exampleapp.Handlers
             {
                 Logger.Error("kick user failed!");
             }
+        }
+
+        public class TestClass
+        {
+            public string msg;
+            public int code;
+        }
+
+        public TestClass OnlyValidWithJson(PitayaSession s, TestClass t)
+        {
+            return t;
         }
     }
 }

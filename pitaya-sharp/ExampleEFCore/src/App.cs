@@ -1,13 +1,9 @@
 ﻿using System;
-using System.Linq;
-using System.Security.Cryptography.X509Certificates;
 using System.Threading;
-using ExampleORM.Models;
 using ExampleORM.Servers.BusinessLogic.Handlers;
-using Microsoft.EntityFrameworkCore;
-using Npgsql;
 using NPitaya;
 using NPitaya.Models;
+using NPitaya.Serializer;
 
 namespace ExampleORM
 {
@@ -46,6 +42,7 @@ namespace ExampleORM
             });
             
             PitayaCluster.RegisterHandler(new UserHandler());
+            PitayaCluster.SetSerializer(new JSONSerializer()); // Using json serializer for easier interop with pitaya-cli
 
             try
             {

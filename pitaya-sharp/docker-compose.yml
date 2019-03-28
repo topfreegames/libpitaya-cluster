@@ -1,0 +1,16 @@
+version: '3'
+services:
+  etcd:
+    image: appcelerator/etcd
+    container_name: example_etcd
+    ports:
+      - 2379:2379
+      - 4001:4001
+  postgres:
+    image: postgres:10.5-alpine
+    container_name: example_postgres
+    ports:
+      - 9000:5432
+    environment:
+      - POSTGRES_USER=pguser
+      - POSTGRES_DB=testdb

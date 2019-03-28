@@ -28,7 +28,9 @@ namespace example_orm.Migrations
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnName("name");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnName("name")
+                        .HasDefaultValue("Player");
 
                     b.Property<Guid>("Token")
                         .ValueGeneratedOnAdd()

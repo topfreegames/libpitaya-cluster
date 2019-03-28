@@ -2,6 +2,7 @@ using System;
 using System.Runtime.InteropServices;
 using Google.Protobuf;
 using NPitaya.Models;
+using NPitaya.Serializer;
 using Protos;
 using static NPitaya.Utils.Utils;
 
@@ -36,7 +37,7 @@ namespace NPitaya
             var res = new MemoryBuffer();
             IntPtr pnt = Marshal.AllocHGlobal(Marshal.SizeOf(res));
 
-            byte[] responseBytes = ProtoMessageToByteArray(response);
+            byte[] responseBytes = response.ToByteArray();
             res.data = ByteArrayToIntPtr(responseBytes);
             res.size = responseBytes.Length;
             Marshal.StructureToPtr(res, pnt, false);
@@ -77,33 +78,36 @@ namespace NPitaya
       
             try
             {
-                IMessage ans;
+                object ans;
                 if (handler.ArgType != null)
                 {
-                    var arg = (IMessage) Activator.CreateInstance(handler.ArgType);
-                    arg.MergeFrom(new CodedInputStream(data));
+                    var arg = Activator.CreateInstance(handler.ArgType);
+                    serializer.Unmarshal(data, ref arg);
                     if (type == RPCType.Sys)
-                        ans = handler.Method.Invoke(handler.Obj, new object[]{s, arg}) as IMessage;
+                        ans = handler.Method.Invoke(handler.Obj, new object[]{s, arg});
                     else
-                        ans = handler.Method.Invoke(handler.Obj, new object[]{arg}) as IMessage;
+                        ans = handler.Method.Invoke(handler.Obj, new object[]{arg});
                 }
                 else
                 {
                     if (type == RPCType.Sys)
-                        ans = handler.Method.Invoke(handler.Obj, new object[]{s}) as IMessage;
+                        ans = handler.Method.Invoke(handler.Obj, new object[]{s});
                     else
-                        ans = handler.Method.Invoke(handler.Obj, new object[]{}) as IMessage;
+                        ans = handler.Method.Invoke(handler.Obj, new object[]{});
                 }
-                byte[] ansBytes = ProtoMessageToByteArray(ans);
+                byte[] ansBytes = SerializerUtils.SerializeOrRaw(ans, serializer);
                 response.Data = ByteString.CopyFrom(ansBytes);
                 return response;
             }
             catch (Exception e)
             {
+                var innerMostException = e;
+                while (innerMostException.InnerException != null)
+                    innerMostException = innerMostException.InnerException;
                 if (e.InnerException != null)
                     Logger.Error("Exception thrown in handler, error:{0}",
-                        e.InnerException.Message); // TODO externalize method and only print stacktrace when debug
-                response = GetErrorResponse("PIT-500", e.Message);
+                        innerMostException.Message); // TODO externalize method and only print stacktrace when debug
+                response = GetErrorResponse("PIT-500", innerMostException.Message);
                 return response;
             }
         }

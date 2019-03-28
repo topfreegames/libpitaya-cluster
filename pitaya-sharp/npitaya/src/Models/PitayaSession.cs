@@ -108,21 +108,21 @@ namespace NPitaya.Models
                 sessionProto.Data = ByteString.CopyFromUtf8(_rawData);
             }
             Console.WriteLine($"sending {sessionProto}");
-            PitayaCluster.Rpc<Response>(_frontendId, Route.FromString(route), sessionProto);
+            PitayaCluster.Rpc<Response>(_frontendId, Route.FromString(route), sessionProto.ToByteArray());
         }
 
-        public bool Push(Protos.Push push)
+        public bool Push(object pushMsg, string route)
         {
-            return PitayaCluster.SendPushToUser(_frontendId, "", push);
+            return PitayaCluster.SendPushToUser(_frontendId, "", route, Uid, pushMsg);
         }
-        public bool Push(Protos.Push push, string svType)
+        public bool Push(object pushMsg, string svType, string route)
         {
-            return PitayaCluster.SendPushToUser("", svType, push);
+            return PitayaCluster.SendPushToUser("", svType, route, Uid, pushMsg);
         }
         
-        public bool Push(Protos.Push push, string svType, string svId)
+        public bool Push(object pushMsg, string svType, string svId, string route)
         {
-            return PitayaCluster.SendPushToUser(svId, svType, push);
+            return PitayaCluster.SendPushToUser(svId, svType, route, Uid, pushMsg);
         }
 
         public bool Kick()

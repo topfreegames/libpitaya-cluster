@@ -8,7 +8,7 @@
     ".NETCoreApp,Version=v2.2": {
       "exampleapp/1.0.0": {
         "dependencies": {
-          "NPitaya": "0.1.0"
+          "NPitaya": "0.2.0"
         },
         "runtime": {
           "exampleapp.dll": {}
@@ -22,7 +22,7 @@
           }
         }
       },
-      "NPitaya/0.1.0": {
+      "NPitaya/0.2.0": {
         "dependencies": {
           "Google.Protobuf": "3.7.0"
         },
@@ -45,7 +45,7 @@
       "path": "google.protobuf/3.7.0",
       "hashPath": "google.protobuf.3.7.0.nupkg.sha512"
     },
-    "NPitaya/0.1.0": {
+    "NPitaya/0.2.0": {
       "type": "project",
       "serviceable": false,
       "sha512": ""

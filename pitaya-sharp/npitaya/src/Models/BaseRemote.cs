@@ -20,12 +20,12 @@ namespace NPitaya.Models
             {
                 if (m.IsPublic)
                 {
-                    if (typeof(IMessage).IsAssignableFrom(m.ReturnType) || typeof(void) == m.ReturnType)
+                    if (typeof(object).IsAssignableFrom(m.ReturnType) || typeof(void) == m.ReturnType)
                     {
                         ParameterInfo[] parameters = m.GetParameters();
                         if (parameters.Length == 1)
                         {
-                            if (typeof(IMessage).IsAssignableFrom(parameters[0].ParameterType))
+                            if (typeof(object).IsAssignableFrom(parameters[0].ParameterType))
                             {
                                 dict[m.Name] = new RemoteMethod(this, m, m.ReturnType, parameters[0].ParameterType);
                             }

@@ -25,14 +25,14 @@ namespace NPitaya.Models
                 var m = (MethodInfo) methodBase;
                 if (m.IsPublic)
                 {
-                    if (typeof(IMessage).IsAssignableFrom(m.ReturnType) || typeof(void) == m.ReturnType)
+                    if (typeof(object).IsAssignableFrom(m.ReturnType) || typeof(void) == m.ReturnType)
                     {
                         ParameterInfo[] parameters = m.GetParameters();
                         if (parameters.Length == 2) // TODO need to use context
                         {
                             if (typeof(PitayaSession) ==
                                 parameters[0].ParameterType && // TODO support bytes in and out, support context
-                                (typeof(IMessage).IsAssignableFrom(parameters[1].ParameterType)))
+                                (typeof(object).IsAssignableFrom(parameters[1].ParameterType)))
                             {
                                 dict[m.Name] = new RemoteMethod(this, m, m.ReturnType, parameters[1].ParameterType);
                             }

@@ -3,6 +3,7 @@ using System.Runtime.InteropServices;
 using Google.Protobuf;
 using System.Collections.Generic;
 using NPitaya.Models;
+using NPitaya.Serializer;
 using Protos;
 using static NPitaya.Utils.Utils;
 
@@ -12,6 +13,7 @@ namespace NPitaya
 {
     public partial class PitayaCluster
     {
+        private static ISerializer serializer = new ProtobufSerializer();
         public delegate string RemoteNameFunc(string methodName);
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall)]
@@ -131,6 +133,11 @@ namespace NPitaya
             }
         }
 
+        public static void SetSerializer(ISerializer s)
+        {
+            serializer = s;
+        }
+
         public static void Terminate()
         {
             TerminateInternal();
@@ -153,16 +160,23 @@ namespace NPitaya
             return retServer;
         }
 
-        public static unsafe bool SendPushToUser(string frontendId, string serverType, Push push)
+        public static unsafe bool SendPushToUser(string frontendId, string serverType, string route, string uid, object pushMsg)
         {
             bool ok = false;
             MemoryBuffer inMemBuf = new MemoryBuffer();
             MemoryBuffer* outMemBufPtr = null;
             var retError = new Error();
 
+            var push = new Push
+            {
+                Route = route,
+                Uid = uid,
+                Data = ByteString.CopyFrom(SerializerUtils.SerializeOrRaw(pushMsg, serializer))
+            };
+
             try
             {
-                var data = ProtoMessageToByteArray(push);
+                var data = push.ToByteArray();
                 fixed (byte* p = data)
                 {
                     inMemBuf.data = (IntPtr) p;
@@ -194,7 +208,7 @@ namespace NPitaya
 
             try
             {
-                var data = ProtoMessageToByteArray(kick);
+                var data = kick.ToByteArray();
                 fixed (byte* p = data)
                 {
                     inMemBuf.data = (IntPtr) p;
@@ -219,7 +233,7 @@ namespace NPitaya
             }
         }
 
-        public static unsafe T Rpc<T>(string serverId, Route route, IMessage msg)
+        public static unsafe T Rpc<T>(string serverId, Route route, object msg)
         {
             bool ok = false;
             MemoryBuffer* memBufPtr = null;
@@ -227,7 +241,7 @@ namespace NPitaya
 
             try
             {
-                var data = ProtoMessageToByteArray(msg);
+                var data = SerializerUtils.SerializeOrRaw(msg, serializer);
                 fixed (byte* p = data)
                 {
                     ok = RPCInternal(serverId, route.ToString(), (IntPtr) p, data.Length, &memBufPtr, ref retError);

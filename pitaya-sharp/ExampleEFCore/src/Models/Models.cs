@@ -16,7 +16,7 @@ namespace ExampleORM.Models
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            optionsBuilder.UseNpgsql("Host=localhost;Port=9000;Username=battleroyale_user;Password=;Database=testdb");
+            optionsBuilder.UseNpgsql("Host=localhost;Port=9000;Username=pguser;Password=;Database=testdb");
         }
 
         private void EnsureCamelCase(ModelBuilder builder)
@@ -55,7 +55,7 @@ namespace ExampleORM.Models
 
             EnsureCamelCase(modelBuilder);
             var b = modelBuilder.Entity<User>();
-            b.Property(u => u.Name).IsRequired();
+            b.Property(u => u.Name).IsRequired().HasDefaultValue("Player");
             b.Property(u => u.UpdatedAt).HasDefaultValueSql("NOW()");
             b.Property(u => u.Id);
             b.HasKey(u => u.Id);
@@ -63,7 +63,6 @@ namespace ExampleORM.Models
                 .Entity<User>()
                 .Property(u => u.Token)
                 .HasDefaultValueSql("uuid_generate_v4()");
-            b.ToTable("users");
         }
 
         public override int SaveChanges()
