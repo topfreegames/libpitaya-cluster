@@ -16,6 +16,8 @@ bool ParseEtcdKey(const std::string& key,
                   std::string& serverType,
                   std::string& serverId);
 
+std::size_t get_thread_id() noexcept;
+
 } // namespace utils
 } // namespace pitaya
 

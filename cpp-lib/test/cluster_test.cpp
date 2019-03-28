@@ -74,6 +74,7 @@ TEST_F(ClusterTest, RpcsCanBeDoneSuccessfuly)
 
     protos::Request req;
     req.set_allocated_msg(msg);
+    req.set_type(protos::RPCType::User);
 
     protos::Response res;
 
@@ -154,6 +155,7 @@ TEST_F(ClusterTest, RpcReturnsErrorWhenTheCallFails)
 
     protos::Request req;
     req.set_allocated_msg(msg);
+    req.set_type(protos::RPCType::User);
 
     protos::Response res;
 

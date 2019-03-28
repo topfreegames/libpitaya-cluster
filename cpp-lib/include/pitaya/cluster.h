@@ -48,6 +48,7 @@ public:
         return instance;
     }
 
+    std::shared_ptr<RpcServer> _rpcSv;
     void Initialize(Server server,
                     std::shared_ptr<service_discovery::ServiceDiscovery> sd,
                     std::unique_ptr<RpcServer> rpcServer,
@@ -78,11 +79,22 @@ public:
     boost::optional<PitayaError> RPC(const std::string& route,
                                      protos::Request& req,
                                      protos::Response& ret);
-
+    
+    boost::optional<PitayaError>
+    SendPushToUser(const std::string& server_id,
+                   const std::string& server_type,
+                   protos::Push& push,
+                   protos::Response& ret);
+    
+    boost::optional<PitayaError>
+    SendKickToUser(const std::string& server_id,
+                   const std::string& server_type,
+                   protos::KickMsg& kick,
+                   protos::KickAnswer& ret);
+    
 private:
     std::shared_ptr<spdlog::logger> _log;
     std::shared_ptr<service_discovery::ServiceDiscovery> _sd;
-    std::unique_ptr<RpcServer> _rpcSv;
     std::unique_ptr<RpcClient> _rpcClient;
     Server _server;
 };

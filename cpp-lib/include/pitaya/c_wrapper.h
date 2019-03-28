@@ -67,14 +67,31 @@ extern "C"
         int size;
     };
 
-    struct RPCReq
-    {
-        MemoryBuffer buffer;
-        const char* route;
-    };
+    // TODO delete if not necesary
+    //struct CMessage {
+    //    int64_t id;
+    //    const char * route;
+    //    MemoryBuffer buffer;
+    //    const char * reply;
+    //    MsgType type;
+    //}
+
+    //struct CSession {
+    //    int64_t id;
+    //    const char * uid;
+    //    MemoryBuffer data;
+    //}
+
+    //struct CRequest
+    //{
+    //    RPCType type;
+    //    CMessage msg;
+    //    const char* frontendID;
+    //    MemoryBuffer metadata;
+    //};
 
     typedef void (*CsharpFreeCb)(void*);
-    typedef MemoryBuffer* (*RpcPinvokeCb)(RPCReq*);
+    typedef MemoryBuffer* (*RpcPinvokeCb)(MemoryBuffer*);
 
     bool tfg_pitc_InitializeWithGrpc(CGrpcConfig* grpcConfig,
                                      CSDConfig* sdConfig,

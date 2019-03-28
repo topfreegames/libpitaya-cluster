@@ -1,4 +1,4 @@
-package main
+package main // import "github.com/topfreegames/libpitaya-cluster/go-server"
 
 import (
 	"context"
@@ -12,6 +12,7 @@ import (
 	"github.com/topfreegames/libpitaya-cluster/go-server/services"
 	"github.com/topfreegames/pitaya"
 	"github.com/topfreegames/pitaya/acceptor"
+	"github.com/topfreegames/pitaya/cluster"
 	"github.com/topfreegames/pitaya/component"
 	"github.com/topfreegames/pitaya/modules"
 	"github.com/topfreegames/pitaya/serialize/json"
@@ -69,14 +70,32 @@ func main() {
 	confs.Set("pitaya.cluster.rpc.server.grpc.port", 3939)
 
 	meta := map[string]string{
-		"grpc-host": "127.0.0.1",
-		"grpc-port": "3939",
+		"grpcHost": "127.0.0.1",
+		"grpcPort": "3939",
 	}
 
 	pitaya.Configure(true, svType, pitaya.Cluster, meta, confs)
 
 	bs := modules.NewETCDBindingStorage(pitaya.GetServer(), pitaya.GetConfig())
 	pitaya.RegisterModule(bs, "bindingsStorage")
+
+	gs, err := cluster.NewGRPCServer(pitaya.GetConfig(), pitaya.GetServer(), pitaya.GetMetricsReporters())
+	if err != nil {
+		panic(err)
+	}
+
+	gc, err := cluster.NewGRPCClient(
+		pitaya.GetConfig(),
+		pitaya.GetServer(),
+		pitaya.GetMetricsReporters(),
+		bs,
+		cluster.NewConfigInfoRetriever(pitaya.GetConfig()),
+	)
+	if err != nil {
+		panic(err)
+	}
+	pitaya.SetRPCServer(gs)
+	pitaya.SetRPCClient(gc)
 
 	defer pitaya.Shutdown()
 

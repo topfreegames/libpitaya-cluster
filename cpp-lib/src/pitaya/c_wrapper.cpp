@@ -124,16 +124,22 @@ protos::Response
 RpcCallback(protos::Request req)
 {
     protos::Response res;
+    MemoryBuffer reqBuffer;
+    size_t size = req.ByteSizeLong(); 
+    reqBuffer.data = malloc(size);
+    reqBuffer.size = size;
 
-    RPCReq cReq;
-    cReq.buffer.data = (void*)req.msg().data().data();
-    cReq.buffer.size = req.msg().data().size();
-    cReq.route = req.msg().route().c_str();
-    auto memBuf = gPinvokeCb(&cReq);
+    bool success = req.SerializeToArray(reqBuffer.data, size);
+    if (!success){
+      gLogger->error("failed to serialize protobuf request!");
+      //TODO what to do here ? error like below
+    }
+
+    auto memBuf = gPinvokeCb(&reqBuffer);
 
     // for debugging purposes, uncomment the below line
     // print_data(memBuf->data, memBuf->size);
-    bool success = res.ParseFromArray(memBuf->data, memBuf->size);
+    success = res.ParseFromArray(memBuf->data, memBuf->size);
     if (!success) {
         auto err = new protos::Error();
         err->set_code(pitaya::constants::kCodeInternalError);
@@ -143,6 +149,7 @@ RpcCallback(protos::Request req)
     // TODO hacky, OMG :O - do stress testing to see if this will leak memory
     freePinvoke(memBuf->data);
     freePinvoke(memBuf);
+    free(reqBuffer.data);
     return res;
 }
 
@@ -228,6 +235,7 @@ extern "C"
         try {
             Cluster::Instance().InitializeWithGrpc(
                 grpcConfig->ToConfig(), sdConfig->ToConfig(), server, RpcCallback, "c_wrapper");
+
             return true;
         } catch (const PitayaException& exc) {
             gLogger->error("Failed to create cluster instance: {}", exc.what());
@@ -303,6 +311,90 @@ extern "C"
         spdlog::drop_all();
     }
 
+    static bool sendResponseToManaged(MemoryBuffer **outBuf, const protos::Response &res, CPitayaError *&retErr) {
+        size_t size = res.ByteSizeLong();
+        uint8_t* bin = new uint8_t[size];
+        
+        if (!res.SerializeToArray(bin, size)) {
+            retErr->code = ConvertToCString(constants::kCodeInternalError);
+            retErr->msg = ConvertToCString("Error serializing response");
+            return false;
+        }
+        
+        *outBuf = new MemoryBuffer;
+        (*outBuf)->size = size;
+        (*outBuf)->data = bin;
+        
+        return true;
+    }
+    
+    bool tfg_pitc_SendPushToUser(const char *server_id,
+                                 const char *server_type,
+                                 MemoryBuffer* memBuf,
+                                 MemoryBuffer** outBuf,
+                                 CPitayaError* retErr)
+    {
+        protos::Push push;
+        protos::Response res;
+
+        bool success = push.ParseFromArray(memBuf->data, memBuf->size);
+        if (!success) {
+            retErr->code = ConvertToCString(pitaya::constants::kCodeInternalError);
+            retErr->msg = ConvertToCString("failed to deserialize push");
+            return false;
+        }
+        
+        auto err = Cluster::Instance().SendPushToUser(server_id, server_type, push, res);
+
+        if (err) {
+            retErr->code = ConvertToCString(err->code);
+            retErr->msg = ConvertToCString(err->msg);
+            return false;
+        }
+        
+        return sendResponseToManaged(outBuf, res, retErr);
+    }
+
+    bool tfg_pitc_SendKickToUser(const char *server_id,
+                                 const char *server_type,
+                                 MemoryBuffer* memBuf,
+                                 MemoryBuffer** outBuf,
+                                 CPitayaError* retErr)
+    {
+        protos::KickMsg kick;
+        protos::KickAnswer res;
+        
+        bool success = kick.ParseFromArray(memBuf->data, memBuf->size);
+        if (!success) {
+            retErr->code = ConvertToCString(pitaya::constants::kCodeInternalError);
+            retErr->msg = ConvertToCString("failed to deserialize kick msg");
+            return false;
+        }
+        
+        auto err = Cluster::Instance().SendKickToUser(server_id, server_type, kick, res);
+        
+        if (err) {
+            retErr->code = ConvertToCString(err->code);
+            retErr->msg = ConvertToCString(err->msg);
+            return false;
+        }
+
+        size_t size = res.ByteSizeLong();
+        uint8_t* bin = new uint8_t[size];
+        
+        if (!res.SerializeToArray(bin, size)) {
+            retErr->code = ConvertToCString(pitaya::constants::kCodeInternalError);
+            retErr->msg = ConvertToCString("failed to serialize kick ans");
+            return false;
+        }
+        
+        *outBuf = new MemoryBuffer;
+        (*outBuf)->size = size;
+        (*outBuf)->data = bin;
+        
+        return true;
+    }
+    
     bool tfg_pitc_RPC(const char* serverId,
                       const char* route,
                       void* data,
@@ -330,11 +422,6 @@ extern "C"
         req.set_allocated_msg(msg);
         req.set_type(protos::RPCType::User);
 
-        std::vector<uint8_t> buffer;
-        buffer.resize(req.ByteSizeLong());
-
-        req.SerializeToArray(buffer.data(), req.ByteSizeLong());
-
         protos::Response res;
 
         auto err = (!serverId || strlen(serverId) == 0)
@@ -348,21 +435,7 @@ extern "C"
             return false;
         }
 
-        size_t size = res.ByteSizeLong();
-        uint8_t* bin = new uint8_t[size];
-
-        if (!res.SerializeToArray(bin, size)) {
-            gLogger->error("Error serializing RPC response");
-            retErr->code = ConvertToCString(constants::kCodeInternalError);
-            retErr->msg = ConvertToCString("Error serializing RPC response");
-            return false;
-        }
-
-        *outBuf = new MemoryBuffer;
-        (*outBuf)->size = size;
-        (*outBuf)->data = bin;
-
-        return true;
+        return sendResponseToManaged(outBuf, res, retErr);
     }
 
     void tfg_pitc_FreeMem(void* mem) { free(mem); }

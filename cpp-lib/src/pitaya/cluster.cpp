@@ -124,6 +124,52 @@ Cluster::RPC(const string& route, protos::Request& req, protos::Response& ret)
 }
 
 optional<PitayaError>
+Cluster::SendPushToUser(
+             const string& server_id,
+             const string& server_type,
+             protos::Push& push,
+             protos::Response& ret)
+{
+    _log->debug("Sending push to user {} on server {}", push.uid(), server_id);
+    // TODO if no server id sent still goq
+    auto sv = _sd->GetServerById(server_id);
+    if (!sv) {
+        _log->error("Did not find server id {}", server_id);
+        return pitaya::PitayaError(constants::kCodeNotFound, "server not found");
+    }
+
+    ret = _rpcClient->SendPushToUser(sv.value().Id(), sv.value().Type(), push);
+    if (ret.has_error()) {
+        _log->error("Received error sending push: {}", ret.error().msg());
+        return pitaya::PitayaError(ret.error().code(), ret.error().msg());
+    }
+
+    _log->debug("Successfuly sent push: {}", ret.data());
+
+    return boost::none; 
+}
+
+optional<PitayaError>
+Cluster::SendKickToUser(const string& server_id,
+                        const string& server_type,
+                        protos::KickMsg& kick,
+                        protos::KickAnswer& ret)
+{
+    _log->debug("Sending kick to user {} on server {}", kick.userid(), server_id);
+    // TODO if no server id sent still go
+    auto sv = _sd->GetServerById(server_id);
+    if (!sv) {
+        _log->error("Did not find server id {}", server_id);
+        return pitaya::PitayaError(constants::kCodeNotFound, "server not found");
+    }
+    
+    ret = _rpcClient->SendKickToUser(sv.value().Id(), sv.value().Type(), kick);    
+    _log->debug("successfuly sent kick: kicked: {}", ret.kicked());
+    
+    return boost::none;
+}
+
+optional<PitayaError>
 Cluster::RPC(const string& server_id,
              const string& route,
              protos::Request& req,
@@ -142,8 +188,7 @@ Cluster::RPC(const string& server_id,
     metadata[constants::kPeerIdKey] = json::value::string(_server.Id());
     metadata[constants::kPeerServiceKey] = json::value::string(_server.Type());
     string metadataStr = metadata.serialize();
-    req.set_metadata(metadataStr);
-    req.set_type(::protos::RPCType::User);
+    req.set_metadata(metadataStr); 
 
     ret = _rpcClient->Call(sv.value(), req);
     if (ret.has_error()) {

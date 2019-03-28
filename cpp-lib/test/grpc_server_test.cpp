@@ -70,7 +70,7 @@ TEST_F(GrpcServerTest, ThrowsIfAddressIsInvalid)
                  pitaya::PitayaException);
 }
 
-TEST_F(GrpcServerTest, CallHandleDoesNotSupportRpcSys)
+TEST_F(GrpcServerTest, CallHandleDoesSupportRpcSys)
 {
     bool called = false;
 
@@ -86,10 +86,9 @@ TEST_F(GrpcServerTest, CallHandleDoesNotSupportRpcSys)
 
     auto res = client->Call(_server, req);
 
-    ASSERT_TRUE(res.has_error());
-    ASSERT_FALSE(called);
-    EXPECT_EQ(res.error().code(), pitaya::constants::kCodeUnprocessableEntity);
-    EXPECT_TRUE(std::regex_search(res.error().msg(), std::regex("does not support RPC Sys")));
+    ASSERT_FALSE(res.has_error());
+    ASSERT_TRUE(called);
+    EXPECT_EQ(res.data(), "");
 }
 
 TEST_F(GrpcServerTest, CallHandleSupportsRpcUser)

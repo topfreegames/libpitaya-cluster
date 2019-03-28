@@ -26,6 +26,7 @@ using pitaya::etcdv3_service_discovery::Etcdv3ServiceDiscovery;
 using pitaya::service_discovery::ServiceDiscovery;
 
 int x;
+std::atomic<long> qps(0);
 
 static void
 SignalHandler(int signo)
@@ -44,6 +45,41 @@ RpcHandler(const protos::Request& req)
     auto res = protos::Response();
     res.set_data("RPC went ok!");
     return res;
+}
+
+void print()
+{
+  while(true){
+    std::cout << "qps: " << qps << std::endl;
+    qps = 0;
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+  }
+}
+
+void loopSendRpc(shared_ptr<spdlog::logger> logger, int tid){ 
+  auto msg = new protos::Msg();
+  auto session = new protos::Session();
+  session->set_id(1);
+  session->set_uid("uid123");
+
+  msg->set_route("csharp.testHandler.entry");
+
+  protos::Request req;
+  req.set_allocated_session(session);
+
+  req.set_type(protos::RPCType::Sys);
+  req.set_allocated_msg(msg);
+  req.set_frontendid("testfid");
+  protos::Response res;
+  while(true){
+    auto err = Cluster::Instance().RPC("csharp.testHandler.entry", req, res);
+    if (err) {
+      cout << "received error:" << err.value().msg << endl;
+    } else {
+      //cout << "received answer: " << res.data() << endl;
+    }
+    qps++;
+  }
 }
 
 int
@@ -84,26 +120,16 @@ main()
 
         {
             // INIT
-            auto msg = new protos::Msg();
-            //                        msg->set_data("helloww");
-            msg->set_route("room.room.testremote");
-
-            protos::Request req;
-            req.set_allocated_msg(msg);
-            std::vector<uint8_t> buffer(req.ByteSizeLong());
-            req.SerializeToArray(buffer.data(), buffer.size());
-
+            thread thr(print);
+            std::this_thread::sleep_for(std::chrono::seconds(1));
             // FINISH
-            protos::Response res;
-            auto err = Cluster::Instance().RPC("room.room.testremote", req, res);
-            if (err) {
-                cout << "received error:" << err.value().msg << endl;
-            } else {
-                cout << "received answer: " << res.data() << endl;
+            thread threads[1];
+            for (int i = 0 ; i < 1; i ++){
+              threads[i] = thread(loopSendRpc, logger, i);
             }
+            thr.join();
         }
 
-        cin >> x;
 
         Cluster::Instance().Terminate();
     } catch (const PitayaException& e) {
