@@ -163,6 +163,7 @@ if(BUILD_TESTING AND NOT BUILD_MACOSX_BUNDLE)
         test/mock_rpc_client.h
         test/mock_rpc_server.h
         test/mock_etcd_client.h
+        test/mock_binding_storage.h
         test/cluster_test.cpp
         test/ticker_test.cpp
         test/etcdv3_service_discovery_test.cpp

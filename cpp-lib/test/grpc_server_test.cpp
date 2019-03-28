@@ -1,11 +1,13 @@
 #include "test_common.h"
 
 #include "pitaya.h"
+#include "pitaya/binding_storage.h"
 #include "pitaya/constants.h"
 #include "pitaya/grpc/rpc_client.h"
 #include "pitaya/grpc/rpc_server.h"
 #include "pitaya/protos/pitaya_mock.grpc.pb.h"
 
+#include "mock_binding_storage.h"
 #include "mock_service_discovery.h"
 #include <cpprest/json.h>
 #include <regex>
@@ -13,6 +15,7 @@
 namespace json = web::json;
 using namespace pitaya::service_discovery;
 using namespace testing;
+using pitaya::BindingStorage;
 
 class GrpcServerTest : public testing::Test
 {
@@ -38,8 +41,11 @@ public:
     std::unique_ptr<pitaya::GrpcClient> CreateClient()
     {
         _mockSd = new NiceMock<MockServiceDiscovery>();
+        _mockBs = new MockBindingStorage();
         return std::unique_ptr<pitaya::GrpcClient>(
-            new pitaya::GrpcClient(_config, std::shared_ptr<ServiceDiscovery>(_mockSd)));
+            new pitaya::GrpcClient(_config,
+                                   std::shared_ptr<ServiceDiscovery>(_mockSd),
+                                   std::unique_ptr<BindingStorage>(_mockBs)));
     }
 
     void TearDown() override { _client.reset(); }
@@ -49,6 +55,7 @@ protected:
     pitaya::Server _server;
     std::unique_ptr<pitaya::GrpcClient> _client;
     NiceMock<MockServiceDiscovery>* _mockSd;
+    MockBindingStorage* _mockBs;
 };
 
 TEST_F(GrpcServerTest, ServerCanBeCreatedAndDestroyed)

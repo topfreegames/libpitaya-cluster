@@ -5,6 +5,7 @@
 #include "pitaya/grpc/rpc_client.h"
 #include "pitaya/protos/pitaya_mock.grpc.pb.h"
 
+#include "mock_binding_storage.h"
 #include "mock_etcd_client.h"
 #include "mock_service_discovery.h"
 #include <cpprest/json.h>
@@ -20,6 +21,7 @@ public:
     void SetUp() override
     {
         _mockSd = new MockServiceDiscovery();
+        _mockBs = new MockBindingStorage();
         _sd = std::shared_ptr<ServiceDiscovery>(_mockSd);
 
         _config = pitaya::GrpcConfig();
@@ -37,6 +39,7 @@ public:
         _client = std::unique_ptr<pitaya::GrpcClient>(
             new pitaya::GrpcClient(_config,
                                    _sd,
+                                   std::unique_ptr<pitaya::BindingStorage>(_mockBs),
                                    [this](std::shared_ptr<grpc::ChannelInterface> channel)
                                        -> std::unique_ptr<protos::Pitaya::StubInterface> {
                                        (void)channel;
@@ -54,6 +57,7 @@ public:
 
 protected:
     MockServiceDiscovery* _mockSd;
+    MockBindingStorage* _mockBs;
     std::shared_ptr<ServiceDiscovery> _sd;
     pitaya::GrpcConfig _config;
     std::vector<protos::Pitaya::StubInterface*> _mockStubs;
@@ -186,3 +190,162 @@ TEST_F(GrpcClientTest, CanSuccessfullyDoRpc)
     ASSERT_FALSE(res.has_error());
     EXPECT_EQ(res.data(), resResult.data());
 }
+
+TEST_F(GrpcClientTest, CanSuccessfullySendPushesWithId)
+{
+    auto mockStub = new protos::MockPitayaStub();
+    _mockStubs.push_back(mockStub);
+
+    protos::Response resResult;
+    resResult.set_data("return data");
+
+    auto server = pitaya::Server(pitaya::Server::Kind::Frontend, "server-id", "server-type")
+                      .WithMetadata(pitaya::constants::kGrpcHostKey, "localhost")
+                      .WithMetadata(pitaya::constants::kGrpcPortKey, "3435");
+
+    _client->ServerAdded(server);
+
+    auto reqMatcher = AllOf(Property(&protos::Push::uid, "user-uid"),
+                            Property(&protos::Push::data, "MY PUSH DATA"),
+                            Property(&protos::Push::route, "my.push.route"));
+
+    EXPECT_CALL(*mockStub, PushToUser(_, reqMatcher, _))
+        .WillOnce(DoAll(SetArgPointee<2>(resResult), Return(grpc::Status::OK)));
+
+    protos::Push push;
+    push.set_uid("user-uid");
+    push.set_data("MY PUSH DATA");
+    push.set_route("my.push.route");
+
+    auto res = _client->SendPushToUser("server-id", "server-type", push);
+    ASSERT_FALSE(res.has_error());
+    EXPECT_EQ(res.data(), resResult.data());
+}
+
+TEST_F(GrpcClientTest, CanSuccessfullySendPushesWithoutId)
+{
+    auto mockStub1 = new protos::MockPitayaStub();
+    auto mockStub2 = new protos::MockPitayaStub();
+    _mockStubs.push_back(mockStub1);
+    _mockStubs.push_back(mockStub2);
+
+    protos::Response resResult;
+    resResult.set_data("return data");
+
+    auto server1 = pitaya::Server(pitaya::Server::Kind::Frontend, "server-id", "server-type")
+        .WithMetadata(pitaya::constants::kGrpcHostKey, "localhost")
+        .WithMetadata(pitaya::constants::kGrpcPortKey, "3435");
+
+    auto server2 = pitaya::Server(pitaya::Server::Kind::Frontend, "my-special-server-id", "server-type")
+        .WithMetadata(pitaya::constants::kGrpcHostKey, "localhost")
+        .WithMetadata(pitaya::constants::kGrpcPortKey, "3435");
+
+    _client->ServerAdded(server1);
+    _client->ServerAdded(server2);
+
+    protos::Push push;
+    push.set_uid("user-uid");
+    push.set_data("MY PUSH DATA");
+    push.set_route("my.push.route");
+
+    {
+        InSequence seq;
+        EXPECT_CALL(*_mockBs, GetUserFrontendId(push.uid(), "server-type"))
+            .WillOnce(Return(server2.Id()));
+
+        auto reqMatcher = AllOf(Property(&protos::Push::uid, "user-uid"),
+                                Property(&protos::Push::data, push.data()),
+                                Property(&protos::Push::route, push.route()));
+
+        EXPECT_CALL(*mockStub2, PushToUser(_, reqMatcher, _))
+            .WillOnce(DoAll(SetArgPointee<2>(resResult), Return(grpc::Status::OK)));
+    }
+
+    auto res = _client->SendPushToUser("", "server-type", push);
+    ASSERT_FALSE(res.has_error());
+    EXPECT_EQ(res.data(), resResult.data());
+}
+
+TEST_F(GrpcClientTest, SendPushFailsIfServerIdIsNotFoundForUid)
+{
+    protos::Response resResult;
+    resResult.set_data("return data");
+
+    protos::Push push;
+    push.set_uid("user-uid");
+    push.set_data("MY PUSH DATA");
+    push.set_route("my.push.route");
+
+    InSequence seq;
+    EXPECT_CALL(*_mockBs, GetUserFrontendId(push.uid(), "server-type"))
+        .WillOnce(Throw(pitaya::PitayaException("Custom Exception Message")));
+
+    auto res = _client->SendPushToUser("", "server-type", push);
+    ASSERT_TRUE(res.has_error());
+    EXPECT_EQ(res.error().msg(), "Custom Exception Message");
+}
+
+TEST_F(GrpcClientTest, SendPushFailsIfThereAreNoServersOnTheConnectionMap)
+{
+    protos::Response resResult;
+    resResult.set_data("return data");
+
+    protos::Push push;
+    push.set_uid("user-uid");
+    push.set_data("MY PUSH DATA");
+    push.set_route("my.push.route");
+
+    InSequence seq;
+    EXPECT_CALL(*_mockBs, GetUserFrontendId(push.uid(), "server-type"))
+        .WillOnce(Return("my-server-id"));
+
+    auto res = _client->SendPushToUser("", "server-type", push);
+    ASSERT_TRUE(res.has_error());
+    EXPECT_TRUE(std::regex_search(res.error().msg(), std::regex("not added to the connections map")));
+}
+
+TEST_F(GrpcClientTest, SendPushFailsIfGrpcCallFails)
+{
+    protos::Push push;
+    push.set_uid("user-uid");
+    push.set_data("MY PUSH DATA");
+    push.set_route("my.push.route");
+
+    auto mockStub = new protos::MockPitayaStub();
+    _mockStubs.push_back(mockStub);
+
+    auto server = pitaya::Server(pitaya::Server::Kind::Frontend, "my-server-id", "server-type")
+        .WithMetadata(pitaya::constants::kGrpcHostKey, "localhost")
+        .WithMetadata(pitaya::constants::kGrpcPortKey, "3435");
+
+    _client->ServerAdded(server);
+
+    protos::Response resResult;
+    resResult.set_data("return data");
+
+    EXPECT_CALL(*mockStub, PushToUser(_, _, _))
+        .WillOnce(Return(grpc::Status::CANCELLED));
+
+    auto res = _client->SendPushToUser("my-server-id", "server-type", push);
+    ASSERT_TRUE(res.has_error());
+    EXPECT_TRUE(std::regex_search(res.error().msg(), std::regex("Push failed:")));
+}
+
+//TEST_F(GrpcClientTest, SendPushFailsIfServerIdIsNotFoundForUid)
+//{
+//    protos::Response resResult;
+//    resResult.set_data("return data");
+//
+//    protos::Push push;
+//    push.set_uid("user-uid");
+//    push.set_data("MY PUSH DATA");
+//    push.set_route("my.push.route");
+//
+//    InSequence seq;
+//    EXPECT_CALL(*_mockBs, GetUserFrontendId(push.uid(), "server-type"))
+//    .WillOnce(Throw(pitaya::PitayaException("Custom Exception Message")));
+//
+//    auto res = _client->SendPushToUser("", "server-type", push);
+//    ASSERT_TRUE(res.has_error());
+//    EXPECT_EQ(res.error().msg(), "Custom Exception Message");
+//}
