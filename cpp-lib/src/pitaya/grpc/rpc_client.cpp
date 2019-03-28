@@ -17,9 +17,11 @@ static constexpr const char* kLogTag = "grpc_client";
 
 GrpcClient::GrpcClient(GrpcConfig config,
                        std::shared_ptr<service_discovery::ServiceDiscovery> serviceDiscovery,
+                       std::unique_ptr<BindingStorage> bindingStorage,
                        const char* loggerName)
     : GrpcClient(config,
                  std::move(serviceDiscovery),
+                 std::move(bindingStorage),
                  [](std::shared_ptr<grpc::ChannelInterface> channel)
                      -> std::unique_ptr<protos::Pitaya::StubInterface> {
                      return protos::Pitaya::NewStub(std::move(channel));
@@ -29,14 +31,18 @@ GrpcClient::GrpcClient(GrpcConfig config,
 
 GrpcClient::GrpcClient(GrpcConfig config,
                        std::shared_ptr<service_discovery::ServiceDiscovery> serviceDiscovery,
+                       std::unique_ptr<BindingStorage> bindingStorage,
                        CreateStubFunc createStub,
                        const char* loggerName)
     : _log(loggerName ? spdlog::get(loggerName)->clone(kLogTag) : spdlog::stdout_color_mt(kLogTag))
     , _config(std::move(config))
     , _serviceDiscovery(std::move(serviceDiscovery))
     , _createStub(std::move(createStub))
+    , _bindingStorage(std::move(bindingStorage))
 {
+    assert(_bindingStorage != nullptr);
     assert(_serviceDiscovery != nullptr);
+
     _log->info("Registering gRPC client as a listener to the service discovery");
     _serviceDiscovery->AddListener(this);
     _log->info("gRPC RPC client created");
@@ -96,27 +102,37 @@ GrpcClient::Call(const pitaya::Server& target, const protos::Request& req)
 }
 
 protos::Response
-GrpcClient::SendPushToUser(const std::string& server_id,
-                           const std::string& server_type,
+GrpcClient::SendPushToUser(const std::string& providedServerId,
+                           const std::string& serverType,
                            const protos::Push& push)
 {
-    if (server_id.empty()) {
-        // TODO implement this with binding storage
+    std::string serverId;
+
+    // If the user provided an empty server id, we need to fetch it from the
+    // binding storage, otherwise we use the one provided.
+    if (providedServerId.empty()) {
+        try {
+            serverId = _bindingStorage->GetUserFrontendId(push.uid(), serverType);
+        } catch (const PitayaException& exc) {
+            return NewErrorResponse(exc.what());
+        }
+    } else {
+        serverId = providedServerId;
     }
 
+    // TODO: It it good to have two locks here instead of one??
     {
         std::lock_guard<decltype(_stubsForServers)> lock(_stubsForServers);
-        if (_stubsForServers.Find(server_id) == _stubsForServers.end()) {
+        if (_stubsForServers.Find(serverId) == _stubsForServers.end()) {
             auto msg = fmt::format(
-                "Cannot push to server {}, since it is not added to the connections map",
-                server_id);
+                "Cannot push to server {}, since it is not added to the connections map", serverId);
             _log->error(msg);
             return NewErrorResponse(msg);
         }
     }
 
     std::lock_guard<decltype(_stubsForServers)> lock(_stubsForServers);
-    protos::Pitaya::StubInterface* stub = _stubsForServers[server_id].get();
+    protos::Pitaya::StubInterface* stub = _stubsForServers[serverId].get();
 
     protos::Response res;
     grpc::ClientContext context;
@@ -131,29 +147,40 @@ GrpcClient::SendPushToUser(const std::string& server_id,
 }
 
 protos::KickAnswer
-GrpcClient::SendKickToUser(const std::string& server_id,
-                           const std::string& server_type,
+GrpcClient::SendKickToUser(const std::string& providedServerId,
+                           const std::string& serverType,
                            const protos::KickMsg& kick)
 {
     protos::KickAnswer kickAns;
-    if (server_id.empty()) {
-        // TODO implement this with binding storage
+    std::string serverId;
+
+    // If the user provided an empty server id, we need to fetch it from the
+    // binding storage, otherwise we use the one provided.
+    if (providedServerId.empty()) {
+        try {
+            serverId = _bindingStorage->GetUserFrontendId(kick.userid(), serverType);
+        } catch (const PitayaException& exc) {
+            _log->error("Cannot kick on server {}, since it was not found on the binding storage",
+                        providedServerId);
+            kickAns.set_kicked(false);
+            return kickAns;
+        }
+    } else {
+        serverId = providedServerId;
     }
 
     {
         std::lock_guard<decltype(_stubsForServers)> lock(_stubsForServers);
-        if (_stubsForServers.Find(server_id) == _stubsForServers.end()) {
-            auto msg = fmt::format(
-                "Cannot kick on server {}, since it is not added to the connections map",
-                server_id);
-            _log->error(msg);
+        if (_stubsForServers.Find(serverId) == _stubsForServers.end()) {
+            _log->error("Cannot kick on server {}, since it is not added to the connections map",
+                        serverId);
             kickAns.set_kicked(false);
             return kickAns;
         }
     }
 
     std::lock_guard<decltype(_stubsForServers)> lock(_stubsForServers);
-    protos::Pitaya::StubInterface* stub = _stubsForServers[server_id].get();
+    protos::Pitaya::StubInterface* stub = _stubsForServers[serverId].get();
 
     grpc::ClientContext context;
     auto status = stub->KickUser(&context, kick, &kickAns);

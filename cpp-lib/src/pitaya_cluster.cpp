@@ -112,10 +112,19 @@ main()
     grpcConfig.port = 5440;
     grpcConfig.connectionTimeout = std::chrono::seconds(2);
 
+    EtcdBindingStorageConfig bindingStorageConfig;
+    bindingStorageConfig.endpoint = sdConfig.endpoints;
+    bindingStorageConfig.etcdPrefix = "pitaya/";
+    bindingStorageConfig.leaseTtl = std::chrono::seconds(5);
+
     try {
 #if 1
-        Cluster::Instance().InitializeWithGrpc(
-            std::move(grpcConfig), std::move(sdConfig), server, RpcHandler, "main");
+        Cluster::Instance().InitializeWithGrpc(std::move(grpcConfig),
+                                               std::move(sdConfig),
+                                               std::move(bindingStorageConfig),
+                                               server,
+                                               RpcHandler,
+                                               "main");
 #else
         Cluster::Instance().InitializeWithNats(
             std::move(natsConfig), std::move(sdConfig), server, RpcHandler, "main");

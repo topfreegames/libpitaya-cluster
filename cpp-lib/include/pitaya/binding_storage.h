@@ -9,6 +9,7 @@ namespace pitaya {
 class BindingStorage
 {
 public:
+    virtual ~BindingStorage() = default;
     virtual std::string GetUserFrontendId(const std::string& uid,
                                           const std::string& frontendType) = 0;
 };

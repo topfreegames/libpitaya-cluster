@@ -59,6 +59,15 @@ struct CNATSConfig
     int maxPendingMsgs;
 };
 
+struct CBindingStorageConfig
+{
+    int leaseTtlSec;
+    const char* endpoint;
+    const char* etcdPrefix;
+
+    pitaya::EtcdBindingStorageConfig ToConfig();
+};
+
 extern "C"
 {
     struct MemoryBuffer
@@ -95,6 +104,7 @@ extern "C"
 
     bool tfg_pitc_InitializeWithGrpc(CGrpcConfig* grpcConfig,
                                      CSDConfig* sdConfig,
+                                     CBindingStorageConfig* bindingStorageConfig,
                                      CServer* sv,
                                      RpcPinvokeCb cb,
                                      CsharpFreeCb freeCb,

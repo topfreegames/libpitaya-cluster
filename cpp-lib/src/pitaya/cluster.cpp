@@ -1,6 +1,7 @@
 #include "pitaya/cluster.h"
 
 #include "pitaya/constants.h"
+#include "pitaya/etcd_binding_storage.h"
 #include "pitaya/etcdv3_service_discovery.h"
 #include "pitaya/grpc/rpc_client.h"
 #include "pitaya/grpc/rpc_server.h"
@@ -27,6 +28,7 @@ using service_discovery::ServiceDiscovery;
 void
 Cluster::InitializeWithGrpc(GrpcConfig config,
                             etcdv3_service_discovery::Config&& sdConfig,
+                            EtcdBindingStorageConfig bindingStorageConfig,
                             Server server,
                             RpcHandlerFunc rpcServerHandlerFunc,
                             const char* loggerName)
@@ -44,12 +46,19 @@ Cluster::InitializeWithGrpc(GrpcConfig config,
             sdConfig.endpoints, sdConfig.etcdPrefix, sdConfig.logHeartbeat, loggerName)),
         loggerName));
 
+    auto bindingStorage = std::unique_ptr<BindingStorage>(new EtcdBindingStorage(
+        bindingStorageConfig,
+        std::unique_ptr<EtcdClient>(new EtcdClientV3(
+            bindingStorageConfig.endpoint, bindingStorageConfig.etcdPrefix, false, loggerName)),
+        loggerName));
+
     Initialize(server,
                sd,
                std::unique_ptr<RpcServer>(new GrpcServer(config, rpcServerHandlerFunc, loggerName)),
                std::unique_ptr<RpcClient>(
                    new GrpcClient(config,
                                   sd,
+                                  std::move(bindingStorage),
                                   [](std::shared_ptr<grpc::ChannelInterface> channel)
                                       -> std::unique_ptr<protos::Pitaya::StubInterface> {
                                       return protos::Pitaya::NewStub(channel);

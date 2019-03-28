@@ -39,8 +39,6 @@ EtcdBindingStorage::EtcdBindingStorage(EtcdBindingStorageConfig config,
             }
         }
     });
-
-    // _etcdClient->Watch(std::bind(&EtcdBindingStorage::OnWatch, this, _1));
 }
 
 EtcdBindingStorage::~EtcdBindingStorage()
@@ -59,36 +57,6 @@ EtcdBindingStorage::GetUserFrontendId(const std::string& uid, const std::string&
     }
     return res.value;
 }
-
-// void
-// EtcdBindingStorage::OnWatch(WatchResponse res)
-// {
-//     if (!res.ok) {
-//         _log->error("OnWatch error");
-//         return;
-//     }
-
-//     // First we need to parse the etcd key to figure out if it
-//     // belongs to the same prefix and it is actually a server.
-//     string serverType, serverId;
-//     if (!utils::ParseEtcdKey(res.key, _config.etcdPrefix, serverType, serverId)) {
-//         _log->debug("OnWatch: Ignoring {}", res.key);
-//         return;
-//     }
-
-//     if (res.action == "create") {
-//         auto server = ParseServer(res.value);
-//         if (!server) {
-//             _log->error("OnWatch: Error parsing server: {}", res.value);
-//             return;
-//         }
-//         AddServer(std::move(server.value()));
-//         PrintServers();
-//     } else if (res.action == "delete") {
-//         DeleteServer(serverId);
-//         PrintServers();
-//     }
-// }
 
 } // namespace pitaya
 

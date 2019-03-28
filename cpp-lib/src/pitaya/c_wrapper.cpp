@@ -101,6 +101,16 @@ CGrpcConfig::ToConfig()
     return config;
 }
 
+pitaya::EtcdBindingStorageConfig
+CBindingStorageConfig::ToConfig()
+{
+    pitaya::EtcdBindingStorageConfig config;
+    config.endpoint = endpoint;
+    config.etcdPrefix = etcdPrefix;
+    config.leaseTtl = std::chrono::seconds(leaseTtlSec);
+    return config;
+}
+
 void
 OnSignal(int signum)
 {
@@ -207,6 +217,7 @@ extern "C"
 {
     bool tfg_pitc_InitializeWithGrpc(CGrpcConfig* grpcConfig,
                                      CSDConfig* sdConfig,
+                                     CBindingStorageConfig* bindingStorageConfig,
                                      CServer* sv,
                                      RpcPinvokeCb cb,
                                      CsharpFreeCb freeCb,
@@ -232,8 +243,12 @@ extern "C"
         }
 
         try {
-            Cluster::Instance().InitializeWithGrpc(
-                grpcConfig->ToConfig(), sdConfig->ToConfig(), server, RpcCallback, "c_wrapper");
+            Cluster::Instance().InitializeWithGrpc(grpcConfig->ToConfig(),
+                                                   sdConfig->ToConfig(),
+                                                   bindingStorageConfig->ToConfig(),
+                                                   server,
+                                                   RpcCallback,
+                                                   "c_wrapper");
 
             return true;
         } catch (const PitayaException& exc) {

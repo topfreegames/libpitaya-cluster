@@ -1,6 +1,7 @@
 #ifndef PITAYA_GRPC_RPC_CLIENT_H
 #define PITAYA_GRPC_RPC_CLIENT_H
 
+#include "pitaya/binding_storage.h"
 #include "pitaya/grpc/config.h"
 #include "pitaya/protos/pitaya.grpc.pb.h"
 #include "pitaya/rpc_client.h"
@@ -24,10 +25,12 @@ public:
 
     GrpcClient(GrpcConfig config,
                std::shared_ptr<service_discovery::ServiceDiscovery> serviceDiscovery,
+               std::unique_ptr<BindingStorage> bindingStorage,
                CreateStubFunc createStub,
                const char* loggerName = nullptr);
     GrpcClient(GrpcConfig config,
                std::shared_ptr<service_discovery::ServiceDiscovery> serviceDiscovery,
+               std::unique_ptr<BindingStorage> bindingStorage,
                const char* loggerName = nullptr);
     ~GrpcClient();
     protos::Response Call(const pitaya::Server& target, const protos::Request& req) override;
@@ -47,6 +50,7 @@ private:
     std::shared_ptr<service_discovery::ServiceDiscovery> _serviceDiscovery;
     utils::SyncMap<std::string, std::unique_ptr<protos::Pitaya::StubInterface>> _stubsForServers;
     CreateStubFunc _createStub;
+    std::unique_ptr<BindingStorage> _bindingStorage;
 };
 
 } // namespace pitaya

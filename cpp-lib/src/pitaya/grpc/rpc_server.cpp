@@ -11,17 +11,6 @@
 #include <functional>
 #include <grpcpp/server_builder.h>
 
-static protos::Response
-NewUnsupportedRpcRtype()
-{
-    auto error = new protos::Error();
-    error->set_code(pitaya::constants::kCodeUnprocessableEntity);
-    error->set_msg("This server does not support RPC Sys");
-    protos::Response res;
-    res.set_allocated_error(error);
-    return res;
-}
-
 class PitayaGrpcImpl final : public protos::Pitaya::Service
 {
 public:
