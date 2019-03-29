@@ -331,21 +331,92 @@ TEST_F(GrpcClientTest, SendPushFailsIfGrpcCallFails)
     EXPECT_TRUE(std::regex_search(res.error().msg(), std::regex("Push failed:")));
 }
 
-//TEST_F(GrpcClientTest, SendPushFailsIfServerIdIsNotFoundForUid)
-//{
-//    protos::Response resResult;
-//    resResult.set_data("return data");
-//
-//    protos::Push push;
-//    push.set_uid("user-uid");
-//    push.set_data("MY PUSH DATA");
-//    push.set_route("my.push.route");
-//
-//    InSequence seq;
-//    EXPECT_CALL(*_mockBs, GetUserFrontendId(push.uid(), "server-type"))
-//    .WillOnce(Throw(pitaya::PitayaException("Custom Exception Message")));
-//
-//    auto res = _client->SendPushToUser("", "server-type", push);
-//    ASSERT_TRUE(res.has_error());
-//    EXPECT_EQ(res.error().msg(), "Custom Exception Message");
-//}
+TEST_F(GrpcClientTest, CanSuccessfullySendKickWithId)
+{
+    auto mockStub = new protos::MockPitayaStub();
+    _mockStubs.push_back(mockStub);
+
+    protos::Response resResult;
+    resResult.set_data("return data");
+
+    auto server = pitaya::Server(pitaya::Server::Kind::Frontend, "server-id", "server-type")
+        .WithMetadata(pitaya::constants::kGrpcHostKey, "localhost")
+        .WithMetadata(pitaya::constants::kGrpcPortKey, "3435");
+
+    _client->ServerAdded(server);
+
+    protos::KickMsg kick;
+    kick.set_userid("user-uid");
+
+    protos::KickAnswer kickAnswer1;
+    kickAnswer1.set_kicked(true);
+
+    protos::KickAnswer kickAnswer2;
+    kickAnswer2.set_kicked(false);
+
+    EXPECT_CALL(*mockStub, KickUser(_, Property(&protos::KickMsg::userid, kick.userid()), _))
+        .WillOnce(DoAll(SetArgPointee<2>(kickAnswer1), Return(grpc::Status::OK)))
+        .WillOnce(DoAll(SetArgPointee<2>(kickAnswer2), Return(grpc::Status::OK)));
+
+    {
+        auto res = _client->SendKickToUser(server.Id(), server.Type(), kick);
+        ASSERT_TRUE(res.kicked());
+    }
+    {
+        auto res = _client->SendKickToUser(server.Id(), server.Type(), kick);
+        ASSERT_FALSE(res.kicked());
+    }
+}
+
+TEST_F(GrpcClientTest, CanSuccessfullySendKickWithoutId)
+{
+    auto mockStub1 = new protos::MockPitayaStub();
+    auto mockStub2 = new protos::MockPitayaStub();
+    _mockStubs.push_back(mockStub1);
+    _mockStubs.push_back(mockStub2);
+
+    auto server1 = pitaya::Server(pitaya::Server::Kind::Frontend, "server-id", "server-type")
+        .WithMetadata(pitaya::constants::kGrpcHostKey, "localhost")
+        .WithMetadata(pitaya::constants::kGrpcPortKey, "3435");
+
+    auto server2 = pitaya::Server(pitaya::Server::Kind::Frontend, "my-special-server-id", "server-type")
+        .WithMetadata(pitaya::constants::kGrpcHostKey, "localhost")
+        .WithMetadata(pitaya::constants::kGrpcPortKey, "3435");
+
+    _client->ServerAdded(server1);
+    _client->ServerAdded(server2);
+
+    protos::KickMsg kick1;
+    kick1.set_userid("user-uid-1");
+
+    protos::KickAnswer kickAnswer1;
+    kickAnswer1.set_kicked(false);
+
+    protos::KickMsg kick2;
+    kick2.set_userid("user-uid-2");
+
+    protos::KickAnswer kickAnswer2;
+    kickAnswer2.set_kicked(true);
+    {
+        InSequence seq;
+        EXPECT_CALL(*_mockBs, GetUserFrontendId(kick1.userid(), "server-type"))
+            .WillOnce(Return(server2.Id()));
+        EXPECT_CALL(*mockStub2, KickUser(_, Property(&protos::KickMsg::userid, kick1.userid()), _))
+        .WillOnce(DoAll(SetArgPointee<2>(kickAnswer1), Return(grpc::Status::OK)));
+
+        EXPECT_CALL(*_mockBs, GetUserFrontendId(kick2.userid(), "server-type"))
+            .WillOnce(Return(server1.Id()));
+        EXPECT_CALL(*mockStub1, KickUser(_, Property(&protos::KickMsg::userid, kick2.userid()), _))
+            .WillOnce(DoAll(SetArgPointee<2>(kickAnswer2), Return(grpc::Status::OK)));
+    }
+
+    {
+        auto res = _client->SendKickToUser("", "server-type", kick1);
+        EXPECT_FALSE(res.kicked());
+    }
+    {
+        auto res = _client->SendKickToUser("", "server-type", kick2);
+        EXPECT_TRUE(res.kicked());
+    }
+}
+
