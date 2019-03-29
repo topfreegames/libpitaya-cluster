@@ -1,5 +1,5 @@
+using System;
 using System.Text;
-using NPitaya.Serializer;
 using PitayaSimpleJson;
 
 namespace NPitaya.Serializer
@@ -11,10 +11,10 @@ namespace NPitaya.Serializer
             return Encoding.UTF8.GetBytes(SimpleJson.SerializeObject(o));
         }
 
-        public void Unmarshal(byte[] bytes, ref object o)
+        public object Unmarshal(byte[] bytes, Type t)
         {
             if (bytes.Length == 0) bytes = Encoding.UTF8.GetBytes("{}");
-            o = SimpleJson.DeserializeObject(Encoding.UTF8.GetString(bytes), o.GetType());
+            return SimpleJson.DeserializeObject(Encoding.UTF8.GetString(bytes), t);
         }
     }
 }

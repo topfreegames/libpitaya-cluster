@@ -121,8 +121,7 @@ namespace NPitaya
                 object ans;
                 if (handler.ArgType != null)
                 {
-                    var arg = Activator.CreateInstance(handler.ArgType);
-                    serializer.Unmarshal(data, ref arg);
+                    var arg = serializer.Unmarshal(data, handler.ArgType);
                     if (type == RPCType.Sys)
                         ans = handler.Method.Invoke(handler.Obj, new [] {s, arg});
                     else

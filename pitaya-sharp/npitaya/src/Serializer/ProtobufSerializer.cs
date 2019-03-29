@@ -1,5 +1,5 @@
+using System;
 using Google.Protobuf;
-using NPitaya.Serializer;
 
 namespace NPitaya.Serializer
 {
@@ -18,15 +18,16 @@ namespace NPitaya.Serializer
             return ((IMessage) o).ToByteArray();
         }
 
-        public void Unmarshal(byte[] bytes, ref object o)
+        public object Unmarshal(byte[] bytes, Type t)
         {
-            if (!(o is IMessage))
+            if (!typeof(IMessage).IsAssignableFrom(t))
             {
                 throw new PitayaException("Cannot deserialize to a type that doesn't implement IMessage");
                 
             }
-
-            ((IMessage)o).MergeFrom(bytes);
+            var res = Activator.CreateInstance(t);
+            ((IMessage)res).MergeFrom(bytes);
+            return res;
         }
     }
 }
