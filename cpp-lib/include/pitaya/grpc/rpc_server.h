@@ -24,10 +24,15 @@ public:
     void ThreadStart();
 
 private:
+    void ProcessRpcs();
+
+private:
     std::shared_ptr<spdlog::logger> _log;
     GrpcConfig _config;
     std::unique_ptr<grpc::Server> _grpcServer;
-    std::unique_ptr<PitayaGrpcImpl> _service;
+    std::unique_ptr<protos::Pitaya::AsyncService> _service;
+    std::unique_ptr<grpc::ServerCompletionQueue> _completionQueue;
+    std::unique_ptr<std::thread> _workerThread;
 };
 
 } // namespace pitaya

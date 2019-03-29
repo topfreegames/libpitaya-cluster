@@ -19,7 +19,6 @@
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <thread>
 
-using namespace std;
 using namespace pitaya;
 using namespace pitaya::nats;
 using pitaya::etcdv3_service_discovery::Etcdv3ServiceDiscovery;
@@ -38,9 +37,9 @@ SignalHandler(int signo)
 protos::Response
 RpcHandler(const protos::Request& req)
 {
-    cout << "rpc handler called with route: " << req.msg().route() << endl;
+    std::cout << "rpc handler called with route: " << req.msg().route() << std::endl;
     if (req.has_msg()) {
-        cout << "   data = " << req.msg().data() << endl;
+        std::cout << "   data = " << req.msg().data() << std::endl;
     }
     auto res = protos::Response();
     res.set_data("RPC went ok!");
@@ -48,7 +47,7 @@ RpcHandler(const protos::Request& req)
 }
 
 void
-print()
+Print()
 {
     while (true) {
         std::cout << "qps: " << qps << std::endl;
@@ -58,7 +57,7 @@ print()
 }
 
 void
-loopSendRpc(shared_ptr<spdlog::logger> logger, int tid)
+LoopSendRpc(std::shared_ptr<spdlog::logger> logger, int tid)
 {
     auto msg = new protos::Msg();
     auto session = new protos::Session();
@@ -77,9 +76,9 @@ loopSendRpc(shared_ptr<spdlog::logger> logger, int tid)
     while (true) {
         auto err = Cluster::Instance().RPC("csharp.testHandler.entry", req, res);
         if (err) {
-            cout << "received error:" << err.value().msg << endl;
+            std::cout << "received error:" << err.value().msg << std::endl;
         } else {
-            // cout << "received answer: " << res.data() << endl;
+            // std::cout << "received answer: " << res.data() << std::endl;
         }
         qps++;
     }
@@ -129,23 +128,24 @@ main()
         Cluster::Instance().InitializeWithNats(
             std::move(natsConfig), std::move(sdConfig), server, RpcHandler, "main");
 #endif
-
         {
-            // INIT
-            thread thr(print);
+            // // INIT
+            std::thread thr(Print);
             std::this_thread::sleep_for(std::chrono::seconds(1));
             // FINISH
-            thread threads[1];
+            std::thread threads[1];
             for (int i = 0; i < 1; i++) {
-                threads[i] = thread(loopSendRpc, logger, i);
+                threads[i] = std::thread(LoopSendRpc, logger, i);
             }
             thr.join();
         }
 
+        std::cin >> x;
+
         Cluster::Instance().Terminate();
     } catch (const PitayaException& e) {
-        cout << e.what() << endl;
-        cin >> x;
+        std::cout << e.what() << std::endl;
+        std::cin >> x;
     }
 #endif
 }

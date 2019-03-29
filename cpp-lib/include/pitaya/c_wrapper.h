@@ -104,7 +104,6 @@ extern "C"
 
     bool tfg_pitc_InitializeWithGrpc(CGrpcConfig* grpcConfig,
                                      CSDConfig* sdConfig,
-                                     CBindingStorageConfig* bindingStorageConfig,
                                      CServer* sv,
                                      RpcPinvokeCb cb,
                                      CsharpFreeCb freeCb,

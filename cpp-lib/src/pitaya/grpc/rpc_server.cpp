@@ -11,30 +11,94 @@
 #include <functional>
 #include <grpcpp/server_builder.h>
 
-class PitayaGrpcImpl final : public protos::Pitaya::Service
+using namespace grpc;
+
+class CallData
 {
 public:
-    explicit PitayaGrpcImpl(pitaya::RpcHandlerFunc handlerFunc, const char* loggerName = nullptr)
-        : _log(loggerName ? spdlog::get(loggerName)->clone(kLogTag)
-                          : spdlog::stdout_color_mt(kLogTag))
-        , _handlerFunc(std::move(handlerFunc))
-    {}
-
-    ~PitayaGrpcImpl() { spdlog::drop(kLogTag); }
-
-    grpc::Status Call(grpc::ServerContext* context,
-                      const protos::Request* req,
-                      protos::Response* res) override
+    // Take in the "service" instance (in this case representing an asynchronous
+    // server) and the completion queue "cq" used for asynchronous communication
+    // with the gRPC runtime.
+    CallData(protos::Pitaya::AsyncService* service,
+             grpc::ServerCompletionQueue* cq,
+             pitaya::RpcHandlerFunc handler,
+             std::shared_ptr<spdlog::logger> log)
+        : _log(log)
+        , _service(service)
+        , _cq(cq)
+        , _handlerFunc(std::move(handler))
+        , _responder(&_ctx)
+        , _status(CREATE)
     {
-        *res = _handlerFunc(*req);
-        return grpc::Status::OK;
+        // Invoke the serving logic right away.
+        assert(service);
+        assert(cq);
+        Proceed();
+    }
+
+    void Proceed()
+    {
+        if (_status == CREATE) {
+            // As part of the initial CREATE state, we *request* that the system
+            // start processing SayHello requests. In this request, "this" acts are
+            // the tag uniquely identifying the request (so that different CallData
+            // instances can serve different requests concurrently), in this case
+            // the memory address of this CallData instance.
+            _service->RequestCall(&_ctx, &_request, &_responder, _cq, _cq, this);
+            // Make this instance progress to the PROCESS state.
+            _status = PROCESS;
+        } else if (_status == PROCESS) {
+            // Spawn a new CallData instance to serve new clients while we process
+            // the one for this CallData. The instance will deallocate itself as
+            // part of its FINISH state.
+
+            new CallData(_service, _cq, _handlerFunc, _log);
+
+            // The actual processing.
+            _response = _handlerFunc(_request);
+
+            // And we are done! Let the gRPC runtime know we've finished, using the
+            // memory address of this instance as the uniquely identifying tag for
+            // the event.
+            _responder.Finish(_response, grpc::Status::OK, this);
+            _status = FINISH;
+        } else {
+            GPR_ASSERT(_status == FINISH);
+            // Once in the FINISH state, deallocate ourselves (CallData).
+            delete this;
+        }
     }
 
 private:
-    static constexpr const char* kLogTag = "grpc_server_impl";
-
     std::shared_ptr<spdlog::logger> _log;
+    // The means of communication with the gRPC runtime for an asynchronous
+    // server.
+    protos::Pitaya::AsyncService* _service;
+    // The producer-consumer queue where for asynchronous server notifications.
+    ServerCompletionQueue* _cq;
+
     pitaya::RpcHandlerFunc _handlerFunc;
+    // Context for the rpc, allowing to tweak aspects of it such as the use
+    // of compression, authentication, as well as to send metadata back to the
+    // client.
+    ServerContext _ctx;
+
+    // What we get from the client.
+    protos::Request _request;
+    // What we send back to the client.
+    protos::Response _response;
+
+    // The means to get back to the client.
+    ServerAsyncResponseWriter<protos::Response> _responder;
+
+    // Let's implement a tiny state machine with the following states.
+    enum CallStatus
+    {
+        CREATE,
+        PROCESS,
+        FINISH
+    };
+    CallStatus _status; // The current serving state.
 };
 
 namespace pitaya {
@@ -44,41 +108,76 @@ static constexpr const char* kLogTag = "grpc_server";
 GrpcServer::GrpcServer(GrpcConfig config, RpcHandlerFunc handler, const char* loggerName)
     : RpcServer(handler)
     , _config(std::move(config))
-    , _service(new PitayaGrpcImpl(_handlerFunc, loggerName))
+    , _service(new protos::Pitaya::AsyncService())
 {
     const auto address = _config.host + ":" + std::to_string(_config.port);
 
     grpc::ServerBuilder builder;
     builder.AddListeningPort(address, grpc::InsecureServerCredentials());
 
-    unsigned concurentThreadsSupported = std::thread::hardware_concurrency();
-    builder.SetSyncServerOption(grpc::ServerBuilder::SyncServerOption::NUM_CQS,
-                                concurentThreadsSupported);
-    builder.SetSyncServerOption(grpc::ServerBuilder::SyncServerOption::MAX_POLLERS,
-                                concurentThreadsSupported);
+    // unsigned concurentThreadsSupported = std::thread::hardware_concurrency();
+    // builder.SetSyncServerOption(grpc::ServerBuilder::SyncServerOption::NUM_CQS,
+    //                             concurentThreadsSupported);
+    // builder.SetSyncServerOption(grpc::ServerBuilder::SyncServerOption::MAX_POLLERS,
+    //                             concurentThreadsSupported);
     builder.AddListeningPort(address, ::grpc::InsecureServerCredentials());
-
     builder.RegisterService(_service.get());
 
+    _completionQueue = builder.AddCompletionQueue();
+    if (!_completionQueue) {
+        throw PitayaException("Failed to create completion queue");
+    }
     _grpcServer = std::unique_ptr<grpc::Server>(builder.BuildAndStart());
     if (!_grpcServer) {
         throw PitayaException(fmt::format("Failed to start gRPC server at address {}", address));
     }
     _log = loggerName ? spdlog::get(loggerName)->clone(kLogTag) : spdlog::stdout_color_mt(kLogTag);
-    _log->debug("Creating gRPC server at address {} with {} cqs and pollers",
-                address,
-                concurentThreadsSupported);
+    // _log->debug("Creating gRPC server at address {} with {} cqs and pollers",
+    //             address,
+    //             concurentThreadsSupported);
     _log->info("gRPC server started at: {}", address);
+
+    _workerThread =
+        std::unique_ptr<std::thread>(new std::thread(std::bind(&GrpcServer::ProcessRpcs, this)));
 }
 
 GrpcServer::~GrpcServer()
 {
+    if (_workerThread->joinable()) {
+        _log->info("Waiting for worker thread");
+        _workerThread->join();
+    }
+
     if (_grpcServer) {
         _log->info("Shutting down gRPC server");
         _grpcServer->Shutdown();
         _grpcServer->Wait();
     }
+
     spdlog::drop(kLogTag);
+}
+
+void
+GrpcServer::ProcessRpcs()
+{
+    _log->info("Started processing rpcs");
+    new CallData(_service.get(), _completionQueue.get(), _handlerFunc, _log);
+    void* tag; // uniquely identifies a request.
+    bool ok;
+
+    for (;;) {
+        if (!_completionQueue->Next(&tag, &ok)) {
+            break;
+        }
+
+        if (!ok) {
+            _log->error("IS NOT OK, SHUTTING DOWN COMPLETION QUEUE");
+            _completionQueue->Shutdown();
+            continue;
+        }
+
+        static_cast<CallData*>(tag)->Proceed();
+    }
 }
 
 } // namespace pitaya

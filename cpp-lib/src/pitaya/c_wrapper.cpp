@@ -217,7 +217,6 @@ extern "C"
 {
     bool tfg_pitc_InitializeWithGrpc(CGrpcConfig* grpcConfig,
                                      CSDConfig* sdConfig,
-                                     CBindingStorageConfig* bindingStorageConfig,
                                      CServer* sv,
                                      RpcPinvokeCb cb,
                                      CsharpFreeCb freeCb,
@@ -242,10 +241,16 @@ extern "C"
             return false;
         }
 
+        // TODO: make a setter function
+        CBindingStorageConfig bindingStorageConfig;
+        bindingStorageConfig.endpoint = sdConfig->endpoints;
+        bindingStorageConfig.etcdPrefix = "pitaya/";
+        bindingStorageConfig.leaseTtlSec = 5;
+
         try {
             Cluster::Instance().InitializeWithGrpc(grpcConfig->ToConfig(),
                                                    sdConfig->ToConfig(),
-                                                   bindingStorageConfig->ToConfig(),
+                                                   bindingStorageConfig.ToConfig(),
                                                    server,
                                                    RpcCallback,
                                                    "c_wrapper");
