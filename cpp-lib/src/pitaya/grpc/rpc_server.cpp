@@ -113,39 +113,46 @@ GrpcServer::GrpcServer(GrpcConfig config, RpcHandlerFunc handler, const char* lo
     const auto address = _config.host + ":" + std::to_string(_config.port);
 
     grpc::ServerBuilder builder;
-    builder.AddListeningPort(address, grpc::InsecureServerCredentials());
 
     // unsigned concurentThreadsSupported = std::thread::hardware_concurrency();
     // builder.SetSyncServerOption(grpc::ServerBuilder::SyncServerOption::NUM_CQS,
     //                             concurentThreadsSupported);
     // builder.SetSyncServerOption(grpc::ServerBuilder::SyncServerOption::MAX_POLLERS,
     //                             concurentThreadsSupported);
-    builder.AddListeningPort(address, ::grpc::InsecureServerCredentials());
-    builder.RegisterService(_service.get());
 
-    _completionQueue = builder.AddCompletionQueue();
-    if (!_completionQueue) {
-        throw PitayaException("Failed to create completion queue");
-    }
-    _grpcServer = std::unique_ptr<grpc::Server>(builder.BuildAndStart());
-    if (!_grpcServer) {
-        throw PitayaException(fmt::format("Failed to start gRPC server at address {}", address));
-    }
     _log = loggerName ? spdlog::get(loggerName)->clone(kLogTag) : spdlog::stdout_color_mt(kLogTag);
     // _log->debug("Creating gRPC server at address {} with {} cqs and pollers",
     //             address,
     //             concurentThreadsSupported);
     _log->info("gRPC server started at: {}", address);
 
-    _workerThread =
-        std::unique_ptr<std::thread>(new std::thread(std::bind(&GrpcServer::ProcessRpcs, this)));
+    unsigned concurrentThreadsSupported = std::thread::hardware_concurrency();
+
+    for (unsigned i = 0; i < concurrentThreadsSupported; i++) {
+        completionQueues.push_back(builder.AddCompletionQueue());
+    }
+
+    builder.AddListeningPort(address, ::grpc::InsecureServerCredentials());
+    builder.RegisterService(_service.get());
+    _grpcServer = std::unique_ptr<grpc::Server>(builder.BuildAndStart());
+
+    if (!_grpcServer) {
+        throw PitayaException(fmt::format("Failed to start gRPC server at address {}", address));
+    }
+
+    for (auto it = completionQueues.begin(); it != completionQueues.end(); it++) {
+        _workerThreads.push_back(
+            new std::thread(std::bind(&GrpcServer::ProcessRpcs, this, (*it).get())));
+    }
 }
 
 GrpcServer::~GrpcServer()
 {
-    if (_workerThread->joinable()) {
-        _log->info("Waiting for worker thread");
-        _workerThread->join();
+    for (const auto& thread : _workerThreads) {
+        if (thread->joinable()) {
+            _log->info("Waiting for worker thread");
+            thread->join();
+        }
     }
 
     if (_grpcServer) {
@@ -158,21 +165,21 @@ GrpcServer::~GrpcServer()
 }
 
 void
-GrpcServer::ProcessRpcs()
+GrpcServer::ProcessRpcs(ServerCompletionQueue* cq)
 {
     _log->info("Started processing rpcs");
-    new CallData(_service.get(), _completionQueue.get(), _handlerFunc, _log);
+    new CallData(_service.get(), cq, _handlerFunc, _log);
     void* tag; // uniquely identifies a request.
     bool ok;
 
     for (;;) {
-        if (!_completionQueue->Next(&tag, &ok)) {
+        if (!cq->Next(&tag, &ok)) {
             break;
         }
 
         if (!ok) {
-            _log->error("IS NOT OK, SHUTTING DOWN COMPLETION QUEUE");
-            _completionQueue->Shutdown();
+            _log->error("Not ok, shutting down completion queue");
+            cq->Shutdown();
             continue;
         }
 

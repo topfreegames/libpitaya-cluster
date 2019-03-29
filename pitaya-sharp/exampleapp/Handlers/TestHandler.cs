@@ -1,6 +1,7 @@
 using System;
 using System.Runtime.Serialization;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Google.Protobuf;
 using NPitaya.Models;
@@ -17,6 +18,7 @@ namespace exampleapp.Handlers
                 Msg = $"hello from csharp handler!!! :) {System.Guid.NewGuid().ToString()}",
                 Code = 200
             };
+            //Thread.Sleep(20);
             return response;
         }
     
