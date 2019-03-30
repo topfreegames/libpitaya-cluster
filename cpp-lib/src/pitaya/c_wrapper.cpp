@@ -487,30 +487,47 @@ extern "C"
     struct CRpc
     {
         MemoryBuffer* req;
-        void (*onFinish)(MemoryBuffer* mb, void* tag);
         void* tag;
     };
 
-    static void FinishRpc(MemoryBuffer* mb, void* callDataPtr)
+    void tfg_pitc_FinishRpcCall(MemoryBuffer* mb, void* tagPtr)
     {
-        auto rpc = reinterpret_cast<pitaya::Rpc*>(callDataPtr);
+        auto rpc = reinterpret_cast<pitaya::Rpc*>(tagPtr);
 
-        // TODO: marshal mb into a res
         protos::Response res;
+
+        bool success = res.ParseFromArray(mb->data, mb->size);
+        if (!success) {
+            auto err = new protos::Error();
+            err->set_code(pitaya::constants::kCodeInternalError);
+            err->set_msg("pinvoke failed");
+            res.set_allocated_error(err);
+        }
+
         rpc->Finish(res);
+        // TODO: Hacky, alloced on c#, may leak
+        free(mb->data);
+        free(mb);
     }
 
-    CRpc tfg_pitc_WaitForRpc()
+    CRpc* tfg_pitc_WaitForRpc()
     {
         Cluster::RpcData rpcData = Cluster::Instance().WaitForRpc();
 
-        // TODO: convert rpc->req into a MemoryBuffer
-        MemoryBuffer* mb = nullptr;
+        MemoryBuffer* reqBuffer = new MemoryBuffer();
+        size_t size = rpcData.req.ByteSizeLong();
+        reqBuffer->data = malloc(size);
+        reqBuffer->size = size;
 
-        CRpc crpc = {};
-        crpc.req = mb;
-        crpc.onFinish = FinishRpc;
-        crpc.tag = rpcData.rpc;
+        bool success = rpcData.req.SerializeToArray(reqBuffer->data, size);
+        if (!success) {
+            // TODO: send in response?
+            gLogger->error("failed to serialize protobuf request!");
+        }
+
+        CRpc* crpc = new CRpc();
+        crpc->req = reqBuffer;
+        crpc->tag = rpcData.rpc;
 
         return crpc;
     }

@@ -5,6 +5,13 @@ namespace NPitaya
 {
 
     [StructLayout(LayoutKind.Sequential)]
+    public struct CRpc
+    {
+        public IntPtr reqBufferPtr;
+        public IntPtr tag;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
     public struct Server
     {
         [MarshalAs(UnmanagedType.LPStr)]

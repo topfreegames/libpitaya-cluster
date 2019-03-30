@@ -2,6 +2,9 @@ using System;
 using System.Runtime.InteropServices;
 using Google.Protobuf;
 using System.Collections.Generic;
+using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 using NPitaya.Models;
 using NPitaya.Serializer;
 using Protos;
@@ -14,6 +17,7 @@ namespace NPitaya
     public partial class PitayaCluster
     {
         private static ISerializer serializer = new ProtobufSerializer();
+
         public delegate string RemoteNameFunc(string methodName);
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall)]
@@ -52,9 +56,29 @@ namespace NPitaya
                 logLevel,
                 logFile);
 
+            ListenToIncomingRPCs();
+
             if (!ok)
             {
                 throw new PitayaException("Initialization failed");
+            }
+        }
+
+        private static void ListenToIncomingRPCs()
+        {
+            for (int i = 0; i < 1; i++) // TODO configure or get from num_cpu
+            {
+                new Thread(() =>
+                {
+                    Console.WriteLine("consumer thread started");
+                    for (;;)
+                    {
+                        var cRpcPtr = tfg_pitc_WaitForRpc();
+#pragma warning disable 4014
+                        HandleIncomingRpc(cRpcPtr); // TODO I shouldn't await,right?
+#pragma warning restore 4014
+                    }
+                }).Start();
             }
         }
 
@@ -160,7 +184,8 @@ namespace NPitaya
             return retServer;
         }
 
-        public static unsafe bool SendPushToUser(string frontendId, string serverType, string route, string uid, object pushMsg)
+        public static unsafe bool SendPushToUser(string frontendId, string serverType, string route, string uid,
+            object pushMsg)
         {
             bool ok = false;
             MemoryBuffer inMemBuf = new MemoryBuffer();

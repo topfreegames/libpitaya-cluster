@@ -64,7 +64,6 @@ public:
 
     void Finish(protos::Response res) override
     {
-        _log->debug("IAMHERE");
         _status = FINISH;
         _responder.Finish(res, grpc::Status::OK, this);
     }
@@ -127,7 +126,9 @@ GrpcServer::GrpcServer(GrpcConfig config, RpcHandlerFunc handler, const char* lo
     _log->info("gRPC server started at: {}", address);
 
     auto concurrentThreadsSupported = std::thread::hardware_concurrency();
-    for (unsigned i = 0; i < concurrentThreadsSupported; i++) {
+    // for (unsigned i = 0; i < concurrentThreadsSupported; i++) {
+    // TODO set to num cpu
+    for (unsigned i = 0; i < 1; i++) {
         _completionQueues.push_back(builder.AddCompletionQueue());
     }
 
