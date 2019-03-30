@@ -18,6 +18,9 @@ using namespace std;
 namespace json = web::json;
 using boost::optional;
 
+using std::placeholders::_1;
+using std::placeholders::_2;
+
 using google::protobuf::MessageLite;
 
 namespace pitaya {
@@ -54,7 +57,8 @@ Cluster::InitializeWithGrpc(GrpcConfig config,
 
     Initialize(server,
                sd,
-               std::unique_ptr<RpcServer>(new GrpcServer(config, rpcServerHandlerFunc, loggerName)),
+               std::unique_ptr<RpcServer>(new GrpcServer(
+                   config, std::bind(&Cluster::OnIncomingRpc, this, _1, _2), loggerName)),
                std::unique_ptr<RpcClient>(
                    new GrpcClient(config,
                                   sd,
@@ -207,6 +211,38 @@ Cluster::RPC(const string& server_id,
     _log->debug("Successfuly called rpc: {}", ret.data());
 
     return boost::none;
+}
+
+void
+Cluster::OnIncomingRpc(const protos::Request& req, Rpc* rpc)
+{
+    std::lock_guard<decltype(_waitingRpcs)> lock(_waitingRpcs);
+    _log->info("Received new RPC, adding to queue");
+
+    RpcData rpcData = {};
+    rpcData.req = req;
+    rpcData.rpc = rpc;
+
+    _waitingRpcs.PushBack(rpcData);
+    _waitingRpcsSemaphore.Notify();
+}
+
+Cluster::RpcData
+Cluster::WaitForRpc()
+{
+    _waitingRpcsSemaphore.Wait();
+    std::lock_guard<decltype(_waitingRpcs)> lock(_waitingRpcs);
+    _log->info("Will consume new rpc");
+
+    // TODO: define better when there are no more rpc incoming
+    if (_waitingRpcs.Empty()) {
+        RpcData rpcData = {};
+        rpcData.rpc = nullptr;
+        return rpcData;
+    } else {
+        RpcData rpcData = _waitingRpcs.PopFront();
+        return rpcData;
+    }
 }
 
 } // namespace pitaya

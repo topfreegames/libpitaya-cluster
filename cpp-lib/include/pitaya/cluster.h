@@ -11,6 +11,8 @@
 #include "pitaya/rpc_client.h"
 #include "pitaya/rpc_server.h"
 #include "pitaya/service_discovery.h"
+#include "pitaya/utils/semaphore.h"
+#include "pitaya/utils/sync_deque.h"
 #include "spdlog/spdlog.h"
 
 #include <boost/optional.hpp>
@@ -92,11 +94,24 @@ public:
                                                 protos::KickMsg& kick,
                                                 protos::KickAnswer& ret);
 
+    struct RpcData
+    {
+        protos::Request req;
+        Rpc* rpc;
+    };
+
+    RpcData WaitForRpc();
+
+private:
+    void OnIncomingRpc(const protos::Request& req, Rpc* rpc);
+
 private:
     std::shared_ptr<spdlog::logger> _log;
     std::shared_ptr<service_discovery::ServiceDiscovery> _sd;
     std::unique_ptr<RpcClient> _rpcClient;
     Server _server;
+    utils::SyncDeque<RpcData> _waitingRpcs;
+    utils::Semaphore _waitingRpcsSemaphore;
 };
 
 } // namespace pitaya

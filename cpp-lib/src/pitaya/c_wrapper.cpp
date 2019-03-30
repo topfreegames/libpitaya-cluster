@@ -129,8 +129,8 @@ print_data(void* dt, int sz)
     printf("\n");
 }
 
-protos::Response
-RpcCallback(protos::Request req)
+void
+RpcCallback(protos::Request req, pitaya::Rpc* rpc)
 {
     protos::Response res;
     MemoryBuffer reqBuffer;
@@ -159,7 +159,8 @@ RpcCallback(protos::Request req)
     freePinvoke(memBuf->data);
     freePinvoke(memBuf);
     free(reqBuffer.data);
-    return res;
+
+    rpc->Finish(res);
 }
 
 static std::shared_ptr<spdlog::logger>
@@ -481,5 +482,36 @@ extern "C"
         signal(SIGINT, OnSignal);
         signal(SIGTERM, OnSignal);
         signal(SIGKILL, OnSignal);
+    }
+
+    struct CRpc
+    {
+        MemoryBuffer* req;
+        void (*onFinish)(MemoryBuffer* mb, void* tag);
+        void* tag;
+    };
+
+    static void FinishRpc(MemoryBuffer* mb, void* callDataPtr)
+    {
+        auto rpc = reinterpret_cast<pitaya::Rpc*>(callDataPtr);
+
+        // TODO: marshal mb into a res
+        protos::Response res;
+        rpc->Finish(res);
+    }
+
+    CRpc tfg_pitc_WaitForRpc()
+    {
+        Cluster::RpcData rpcData = Cluster::Instance().WaitForRpc();
+
+        // TODO: convert rpc->req into a MemoryBuffer
+        MemoryBuffer* mb = nullptr;
+
+        CRpc crpc = {};
+        crpc.req = mb;
+        crpc.onFinish = FinishRpc;
+        crpc.tag = rpcData.rpc;
+
+        return crpc;
     }
 }

@@ -2,6 +2,7 @@
 #define PITAYA_RPC_SERVER_H
 
 #include "pitaya.h"
+#include "pitaya/protos/response.grpc.pb.h"
 
 namespace pitaya {
 

@@ -13,7 +13,7 @@
 
 using namespace grpc;
 
-class CallData
+class CallData : public pitaya::Rpc
 {
 public:
     // Take in the "service" instance (in this case representing an asynchronous
@@ -54,19 +54,19 @@ public:
 
             new CallData(_service, _cq, _handlerFunc, _log);
 
-            // The actual processing.
-            _response = _handlerFunc(_request);
-
-            // And we are done! Let the gRPC runtime know we've finished, using the
-            // memory address of this instance as the uniquely identifying tag for
-            // the event.
-            _responder.Finish(_response, grpc::Status::OK, this);
-            _status = FINISH;
+            _handlerFunc(_request, this);
         } else {
             GPR_ASSERT(_status == FINISH);
             // Once in the FINISH state, deallocate ourselves (CallData).
             delete this;
         }
+    }
+
+    void Finish(protos::Response res) override
+    {
+        _log->debug("IAMHERE");
+        _status = FINISH;
+        _responder.Finish(res, grpc::Status::OK, this);
     }
 
 private:
@@ -126,13 +126,12 @@ GrpcServer::GrpcServer(GrpcConfig config, RpcHandlerFunc handler, const char* lo
     //             concurentThreadsSupported);
     _log->info("gRPC server started at: {}", address);
 
-    unsigned concurrentThreadsSupported = std::thread::hardware_concurrency();
-
+    auto concurrentThreadsSupported = std::thread::hardware_concurrency();
     for (unsigned i = 0; i < concurrentThreadsSupported; i++) {
-        completionQueues.push_back(builder.AddCompletionQueue());
+        _completionQueues.push_back(builder.AddCompletionQueue());
     }
 
-    builder.AddListeningPort(address, ::grpc::InsecureServerCredentials());
+    builder.AddListeningPort(address, grpc::InsecureServerCredentials());
     builder.RegisterService(_service.get());
     _grpcServer = std::unique_ptr<grpc::Server>(builder.BuildAndStart());
 
@@ -140,7 +139,7 @@ GrpcServer::GrpcServer(GrpcConfig config, RpcHandlerFunc handler, const char* lo
         throw PitayaException(fmt::format("Failed to start gRPC server at address {}", address));
     }
 
-    for (auto it = completionQueues.begin(); it != completionQueues.end(); it++) {
+    for (auto it = _completionQueues.begin(); it != _completionQueues.end(); it++) {
         _workerThreads.push_back(
             new std::thread(std::bind(&GrpcServer::ProcessRpcs, this, (*it).get())));
     }

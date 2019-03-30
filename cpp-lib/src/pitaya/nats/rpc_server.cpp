@@ -83,13 +83,19 @@ NatsRpcServer::HandleMsg(natsConnection* nc, natsSubscription* sub, natsMsg* msg
         return;
     }
 
-    protos::Response res = instance->_handlerFunc(req);
+    // FIXME: this is bad!
+    instance->_handlerFunc(req, instance);
+}
 
-    std::vector<uint8_t> buffer(res.ByteSizeLong());
-    res.SerializeToArray(buffer.data(), buffer.size());
+void
+NatsRpcServer::Finish(protos::Response res)
+{
+    throw PitayaException("FINISH THIS");
+    // std::vector<uint8_t> buffer(res.ByteSizeLong());
+    // res.SerializeToArray(buffer.data(), buffer.size());
 
-    natsConnection_Publish(nc, reply, buffer.data(), buffer.size());
-    natsMsg_Destroy(msg);
+    // natsConnection_Publish(nc, reply, buffer.data(), buffer.size());
+    // natsMsg_Destroy(msg);
 }
 
 void

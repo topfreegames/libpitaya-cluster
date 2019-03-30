@@ -32,7 +32,7 @@ private:
     std::unique_ptr<grpc::Server> _grpcServer;
     std::unique_ptr<protos::Pitaya::AsyncService> _service;
     std::vector<std::thread*> _workerThreads;
-    std::vector<std::unique_ptr<grpc::ServerCompletionQueue>> completionQueues;
+    std::vector<std::unique_ptr<grpc::ServerCompletionQueue>> _completionQueues;
 };
 
 } // namespace pitaya

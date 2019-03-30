@@ -34,8 +34,8 @@ SignalHandler(int signo)
     exit(0);
 }
 
-protos::Response
-RpcHandler(const protos::Request& req)
+void
+RpcHandler(const protos::Request& req, pitaya::Rpc* rpc)
 {
     std::cout << "rpc handler called with route: " << req.msg().route() << std::endl;
     if (req.has_msg()) {
@@ -43,7 +43,8 @@ RpcHandler(const protos::Request& req)
     }
     auto res = protos::Response();
     res.set_data("RPC went ok!");
-    return res;
+
+    rpc->Finish(res);
 }
 
 void
@@ -64,7 +65,7 @@ LoopSendRpc(std::shared_ptr<spdlog::logger> logger, int tid)
     session->set_id(1);
     session->set_uid("uid123");
 
-    msg->set_route("csharp.testHandler.entry");
+    msg->set_route("sometype.testHandler.entry");
 
     protos::Request req;
     req.set_allocated_session(session);
@@ -74,11 +75,11 @@ LoopSendRpc(std::shared_ptr<spdlog::logger> logger, int tid)
     req.set_frontendid("testfid");
     protos::Response res;
     while (true) {
-        auto err = Cluster::Instance().RPC("csharp.testHandler.entry", req, res);
+        auto err = Cluster::Instance().RPC("sometype.testHandler.entry", req, res);
         if (err) {
             std::cout << "received error:" << err.value().msg << std::endl;
         } else {
-            // std::cout << "received answer: " << res.data() << std::endl;
+            std::cout << "received answer: " << res.data() << std::endl;
         }
         qps++;
     }
@@ -95,7 +96,6 @@ main()
     logger->set_level(spdlog::level::debug);
 
     pitaya::Server server(Server::Kind::Frontend, "someid", "sometype");
-    NatsConfig natsConfig("nats://localhost:4222", 1000, 3000, 3, 100);
 
     etcdv3_service_discovery::Config sdConfig;
     sdConfig.endpoints = "http://127.0.0.1:2379";
@@ -106,11 +106,6 @@ main()
     sdConfig.heartbeatTTLSec = std::chrono::seconds(20);
     sdConfig.syncServersIntervalSec = std::chrono::seconds(20);
 
-    GrpcConfig grpcConfig;
-    grpcConfig.host = "127.0.0.1";
-    grpcConfig.port = 5440;
-    grpcConfig.connectionTimeout = std::chrono::seconds(2);
-
     EtcdBindingStorageConfig bindingStorageConfig;
     bindingStorageConfig.endpoint = sdConfig.endpoints;
     bindingStorageConfig.etcdPrefix = "pitaya/";
@@ -118,6 +113,11 @@ main()
 
     try {
 #if 1
+        GrpcConfig grpcConfig;
+        grpcConfig.host = "127.0.0.1";
+        grpcConfig.port = 5440;
+        grpcConfig.connectionTimeout = std::chrono::seconds(2);
+
         Cluster::Instance().InitializeWithGrpc(std::move(grpcConfig),
                                                std::move(sdConfig),
                                                std::move(bindingStorageConfig),
@@ -125,6 +125,8 @@ main()
                                                RpcHandler,
                                                "main");
 #else
+        NatsConfig natsConfig("nats://localhost:4222", 1000, 3000, 3, 100);
+
         Cluster::Instance().InitializeWithNats(
             std::move(natsConfig), std::move(sdConfig), server, RpcHandler, "main");
 #endif
@@ -137,6 +139,19 @@ main()
             for (int i = 0; i < 1; i++) {
                 threads[i] = std::thread(LoopSendRpc, logger, i);
             }
+
+            // Now, wait for RPCs
+            for (;;) {
+                auto rpcData = Cluster::Instance().WaitForRpc();
+
+                logger->debug("Processing new rpc...");
+
+                protos::Response res;
+                res.set_data("MY DATA MAAAAAAAAAAAN");
+
+                rpcData.rpc->Finish(res);
+            }
+
             thr.join();
         }
 

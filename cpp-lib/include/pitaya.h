@@ -11,7 +11,14 @@
 
 namespace pitaya {
 
-using RpcHandlerFunc = std::function<protos::Response(const protos::Request&)>;
+class Rpc
+{
+public:
+    virtual ~Rpc() = default;
+    virtual void Finish(protos::Response res) = 0;
+};
+
+using RpcHandlerFunc = std::function<void(const protos::Request&, Rpc*)>;
 
 class PitayaException : public std::exception
 {
