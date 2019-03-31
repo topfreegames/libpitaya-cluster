@@ -74,7 +74,6 @@ NatsRpcClient::Call(const pitaya::Server& target, const protos::Request& req)
     if (s != NATS_OK) {
         auto err = new protos::Error();
         if (s == NATS_TIMEOUT) {
-            // TODO const codes in separate file
             err->set_code(constants::kCodeTimeout);
             err->set_msg("nats timeout");
         } else {

@@ -1,5 +1,4 @@
 using System;
-using System.Runtime.InteropServices;
 using Google.Protobuf;
 using System.Collections.Generic;
 using System.Threading;
@@ -8,7 +7,6 @@ using NPitaya.Serializer;
 using Protos;
 using static NPitaya.Utils.Utils;
 
-// TODO fix nats rpc
 // TODO profiling
 // TODO better reflection performance in task async call
 // TODO support to sync methods

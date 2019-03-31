@@ -105,7 +105,6 @@ NatsRpcServer::HandleMsg(natsConnection* nc, natsSubscription* sub, natsMsg* msg
 {
     auto instance = reinterpret_cast<NatsRpcServer*>(closure);
 
-    // TODO only every x msgs
     if (_cnt == 10000){
         instance->PrintSubStatus(sub);
         _cnt = 0;

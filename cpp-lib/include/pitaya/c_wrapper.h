@@ -76,29 +76,6 @@ extern "C"
         int size;
     };
 
-    // TODO delete if not necesary
-    // struct CMessage {
-    //    int64_t id;
-    //    const char * route;
-    //    MemoryBuffer buffer;
-    //    const char * reply;
-    //    MsgType type;
-    //}
-
-    // struct CSession {
-    //    int64_t id;
-    //    const char * uid;
-    //    MemoryBuffer data;
-    //}
-
-    // struct CRequest
-    //{
-    //    RPCType type;
-    //    CMessage msg;
-    //    const char* frontendID;
-    //    MemoryBuffer metadata;
-    //};
-
     typedef void (*CsharpFreeCb)(void*);
     typedef MemoryBuffer* (*RpcPinvokeCb)(MemoryBuffer*);
 

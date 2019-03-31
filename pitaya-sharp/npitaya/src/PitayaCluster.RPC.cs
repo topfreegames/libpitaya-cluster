@@ -21,7 +21,7 @@ namespace NPitaya
             }
             catch (Exception e)
             {
-                throw e; // TODO: Could handle this better, putting into a response and retuning
+                throw e; // TODO: Could handle this better?
             }
             finally
             {
@@ -148,9 +148,8 @@ namespace NPitaya
                 var innerMostException = e;
                 while (innerMostException.InnerException != null)
                     innerMostException = innerMostException.InnerException;
-                if (e.InnerException != null)
-                    Logger.Error("Exception thrown in handler, error:{0}",
-                        innerMostException.Message); // TODO externalize method and only print stacktrace when debug
+                Logger.Error("Exception thrown in handler, error:{0}",
+                    innerMostException.Message); // TODO externalize method and only print stacktrace when debug
                 response = GetErrorResponse("PIT-500", innerMostException.Message);
                 return response;
             }

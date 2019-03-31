@@ -129,40 +129,6 @@ print_data(void* dt, int sz)
     printf("\n");
 }
 
-void
-RpcCallback(protos::Request req, pitaya::Rpc* rpc)
-{
-    protos::Response res;
-    MemoryBuffer reqBuffer;
-    size_t size = req.ByteSizeLong();
-    reqBuffer.data = malloc(size);
-    reqBuffer.size = size;
-
-    bool success = req.SerializeToArray(reqBuffer.data, size);
-    if (!success) {
-        gLogger->error("failed to serialize protobuf request!");
-        // TODO what to do here ? error like below
-    }
-
-    auto memBuf = gPinvokeCb(&reqBuffer);
-
-    // for debugging purposes, uncomment the below line
-    // print_data(memBuf->data, memBuf->size);
-    success = res.ParseFromArray(memBuf->data, memBuf->size);
-    if (!success) {
-        auto err = new protos::Error();
-        err->set_code(pitaya::constants::kCodeInternalError);
-        err->set_msg("pinvoke failed");
-        res.set_allocated_error(err);
-    }
-    // TODO hacky, OMG :O - do stress testing to see if this will leak memory
-    freePinvoke(memBuf->data);
-    freePinvoke(memBuf);
-    free(reqBuffer.data);
-
-    rpc->Finish(res);
-}
-
 static std::shared_ptr<spdlog::logger>
 CreateLogger(const char* logFile)
 {
