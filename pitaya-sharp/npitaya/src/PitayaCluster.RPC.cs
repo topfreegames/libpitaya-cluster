@@ -11,13 +11,6 @@ namespace NPitaya
 {
     public partial class PitayaCluster
     {
-        // TODO can delete this cb
-        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-        private delegate Task<IntPtr> RPCCb(IntPtr req);
-
-        static readonly RPCCb RpcCbFunc = RPCCbFuncImpl;
-        private static readonly IntPtr RpcCbFuncPtr = Marshal.GetFunctionPointerForDelegate(RpcCbFunc);
-        
         private static async Task HandleIncomingRpc(IntPtr cRpcPtr)
         {
             try

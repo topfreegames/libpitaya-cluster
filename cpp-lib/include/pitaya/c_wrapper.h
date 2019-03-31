@@ -105,16 +105,12 @@ extern "C"
     bool tfg_pitc_InitializeWithGrpc(CGrpcConfig* grpcConfig,
                                      CSDConfig* sdConfig,
                                      CServer* sv,
-                                     RpcPinvokeCb cb,
-                                     CsharpFreeCb freeCb,
                                      LogLevel logLevel,
                                      const char* logFile);
 
     bool tfg_pitc_InitializeWithNats(CNATSConfig* nc,
                                      CSDConfig* sdConfig,
                                      CServer* sv,
-                                     RpcPinvokeCb cb,
-                                     CsharpFreeCb freeCb,
                                      LogLevel logLevel,
                                      const char* logFile);
 

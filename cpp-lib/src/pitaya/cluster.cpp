@@ -33,7 +33,6 @@ Cluster::InitializeWithGrpc(GrpcConfig config,
                             etcdv3_service_discovery::Config&& sdConfig,
                             EtcdBindingStorageConfig bindingStorageConfig,
                             Server server,
-                            RpcHandlerFunc rpcServerHandlerFunc,
                             const char* loggerName)
 {
     // In order to other servers know how to connect to our grpc server,
@@ -74,7 +73,6 @@ void
 Cluster::InitializeWithNats(NatsConfig&& natsConfig,
                             etcdv3_service_discovery::Config&& sdConfig,
                             Server server,
-                            RpcHandlerFunc rpcServerHandlerFunc,
                             const char* loggerName)
 {
     Initialize(server,
@@ -85,7 +83,7 @@ Cluster::InitializeWithNats(NatsConfig&& natsConfig,
                        sdConfig.endpoints, sdConfig.etcdPrefix, sdConfig.logHeartbeat, loggerName)),
                    loggerName)),
                std::unique_ptr<RpcServer>(
-                   new nats::NatsRpcServer(server, natsConfig, rpcServerHandlerFunc, loggerName)),
+                   new nats::NatsRpcServer(server, natsConfig, std::bind(&Cluster::OnIncomingRpc, this, _1, _2), loggerName)),
                std::unique_ptr<RpcClient>(new NatsRpcClient(natsConfig, loggerName)));
 }
 

@@ -43,7 +43,6 @@ RpcHandler(const protos::Request& req, pitaya::Rpc* rpc)
     }
     auto res = protos::Response();
     res.set_data("RPC went ok!");
-
     rpc->Finish(res);
 }
 
@@ -79,7 +78,7 @@ LoopSendRpc(std::shared_ptr<spdlog::logger> logger, int tid)
         if (err) {
             std::cout << "received error:" << err.value().msg << std::endl;
         } else {
-            std::cout << "received answer: " << res.data() << std::endl;
+            //std::cout << "received answer: " << res.data() << std::endl;
         }
         qps++;
     }
@@ -122,13 +121,12 @@ main()
                                                std::move(sdConfig),
                                                std::move(bindingStorageConfig),
                                                server,
-                                               RpcHandler,
                                                "main");
 #else
         NatsConfig natsConfig("nats://localhost:4222", 1000, 3000, 3, 100);
 
         Cluster::Instance().InitializeWithNats(
-            std::move(natsConfig), std::move(sdConfig), server, RpcHandler, "main");
+            std::move(natsConfig), std::move(sdConfig), server, "main");
 #endif
         {
             // // INIT

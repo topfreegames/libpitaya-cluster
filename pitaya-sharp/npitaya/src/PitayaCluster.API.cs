@@ -8,12 +8,11 @@ using NPitaya.Serializer;
 using Protos;
 using static NPitaya.Utils.Utils;
 
-// TODO remove try catches?
+// TODO fix nats rpc
+// TODO profiling
 // TODO better reflection performance in task async call
 // TODO support to sync methods
-// TODO profiling
 // TODO configure max paralelism
-// TODO fix nats rpc
 namespace NPitaya
 {
     public partial class PitayaCluster
@@ -22,13 +21,7 @@ namespace NPitaya
         private static ISerializer serializer = new ProtobufSerializer();
 
         public delegate string RemoteNameFunc(string methodName);
-
-        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-        private delegate void FreeHGlobalDelegate(IntPtr ptr);
-
-        static readonly FreeHGlobalDelegate FreeDelegate = Marshal.FreeHGlobal;
-        private static readonly IntPtr FreeHGlobalPtr = Marshal.GetFunctionPointerForDelegate(FreeDelegate);
-
+        
         private delegate void OnSignalFunc();
 
         private static readonly Dictionary<string, RemoteMethod> RemotesDict = new Dictionary<string, RemoteMethod>();
@@ -55,16 +48,15 @@ namespace NPitaya
             IntPtr sdCfgPtr = new StructWrapper(sdCfg);
             IntPtr serverPtr = new StructWrapper(server);
 
-            bool ok = InitializeWithGrpcInternal(grpcCfgPtr, sdCfgPtr, serverPtr, RpcCbFuncPtr, FreeHGlobalPtr,
-                logLevel,
+            bool ok = InitializeWithGrpcInternal(grpcCfgPtr, sdCfgPtr, serverPtr, logLevel,
                 logFile);
-
-            ListenToIncomingRPCs();
 
             if (!ok)
             {
                 throw new PitayaException("Initialization failed");
             }
+            
+            ListenToIncomingRPCs();
         }
 
         private static void ListenToIncomingRPCs()
@@ -92,7 +84,7 @@ namespace NPitaya
             IntPtr sdCfgPtr = new StructWrapper(sdCfg);
             IntPtr serverPtr = new StructWrapper(server);
 
-            bool ok = InitializeWithNatsInternal(natsCfgPtr, sdCfgPtr, serverPtr, RpcCbFuncPtr, FreeHGlobalPtr,
+            bool ok = InitializeWithNatsInternal(natsCfgPtr, sdCfgPtr, serverPtr, 
                 logLevel,
                 logFile);
 
@@ -100,6 +92,8 @@ namespace NPitaya
             {
                 throw new PitayaException("Initialization failed");
             }
+
+            ListenToIncomingRPCs();
         }
 
         public static void RegisterRemote(BaseRemote remote)

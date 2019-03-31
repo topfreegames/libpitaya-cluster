@@ -219,8 +219,6 @@ extern "C"
     bool tfg_pitc_InitializeWithGrpc(CGrpcConfig* grpcConfig,
                                      CSDConfig* sdConfig,
                                      CServer* sv,
-                                     RpcPinvokeCb cb,
-                                     CsharpFreeCb freeCb,
                                      LogLevel logLevel,
                                      const char* logFile)
     {
@@ -229,19 +227,6 @@ extern "C"
         }
         SetLogLevel(logLevel);
         Server server = CServerToServer(sv);
-
-        gPinvokeCb = cb;
-        if (gPinvokeCb == nullptr) {
-            gLogger->error("pinvoke callback not set!");
-            return false;
-        }
-
-        freePinvoke = freeCb;
-        if (freePinvoke == nullptr) {
-            gLogger->error("freePinvoke callback not set!");
-            return false;
-        }
-
         // TODO: make a setter function
         CBindingStorageConfig bindingStorageConfig;
         bindingStorageConfig.endpoint = sdConfig->endpoints;
@@ -253,7 +238,6 @@ extern "C"
                                                    sdConfig->ToConfig(),
                                                    bindingStorageConfig.ToConfig(),
                                                    server,
-                                                   RpcCallback,
                                                    "c_wrapper");
 
             return true;
@@ -266,8 +250,6 @@ extern "C"
     bool tfg_pitc_InitializeWithNats(CNATSConfig* nc,
                                      CSDConfig* sdConfig,
                                      CServer* sv,
-                                     RpcPinvokeCb cb,
-                                     CsharpFreeCb freeCb,
                                      LogLevel logLevel,
                                      const char* logFile)
     {
@@ -282,21 +264,9 @@ extern "C"
                                         nc->maxPendingMsgs);
         Server server = CServerToServer(sv);
 
-        gPinvokeCb = cb;
-        if (gPinvokeCb == nullptr) {
-            gLogger->error("pinvoke callback not set!");
-            return false;
-        }
-
-        freePinvoke = freeCb;
-        if (freePinvoke == nullptr) {
-            gLogger->error("freePinvoke callback not set!");
-            return false;
-        }
-
         try {
             Cluster::Instance().InitializeWithNats(
-                std::move(natsCfg), sdConfig->ToConfig(), server, RpcCallback, "c_wrapper");
+                std::move(natsCfg), sdConfig->ToConfig(), server, "c_wrapper");
             return true;
         } catch (const PitayaException& exc) {
             gLogger->error("Failed to create cluster instance: {}", exc.what());

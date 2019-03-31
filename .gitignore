@@ -54,3 +54,4 @@ _build
 
 *.profraw
 *.profdata
+compile_commands.json

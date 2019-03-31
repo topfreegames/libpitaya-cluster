@@ -61,14 +61,12 @@ public:
     void InitializeWithNats(NatsConfig&& natsConfig,
                             etcdv3_service_discovery::Config&& sdConfig,
                             Server server,
-                            RpcHandlerFunc rpcServerHandlerFunc,
                             const char* loggerName = nullptr);
 
     void InitializeWithGrpc(GrpcConfig config,
                             etcdv3_service_discovery::Config&& sdConfig,
                             EtcdBindingStorageConfig bindingStorageConfig,
                             Server server,
-                            RpcHandlerFunc rpcServerHandlerFunc,
                             const char* loggerName = nullptr);
 
     void Terminate();

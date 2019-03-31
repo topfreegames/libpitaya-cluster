@@ -20,6 +20,8 @@ static constexpr const char* kLogTag = "nats_rpc_server";
 namespace pitaya {
 namespace nats {
 
+std::atomic_int NatsRpcServer::_cnt;
+
 NatsRpcServer::NatsRpcServer(const Server& server,
                              const NatsConfig& config,
                              RpcHandlerFunc handlerFunc,
@@ -68,12 +70,48 @@ NatsRpcServer::~NatsRpcServer()
     spdlog::drop(kLogTag);
 }
 
+class CallData : public pitaya::Rpc
+{
+public:
+    CallData(natsConnection* nc,
+             const char * reply,
+             natsMsg* msg)
+      : _reply(reply)
+      , _nc(nc)
+      , _msg(msg)
+  {
+      assert(nc);
+      assert(reply);
+  }
+
+    void Finish(protos::Response res) override
+    {
+        std::vector<uint8_t> buffer(res.ByteSizeLong());
+        res.SerializeToArray(buffer.data(), buffer.size());
+
+        natsConnection_Publish(_nc, _reply, buffer.data(), buffer.size());
+        natsMsg_Destroy(_msg);
+        delete this;
+    }
+
+private:
+    const char * _reply;
+    natsConnection* _nc;
+    natsMsg* _msg;
+};
+
 void
 NatsRpcServer::HandleMsg(natsConnection* nc, natsSubscription* sub, natsMsg* msg, void* closure)
 {
     auto instance = reinterpret_cast<NatsRpcServer*>(closure);
 
-    instance->PrintSubStatus(sub);
+    // TODO only every x msgs
+    if (_cnt == 10000){
+        instance->PrintSubStatus(sub);
+        _cnt = 0;
+    }
+
+    _cnt++;
 
     auto req = protos::Request();
     auto reply = natsMsg_GetReply(msg);
@@ -83,19 +121,7 @@ NatsRpcServer::HandleMsg(natsConnection* nc, natsSubscription* sub, natsMsg* msg
         return;
     }
 
-    // FIXME: this is bad!
-    instance->_handlerFunc(req, instance);
-}
-
-void
-NatsRpcServer::Finish(protos::Response res)
-{
-    throw PitayaException("FINISH THIS");
-    // std::vector<uint8_t> buffer(res.ByteSizeLong());
-    // res.SerializeToArray(buffer.data(), buffer.size());
-
-    // natsConnection_Publish(nc, reply, buffer.data(), buffer.size());
-    // natsMsg_Destroy(msg);
+    instance->_handlerFunc(req, new CallData(nc, reply, msg));
 }
 
 void

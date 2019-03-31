@@ -16,9 +16,6 @@ namespace nats {
 
 class NatsRpcServer
     : public RpcServer
-    // FIXME, HACK: THIS IS PROBABLY VERY BAD,
-    // THINK OF A BETTER WAY OF DOING THIS
-    , public Rpc
 {
 public:
     NatsRpcServer(const Server& server,
@@ -28,8 +25,6 @@ public:
 
     ~NatsRpcServer();
     void ThreadStart();
-
-    void Finish(protos::Response res) override;
 
 private:
     void PrintSubStatus(natsSubscription* sub);
@@ -50,6 +45,7 @@ private:
     natsOptions* _opts;
     natsConnection* _nc;
     natsSubscription* _sub;
+    static std::atomic_int _cnt;
 };
 
 } // namespace nats
