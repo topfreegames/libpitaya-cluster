@@ -1,6 +1,5 @@
 using System;
 using System.Runtime.InteropServices;
-using System.Threading;
 using System.Threading.Tasks;
 using Google.Protobuf;
 using NPitaya.Models;
@@ -118,24 +117,36 @@ namespace NPitaya
 
             try
             {
-                object ans;
+                Task ans;
                 if (handler.ArgType != null)
                 {
                     var arg = serializer.Unmarshal(data, handler.ArgType);
                     if (type == RPCType.Sys)
-                        ans = handler.Method.Invoke(handler.Obj, new [] {s, arg});
+                        ans = handler.Method.Invoke(handler.Obj, new[] {s, arg}) as Task;
                     else
-                        ans = handler.Method.Invoke(handler.Obj, new [] {arg});
+                        ans = handler.Method.Invoke(handler.Obj, new[] {arg}) as Task;
                 }
                 else
                 {
                     if (type == RPCType.Sys)
-                        ans = handler.Method.Invoke(handler.Obj, new object[] {s});
+                        ans = handler.Method.Invoke(handler.Obj, new object[] {s}) as Task;
                     else
-                        ans = handler.Method.Invoke(handler.Obj, new object[] { });
+                        ans = handler.Method.Invoke(handler.Obj, new object[] { }) as Task;
                 }
 
-                byte[] ansBytes = SerializerUtils.SerializeOrRaw(ans, serializer);
+                await ans;
+                byte[] ansBytes;
+
+                if (handler.ReturnType != typeof(void))
+                {
+                    ansBytes = SerializerUtils.SerializeOrRaw(ans.GetType().
+                        GetProperty("Result")
+                        ?.GetValue(ans), serializer);
+                }
+                else
+                {
+                    ansBytes = new byte[]{};
+                }
                 response.Data = ByteString.CopyFrom(ansBytes);
                 return response;
             }

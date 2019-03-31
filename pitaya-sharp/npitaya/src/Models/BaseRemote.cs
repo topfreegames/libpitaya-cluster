@@ -15,19 +15,24 @@ namespace NPitaya.Models
         public Dictionary<string, RemoteMethod> getRemotesMap()
         {
             Dictionary<string, RemoteMethod> dict = new Dictionary<string, RemoteMethod>();
-            MethodBase[] methods = GetType().GetMethods(BindingFlags.Instance | BindingFlags.Public);
+            MethodBase[] methods = GetType().GetMethods(BindingFlags.Instance |
+                                                        BindingFlags.Public);
             foreach (MethodInfo m in methods)
             {
                 if (m.IsPublic)
                 {
-                    if (typeof(object).IsAssignableFrom(m.ReturnType) || typeof(void) == m.ReturnType)
+                    if (typeof(Task).IsAssignableFrom(m.ReturnType))
                     {
+                        var returnType = m.ReturnType.GenericTypeArguments.Length > 0
+                            ? m.ReturnType.GenericTypeArguments[0]
+                            : typeof(void);
                         ParameterInfo[] parameters = m.GetParameters();
                         if (parameters.Length == 1)
                         {
                             if (typeof(object).IsAssignableFrom(parameters[0].ParameterType))
                             {
-                                dict[m.Name] = new RemoteMethod(this, m, m.ReturnType, parameters[0].ParameterType);
+                                dict[m.Name] = new RemoteMethod(this, m, returnType,
+                                    parameters[0].ParameterType);
                             }
                         }
                     }

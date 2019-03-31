@@ -2,20 +2,23 @@ using System;
 using System.Runtime.InteropServices;
 using Google.Protobuf;
 using System.Collections.Generic;
-using System.IO;
 using System.Threading;
-using System.Threading.Tasks;
 using NPitaya.Models;
 using NPitaya.Serializer;
 using Protos;
 using static NPitaya.Utils.Utils;
 
-// TODO remove try catches
-// TODO json support
+// TODO remove try catches?
+// TODO better reflection performance in task async call
+// TODO support to sync methods
+// TODO profiling
+// TODO configure max paralelism
+// TODO fix nats rpc
 namespace NPitaya
 {
     public partial class PitayaCluster
     {
+        private static int ProcessorsCount = Environment.ProcessorCount;
         private static ISerializer serializer = new ProtobufSerializer();
 
         public delegate string RemoteNameFunc(string methodName);
@@ -66,7 +69,7 @@ namespace NPitaya
 
         private static void ListenToIncomingRPCs()
         {
-            for (int i = 0; i < 1; i++) // TODO configure or get from num_cpu
+            for (int i = 0; i < ProcessorsCount; i++)
             {
                 new Thread(() =>
                 {
@@ -75,7 +78,7 @@ namespace NPitaya
                     {
                         var cRpcPtr = tfg_pitc_WaitForRpc();
 #pragma warning disable 4014
-                        HandleIncomingRpc(cRpcPtr); // TODO I shouldn't await,right?
+                        HandleIncomingRpc(cRpcPtr);
 #pragma warning restore 4014
                     }
                 }).Start();

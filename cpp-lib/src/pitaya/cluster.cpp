@@ -217,7 +217,6 @@ void
 Cluster::OnIncomingRpc(const protos::Request& req, Rpc* rpc)
 {
     std::lock_guard<decltype(_waitingRpcs)> lock(_waitingRpcs);
-    //_log->info("Received new RPC, adding to queue");
 
     RpcData rpcData = {};
     rpcData.req = req;

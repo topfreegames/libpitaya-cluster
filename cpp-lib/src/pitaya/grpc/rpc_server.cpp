@@ -113,22 +113,11 @@ GrpcServer::GrpcServer(GrpcConfig config, RpcHandlerFunc handler, const char* lo
 
     grpc::ServerBuilder builder;
 
-    // unsigned concurentThreadsSupported = std::thread::hardware_concurrency();
-    // builder.SetSyncServerOption(grpc::ServerBuilder::SyncServerOption::NUM_CQS,
-    //                             concurentThreadsSupported);
-    // builder.SetSyncServerOption(grpc::ServerBuilder::SyncServerOption::MAX_POLLERS,
-    //                             concurentThreadsSupported);
-
     _log = loggerName ? spdlog::get(loggerName)->clone(kLogTag) : spdlog::stdout_color_mt(kLogTag);
-    // _log->debug("Creating gRPC server at address {} with {} cqs and pollers",
-    //             address,
-    //             concurentThreadsSupported);
     _log->info("gRPC server started at: {}", address);
 
     auto concurrentThreadsSupported = std::thread::hardware_concurrency();
-    // for (unsigned i = 0; i < concurrentThreadsSupported; i++) {
-    // TODO set to num cpu
-    for (unsigned i = 0; i < 1; i++) {
+    for (unsigned i = 0; i < concurrentThreadsSupported; i++) {
         _completionQueues.push_back(builder.AddCompletionQueue());
     }
 

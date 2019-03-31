@@ -7,10 +7,6 @@ namespace NPitaya.Models
 {
     public class BaseHandler : IBaseRemote
     {
-        delegate dynamic SimpleDelegate(PitayaSession s);
-
-        delegate dynamic CompositeDelegate(PitayaSession s, dynamic a);
-
         public string GetName()
         {
             return GetType().Name;
@@ -25,8 +21,11 @@ namespace NPitaya.Models
                 var m = (MethodInfo) methodBase;
                 if (m.IsPublic)
                 {
-                    if (typeof(object).IsAssignableFrom(m.ReturnType) || typeof(void) == m.ReturnType)
+                    if (typeof(Task).IsAssignableFrom(m.ReturnType))
                     {
+                        var returnType = m.ReturnType.GenericTypeArguments.Length > 0
+                            ? m.ReturnType.GenericTypeArguments[0]
+                            : typeof(void);
                         ParameterInfo[] parameters = m.GetParameters();
                         if (parameters.Length == 2) // TODO need to use context
                         {
@@ -34,14 +33,14 @@ namespace NPitaya.Models
                                 parameters[0].ParameterType && // TODO support bytes in and out, support context
                                 (typeof(object).IsAssignableFrom(parameters[1].ParameterType)))
                             {
-                                dict[m.Name] = new RemoteMethod(this, m, m.ReturnType, parameters[1].ParameterType);
+                                dict[m.Name] = new RemoteMethod(this, m, returnType, parameters[1].ParameterType);
                             }
                         }
 
                         if (parameters.Length == 1)
                             if (typeof(PitayaSession) == parameters[0].ParameterType)
                             {
-                                dict[m.Name] = new RemoteMethod(this, m, m.ReturnType, null);
+                                dict[m.Name] = new RemoteMethod(this, m, returnType, null);
                             }
                     }
                 }

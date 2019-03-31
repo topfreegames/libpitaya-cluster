@@ -75,7 +75,7 @@ LoopSendRpc(std::shared_ptr<spdlog::logger> logger, int tid)
     req.set_frontendid("testfid");
     protos::Response res;
     while (true) {
-        auto err = Cluster::Instance().RPC("sometype.testHandler.entry", req, res);
+        auto err = Cluster::Instance().RPC("csharp.testHandler.entry", req, res);
         if (err) {
             std::cout << "received error:" << err.value().msg << std::endl;
         } else {
@@ -135,8 +135,8 @@ main()
             std::thread thr(Print);
             std::this_thread::sleep_for(std::chrono::seconds(1));
             // FINISH
-            std::thread threads[1];
-            for (int i = 0; i < 1; i++) {
+            std::thread threads[2];
+            for (int i = 0; i < 2; i++) {
                 threads[i] = std::thread(LoopSendRpc, logger, i);
             }
 

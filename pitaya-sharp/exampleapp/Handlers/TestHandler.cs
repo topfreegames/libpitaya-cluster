@@ -1,6 +1,7 @@
 using System;
 using System.Runtime.Serialization;
 using System.Text;
+using System.Threading.Tasks;
 using NPitaya.Models;
 using Protos;
 
@@ -9,19 +10,20 @@ namespace exampleapp.Handlers
 {
     class TestHandler : BaseHandler
     {
-        public RPCRes Entry(PitayaSession pitayaSession, Protos.RPCMsg msg) {
+        public async Task<RPCRes> Entry(PitayaSession pitayaSession, RPCMsg msg)
+        {
             var response = new Protos.RPCRes
             {
-                Msg = $"hello from csharp handler!!! :) {System.Guid.NewGuid().ToString()}",
+                Msg = $"hello from csharp handler!!! :) {Guid.NewGuid().ToString()}",
                 Code = 200
             };
             return response;
         }
     
-        public void NotifyBind(PitayaSession pitayaSession, Protos.RPCMsg msg) {
+        public async Task NotifyBind(PitayaSession pitayaSession, RPCMsg msg) {
             var response = new Protos.RPCRes
             {
-                Msg = $"hello from csharp handler!!! :) {System.Guid.NewGuid().ToString()}",
+                Msg = $"hello from csharp handler!!! :) {Guid.NewGuid().ToString()}",
                 Code = 200
             };
 
@@ -31,7 +33,7 @@ namespace exampleapp.Handlers
             Console.WriteLine("handler executed with session ipversion {0}", pitayaSession.GetString("ipversion"));
         }
 
-        public void SetSessionDataTest(PitayaSession pitayaSession, Protos.RPCMsg msg)
+        public async Task SetSessionDataTest(PitayaSession pitayaSession, RPCMsg msg)
         {
             pitayaSession.Set("msg", "testingMsg");
             pitayaSession.Set("int", 3);
@@ -39,7 +41,7 @@ namespace exampleapp.Handlers
             pitayaSession.PushToFrontend();
         }
 
-        public void TestPush(PitayaSession pitayaSession)
+        public async Task TestPush(PitayaSession pitayaSession)
         {
             Console.WriteLine("got empty notify");
             var msg = Encoding.UTF8.GetBytes("test felipe");
@@ -49,7 +51,7 @@ namespace exampleapp.Handlers
                 Logger.Error("push to user failed!");
             }
         }
-        public void TestKick(PitayaSession pitayaSession)
+        public async Task TestKick(PitayaSession pitayaSession)
         {
             var ok = pitayaSession.Kick();
             if (!ok)
@@ -67,7 +69,7 @@ namespace exampleapp.Handlers
             public int Code;
         }
 
-        public TestClass OnlyValidWithJson(PitayaSession s, TestClass t)
+        public async Task <TestClass> OnlyValidWithJson(PitayaSession s, TestClass t)
         {
             return t;
         }
