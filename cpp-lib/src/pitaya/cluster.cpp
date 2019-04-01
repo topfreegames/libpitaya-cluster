@@ -142,13 +142,18 @@ Cluster::SendPushToUser(const string& server_id,
 {
     _log->debug("Sending push to user {} on server {}", push.uid(), server_id);
     // TODO if no server id sent still goq
-    auto sv = _sd->GetServerById(server_id);
-    if (!sv) {
-        _log->error("Did not find server id {}", server_id);
-        return pitaya::PitayaError(constants::kCodeNotFound, "server not found");
+    std::string sv_id;
+    std::string sv_type = server_type;
+    if (!server_id.empty()){
+        auto sv = _sd->GetServerById(server_id);
+        if (!sv) {
+          _log->error("Did not find server id {}", server_id);
+          return pitaya::PitayaError(constants::kCodeNotFound, "server not found");
+        }
+        sv_id = sv.value().Id();
+        sv_type = sv.value().Type();
     }
-
-    ret = _rpcClient->SendPushToUser(sv.value().Id(), sv.value().Type(), push);
+    ret = _rpcClient->SendPushToUser(sv_id, sv_type, push);
     if (ret.has_error()) {
         _log->error("Received error sending push: {}", ret.error().msg());
         return pitaya::PitayaError(ret.error().code(), ret.error().msg());

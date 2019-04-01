@@ -35,7 +35,7 @@ namespace PitayaCSharpExample
 
       NatsConfig natsConfig = new NatsConfig("127.0.0.1:4222", 2000, 1000, 3, 100);
 
-      //GrpcConfig grpcConfig = new GrpcConfig("127.0.0.1", 5444, 2);
+      GrpcConfig grpcConfig = new GrpcConfig("127.0.0.1", 5444, 2);
 
       PitayaCluster cluster = null;
 
@@ -50,8 +50,8 @@ namespace PitayaCSharpExample
 
       try
       {
-        //PitayaCluster.Initialize(grpcConfig, sdConfig, sv, NativeLogLevel.Debug, "");
-        PitayaCluster.Initialize(natsConfig, sdConfig, sv, NativeLogLevel.Debug, "");
+        PitayaCluster.Initialize(grpcConfig, sdConfig, sv, NativeLogLevel.Debug, "");
+        //PitayaCluster.Initialize(natsConfig, sdConfig, sv, NativeLogLevel.Debug, "");
       }
       catch (PitayaException exc)
       {

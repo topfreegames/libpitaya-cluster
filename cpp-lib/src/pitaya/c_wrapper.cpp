@@ -196,7 +196,7 @@ extern "C"
         // TODO: make a setter function
         CBindingStorageConfig bindingStorageConfig;
         bindingStorageConfig.endpoint = sdConfig->endpoints;
-        bindingStorageConfig.etcdPrefix = "pitaya/";
+        bindingStorageConfig.etcdPrefix = sdConfig->etcdPrefix;
         bindingStorageConfig.leaseTtlSec = 5;
 
         try {
