@@ -34,14 +34,14 @@ namespace NPitaya
 
         [DllImport("libpitaya_cluster", CallingConvention = CallingConvention.Cdecl, EntryPoint = "tfg_pitc_WaitForRpc")]
         private static extern IntPtr tfg_pitc_WaitForRpc();
-    
+
         [DllImport("libpitaya_cluster", CallingConvention = CallingConvention.Cdecl, EntryPoint = "tfg_pitc_FinishRpcCall")]
-        private static extern void tfg_pitc_FinishRpcCall(IntPtr responseMemoryBufferPtr, IntPtr tagPtr);
-        
+        private static extern void tfg_pitc_FinishRpcCall(IntPtr responseMemoryBufferPtr, IntPtr crpcPtr);
+
         [DllImport("libpitaya_cluster", CallingConvention = CallingConvention.Cdecl, EntryPoint = "tfg_pitc_SendPushToUser")]
         private static extern unsafe bool PushInternal(string serverId, string serverType, IntPtr pushData, MemoryBuffer** buffer, ref Error retErr);
-    
+
         [DllImport("libpitaya_cluster", CallingConvention = CallingConvention.Cdecl, EntryPoint = "tfg_pitc_SendKickToUser")]
-        private static extern unsafe bool KickInternal(string serverId, string serverType, IntPtr pushData, MemoryBuffer** buffer, ref Error retErr);       
+        private static extern unsafe bool KickInternal(string serverId, string serverType, IntPtr pushData, MemoryBuffer** buffer, ref Error retErr);
     }
 }

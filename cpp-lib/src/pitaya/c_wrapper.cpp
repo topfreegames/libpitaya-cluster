@@ -426,9 +426,9 @@ extern "C"
         void* tag;
     };
 
-    void tfg_pitc_FinishRpcCall(MemoryBuffer* mb, void* tagPtr)
+    void tfg_pitc_FinishRpcCall(MemoryBuffer* mb, CRpc* crpc)
     {
-        auto rpc = reinterpret_cast<pitaya::Rpc*>(tagPtr);
+        auto rpc = reinterpret_cast<pitaya::Rpc*>(crpc->tag);
 
         protos::Response res;
 
@@ -441,9 +441,10 @@ extern "C"
         }
 
         rpc->Finish(res);
-        // TODO: Hacky, alloced on c#, may leak
-        free(mb->data);
-        free(mb);
+
+        free(crpc->req->data);
+        delete crpc->req;
+        delete crpc;
     }
 
     CRpc* tfg_pitc_WaitForRpc()

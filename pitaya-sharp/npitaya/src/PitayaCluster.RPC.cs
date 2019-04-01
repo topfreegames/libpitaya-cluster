@@ -13,64 +13,64 @@ namespace NPitaya
     {
         private static async Task HandleIncomingRpc(IntPtr cRpcPtr)
         {
+            var res = new MemoryBuffer();
+            IntPtr resPtr;
             try
             {
                 var cRpc = (CRpc) Marshal.PtrToStructure(cRpcPtr, typeof(CRpc));
-                var resPtr = await RPCCbFuncImpl(cRpc.reqBufferPtr);
-                tfg_pitc_FinishRpcCall(resPtr, cRpc.tag);
+                res = await RPCCbFuncImpl(cRpc.reqBufferPtr);
             }
             catch (Exception e)
             {
-                throw e; // TODO: Could handle this better?
+                var innerMostException = e;
+                while (innerMostException.InnerException != null)
+                    innerMostException = innerMostException.InnerException;
+
+                Logger.Error("Exception thrown in handler, error:{0}",
+                    innerMostException.Message); // TODO externalize method and only print stacktrace when debug
+
+                var protosResponse = GetErrorResponse("PIT-500", innerMostException.Message);
+                var responseBytes = protosResponse.ToByteArray();
+                res.data = ByteArrayToIntPtr(responseBytes);
+                res.size = responseBytes.Length;
             }
             finally
             {
-                // TODO hack freeing memory allocated in c++, may crash
-                Marshal.FreeHGlobal(cRpcPtr);
+                resPtr = Marshal.AllocHGlobal(Marshal.SizeOf(res));
+                Marshal.StructureToPtr(res, resPtr, false);
+
+                tfg_pitc_FinishRpcCall(resPtr, cRpcPtr);
+
+                Marshal.FreeHGlobal(res.data);
+                Marshal.FreeHGlobal(resPtr);
             }
         }
 
-        private static async Task<IntPtr> RPCCbFuncImpl(IntPtr bufferPtr)
+        private static async Task<MemoryBuffer> RPCCbFuncImpl(IntPtr reqBufferPtr)
         {
-            var buffer = (MemoryBuffer) Marshal.PtrToStructure(bufferPtr, typeof(MemoryBuffer));
-            try
-            {
-                Request req = new Request();
-                req.MergeFrom(new CodedInputStream(buffer.GetData()));
+            var reqBuffer = (MemoryBuffer) Marshal.PtrToStructure(reqBufferPtr, typeof(MemoryBuffer));
 
-                Response response;
-                switch (req.Type)
-                {
-                    case RPCType.User:
-                        response = await HandleRpc(req, RPCType.User);
-                        break;
-                    case RPCType.Sys:
-                        response = await HandleRpc(req, RPCType.Sys);
-                        break;
-                    default:
-                        //TODO hacky, freeing memory allocated in managed may crash
-                        Marshal.FreeHGlobal(buffer.data);
-                        throw new Exception($"invalid rpc type, argument:{req.Type}");
-                }
+            Request req = new Request();
+            req.MergeFrom(new CodedInputStream(reqBuffer.GetData()));
 
-                var res = new MemoryBuffer();
-                IntPtr pnt = Marshal.AllocHGlobal(Marshal.SizeOf(res));
-                byte[] responseBytes = response.ToByteArray();
-                res.data = ByteArrayToIntPtr(responseBytes);
-                res.size = responseBytes.Length;
-                Marshal.StructureToPtr(res, pnt, false);
-                return pnt;
-            }
-            catch (Exception e)
+            Response response;
+            switch (req.Type)
             {
-                throw e;
+                case RPCType.User:
+                    response = await HandleRpc(req, RPCType.User);
+                    break;
+                case RPCType.Sys:
+                    response = await HandleRpc(req, RPCType.Sys);
+                    break;
+                default:
+                    throw new Exception($"invalid rpc type, argument:{req.Type}");
             }
-            finally
-            {
-                //TODO hacky, freeing memory allocated in managed may crash
-                Marshal.FreeHGlobal(buffer.data);
-                Marshal.FreeHGlobal(bufferPtr);
-            }
+
+            var res = new MemoryBuffer();
+            byte[] responseBytes = response.ToByteArray();
+            res.data = ByteArrayToIntPtr(responseBytes);
+            res.size = responseBytes.Length;
+            return res;
         }
 
         internal static async Task<Response> HandleRpc(Protos.Request req, RPCType type)
@@ -108,51 +108,38 @@ namespace NPitaya
                 handler = RemotesDict[handlerName];
             }
 
-            try
+            Task ans;
+            if (handler.ArgType != null)
             {
-                Task ans;
-                if (handler.ArgType != null)
-                {
-                    var arg = serializer.Unmarshal(data, handler.ArgType);
-                    if (type == RPCType.Sys)
-                        ans = handler.Method.Invoke(handler.Obj, new[] {s, arg}) as Task;
-                    else
-                        ans = handler.Method.Invoke(handler.Obj, new[] {arg}) as Task;
-                }
+                var arg = serializer.Unmarshal(data, handler.ArgType);
+                if (type == RPCType.Sys)
+                    ans = handler.Method.Invoke(handler.Obj, new[] {s, arg}) as Task;
                 else
-                {
-                    if (type == RPCType.Sys)
-                        ans = handler.Method.Invoke(handler.Obj, new object[] {s}) as Task;
-                    else
-                        ans = handler.Method.Invoke(handler.Obj, new object[] { }) as Task;
-                }
-
-                await ans;
-                byte[] ansBytes;
-
-                if (handler.ReturnType != typeof(void))
-                {
-                    ansBytes = SerializerUtils.SerializeOrRaw(ans.GetType().
-                        GetProperty("Result")
-                        ?.GetValue(ans), serializer);
-                }
-                else
-                {
-                    ansBytes = new byte[]{};
-                }
-                response.Data = ByteString.CopyFrom(ansBytes);
-                return response;
+                    ans = handler.Method.Invoke(handler.Obj, new[] {arg}) as Task;
             }
-            catch (Exception e)
+            else
             {
-                var innerMostException = e;
-                while (innerMostException.InnerException != null)
-                    innerMostException = innerMostException.InnerException;
-                Logger.Error("Exception thrown in handler, error:{0}",
-                    innerMostException.Message); // TODO externalize method and only print stacktrace when debug
-                response = GetErrorResponse("PIT-500", innerMostException.Message);
-                return response;
+                if (type == RPCType.Sys)
+                    ans = handler.Method.Invoke(handler.Obj, new object[] {s}) as Task;
+                else
+                    ans = handler.Method.Invoke(handler.Obj, new object[] { }) as Task;
             }
+
+            await ans;
+            byte[] ansBytes;
+
+            if (handler.ReturnType != typeof(void))
+            {
+                ansBytes = SerializerUtils.SerializeOrRaw(ans.GetType().
+                    GetProperty("Result")
+                    ?.GetValue(ans), serializer);
+            }
+            else
+            {
+                ansBytes = new byte[]{};
+            }
+            response.Data = ByteString.CopyFrom(ansBytes);
+            return response;
         }
     }
 }
