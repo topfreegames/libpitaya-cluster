@@ -43,7 +43,6 @@ class NatsClient
 {
 public:
     virtual ~NatsClient() = default;
-    virtual bool Connect() = 0;
     virtual NatsStatus Request(std::shared_ptr<NatsMsg>* natsMsg,
                                const std::string& topic,
                                const std::vector<uint8_t>& data,
@@ -56,7 +55,6 @@ public:
     NatsClientImpl(const NatsConfig& opts);
     ~NatsClientImpl();
 
-    bool Connect() override;
     NatsStatus Request(std::shared_ptr<NatsMsg>* natsMsg,
                        const std::string& topic,
                        const std::vector<uint8_t>& data,

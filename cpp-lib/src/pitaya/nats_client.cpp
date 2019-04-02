@@ -57,12 +57,6 @@ NatsClientImpl::~NatsClientImpl()
     natsOptions_Destroy(_opts);
 }
 
-bool
-NatsClientImpl::Connect()
-{
-    return false;
-}
-
 NatsStatus
 NatsClientImpl::Request(std::shared_ptr<NatsMsg>* msg,
                         const std::string& topic,
