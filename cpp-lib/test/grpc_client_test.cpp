@@ -25,7 +25,7 @@ public:
         _sd = std::shared_ptr<ServiceDiscovery>(_mockSd);
 
         _config = pitaya::GrpcConfig();
-        _config.connectionTimeout = std::chrono::seconds(1);
+        _config.connectionTimeout = std::chrono::milliseconds(100);
         _config.host = "localhost";
         _config.port = 3030;
 

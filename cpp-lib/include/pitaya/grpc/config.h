@@ -10,7 +10,7 @@ struct GrpcConfig
 {
     std::string host;
     int port;
-    std::chrono::seconds connectionTimeout;
+    std::chrono::milliseconds connectionTimeout;
 
     GrpcConfig()
         : port(0)
