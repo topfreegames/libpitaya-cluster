@@ -16,6 +16,7 @@ namespace pitaya {
 class NatsRpcClient : public RpcClient
 {
 public:
+    NatsRpcClient(const NatsConfig& config, std::unique_ptr<NatsClient> natsClient, const char* loggerName = nullptr);
     NatsRpcClient(const NatsConfig& config, const char* loggerName = nullptr);
     ~NatsRpcClient();
     protos::Response Call(const pitaya::Server& target, const protos::Request& req) override;

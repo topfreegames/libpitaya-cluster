@@ -68,7 +68,6 @@ private:
 private:
     natsOptions* _opts;
     natsConnection* _conn;
-    std::chrono::milliseconds _requestTimeout;
 };
 
 } // namespace pitaya

@@ -22,8 +22,13 @@ static constexpr const char* kLogTag = "nats_rpc_client";
 namespace pitaya {
 
 NatsRpcClient::NatsRpcClient(const NatsConfig& config, const char* loggerName)
+    : NatsRpcClient(config, std::unique_ptr<NatsClient>(new NatsClientImpl(config)), loggerName)
+{
+}
+
+NatsRpcClient::NatsRpcClient(const NatsConfig& config, std::unique_ptr<NatsClient> natsClient, const char* loggerName)
     : _log(loggerName ? spdlog::get(loggerName)->clone(kLogTag) : spdlog::stdout_color_mt(kLogTag))
-    , _natsClient(new NatsClientImpl(config))
+    , _natsClient(std::move(natsClient))
     , _requestTimeout(config.requestTimeoutMs)
 {
     _log->info("nats rpc client configured!");
