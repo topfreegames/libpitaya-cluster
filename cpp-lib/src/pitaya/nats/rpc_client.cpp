@@ -11,7 +11,6 @@
 #include "spdlog/sinks/stdout_color_sinks.h"
 
 #include <iostream>
-#include <nats/nats.h>
 #include <string>
 
 using std::string;
@@ -45,10 +44,8 @@ NatsRpcClient::Call(const pitaya::Server& target, const protos::Request& req)
     std::vector<uint8_t> buffer(req.ByteSizeLong());
     req.SerializeToArray(buffer.data(), buffer.size());
 
-    natsMsg* reply = nullptr;
-
-    std::shared_ptr<NatsMsg> natsMsg;
-    NatsStatus status = _natsClient->Request(&natsMsg, topic, buffer, _requestTimeout);
+    std::shared_ptr<NatsMsg> reply;
+    NatsStatus status = _natsClient->Request(&reply, topic, buffer, _requestTimeout);
 
     protos::Response res;
 
@@ -63,10 +60,9 @@ NatsRpcClient::Call(const pitaya::Server& target, const protos::Request& req)
         }
         res.set_allocated_error(err);
     } else {
-        res.ParseFromArray(natsMsg_GetData(reply), natsMsg_GetDataLength(reply));
+        res.ParseFromArray(reply->GetData(), reply->GetSize());
     }
 
-    natsMsg_Destroy(reply);
     return res;
 }
 
