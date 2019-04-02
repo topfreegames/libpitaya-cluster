@@ -113,9 +113,6 @@ GrpcServer::GrpcServer(GrpcConfig config, RpcHandlerFunc handler, const char* lo
 
     grpc::ServerBuilder builder;
 
-    _log = loggerName ? spdlog::get(loggerName)->clone(kLogTag) : spdlog::stdout_color_mt(kLogTag);
-    _log->info("gRPC server started at: {}", address);
-
     auto concurrentThreadsSupported = std::thread::hardware_concurrency();
     for (unsigned i = 0; i < concurrentThreadsSupported; i++) {
         _completionQueues.push_back(builder.AddCompletionQueue());
@@ -129,6 +126,9 @@ GrpcServer::GrpcServer(GrpcConfig config, RpcHandlerFunc handler, const char* lo
         throw PitayaException(fmt::format("Failed to start gRPC server at address {}", address));
     }
 
+    _log = loggerName ? spdlog::get(loggerName)->clone(kLogTag) : spdlog::stdout_color_mt(kLogTag);
+    _log->info("gRPC server started at: {}", address);
+
     for (auto it = _completionQueues.begin(); it != _completionQueues.end(); it++) {
         _workerThreads.push_back(
             new std::thread(std::bind(&GrpcServer::ProcessRpcs, this, (*it).get())));
@@ -137,17 +137,21 @@ GrpcServer::GrpcServer(GrpcConfig config, RpcHandlerFunc handler, const char* lo
 
 GrpcServer::~GrpcServer()
 {
+    // NOTE, TODO: The shutdown method cancels all of the current
+    // tags immediately, if this is not desidered, a diferent workflow
+    // should be thought of (maybe Shutdown with deadline?).
+    _grpcServer->Shutdown();
+    _grpcServer->Wait();
+
+    for (const auto& queue : _completionQueues) {
+        queue->Shutdown();
+    }
+
     for (const auto& thread : _workerThreads) {
         if (thread->joinable()) {
             _log->info("Waiting for worker thread");
             thread->join();
         }
-    }
-
-    if (_grpcServer) {
-        _log->info("Shutting down gRPC server");
-        _grpcServer->Shutdown();
-        _grpcServer->Wait();
     }
 
     spdlog::drop(kLogTag);
@@ -167,7 +171,6 @@ GrpcServer::ProcessRpcs(ServerCompletionQueue* cq)
         }
 
         if (!ok) {
-            _log->error("Not ok, shutting down completion queue");
             cq->Shutdown();
             continue;
         }

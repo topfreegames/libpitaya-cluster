@@ -196,9 +196,6 @@ TEST_F(GrpcClientTest, CanSuccessfullySendPushesWithId)
     auto mockStub = new protos::MockPitayaStub();
     _mockStubs.push_back(mockStub);
 
-    protos::Response resResult;
-    resResult.set_data("return data");
-
     auto server = pitaya::Server(pitaya::Server::Kind::Frontend, "server-id", "server-type")
                       .WithMetadata(pitaya::constants::kGrpcHostKey, "localhost")
                       .WithMetadata(pitaya::constants::kGrpcPortKey, "3435");
@@ -210,7 +207,7 @@ TEST_F(GrpcClientTest, CanSuccessfullySendPushesWithId)
                             Property(&protos::Push::route, "my.push.route"));
 
     EXPECT_CALL(*mockStub, PushToUser(_, reqMatcher, _))
-        .WillOnce(DoAll(SetArgPointee<2>(resResult), Return(grpc::Status::OK)));
+        .WillOnce(Return(grpc::Status::OK));
 
     protos::Push push;
     push.set_uid("user-uid");
@@ -218,8 +215,7 @@ TEST_F(GrpcClientTest, CanSuccessfullySendPushesWithId)
     push.set_route("my.push.route");
 
     auto res = _client->SendPushToUser("server-id", "server-type", push);
-    ASSERT_FALSE(res.has_error());
-    EXPECT_EQ(res.data(), resResult.data());
+    ASSERT_FALSE(res);
 }
 
 TEST_F(GrpcClientTest, CanSuccessfullySendPushesWithoutId)
@@ -228,9 +224,6 @@ TEST_F(GrpcClientTest, CanSuccessfullySendPushesWithoutId)
     auto mockStub2 = new protos::MockPitayaStub();
     _mockStubs.push_back(mockStub1);
     _mockStubs.push_back(mockStub2);
-
-    protos::Response resResult;
-    resResult.set_data("return data");
 
     auto server1 = pitaya::Server(pitaya::Server::Kind::Frontend, "server-id", "server-type")
         .WithMetadata(pitaya::constants::kGrpcHostKey, "localhost")
@@ -258,12 +251,11 @@ TEST_F(GrpcClientTest, CanSuccessfullySendPushesWithoutId)
                                 Property(&protos::Push::route, push.route()));
 
         EXPECT_CALL(*mockStub2, PushToUser(_, reqMatcher, _))
-            .WillOnce(DoAll(SetArgPointee<2>(resResult), Return(grpc::Status::OK)));
+            .WillOnce(Return(grpc::Status::OK));
     }
 
     auto res = _client->SendPushToUser("", "server-type", push);
-    ASSERT_FALSE(res.has_error());
-    EXPECT_EQ(res.data(), resResult.data());
+    ASSERT_FALSE(res);
 }
 
 TEST_F(GrpcClientTest, SendPushFailsIfServerIdIsNotFoundForUid)
@@ -281,8 +273,8 @@ TEST_F(GrpcClientTest, SendPushFailsIfServerIdIsNotFoundForUid)
         .WillOnce(Throw(pitaya::PitayaException("Custom Exception Message")));
 
     auto res = _client->SendPushToUser("", "server-type", push);
-    ASSERT_TRUE(res.has_error());
-    EXPECT_EQ(res.error().msg(), "Custom Exception Message");
+    ASSERT_TRUE(res);
+    EXPECT_EQ(res->msg, "Custom Exception Message");
 }
 
 TEST_F(GrpcClientTest, SendPushFailsIfThereAreNoServersOnTheConnectionMap)
@@ -300,8 +292,8 @@ TEST_F(GrpcClientTest, SendPushFailsIfThereAreNoServersOnTheConnectionMap)
         .WillOnce(Return("my-server-id"));
 
     auto res = _client->SendPushToUser("", "server-type", push);
-    ASSERT_TRUE(res.has_error());
-    EXPECT_TRUE(std::regex_search(res.error().msg(), std::regex("not added to the connections map")));
+    ASSERT_TRUE(res);
+    EXPECT_TRUE(std::regex_search(res->msg, std::regex("not added to the connections map")));
 }
 
 TEST_F(GrpcClientTest, SendPushFailsIfGrpcCallFails)
@@ -327,8 +319,8 @@ TEST_F(GrpcClientTest, SendPushFailsIfGrpcCallFails)
         .WillOnce(Return(grpc::Status::CANCELLED));
 
     auto res = _client->SendPushToUser("my-server-id", "server-type", push);
-    ASSERT_TRUE(res.has_error());
-    EXPECT_TRUE(std::regex_search(res.error().msg(), std::regex("Push failed:")));
+    ASSERT_TRUE(res);
+    EXPECT_TRUE(std::regex_search(res->msg, std::regex("Push failed:")));
 }
 
 TEST_F(GrpcClientTest, CanSuccessfullySendKickWithId)
@@ -348,24 +340,11 @@ TEST_F(GrpcClientTest, CanSuccessfullySendKickWithId)
     protos::KickMsg kick;
     kick.set_userid("user-uid");
 
-    protos::KickAnswer kickAnswer1;
-    kickAnswer1.set_kicked(true);
-
-    protos::KickAnswer kickAnswer2;
-    kickAnswer2.set_kicked(false);
-
     EXPECT_CALL(*mockStub, KickUser(_, Property(&protos::KickMsg::userid, kick.userid()), _))
-        .WillOnce(DoAll(SetArgPointee<2>(kickAnswer1), Return(grpc::Status::OK)))
-        .WillOnce(DoAll(SetArgPointee<2>(kickAnswer2), Return(grpc::Status::OK)));
+        .WillOnce(Return(grpc::Status::OK));
 
-    {
-        auto res = _client->SendKickToUser(server.Id(), server.Type(), kick);
-        ASSERT_TRUE(res.kicked());
-    }
-    {
-        auto res = _client->SendKickToUser(server.Id(), server.Type(), kick);
-        ASSERT_FALSE(res.kicked());
-    }
+    auto error = _client->SendKickToUser(server.Id(), server.Type(), kick);
+    ASSERT_FALSE(error);
 }
 
 TEST_F(GrpcClientTest, CanSuccessfullySendKickWithoutId)
@@ -389,34 +368,30 @@ TEST_F(GrpcClientTest, CanSuccessfullySendKickWithoutId)
     protos::KickMsg kick1;
     kick1.set_userid("user-uid-1");
 
-    protos::KickAnswer kickAnswer1;
-    kickAnswer1.set_kicked(false);
-
     protos::KickMsg kick2;
     kick2.set_userid("user-uid-2");
 
-    protos::KickAnswer kickAnswer2;
-    kickAnswer2.set_kicked(true);
     {
         InSequence seq;
         EXPECT_CALL(*_mockBs, GetUserFrontendId(kick1.userid(), "server-type"))
             .WillOnce(Return(server2.Id()));
         EXPECT_CALL(*mockStub2, KickUser(_, Property(&protos::KickMsg::userid, kick1.userid()), _))
-        .WillOnce(DoAll(SetArgPointee<2>(kickAnswer1), Return(grpc::Status::OK)));
+            .WillOnce(Return(grpc::Status::OK));
 
         EXPECT_CALL(*_mockBs, GetUserFrontendId(kick2.userid(), "server-type"))
             .WillOnce(Return(server1.Id()));
         EXPECT_CALL(*mockStub1, KickUser(_, Property(&protos::KickMsg::userid, kick2.userid()), _))
-            .WillOnce(DoAll(SetArgPointee<2>(kickAnswer2), Return(grpc::Status::OK)));
+            .WillOnce(Return(grpc::Status::OK));
     }
 
     {
-        auto res = _client->SendKickToUser("", "server-type", kick1);
-        EXPECT_FALSE(res.kicked());
+        auto error = _client->SendKickToUser("", "server-type", kick1);
+        EXPECT_FALSE(error);
     }
+
     {
-        auto res = _client->SendKickToUser("", "server-type", kick2);
-        EXPECT_TRUE(res.kicked());
+        auto error = _client->SendKickToUser("", "server-type", kick2);
+        EXPECT_FALSE(error);
     }
 }
 

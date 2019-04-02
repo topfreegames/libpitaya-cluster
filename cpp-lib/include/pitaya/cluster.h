@@ -21,27 +21,6 @@
 
 namespace pitaya {
 
-struct PitayaError
-{
-    std::string code;
-    std::string msg;
-
-    PitayaError(const std::string& code, const std::string& msg)
-        : code(code)
-        , msg(msg)
-    {}
-};
-
-template<class CharType, class CharTrait>
-inline std::basic_ostream<CharType, CharTrait>&
-operator<<(std::basic_ostream<CharType, CharTrait>& os, const PitayaError& e)
-{
-    if (os.good()) {
-        os << "PitayaError{ code = " << e.code << ", msg = " << e.msg << " }";
-    }
-    return os;
-}
-
 class Cluster
 {
 public:
@@ -84,13 +63,11 @@ public:
 
     boost::optional<PitayaError> SendPushToUser(const std::string& server_id,
                                                 const std::string& server_type,
-                                                protos::Push& push,
-                                                protos::Response& ret);
+                                                protos::Push& push);
 
     boost::optional<PitayaError> SendKickToUser(const std::string& server_id,
                                                 const std::string& server_type,
-                                                protos::KickMsg& kick,
-                                                protos::KickAnswer& ret);
+                                                protos::KickMsg& kick);
 
     struct RpcData
     {

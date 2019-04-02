@@ -34,12 +34,12 @@ public:
                const char* loggerName = nullptr);
     ~GrpcClient();
     protos::Response Call(const pitaya::Server& target, const protos::Request& req) override;
-    protos::Response SendPushToUser(const std::string& server_id,
-                                    const std::string& server_type,
-                                    const protos::Push& push) override;
-    protos::KickAnswer SendKickToUser(const std::string& server_id,
-                                      const std::string& server_type,
-                                      const protos::KickMsg& ksick) override;
+    boost::optional<PitayaError> SendPushToUser(const std::string& serverId,
+                                                const std::string& serverType,
+                                                const protos::Push& push) override;
+    boost::optional<PitayaError> SendKickToUser(const std::string& serverId,
+                                                const std::string& serverType,
+                                                const protos::KickMsg& ksick) override;
 
     void ServerAdded(const pitaya::Server& server) override;
     void ServerRemoved(const pitaya::Server& server) override;

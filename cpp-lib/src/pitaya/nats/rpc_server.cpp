@@ -47,8 +47,11 @@ NatsRpcServer::NatsRpcServer(const Server& server,
 
     s = natsConnection_Connect(&_nc, _opts);
     if (s == NATS_OK) {
-        s = natsConnection_Subscribe(
-            &_sub, _nc, utils::GetTopicForServer(server).c_str(), HandleMsg, this);
+        s = natsConnection_Subscribe(&_sub,
+                                     _nc,
+                                     utils::GetTopicForServer(server.Id(), server.Type()).c_str(),
+                                     HandleMsg,
+                                     this);
     }
     if (s == NATS_OK) {
         _log->info("nats rpc server configured!");
@@ -73,16 +76,14 @@ NatsRpcServer::~NatsRpcServer()
 class CallData : public pitaya::Rpc
 {
 public:
-    CallData(natsConnection* nc,
-             const char * reply,
-             natsMsg* msg)
-      : _reply(reply)
-      , _nc(nc)
-      , _msg(msg)
-  {
-      assert(nc);
-      assert(reply);
-  }
+    CallData(natsConnection* nc, const char* reply, natsMsg* msg)
+        : _reply(reply)
+        , _nc(nc)
+        , _msg(msg)
+    {
+        assert(nc);
+        assert(reply);
+    }
 
     void Finish(protos::Response res) override
     {
@@ -95,7 +96,7 @@ public:
     }
 
 private:
-    const char * _reply;
+    const char* _reply;
     natsConnection* _nc;
     natsMsg* _msg;
 };
@@ -105,7 +106,7 @@ NatsRpcServer::HandleMsg(natsConnection* nc, natsSubscription* sub, natsMsg* msg
 {
     auto instance = reinterpret_cast<NatsRpcServer*>(closure);
 
-    if (_cnt == 10000){
+    if (_cnt == 10000) {
         instance->PrintSubStatus(sub);
         _cnt = 0;
     }

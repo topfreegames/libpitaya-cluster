@@ -10,6 +10,7 @@
 #include <grpcpp/create_channel.h>
 
 namespace json = web::json;
+using boost::optional;
 
 namespace pitaya {
 
@@ -101,7 +102,7 @@ GrpcClient::Call(const pitaya::Server& target, const protos::Request& req)
     }
 }
 
-protos::Response
+optional<PitayaError>
 GrpcClient::SendPushToUser(const std::string& providedServerId,
                            const std::string& serverType,
                            const protos::Push& push)
@@ -114,7 +115,7 @@ GrpcClient::SendPushToUser(const std::string& providedServerId,
         try {
             serverId = _bindingStorage->GetUserFrontendId(push.uid(), serverType);
         } catch (const PitayaException& exc) {
-            return NewErrorResponse(exc.what());
+            return PitayaError(constants::kCodeInternalError, exc.what());
         }
     } else {
         serverId = providedServerId;
@@ -127,7 +128,7 @@ GrpcClient::SendPushToUser(const std::string& providedServerId,
             auto msg = fmt::format(
                 "Cannot push to server {}, since it is not added to the connections map", serverId);
             _log->error(msg);
-            return NewErrorResponse(msg);
+            return PitayaError(constants::kCodeInternalError, msg);
         }
     }
 
@@ -140,13 +141,13 @@ GrpcClient::SendPushToUser(const std::string& providedServerId,
 
     if (!status.ok()) {
         auto msg = fmt::format("Push failed: {}", status.error_message());
-        return NewErrorResponse(msg);
+        return PitayaError(constants::kCodeInternalError, msg);
     }
 
-    return res;
+    return boost::none;
 }
 
-protos::KickAnswer
+optional<PitayaError>
 GrpcClient::SendKickToUser(const std::string& providedServerId,
                            const std::string& serverType,
                            const protos::KickMsg& kick)
@@ -160,10 +161,11 @@ GrpcClient::SendKickToUser(const std::string& providedServerId,
         try {
             serverId = _bindingStorage->GetUserFrontendId(kick.userid(), serverType);
         } catch (const PitayaException& exc) {
-            _log->error("Cannot kick on server {}, since it was not found on the binding storage",
-                        providedServerId);
-            kickAns.set_kicked(false);
-            return kickAns;
+            return PitayaError(constants::kCodeInternalError,
+                               fmt::format("Cannot kick user {} on server {}, since it was not "
+                                           "found on the binding storage",
+                                           kick.userid(),
+                                           serverType));
         }
     } else {
         serverId = providedServerId;
@@ -172,10 +174,11 @@ GrpcClient::SendKickToUser(const std::string& providedServerId,
     {
         std::lock_guard<decltype(_stubsForServers)> lock(_stubsForServers);
         if (_stubsForServers.Find(serverId) == _stubsForServers.end()) {
-            _log->error("Cannot kick on server {}, since it is not added to the connections map",
-                        serverId);
-            kickAns.set_kicked(false);
-            return kickAns;
+            return PitayaError(
+                constants::kCodeInternalError,
+                fmt::format(
+                    "Cannot kick on server {}, since it is not added to the connections map",
+                    serverId));
         }
     }
 
@@ -186,12 +189,11 @@ GrpcClient::SendKickToUser(const std::string& providedServerId,
     auto status = stub->KickUser(&context, kick, &kickAns);
 
     if (!status.ok()) {
-        auto msg = fmt::format("Kick failed: {}", status.error_message());
-        kickAns.set_kicked(false);
-        return kickAns;
+        return PitayaError(constants::kCodeInternalError,
+                           fmt::format("Kick failed: {}", status.error_message()));
     }
 
-    return kickAns;
+    return boost::none;
 }
 
 // ==================================================

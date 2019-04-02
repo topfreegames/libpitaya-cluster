@@ -60,9 +60,9 @@ protected:
 
 TEST_F(GrpcServerTest, ServerCanBeCreatedAndDestroyed)
 {
-    EXPECT_NO_THROW(CreateServer([](const protos::Request& req) -> protos::Response {
+    EXPECT_NO_THROW(CreateServer([](const protos::Request& req, pitaya::Rpc* rpc) {
         (void)req;
-        return protos::Response();
+        rpc->Finish(protos::Response());
     }));
 }
 
@@ -71,9 +71,9 @@ TEST_F(GrpcServerTest, ThrowsIfAddressIsInvalid)
     _config.host = "oqijdwioqwjdiowqjdj";
     _config.port = 123123;
 
-    EXPECT_THROW(CreateServer([](const protos::Request& req) -> protos::Response {
+    EXPECT_THROW(CreateServer([](const protos::Request& req, pitaya::Rpc* rpc) {
                      (void)req;
-                     return protos::Response();
+                     rpc->Finish(protos::Response());
                  }),
                  pitaya::PitayaException);
 }
@@ -82,9 +82,9 @@ TEST_F(GrpcServerTest, CallHandleDoesSupportRpcSys)
 {
     bool called = false;
 
-    auto server = CreateServer([&](const protos::Request& req) -> protos::Response {
+    auto server = CreateServer([&](const protos::Request& req, pitaya::Rpc* rpc) {
         called = true;
-        return protos::Response();
+        rpc->Finish(protos::Response());
     });
 
     auto client = CreateClient();
@@ -103,13 +103,13 @@ TEST_F(GrpcServerTest, CallHandleSupportsRpcUser)
 {
     bool called = false;
 
-    auto server = CreateServer([&](const protos::Request& req) -> protos::Response {
+    auto server = CreateServer([&](const protos::Request& req, pitaya::Rpc* rpc) {
         called = true;
         EXPECT_EQ(req.msg().route(), "my.custom.route");
 
         protos::Response res;
         res.set_data("SERVER DATA");
-        return res;
+        rpc->Finish(res);
     });
 
     auto client = CreateClient();

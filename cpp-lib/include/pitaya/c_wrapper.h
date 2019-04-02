@@ -103,4 +103,14 @@ extern "C"
                       int dataSize,
                       MemoryBuffer** outBuf,
                       CPitayaError* retErr);
+
+    bool tfg_pitc_SendKickToUser(const char* serverId,
+                                 const char* serverType,
+                                 MemoryBuffer* memBuf,
+                                 CPitayaError* retErr);
+
+    bool tfg_pitc_SendPushToUser(const char* server_id,
+                                 const char* server_type,
+                                 MemoryBuffer* memBuf,
+                                 CPitayaError* retErr);
 }

@@ -75,16 +75,17 @@ Cluster::InitializeWithNats(NatsConfig&& natsConfig,
                             Server server,
                             const char* loggerName)
 {
-    Initialize(server,
-               std::shared_ptr<ServiceDiscovery>(new Etcdv3ServiceDiscovery(
-                   std::move(sdConfig),
-                   server,
-                   std::unique_ptr<EtcdClient>(new EtcdClientV3(
-                       sdConfig.endpoints, sdConfig.etcdPrefix, sdConfig.logHeartbeat, loggerName)),
-                   loggerName)),
-               std::unique_ptr<RpcServer>(
-                   new nats::NatsRpcServer(server, natsConfig, std::bind(&Cluster::OnIncomingRpc, this, _1, _2), loggerName)),
-               std::unique_ptr<RpcClient>(new NatsRpcClient(natsConfig, loggerName)));
+    Initialize(
+        server,
+        std::shared_ptr<ServiceDiscovery>(new Etcdv3ServiceDiscovery(
+            std::move(sdConfig),
+            server,
+            std::unique_ptr<EtcdClient>(new EtcdClientV3(
+                sdConfig.endpoints, sdConfig.etcdPrefix, sdConfig.logHeartbeat, loggerName)),
+            loggerName)),
+        std::unique_ptr<RpcServer>(new nats::NatsRpcServer(
+            server, natsConfig, std::bind(&Cluster::OnIncomingRpc, this, _1, _2), loggerName)),
+        std::unique_ptr<RpcClient>(new NatsRpcClient(natsConfig, loggerName)));
 }
 
 void
@@ -124,64 +125,41 @@ Cluster::RPC(const string& route, protos::Request& req, protos::Response& ret)
         auto sv_type = r.server_type;
         auto servers = _sd->GetServersByType(sv_type);
         if (servers.size() < 1) {
-            return pitaya::PitayaError(constants::kCodeNotFound,
-                                       "no servers found for route: " + route);
+            return PitayaError(constants::kCodeNotFound, "no servers found for route: " + route);
         }
         pitaya::Server sv = pitaya::utils::RandomServer(servers);
         return RPC(sv.Id(), route, req, ret);
     } catch (PitayaException* e) {
-        return pitaya::PitayaError(constants::kCodeInternalError, e->what());
+        return PitayaError(constants::kCodeInternalError, e->what());
     }
 }
 
 optional<PitayaError>
-Cluster::SendPushToUser(const string& server_id,
-                        const string& server_type,
-                        protos::Push& push,
-                        protos::Response& ret)
+Cluster::SendPushToUser(const string& serverId, const string& serverType, protos::Push& push)
 {
-    _log->debug("Sending push to user {} on server {}", push.uid(), server_id);
-    // TODO if no server id sent still goq
-    std::string sv_id;
-    std::string sv_type = server_type;
-    if (!server_id.empty()){
-        auto sv = _sd->GetServerById(server_id);
-        if (!sv) {
-          _log->error("Did not find server id {}", server_id);
-          return pitaya::PitayaError(constants::kCodeNotFound, "server not found");
-        }
-        sv_id = sv.value().Id();
-        sv_type = sv.value().Type();
-    }
-    ret = _rpcClient->SendPushToUser(sv_id, sv_type, push);
-    if (ret.has_error()) {
-        _log->error("Received error sending push: {}", ret.error().msg());
-        return pitaya::PitayaError(ret.error().code(), ret.error().msg());
-    }
+    _log->debug("Sending push to user {} on server {}", push.uid(), serverId);
 
-    _log->debug("Successfuly sent push: {}", ret.data());
+    auto error = _rpcClient->SendPushToUser(serverId, serverType, push);
+    if (error) {
+        _log->error("Received error sending push: {}", error.value().msg);
+    } else {
+        _log->debug("Successfuly sent push");
+    }
 
     return boost::none;
 }
 
 optional<PitayaError>
-Cluster::SendKickToUser(const string& server_id,
-                        const string& server_type,
-                        protos::KickMsg& kick,
-                        protos::KickAnswer& ret)
+Cluster::SendKickToUser(const string& serverId, const string& serverType, protos::KickMsg& kick)
 {
-    _log->debug("Sending kick to user {} on server {}", kick.userid(), server_id);
-    // TODO if no server id sent still go
-    auto sv = _sd->GetServerById(server_id);
-    if (!sv) {
-        _log->error("Did not find server id {}", server_id);
-        return pitaya::PitayaError(constants::kCodeNotFound, "server not found");
+    _log->debug("Sending kick to user {} on server {}", kick.userid(), serverId);
+
+    auto error = _rpcClient->SendKickToUser(serverId, serverType, kick);
+    if (!error) {
+        _log->debug("successfuly sent kick");
     }
 
-    ret = _rpcClient->SendKickToUser(sv.value().Id(), sv.value().Type(), kick);
-    _log->debug("successfuly sent kick: kicked: {}", ret.kicked());
-
-    return boost::none;
+    return error;
 }
 
 optional<PitayaError>
@@ -194,7 +172,7 @@ Cluster::RPC(const string& server_id,
     auto sv = _sd->GetServerById(server_id);
     if (!sv) {
         _log->error("Did not find server id {}", server_id);
-        return pitaya::PitayaError(constants::kCodeNotFound, "server not found");
+        return PitayaError(constants::kCodeNotFound, "server not found");
     }
 
     // TODO proper jaeger setup
@@ -208,7 +186,7 @@ Cluster::RPC(const string& server_id,
     ret = _rpcClient->Call(sv.value(), req);
     if (ret.has_error()) {
         _log->error("Received error calling client rpc: {}", ret.error().msg());
-        return pitaya::PitayaError(ret.error().code(), ret.error().msg());
+        return PitayaError(ret.error().code(), ret.error().msg());
     }
 
     _log->debug("Successfuly called rpc: {}", ret.data());

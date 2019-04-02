@@ -14,11 +14,11 @@ using namespace ::testing;
 using boost::optional;
 using pitaya::service_discovery::ServiceDiscovery;
 
-protos::Response
-RpcFunc(protos::Request req)
+void
+RpcFunc(protos::Request req, pitaya::Rpc* rpc)
 {
     (void)req;
-    return protos::Response();
+    rpc->Finish(protos::Response());
 }
 
 class ClusterTest : public ::testing::Test

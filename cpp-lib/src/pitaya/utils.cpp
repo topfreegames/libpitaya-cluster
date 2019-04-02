@@ -16,10 +16,22 @@ using std::string;
 namespace pitaya {
 namespace utils {
 
-string
-GetTopicForServer(const Server& server)
+std::string
+GetUserKickTopic(const std::string& userId, const std::string& serverType)
 {
-    return boost::str(boost::format("pitaya/servers/%1%/%2%") % server.Type() % server.Id());
+    return boost::str(boost::format("pitaya/%1%/user/%2%/kick") % serverType % userId);
+}
+
+std::string
+GetUserMessagesTopic(const std::string& userId, const std::string& serverType)
+{
+    return boost::str(boost::format("pitaya/%1%/user/%2%/push") % serverType % userId);
+}
+
+string
+GetTopicForServer(const std::string& serverId, const std::string& serverType)
+{
+    return boost::str(boost::format("pitaya/servers/%1%/%2%") % serverType % serverId);
 }
 
 pitaya::Server

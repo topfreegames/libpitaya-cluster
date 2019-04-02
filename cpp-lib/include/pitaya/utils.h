@@ -8,7 +8,12 @@
 namespace pitaya {
 namespace utils {
 
-std::string GetTopicForServer(const Server& server);
+std::string GetUserKickTopic(const std::string& userId, const std::string& serverType);
+
+std::string GetUserMessagesTopic(const std::string& userId, const std::string& serverType);
+
+std::string GetTopicForServer(const std::string& serverId, const std::string& serverType);
+
 Server RandomServer(const std::vector<Server>& vec);
 
 bool ParseEtcdKey(const std::string& key,

@@ -290,11 +290,9 @@ extern "C"
     bool tfg_pitc_SendPushToUser(const char* server_id,
                                  const char* server_type,
                                  MemoryBuffer* memBuf,
-                                 MemoryBuffer** outBuf,
                                  CPitayaError* retErr)
     {
         protos::Push push;
-        protos::Response res;
 
         bool success = push.ParseFromArray(memBuf->data, memBuf->size);
         if (!success) {
@@ -303,7 +301,7 @@ extern "C"
             return false;
         }
 
-        auto err = Cluster::Instance().SendPushToUser(server_id, server_type, push, res);
+        auto err = Cluster::Instance().SendPushToUser(server_id, server_type, push);
 
         if (err) {
             retErr->code = ConvertToCString(err->code);
@@ -311,17 +309,15 @@ extern "C"
             return false;
         }
 
-        return sendResponseToManaged(outBuf, res, retErr);
+        return true;
     }
 
-    bool tfg_pitc_SendKickToUser(const char* server_id,
-                                 const char* server_type,
+    bool tfg_pitc_SendKickToUser(const char* serverId,
+                                 const char* serverType,
                                  MemoryBuffer* memBuf,
-                                 MemoryBuffer** outBuf,
                                  CPitayaError* retErr)
     {
         protos::KickMsg kick;
-        protos::KickAnswer res;
 
         bool success = kick.ParseFromArray(memBuf->data, memBuf->size);
         if (!success) {
@@ -330,26 +326,13 @@ extern "C"
             return false;
         }
 
-        auto err = Cluster::Instance().SendKickToUser(server_id, server_type, kick, res);
+        auto err = Cluster::Instance().SendKickToUser(serverId, serverType, kick);
 
         if (err) {
             retErr->code = ConvertToCString(err->code);
             retErr->msg = ConvertToCString(err->msg);
             return false;
         }
-
-        size_t size = res.ByteSizeLong();
-        uint8_t* bin = new uint8_t[size];
-
-        if (!res.SerializeToArray(bin, size)) {
-            retErr->code = ConvertToCString(pitaya::constants::kCodeInternalError);
-            retErr->msg = ConvertToCString("failed to serialize kick ans");
-            return false;
-        }
-
-        *outBuf = new MemoryBuffer;
-        (*outBuf)->size = size;
-        (*outBuf)->data = bin;
 
         return true;
     }

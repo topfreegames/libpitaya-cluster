@@ -16,6 +16,7 @@
 
 using std::string;
 using namespace pitaya;
+using boost::optional;
 
 static constexpr const char* kLogTag = "nats_rpc_client";
 
@@ -61,7 +62,7 @@ NatsRpcClient::~NatsRpcClient()
 protos::Response
 NatsRpcClient::Call(const pitaya::Server& target, const protos::Request& req)
 {
-    auto topic = utils::GetTopicForServer(target);
+    auto topic = utils::GetTopicForServer(target.Id(), target.Type());
 
     std::vector<uint8_t> buffer(req.ByteSizeLong());
     req.SerializeToArray(buffer.data(), buffer.size());
@@ -111,33 +112,94 @@ NatsRpcClient::ClosedCb(natsConnection* nc, void* closure)
     // TODO: exit server here, but need to do this gracefully
 }
 
-protos::KickAnswer
-NatsRpcClient::SendKickToUser(const std::string& server_id,
-                              const std::string& server_type,
+optional<PitayaError>
+NatsRpcClient::SendKickToUser(const std::string& serverId,
+                              const std::string& serverType,
                               const protos::KickMsg& kick)
 {
-    // TODO needs implementation
-    _log->error("method not implemented");
-    protos::KickAnswer ans;
-    ans.set_kicked(false);
-    return ans;
+    // NOTE: we ignore the server id, since it is not necessary to create the topic.
+    (void)serverId;
+
+    if (kick.userid().empty()) {
+        return PitayaError(constants::kCodeInternalError, "Received an empty user id");
+    }
+
+    if (serverType.empty()) {
+        return PitayaError(constants::kCodeInternalError,
+                           "SendKickToUser received an empty server type");
+    }
+
+    std::string topic = utils::GetUserKickTopic(kick.userid(), serverType);
+
+    std::vector<uint8_t> buffer(kick.ByteSizeLong());
+    kick.SerializeToArray(buffer.data(), buffer.size());
+
+    natsMsg* reply = nullptr;
+    natsStatus s = natsConnection_Request(
+        &reply, _nc, topic.c_str(), buffer.data(), buffer.size(), _timeoutMs);
+
+    optional<PitayaError> error;
+
+    if (s != NATS_OK) {
+        if (s == NATS_TIMEOUT) {
+            error = PitayaError(constants::kCodeTimeout, "nats timeout");
+        } else {
+            error = PitayaError(constants::kCodeInternalError, "nats error");
+        }
+    } else {
+        error = boost::none;
+    }
+
+    if (reply) {
+        natsMsg_Destroy(reply);
+    }
+
+    return error;
 }
 
-protos::Response
-NatsRpcClient::SendPushToUser(const std::string& server_id,
-                              const std::string& server_type,
+optional<PitayaError>
+NatsRpcClient::SendPushToUser(const std::string& serverId,
+                              const std::string& serverType,
                               const protos::Push& push)
 {
-    {
-        // TODO implement here
-        protos::Response res;
-        auto err = new protos::Error();
-        err->set_code(pitaya::constants::kCodeNotImplemented);
-        err->set_msg("method not implemented");
-        res.set_allocated_error(err);
+    // NOTE: we ignore the server id, since it is not necessary to create the topic.
+    (void)serverId;
 
-        return res;
+    if (push.uid().empty()) {
+        return PitayaError(constants::kCodeInternalError, "Received an empty user id");
     }
+
+    if (serverType.empty()) {
+        return PitayaError(constants::kCodeInternalError,
+                           "SendKickToUser received an empty server type");
+    }
+
+    std::string topic = utils::GetUserMessagesTopic(push.uid(), serverType);
+
+    std::vector<uint8_t> buffer(push.ByteSizeLong());
+    push.SerializeToArray(buffer.data(), buffer.size());
+
+    natsMsg* reply = nullptr;
+    natsStatus s = natsConnection_Request(
+        &reply, _nc, topic.c_str(), buffer.data(), buffer.size(), _timeoutMs);
+
+    optional<PitayaError> error;
+
+    if (s != NATS_OK) {
+        if (s == NATS_TIMEOUT) {
+            error = PitayaError(constants::kCodeTimeout, "nats timeout");
+        } else {
+            error = PitayaError(constants::kCodeInternalError, "nats error");
+        }
+    } else {
+        error = boost::none;
+    }
+
+    if (reply) {
+        natsMsg_Destroy(reply);
+    }
+
+    return error;
 }
 
 } // namespace pitaya
