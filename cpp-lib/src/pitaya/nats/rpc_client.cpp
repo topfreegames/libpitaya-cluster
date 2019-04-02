@@ -24,37 +24,15 @@ namespace pitaya {
 
 NatsRpcClient::NatsRpcClient(const NatsConfig& config, const char* loggerName)
     : _log(loggerName ? spdlog::get(loggerName)->clone(kLogTag) : spdlog::stdout_color_mt(kLogTag))
-    , _opts(nullptr)
-    , _nc(nullptr)
-    , _timeoutMs(config.requestTimeoutMs)
+    , _natsClient(new NatsClientImpl(config))
+    , _requestTimeout(config.requestTimeoutMs)
 {
-    auto s = natsOptions_Create(&_opts);
-    if (s != NATS_OK) {
-        throw PitayaException("error configuring nats server;");
-    }
-    natsOptions_SetTimeout(_opts, config.connectionTimeoutMs);
-    natsOptions_SetMaxReconnect(_opts, config.maxReconnectionAttempts);
-    natsOptions_SetClosedCB(_opts, ClosedCb, this);
-    natsOptions_SetDisconnectedCB(_opts, DisconnectedCb, this);
-    natsOptions_SetReconnectedCB(_opts, ReconnectedCb, this);
-    natsOptions_SetURL(_opts, config.natsAddr.c_str());
-
-    s = natsConnection_Connect(&_nc, _opts);
-    if (s != NATS_OK) {
-        natsOptions_Destroy(_opts);
-        throw PitayaException("unable to initialize nats server");
-    } else {
-        _log->info("nats rpc client configured!");
-    }
+    _log->info("nats rpc client configured!");
 }
 
 NatsRpcClient::~NatsRpcClient()
 {
     _log->info("Stopping rpc client");
-    natsConnection_Destroy(_nc);
-    natsOptions_Destroy(_opts);
-
-    _log->info("rpc client shut down");
     _log->flush();
     spdlog::drop(kLogTag);
 }
@@ -68,13 +46,15 @@ NatsRpcClient::Call(const pitaya::Server& target, const protos::Request& req)
     req.SerializeToArray(buffer.data(), buffer.size());
 
     natsMsg* reply = nullptr;
-    natsStatus s = natsConnection_Request(
-        &reply, _nc, topic.c_str(), buffer.data(), buffer.size(), _timeoutMs);
+
+    std::shared_ptr<NatsMsg> natsMsg;
+    NatsStatus status = _natsClient->Request(&natsMsg, topic, buffer, _requestTimeout);
+
     protos::Response res;
 
-    if (s != NATS_OK) {
+    if (status != NatsStatus::Ok) {
         auto err = new protos::Error();
-        if (s == NATS_TIMEOUT) {
+        if (status == NatsStatus::Timeout) {
             err->set_code(constants::kCodeTimeout);
             err->set_msg("nats timeout");
         } else {
@@ -88,28 +68,6 @@ NatsRpcClient::Call(const pitaya::Server& target, const protos::Request& req)
 
     natsMsg_Destroy(reply);
     return res;
-}
-
-void
-NatsRpcClient::DisconnectedCb(natsConnection* nc, void* closure)
-{
-    auto instance = reinterpret_cast<NatsRpcClient*>(closure);
-    instance->_log->error("nats disconnected! will try to reconnect...");
-}
-
-void
-NatsRpcClient::ReconnectedCb(natsConnection* nc, void* closure)
-{
-    auto instance = reinterpret_cast<NatsRpcClient*>(closure);
-    instance->_log->error("nats reconnected!");
-}
-
-void
-NatsRpcClient::ClosedCb(natsConnection* nc, void* closure)
-{
-    auto instance = reinterpret_cast<NatsRpcClient*>(closure);
-    instance->_log->error("failed all nats reconnection attempts!");
-    // TODO: exit server here, but need to do this gracefully
 }
 
 optional<PitayaError>
@@ -134,24 +92,19 @@ NatsRpcClient::SendKickToUser(const std::string& serverId,
     std::vector<uint8_t> buffer(kick.ByteSizeLong());
     kick.SerializeToArray(buffer.data(), buffer.size());
 
-    natsMsg* reply = nullptr;
-    natsStatus s = natsConnection_Request(
-        &reply, _nc, topic.c_str(), buffer.data(), buffer.size(), _timeoutMs);
+    std::shared_ptr<NatsMsg> reply;
+    NatsStatus status = _natsClient->Request(&reply, topic, buffer, _requestTimeout);
 
     optional<PitayaError> error;
 
-    if (s != NATS_OK) {
-        if (s == NATS_TIMEOUT) {
+    if (status != NatsStatus::Ok) {
+        if (status == NatsStatus::Timeout) {
             error = PitayaError(constants::kCodeTimeout, "nats timeout");
         } else {
             error = PitayaError(constants::kCodeInternalError, "nats error");
         }
     } else {
         error = boost::none;
-    }
-
-    if (reply) {
-        natsMsg_Destroy(reply);
     }
 
     return error;
@@ -179,24 +132,19 @@ NatsRpcClient::SendPushToUser(const std::string& serverId,
     std::vector<uint8_t> buffer(push.ByteSizeLong());
     push.SerializeToArray(buffer.data(), buffer.size());
 
-    natsMsg* reply = nullptr;
-    natsStatus s = natsConnection_Request(
-        &reply, _nc, topic.c_str(), buffer.data(), buffer.size(), _timeoutMs);
+    std::shared_ptr<NatsMsg> reply;
+    NatsStatus status = _natsClient->Request(&reply, topic, buffer, _requestTimeout);
 
     optional<PitayaError> error;
 
-    if (s != NATS_OK) {
-        if (s == NATS_TIMEOUT) {
+    if (status != NatsStatus::Ok) {
+        if (status == NatsStatus::Timeout) {
             error = PitayaError(constants::kCodeTimeout, "nats timeout");
         } else {
             error = PitayaError(constants::kCodeInternalError, "nats error");
         }
     } else {
         error = boost::none;
-    }
-
-    if (reply) {
-        natsMsg_Destroy(reply);
     }
 
     return error;

@@ -52,8 +52,6 @@ NatsRpcServer::NatsRpcServer(const Server& server,
                                      utils::GetTopicForServer(server.Id(), server.Type()).c_str(),
                                      HandleMsg,
                                      this);
-    }
-    if (s == NATS_OK) {
         _log->info("nats rpc server configured!");
     } else {
         natsOptions_Destroy(_opts);

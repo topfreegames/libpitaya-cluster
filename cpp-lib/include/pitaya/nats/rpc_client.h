@@ -3,12 +3,12 @@
 
 #include "pitaya.h"
 #include "pitaya/nats/config.h"
+#include "pitaya/nats_client.h"
 #include "pitaya/protos/request.pb.h"
 #include "pitaya/protos/response.pb.h"
 #include "pitaya/rpc_client.h"
 #include "spdlog/spdlog.h"
 
-#include <nats/nats.h>
 #include <string>
 
 namespace pitaya {
@@ -28,15 +28,8 @@ public:
 
 private:
     std::shared_ptr<spdlog::logger> _log;
-    natsOptions* _opts;
-    natsConnection* _nc;
-    int _timeoutMs;
-    static void ClosedCb(natsConnection* nc,
-                         void* closure); // called when all reconnection requests failed
-    static void DisconnectedCb(natsConnection* nc,
-                               void* closure); // called when the connection is lost
-    static void ReconnectedCb(natsConnection* nc,
-                              void* closure); // called when the connection is repaired
+    std::unique_ptr<NatsClient> _natsClient;
+    std::chrono::milliseconds _requestTimeout;
 };
 
 } // namespace pitaya
