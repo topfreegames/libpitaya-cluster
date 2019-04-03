@@ -1,10 +1,13 @@
-#include "mock_nats_client.h"
+#include "pitaya/constants.h"
 #include "pitaya/nats/rpc_client.h"
+
+#include "mock_nats_client.h"
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <memory>
 
 using namespace testing;
+namespace constants = pitaya::constants;
 
 class NatsRpcClientTest : public testing::Test
 {
@@ -13,7 +16,8 @@ public:
     {
         _mockNatsClient = new MockNatsClient();
         _config = pitaya::NatsConfig();
-        _rpcClient = std::unique_ptr<pitaya::NatsRpcClient>(new pitaya::NatsRpcClient(_config, std::unique_ptr<pitaya::NatsClient>(_mockNatsClient)));
+        _rpcClient = std::unique_ptr<pitaya::NatsRpcClient>(new pitaya::NatsRpcClient(
+            _config, std::unique_ptr<pitaya::NatsClient>(_mockNatsClient)));
     }
 
     void TearDown() override { _rpcClient.reset(); }
@@ -24,12 +28,10 @@ protected:
     std::unique_ptr<pitaya::NatsRpcClient> _rpcClient;
 };
 
-TEST_F(NatsRpcClientTest, CanBeCreatedAndDestroyed)
-{
-}
+TEST_F(NatsRpcClientTest, CanBeCreatedAndDestroyed) {}
 
-//protos::Response
-//NatsRpcClient::Call(const pitaya::Server& target, const protos::Request& req)
+// protos::Response
+// NatsRpcClient::Call(const pitaya::Server& target, const protos::Request& req)
 //{
 //    auto topic = utils::GetTopicForServer(target.Id(), target.Type());
 //
@@ -75,11 +77,9 @@ TEST_F(NatsRpcClientTest, CanSendRpcs)
     std::vector<uint8_t> buffer(natsResData.ByteSizeLong());
     natsResData.SerializeToArray(buffer.data(), buffer.size());
 
-    EXPECT_CALL(*mockNatsMsg, GetData())
-      .WillOnce(Return(buffer.data()));
+    EXPECT_CALL(*mockNatsMsg, GetData()).WillOnce(Return(buffer.data()));
 
-    EXPECT_CALL(*mockNatsMsg, GetSize())
-      .WillOnce(Return(buffer.size()));
+    EXPECT_CALL(*mockNatsMsg, GetSize()).WillOnce(Return(buffer.size()));
 
     auto target = pitaya::Server(pitaya::Server::Kind::Backend, "my-type", "my-id");
     protos::Request req;
@@ -88,3 +88,75 @@ TEST_F(NatsRpcClientTest, CanSendRpcs)
     ASSERT_FALSE(rpcRes.has_error());
     EXPECT_EQ(rpcRes.data(), natsResData.data());
 }
+
+TEST_F(NatsRpcClientTest, RpcsCanReturnError)
+{
+    using namespace pitaya;
+
+    auto mockNatsMsg = new MockNatsMsg();
+    auto retMsg = std::shared_ptr<NatsMsg>(mockNatsMsg);
+
+    EXPECT_CALL(*_mockNatsClient, Request(_, _, _, _))
+        .WillOnce(DoAll(SetArgPointee<0>(retMsg), Return(NatsStatus::Ok)));
+
+    auto error = new protos::Error();
+    error->set_code("my-random-error-code");
+    error->set_msg("my-random-error-msg");
+
+    // An error response will be returned
+    protos::Response natsResData;
+    natsResData.set_allocated_error(error);
+
+    std::vector<uint8_t> buffer(natsResData.ByteSizeLong());
+    natsResData.SerializeToArray(buffer.data(), buffer.size());
+
+    EXPECT_CALL(*mockNatsMsg, GetData()).WillOnce(Return(buffer.data()));
+
+    EXPECT_CALL(*mockNatsMsg, GetSize()).WillOnce(Return(buffer.size()));
+
+    auto target = pitaya::Server(pitaya::Server::Kind::Backend, "my-type", "my-id");
+    protos::Request req;
+    auto rpcRes = _rpcClient->Call(target, req);
+
+    ASSERT_TRUE(rpcRes.has_error());
+    EXPECT_EQ(rpcRes.error().code(), error->code());
+    EXPECT_EQ(rpcRes.error().msg(), error->msg());
+}
+
+TEST_F(NatsRpcClientTest, RpcsCanFail)
+{
+    using namespace pitaya;
+
+    auto mockNatsMsg = new MockNatsMsg();
+    auto retMsg = std::shared_ptr<NatsMsg>(mockNatsMsg);
+
+    EXPECT_CALL(*_mockNatsClient, Request(_, _, _, _))
+        .WillOnce(DoAll(SetArgPointee<0>(retMsg), Return(NatsStatus::UnknownErr)));
+
+    auto target = pitaya::Server(pitaya::Server::Kind::Backend, "my-type", "my-id");
+    protos::Request req;
+    auto rpcRes = _rpcClient->Call(target, req);
+
+    ASSERT_TRUE(rpcRes.has_error());
+    EXPECT_EQ(rpcRes.error().code(), constants::kCodeInternalError);
+    EXPECT_EQ(rpcRes.error().msg(), "nats error");
+}
+
+// TEST_F(NatsRpcClientTest, CanSendKicks)
+// {
+//     using namespace pitaya;
+
+//     auto mockNatsMsg = new MockNatsMsg();
+//     auto retMsg = std::shared_ptr<NatsMsg>(mockNatsMsg);
+
+//     EXPECT_CALL(*_mockNatsClient, Request(_, _, _, _))
+//         .WillOnce(DoAll(SetArgPointee<0>(retMsg), Return(NatsStatus::UnknownErr)));
+
+//     auto target = pitaya::Server(pitaya::Server::Kind::Backend, "my-type", "my-id");
+//     protos::Request req;
+//     auto rpcRes = _rpcClient->Call(target, req);
+
+//     ASSERT_TRUE(rpcRes.has_error());
+//     EXPECT_EQ(rpcRes.error().code(), constants::kCodeInternalError);
+//     EXPECT_EQ(rpcRes.error().msg(), "nats error");
+// }
