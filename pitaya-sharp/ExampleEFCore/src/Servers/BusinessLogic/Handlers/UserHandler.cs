@@ -10,9 +10,9 @@ namespace ExampleORM.Servers.BusinessLogic.Handlers
 {
   public class UserHandler : BaseHandler
   {
-    private Task<Models.User> GetUserFromToken(Guid token, ExampleContext ctx)
+    private async Task<Models.User> GetUserFromToken(Guid token, ExampleContext ctx)
     {
-      return ctx.Users.SingleAsync(u => u.Token == token);
+      return await ctx.Users.SingleAsync(u => u.Token == token);
     }
 
     private User ModelsUserToProtosUser(Models.User modelsUser)
