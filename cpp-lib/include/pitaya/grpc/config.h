@@ -11,10 +11,12 @@ struct GrpcConfig
     std::string host;
     int port;
     std::chrono::milliseconds connectionTimeout;
+    std::chrono::milliseconds serverShutdownDeadline;
 
     GrpcConfig()
         : port(0)
         , connectionTimeout(4)
+        , serverShutdownDeadline(5)
     {}
 };
 
