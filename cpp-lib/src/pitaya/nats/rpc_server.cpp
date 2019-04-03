@@ -36,7 +36,7 @@ NatsRpcServer::NatsRpcServer(const Server& server,
     if (s != NATS_OK) {
         throw PitayaException("error configuring nats server;");
     }
-    natsOptions_SetTimeout(_opts, config.connectionTimeoutMs);
+    natsOptions_SetTimeout(_opts, config.connectionTimeout.count());
     natsOptions_SetMaxReconnect(_opts, config.maxReconnectionAttempts);
     natsOptions_SetMaxPendingMsgs(_opts, config.maxPendingMsgs);
     natsOptions_SetClosedCB(_opts, ClosedCb, this);

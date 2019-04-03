@@ -224,8 +224,8 @@ extern "C"
         }
         SetLogLevel(logLevel);
         NatsConfig natsCfg = NatsConfig(nc->addr ? std::string(nc->addr) : "",
-                                        nc->requestTimeoutMs,
-                                        nc->connectionTimeoutMs,
+                                        std::chrono::milliseconds(nc->requestTimeoutMs),
+                                        std::chrono::milliseconds(nc->connectionTimeoutMs),
                                         nc->maxReconnectionAttempts,
                                         nc->maxPendingMsgs);
         Server server = CServerToServer(sv);

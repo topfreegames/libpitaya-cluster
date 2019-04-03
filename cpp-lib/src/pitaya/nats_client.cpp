@@ -38,7 +38,7 @@ NatsClientImpl::NatsClientImpl(const NatsConfig& config)
         throw PitayaException("error configuring nats client");
     }
 
-    natsOptions_SetTimeout(_opts, config.connectionTimeoutMs);
+    natsOptions_SetTimeout(_opts, config.connectionTimeout.count());
     natsOptions_SetMaxReconnect(_opts, config.maxReconnectionAttempts);
     natsOptions_SetClosedCB(_opts, ClosedCb, this);
     natsOptions_SetDisconnectedCB(_opts, DisconnectedCb, this);
