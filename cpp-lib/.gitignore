@@ -1,4 +1,5 @@
 _builds
+build
 cmake-build-*
 .idea
 .ccls-cache
