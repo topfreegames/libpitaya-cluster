@@ -78,7 +78,7 @@ LoopSendRpc(std::shared_ptr<spdlog::logger> logger, int tid)
         if (err) {
             std::cout << "received error:" << err.value().msg << std::endl;
         } else {
-            //std::cout << "received answer: " << res.data() << std::endl;
+            // std::cout << "received answer: " << res.data() << std::endl;
         }
         qps++;
     }

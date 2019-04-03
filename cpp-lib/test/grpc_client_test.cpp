@@ -206,8 +206,7 @@ TEST_F(GrpcClientTest, CanSuccessfullySendPushesWithId)
                             Property(&protos::Push::data, "MY PUSH DATA"),
                             Property(&protos::Push::route, "my.push.route"));
 
-    EXPECT_CALL(*mockStub, PushToUser(_, reqMatcher, _))
-        .WillOnce(Return(grpc::Status::OK));
+    EXPECT_CALL(*mockStub, PushToUser(_, reqMatcher, _)).WillOnce(Return(grpc::Status::OK));
 
     protos::Push push;
     push.set_uid("user-uid");
@@ -226,12 +225,13 @@ TEST_F(GrpcClientTest, CanSuccessfullySendPushesWithoutId)
     _mockStubs.push_back(mockStub2);
 
     auto server1 = pitaya::Server(pitaya::Server::Kind::Frontend, "server-id", "server-type")
-        .WithMetadata(pitaya::constants::kGrpcHostKey, "localhost")
-        .WithMetadata(pitaya::constants::kGrpcPortKey, "3435");
+                       .WithMetadata(pitaya::constants::kGrpcHostKey, "localhost")
+                       .WithMetadata(pitaya::constants::kGrpcPortKey, "3435");
 
-    auto server2 = pitaya::Server(pitaya::Server::Kind::Frontend, "my-special-server-id", "server-type")
-        .WithMetadata(pitaya::constants::kGrpcHostKey, "localhost")
-        .WithMetadata(pitaya::constants::kGrpcPortKey, "3435");
+    auto server2 =
+        pitaya::Server(pitaya::Server::Kind::Frontend, "my-special-server-id", "server-type")
+            .WithMetadata(pitaya::constants::kGrpcHostKey, "localhost")
+            .WithMetadata(pitaya::constants::kGrpcPortKey, "3435");
 
     _client->ServerAdded(server1);
     _client->ServerAdded(server2);
@@ -250,8 +250,7 @@ TEST_F(GrpcClientTest, CanSuccessfullySendPushesWithoutId)
                                 Property(&protos::Push::data, push.data()),
                                 Property(&protos::Push::route, push.route()));
 
-        EXPECT_CALL(*mockStub2, PushToUser(_, reqMatcher, _))
-            .WillOnce(Return(grpc::Status::OK));
+        EXPECT_CALL(*mockStub2, PushToUser(_, reqMatcher, _)).WillOnce(Return(grpc::Status::OK));
     }
 
     auto res = _client->SendPushToUser("", "server-type", push);
@@ -307,16 +306,15 @@ TEST_F(GrpcClientTest, SendPushFailsIfGrpcCallFails)
     _mockStubs.push_back(mockStub);
 
     auto server = pitaya::Server(pitaya::Server::Kind::Frontend, "my-server-id", "server-type")
-        .WithMetadata(pitaya::constants::kGrpcHostKey, "localhost")
-        .WithMetadata(pitaya::constants::kGrpcPortKey, "3435");
+                      .WithMetadata(pitaya::constants::kGrpcHostKey, "localhost")
+                      .WithMetadata(pitaya::constants::kGrpcPortKey, "3435");
 
     _client->ServerAdded(server);
 
     protos::Response resResult;
     resResult.set_data("return data");
 
-    EXPECT_CALL(*mockStub, PushToUser(_, _, _))
-        .WillOnce(Return(grpc::Status::CANCELLED));
+    EXPECT_CALL(*mockStub, PushToUser(_, _, _)).WillOnce(Return(grpc::Status::CANCELLED));
 
     auto res = _client->SendPushToUser("my-server-id", "server-type", push);
     ASSERT_TRUE(res);
@@ -332,8 +330,8 @@ TEST_F(GrpcClientTest, CanSuccessfullySendKickWithId)
     resResult.set_data("return data");
 
     auto server = pitaya::Server(pitaya::Server::Kind::Frontend, "server-id", "server-type")
-        .WithMetadata(pitaya::constants::kGrpcHostKey, "localhost")
-        .WithMetadata(pitaya::constants::kGrpcPortKey, "3435");
+                      .WithMetadata(pitaya::constants::kGrpcHostKey, "localhost")
+                      .WithMetadata(pitaya::constants::kGrpcPortKey, "3435");
 
     _client->ServerAdded(server);
 
@@ -355,12 +353,13 @@ TEST_F(GrpcClientTest, CanSuccessfullySendKickWithoutId)
     _mockStubs.push_back(mockStub2);
 
     auto server1 = pitaya::Server(pitaya::Server::Kind::Frontend, "server-id", "server-type")
-        .WithMetadata(pitaya::constants::kGrpcHostKey, "localhost")
-        .WithMetadata(pitaya::constants::kGrpcPortKey, "3435");
+                       .WithMetadata(pitaya::constants::kGrpcHostKey, "localhost")
+                       .WithMetadata(pitaya::constants::kGrpcPortKey, "3435");
 
-    auto server2 = pitaya::Server(pitaya::Server::Kind::Frontend, "my-special-server-id", "server-type")
-        .WithMetadata(pitaya::constants::kGrpcHostKey, "localhost")
-        .WithMetadata(pitaya::constants::kGrpcPortKey, "3435");
+    auto server2 =
+        pitaya::Server(pitaya::Server::Kind::Frontend, "my-special-server-id", "server-type")
+            .WithMetadata(pitaya::constants::kGrpcHostKey, "localhost")
+            .WithMetadata(pitaya::constants::kGrpcPortKey, "3435");
 
     _client->ServerAdded(server1);
     _client->ServerAdded(server2);
@@ -394,4 +393,3 @@ TEST_F(GrpcClientTest, CanSuccessfullySendKickWithoutId)
         EXPECT_FALSE(error);
     }
 }
-

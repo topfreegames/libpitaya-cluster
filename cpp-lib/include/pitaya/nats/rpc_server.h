@@ -14,8 +14,7 @@
 namespace pitaya {
 namespace nats {
 
-class NatsRpcServer
-    : public RpcServer
+class NatsRpcServer : public RpcServer
 {
 public:
     NatsRpcServer(const Server& server,

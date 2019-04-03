@@ -30,36 +30,6 @@ protected:
 
 TEST_F(NatsRpcClientTest, CanBeCreatedAndDestroyed) {}
 
-// protos::Response
-// NatsRpcClient::Call(const pitaya::Server& target, const protos::Request& req)
-//{
-//    auto topic = utils::GetTopicForServer(target.Id(), target.Type());
-//
-//    std::vector<uint8_t> buffer(req.ByteSizeLong());
-//    req.SerializeToArray(buffer.data(), buffer.size());
-//
-//    std::shared_ptr<NatsMsg> reply;
-//    NatsStatus status = _natsClient->Request(&reply, topic, buffer, _requestTimeout);
-//
-//    protos::Response res;
-//
-//    if (status != NatsStatus::Ok) {
-//        auto err = new protos::Error();
-//        if (status == NatsStatus::Timeout) {
-//            err->set_code(constants::kCodeTimeout);
-//            err->set_msg("nats timeout");
-//        } else {
-//            err->set_code(constants::kCodeInternalError);
-//            err->set_msg("nats error");
-//        }
-//        res.set_allocated_error(err);
-//    } else {
-//        res.ParseFromArray(reply->GetData(), reply->GetSize());
-//    }
-//
-//    return res;
-//})
-
 TEST_F(NatsRpcClientTest, CanSendRpcs)
 {
     using namespace pitaya;
@@ -142,21 +112,95 @@ TEST_F(NatsRpcClientTest, RpcsCanFail)
     EXPECT_EQ(rpcRes.error().msg(), "nats error");
 }
 
-// TEST_F(NatsRpcClientTest, CanSendKicks)
-// {
-//     using namespace pitaya;
+TEST_F(NatsRpcClientTest, CanSendKicks)
+{
+    using namespace pitaya;
 
-//     auto mockNatsMsg = new MockNatsMsg();
-//     auto retMsg = std::shared_ptr<NatsMsg>(mockNatsMsg);
+    EXPECT_CALL(*_mockNatsClient, Request(_, _, _, _)).WillOnce(Return(NatsStatus::Ok));
 
-//     EXPECT_CALL(*_mockNatsClient, Request(_, _, _, _))
-//         .WillOnce(DoAll(SetArgPointee<0>(retMsg), Return(NatsStatus::UnknownErr)));
+    auto target = pitaya::Server(pitaya::Server::Kind::Backend, "my-type", "my-id");
 
-//     auto target = pitaya::Server(pitaya::Server::Kind::Backend, "my-type", "my-id");
-//     protos::Request req;
-//     auto rpcRes = _rpcClient->Call(target, req);
+    protos::KickMsg kick;
+    kick.set_userid("my-user-id");
 
-//     ASSERT_TRUE(rpcRes.has_error());
-//     EXPECT_EQ(rpcRes.error().code(), constants::kCodeInternalError);
-//     EXPECT_EQ(rpcRes.error().msg(), "nats error");
-// }
+    auto error = _rpcClient->SendKickToUser(target.Id(), target.Type(), kick);
+    ASSERT_FALSE(error);
+}
+
+TEST_F(NatsRpcClientTest, KicksCanFail)
+{
+    using namespace pitaya;
+
+    EXPECT_CALL(*_mockNatsClient, Request(_, _, _, _)).WillOnce(Return(NatsStatus::UnknownErr));
+
+    auto target = pitaya::Server(pitaya::Server::Kind::Backend, "my-type", "my-id");
+
+    protos::KickMsg kick;
+    kick.set_userid("my-user-id");
+
+    auto error = _rpcClient->SendKickToUser(target.Id(), target.Type(), kick);
+    ASSERT_TRUE(error);
+    ASSERT_EQ(error->code, constants::kCodeInternalError);
+    ASSERT_EQ(error->msg, "nats error");
+}
+
+TEST_F(NatsRpcClientTest, KicksCanFailWithTimeout)
+{
+    using namespace pitaya;
+
+    EXPECT_CALL(*_mockNatsClient, Request(_, _, _, _)).WillOnce(Return(NatsStatus::Timeout));
+
+    auto target = pitaya::Server(pitaya::Server::Kind::Backend, "my-type", "my-id");
+
+    protos::KickMsg kick;
+    kick.set_userid("my-user-id");
+
+    auto error = _rpcClient->SendKickToUser(target.Id(), target.Type(), kick);
+    ASSERT_TRUE(error);
+    ASSERT_EQ(error->code, constants::kCodeTimeout);
+    ASSERT_EQ(error->msg, "nats timeout");
+}
+
+TEST_F(NatsRpcClientTest, CanSendUserPushes)
+{
+    using namespace pitaya;
+
+    protos::Push push;
+    push.set_uid("user-id");
+    push.set_route("my.push.route");
+    push.set_data("Push data");
+
+    std::vector<uint8_t> pushData(push.ByteSizeLong());
+    push.SerializeToArray(pushData.data(), pushData.size());
+
+    EXPECT_CALL(*_mockNatsClient, Request(_, _, pushData, _config.requestTimeout))
+        .WillOnce(Return(NatsStatus::Ok));
+
+    auto target = pitaya::Server(pitaya::Server::Kind::Frontend, "my-type", "my-id");
+
+    auto error = _rpcClient->SendPushToUser(target.Id(), target.Type(), push);
+    ASSERT_FALSE(error);
+}
+
+TEST_F(NatsRpcClientTest, UserPushesCanFail)
+{
+    using namespace pitaya;
+
+    protos::Push push;
+    push.set_uid("user-id");
+    push.set_route("my.push.route");
+    push.set_data("Push data");
+
+    std::vector<uint8_t> pushData(push.ByteSizeLong());
+    push.SerializeToArray(pushData.data(), pushData.size());
+
+    EXPECT_CALL(*_mockNatsClient, Request(_, _, pushData, _config.requestTimeout))
+        .WillOnce(Return(NatsStatus::UnknownErr));
+
+    auto target = pitaya::Server(pitaya::Server::Kind::Backend, "my-type", "my-id");
+
+    auto error = _rpcClient->SendPushToUser(target.Id(), target.Type(), push);
+    ASSERT_TRUE(error);
+    EXPECT_EQ(error->code, constants::kCodeInternalError);
+    EXPECT_EQ(error->msg, "nats error");
+}

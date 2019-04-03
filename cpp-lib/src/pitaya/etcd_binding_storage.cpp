@@ -5,7 +5,9 @@
 
 #include "spdlog/sinks/stdout_color_sinks.h"
 
-static std::string GetUserBindingKey(const std::string& prefix, const std::string& uid, const std::string& frontendType);
+static std::string GetUserBindingKey(const std::string& prefix,
+                                     const std::string& uid,
+                                     const std::string& frontendType);
 
 namespace pitaya {
 
@@ -51,7 +53,7 @@ EtcdBindingStorage::~EtcdBindingStorage()
 std::string
 EtcdBindingStorage::GetUserFrontendId(const std::string& uid, const std::string& frontendType)
 {
-    auto res = _etcdClient->Get(GetUserBindingKey(_config.etcdPrefix ,uid, frontendType));
+    auto res = _etcdClient->Get(GetUserBindingKey(_config.etcdPrefix, uid, frontendType));
     if (!res.ok) {
         throw PitayaException(fmt::format("Failed to get user frontend id: {}", res.errorMsg));
     }
@@ -65,7 +67,9 @@ EtcdBindingStorage::GetUserFrontendId(const std::string& uid, const std::string&
 //
 
 static std::string
-GetUserBindingKey(const std::string& prefix, const std::string& uid, const std::string& frontendType)
+GetUserBindingKey(const std::string& prefix,
+                  const std::string& uid,
+                  const std::string& frontendType)
 {
-    return fmt::format("{}bindings/{}/{}", prefix ,frontendType, uid);
+    return fmt::format("{}bindings/{}/{}", prefix, frontendType, uid);
 }
