@@ -52,7 +52,7 @@ TEST(Ticker, CallbackIsCalledNTimesWithLimitedPrecision)
     Ticker ticker(std::chrono::milliseconds(100), [&]() { ++called; });
 
     ticker.Start();
-    std::this_thread::sleep_for(std::chrono::milliseconds(1050));
+    std::this_thread::sleep_for(std::chrono::milliseconds(1100));
     ticker.Stop();
 
     EXPECT_EQ(called, 10);
