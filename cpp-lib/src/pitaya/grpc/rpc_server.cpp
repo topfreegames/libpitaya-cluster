@@ -94,7 +94,7 @@ GrpcServer::~GrpcServer()
     // Signal other threads that the server is shutting down.
     // Now, we wait a little bit in order for the exiting rpcs to
     // finish. If the deadline passes, the current rpcs are removed and destroyed.
-    _shuttingDown = true;
+    _shuttingDown.store(true);
 
     // The shutdown method cancels all of the current
     // tags immediately.
@@ -170,17 +170,15 @@ GrpcServer::InvalidateInProcessRpcs()
 {
     std::lock_guard<decltype(_inProcessRpcs)> lock(_inProcessRpcs);
     if (_inProcessRpcs.Size() == 0) {
-        return; 
+        return;
     }
 
-    _log->debug("INVALIDATING PROCESS RPCS");
     for (auto rpc : _inProcessRpcs) {
         rpc->isValid.store(false);
     }
 
     _inProcessRpcs.Clear();
 }
-
 
 void
 GrpcServer::ProcessCallData(CallData* callData, ServerCompletionQueue* cq)
@@ -204,14 +202,11 @@ GrpcServer::ProcessCallData(CallData* callData, ServerCompletionQueue* cq)
                 ProcessCallData(nextCallData, cq);
             }
             // Another RPC will start to be processed
-            // ++_numInProcessRpcs;
             {
                 std::lock_guard<decltype(_inProcessRpcs)> lock(_inProcessRpcs);
                 _inProcessRpcs.PushBack(callData);
                 _log->debug("Increasing number of in process rpcs: {}", _inProcessRpcs.Size());
             }
-
-            // _log->debug("Increasing number of in process rpcs: {}", _numInProcessRpcs);
 
             // TODO: have some way of specifying a deadline for the client to complete
             // the request.
@@ -222,7 +217,6 @@ GrpcServer::ProcessCallData(CallData* callData, ServerCompletionQueue* cq)
             // The RPC was finished. Therefore we decrement
             // the count and delete the CallData instance.
             delete callData;
-            // --_numInProcessRpcs;
 
             // The RPC was finished. Therefore we remove from the _inProcessRpcs vector.
             std::lock_guard<decltype(_inProcessRpcs)> lock(_inProcessRpcs);
@@ -232,7 +226,6 @@ GrpcServer::ProcessCallData(CallData* callData, ServerCompletionQueue* cq)
                 _log->debug("Decreasing number of in process rpcs: {}", _inProcessRpcs.Size());
             }
 
-            // _log->debug("Decreasing number of in process rpcs: {}", _numInProcessRpcs);
             break;
         }
     }
