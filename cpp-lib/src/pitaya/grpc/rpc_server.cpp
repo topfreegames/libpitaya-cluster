@@ -82,8 +82,8 @@ GrpcServer::GrpcServer(GrpcConfig config, RpcHandlerFunc handler, const char* lo
     _log->info("gRPC server started at: {}", address);
 
     for (const auto& it : _completionQueues) {
-        _workerThreads.push_back(
-            new std::thread(std::bind(&GrpcServer::ProcessRpcs, this, it.get())));
+        _workerThreads.emplace_back(
+            std::bind(&GrpcServer::ProcessRpcs, this, it.get()));
     }
 }
 
@@ -107,9 +107,9 @@ GrpcServer::~GrpcServer()
         queue->Shutdown();
     }
 
-    for (const auto& thread : _workerThreads) {
-        if (thread->joinable()) {
-            thread->join();
+    for (auto& thread : _workerThreads) {
+        if (thread.joinable()) {
+            thread.join();
         }
     }
 

@@ -39,8 +39,7 @@ private:
     GrpcConfig _config;
     std::unique_ptr<grpc::Server> _grpcServer;
     std::unique_ptr<protos::Pitaya::AsyncService> _service;
-    // TODO: remove pointer to a thread (use only std::thread)
-    std::vector<std::thread*> _workerThreads;
+    std::vector<std::thread> _workerThreads;
     std::vector<std::unique_ptr<grpc::ServerCompletionQueue>> _completionQueues;
 
     // Tracks the number of RPCs that are being processed.
