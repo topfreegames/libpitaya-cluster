@@ -22,9 +22,7 @@ namespace pitaya {
 class GrpcServer : public RpcServer
 {
 public:
-    GrpcServer(GrpcConfig config,
-               RpcHandlerFunc handler,
-               const char* loggerName = nullptr);
+    GrpcServer(GrpcConfig config, RpcHandlerFunc handler, const char* loggerName = nullptr);
     ~GrpcServer();
     void ThreadStart();
 

@@ -138,13 +138,14 @@ TEST_F(GrpcServerTest, HasGracefulShutdown)
     auto server = CreateServer([&](const protos::Request& req, pitaya::Rpc* rpc) {
         EXPECT_EQ(req.msg().route(), "my.custom.route");
 
-        std::thread([rpc, &called]() {
+        auto t = std::thread([rpc, &called]() {
             std::this_thread::sleep_for(std::chrono::milliseconds(300));
             protos::Response res;
             res.set_data("SERVER DATA");
             called = true;
             rpc->Finish(res);
-        }).detach();
+        });
+        t.detach();
     });
 
     auto client = CreateClient();
@@ -157,18 +158,23 @@ TEST_F(GrpcServerTest, HasGracefulShutdown)
     req.set_type(protos::RPCType::User);
     req.set_allocated_msg(msg);
 
-    std::thread([&]() {
+    auto t = std::thread([&]() {
         // Kill the server, right after the call. Since it has graceful shutdown,
         // the server should wait a maximum of _config.serverShutdownDeadline until
         // the remaining RPC is completed.
         std::this_thread::sleep_for(std::chrono::milliseconds(50));
         server.reset();
-    }).detach();
+    });
+    t.detach();
 
     auto res = client->Call(_server, req);
     ASSERT_FALSE(res.has_error());
     EXPECT_TRUE(called);
     EXPECT_EQ(res.data(), "SERVER DATA");
+
+    if (t.joinable()) {
+        t.join();
+    }
 }
 
 TEST_F(GrpcServerTest, HasForcefulShutdownIfDeadlinePasses)
