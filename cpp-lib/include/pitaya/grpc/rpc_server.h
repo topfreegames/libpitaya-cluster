@@ -7,6 +7,7 @@
 #include "pitaya/protos/request.pb.h"
 #include "pitaya/protos/response.pb.h"
 #include "pitaya/rpc_server.h"
+#include "pitaya/utils/sync_vector.h"
 
 #include "spdlog/logger.h"
 
@@ -30,6 +31,7 @@ public:
 private:
     void ProcessRpcs(grpc::ServerCompletionQueue* cq);
     void ProcessCallData(CallData* callData, grpc::ServerCompletionQueue* cq);
+    void InvalidateInProcessRpcs();
 
 private:
     std::shared_ptr<spdlog::logger> _log;
@@ -42,7 +44,7 @@ private:
     std::vector<std::unique_ptr<grpc::ServerCompletionQueue>> _completionQueues;
 
     // Tracks the number of RPCs that are being processed.
-    std::atomic<size_t> _numInProcessRpcs;
+    utils::SyncVector<CallData*> _inProcessRpcs;
 };
 
 } // namespace pitaya

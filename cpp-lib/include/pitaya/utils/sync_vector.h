@@ -24,6 +24,10 @@ public:
     void PushBack(const T& el) { _vector.push_back(el); }
 
     Iterator Erase(Iterator start, Iterator end) { return _vector.erase(start, end); }
+    Iterator Erase(Iterator it) { return _vector.erase(it); }
+
+    size_t Size() const { return _vector.size(); }
+    void Clear() { _vector.clear(); }
 
     // Make type iterable with range-based for loop.
     Iterator begin() { return _vector.begin(); }

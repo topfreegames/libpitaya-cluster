@@ -28,20 +28,26 @@ public:
     protos::Request request;
     protos::Response response;
     ServerAsyncResponseWriter<protos::Response> responder;
+    std::atomic_bool isValid;
 
     explicit CallData()
-        : responder(&ctx)
-        , status(Status::Create)
+        : status(Status::Create)
+        , responder(&ctx)
+        , isValid(true)
     {}
 
     void Finish(protos::Response res) override
     {
-        // TODO, FIXME: consider when the instance was already
-        // deleted and this function is called. This will probably
-        // crash the program. A possible solution is using a shared pointer
-        // for CallData.
-        status = Status::Finish;
-        responder.Finish(res, grpc::Status::OK, this);
+        if (isValid) {
+            status = Status::Finish;
+            responder.Finish(res, grpc::Status::OK, this);
+        } else {
+            // NOTE(leo): The case where a CallData is not valid is whenever the
+            // server is Shutdown and Finish is called after that. In such cases,
+            // we cannot call `responder.Finish` anymore, since the server was destroyed.
+            // We then only delete the memory to avoid a leak.
+            delete this;
+        }
     }
 };
 
@@ -49,14 +55,11 @@ namespace pitaya {
 
 static constexpr const char* kLogTag = "grpc_server";
 
-GrpcServer::GrpcServer(GrpcConfig config,
-                       RpcHandlerFunc handler,
-                       const char* loggerName)
+GrpcServer::GrpcServer(GrpcConfig config, RpcHandlerFunc handler, const char* loggerName)
     : RpcServer(handler)
     , _shuttingDown(false)
     , _config(std::move(config))
     , _service(new protos::Pitaya::AsyncService())
-    , _numInProcessRpcs(0)
 {
     const auto address = _config.host + ":" + std::to_string(_config.port);
 
@@ -78,9 +81,9 @@ GrpcServer::GrpcServer(GrpcConfig config,
     _log = loggerName ? spdlog::get(loggerName)->clone(kLogTag) : spdlog::stdout_color_mt(kLogTag);
     _log->info("gRPC server started at: {}", address);
 
-    for (auto it = _completionQueues.begin(); it != _completionQueues.end(); it++) {
+    for (const auto& it : _completionQueues) {
         _workerThreads.push_back(
-            new std::thread(std::bind(&GrpcServer::ProcessRpcs, this, (*it).get())));
+            new std::thread(std::bind(&GrpcServer::ProcessRpcs, this, it.get())));
     }
 }
 
@@ -96,6 +99,7 @@ GrpcServer::~GrpcServer()
     // The shutdown method cancels all of the current
     // tags immediately.
     _grpcServer->Shutdown(system_clock::now() + _config.serverShutdownDeadline);
+    _grpcServer->Wait();
 
     // Shutdown every completion queue and wait for all of the completion queue
     // threads to join.
@@ -109,8 +113,12 @@ GrpcServer::~GrpcServer()
         }
     }
 
-    if (_numInProcessRpcs > 0) {
-        _log->warn("Server is shutting down with {} rpcs being processed", _numInProcessRpcs);
+    {
+        std::lock_guard<decltype(_inProcessRpcs)> lock(_inProcessRpcs);
+        if (_inProcessRpcs.Size() > 0) {
+            _log->warn("Server is shutting down with {} rpcs being processed",
+                       _inProcessRpcs.Size());
+        }
     }
 
     _log->info("Shutdown complete");
@@ -133,6 +141,8 @@ GrpcServer::ProcessRpcs(ServerCompletionQueue* cq)
 
         if (!cq->Next(&tag, &ok)) {
             _log->debug("Completion queue was shut down for thread");
+
+            InvalidateInProcessRpcs();
             break;
         }
 
@@ -156,6 +166,23 @@ GrpcServer::ProcessRpcs(ServerCompletionQueue* cq)
 }
 
 void
+GrpcServer::InvalidateInProcessRpcs()
+{
+    std::lock_guard<decltype(_inProcessRpcs)> lock(_inProcessRpcs);
+    if (_inProcessRpcs.Size() == 0) {
+        return; 
+    }
+
+    _log->debug("INVALIDATING PROCESS RPCS");
+    for (auto rpc : _inProcessRpcs) {
+        rpc->isValid.store(false);
+    }
+
+    _inProcessRpcs.Clear();
+}
+
+
+void
 GrpcServer::ProcessCallData(CallData* callData, ServerCompletionQueue* cq)
 {
     assert(callData);
@@ -177,8 +204,14 @@ GrpcServer::ProcessCallData(CallData* callData, ServerCompletionQueue* cq)
                 ProcessCallData(nextCallData, cq);
             }
             // Another RPC will start to be processed
-            ++_numInProcessRpcs;
-            _log->debug("Increasing number of in process rpcs: {}", _numInProcessRpcs);
+            // ++_numInProcessRpcs;
+            {
+                std::lock_guard<decltype(_inProcessRpcs)> lock(_inProcessRpcs);
+                _inProcessRpcs.PushBack(callData);
+                _log->debug("Increasing number of in process rpcs: {}", _inProcessRpcs.Size());
+            }
+
+            // _log->debug("Increasing number of in process rpcs: {}", _numInProcessRpcs);
 
             // TODO: have some way of specifying a deadline for the client to complete
             // the request.
@@ -189,8 +222,17 @@ GrpcServer::ProcessCallData(CallData* callData, ServerCompletionQueue* cq)
             // The RPC was finished. Therefore we decrement
             // the count and delete the CallData instance.
             delete callData;
-            --_numInProcessRpcs;
-            _log->debug("Decreasing number of in process rpcs: {}", _numInProcessRpcs);
+            // --_numInProcessRpcs;
+
+            // The RPC was finished. Therefore we remove from the _inProcessRpcs vector.
+            std::lock_guard<decltype(_inProcessRpcs)> lock(_inProcessRpcs);
+            auto it = std::find(_inProcessRpcs.begin(), _inProcessRpcs.end(), callData);
+            if (it != _inProcessRpcs.end()) {
+                _inProcessRpcs.Erase(it);
+                _log->debug("Decreasing number of in process rpcs: {}", _inProcessRpcs.Size());
+            }
+
+            // _log->debug("Decreasing number of in process rpcs: {}", _numInProcessRpcs);
             break;
         }
     }

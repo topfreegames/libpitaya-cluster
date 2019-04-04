@@ -133,8 +133,6 @@ TEST_F(GrpcServerTest, CallHandleSupportsRpcUser)
 
 TEST_F(GrpcServerTest, HasGracefulShutdown)
 {
-    spdlog::set_level(spdlog::level::debug);
-
     bool called = false;
 
     auto server = CreateServer([&](const protos::Request& req, pitaya::Rpc* rpc) {
@@ -175,7 +173,7 @@ TEST_F(GrpcServerTest, HasGracefulShutdown)
 
 TEST_F(GrpcServerTest, HasForcefulShutdownIfDeadlinePasses)
 {
-    spdlog::set_level(spdlog::level::debug);
+    using namespace std::chrono;
 
     bool called = false;
 
@@ -184,8 +182,7 @@ TEST_F(GrpcServerTest, HasForcefulShutdownIfDeadlinePasses)
 
         std::thread([rpc, &called]() {
             // Wait longer than _config.serverShutdownDeadline
-            std::this_thread::sleep_for(std::chrono::milliseconds(700));
-            std::this_thread::sleep_for(std::chrono::milliseconds(700));
+            std::this_thread::sleep_for(milliseconds(700));
             protos::Response res;
             res.set_data("SERVER DATA");
             called = true;
@@ -203,17 +200,23 @@ TEST_F(GrpcServerTest, HasForcefulShutdownIfDeadlinePasses)
     req.set_type(protos::RPCType::User);
     req.set_allocated_msg(msg);
 
-    std::thread([&]() {
+    auto t = std::thread([&]() {
         // Kill the server, right after the call. Since it has graceful shutdown,
         // the server should wait a maximum of _config.serverShutdownDeadline until
         // the remaining RPC is completed.
-        std::this_thread::sleep_for(std::chrono::milliseconds(50));
+        std::this_thread::sleep_for(milliseconds(50));
         server.reset();
-    }).detach();
+    });
 
     auto res = client->Call(_server, req);
-    EXPECT_FALSE(called);
+    ASSERT_FALSE(called);
     ASSERT_TRUE(res.has_error());
     EXPECT_EQ(res.error().code(), constants::kCodeInternalError);
     EXPECT_TRUE(std::regex_search(res.error().msg(), std::regex("Call RPC failed")));
+
+    if (t.joinable()) {
+        t.join();
+    }
+
+    std::this_thread::sleep_for(seconds(1));
 }
