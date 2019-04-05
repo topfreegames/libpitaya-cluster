@@ -95,8 +95,7 @@ Cluster::Initialize(Server server,
                     std::unique_ptr<RpcClient> rpcClient,
                     const char* loggerName)
 {
-    _log = ((loggerName && spdlog::get(loggerName)) ? spdlog::get(loggerName)->clone("cluster")
-                                                    : spdlog::stdout_color_mt("cluster"));
+    _log = utils::CloneLoggerOrCreate(loggerName, "cluster");
     _sd = std::move(sd);
     _rpcSv = std::move(rpcServer);
     _rpcClient = std::move(rpcClient);
@@ -112,9 +111,6 @@ Cluster::Terminate()
     _sd.reset();
     _rpcClient.reset();
     _rpcSv.reset();
-    if (spdlog::get("cluster")) {
-        spdlog::drop("cluster");
-    }
 }
 
 optional<PitayaError>

@@ -28,7 +28,7 @@ NatsRpcClient::NatsRpcClient(const NatsConfig& config, const char* loggerName)
 NatsRpcClient::NatsRpcClient(const NatsConfig& config,
                              std::unique_ptr<NatsClient> natsClient,
                              const char* loggerName)
-    : _log(loggerName ? spdlog::get(loggerName)->clone(kLogTag) : spdlog::stdout_color_mt(kLogTag))
+    : _log(utils::CloneLoggerOrCreate(loggerName, kLogTag))
     , _natsClient(std::move(natsClient))
     , _requestTimeout(config.requestTimeout)
 {
@@ -39,7 +39,6 @@ NatsRpcClient::~NatsRpcClient()
 {
     _log->info("Stopping rpc client");
     _log->flush();
-    spdlog::drop(kLogTag);
 }
 
 protos::Response

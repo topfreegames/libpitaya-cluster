@@ -2,6 +2,7 @@
 
 #include "pitaya/etcd_lease_keep_alive.h"
 #include "pitaya/etcdv3_service_discovery/worker.h"
+#include "pitaya/utils.h"
 #include "pitaya/utils/string_utils.h"
 
 #include "spdlog/sinks/stdout_color_sinks.h"
@@ -31,12 +32,11 @@ Etcdv3ServiceDiscovery::Etcdv3ServiceDiscovery(const Config& config,
                                                Server server,
                                                std::unique_ptr<EtcdClient> etcdClient,
                                                const char* loggerName)
+    : _log(utils::CloneLoggerOrCreate(loggerName, kLogTag))
 {
     if (server.Id().empty() || server.Type().empty()) {
         throw PitayaException("Server id and type cannot be empty");
     }
-    _log = ((loggerName && spdlog::get(loggerName)) ? spdlog::get(loggerName)->clone(kLogTag)
-                                                    : spdlog::stdout_color_mt(kLogTag));
     _worker = std::unique_ptr<Worker>(
         new Worker(config, server, std::move(etcdClient), loggerName ? loggerName : kLogTag));
     _worker->WaitUntilInitialized();
@@ -46,7 +46,6 @@ Etcdv3ServiceDiscovery::~Etcdv3ServiceDiscovery()
 {
     _log->info("Terminating");
     _log->flush();
-    spdlog::drop(kLogTag);
 }
 
 boost::optional<pitaya::Server>

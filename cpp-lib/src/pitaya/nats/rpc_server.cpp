@@ -27,7 +27,7 @@ NatsRpcServer::NatsRpcServer(const Server& server,
                              RpcHandlerFunc handlerFunc,
                              const char* loggerName)
     : RpcServer(handlerFunc)
-    , _log(loggerName ? spdlog::get(loggerName)->clone(kLogTag) : spdlog::stdout_color_mt(kLogTag))
+    , _log(utils::CloneLoggerOrCreate(loggerName, kLogTag))
     , _opts(nullptr)
     , _nc(nullptr)
     , _sub(nullptr)
@@ -68,7 +68,6 @@ NatsRpcServer::~NatsRpcServer()
 
     _log->info("rpc server shut down");
     _log->flush();
-    spdlog::drop(kLogTag);
 }
 
 class CallData : public pitaya::Rpc

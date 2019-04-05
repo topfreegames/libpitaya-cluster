@@ -2,6 +2,7 @@
 
 #include "pitaya/constants.h"
 #include "pitaya/protos/pitaya.grpc.pb.h"
+#include "pitaya/utils.h"
 #include "pitaya/utils/grpc.h"
 #include "spdlog/spdlog.h"
 
@@ -61,6 +62,7 @@ GrpcServer::GrpcServer(GrpcConfig config, RpcHandlerFunc handler, const char* lo
     , _shuttingDown(false)
     , _config(std::move(config))
     , _service(new protos::Pitaya::AsyncService())
+    , _log(utils::CloneLoggerOrCreate(loggerName, kLogTag))
 {
     const auto address = _config.host + ":" + std::to_string(_config.port);
 
@@ -79,7 +81,7 @@ GrpcServer::GrpcServer(GrpcConfig config, RpcHandlerFunc handler, const char* lo
         throw PitayaException(fmt::format("Failed to start gRPC server at address {}", address));
     }
 
-    _log = loggerName ? spdlog::get(loggerName)->clone(kLogTag) : spdlog::stdout_color_mt(kLogTag);
+    // _log = loggerName ? spdlog::get(loggerName)->clone(kLogTag) : spdlog::stdout_color_mt(kLogTag);
     _log->info(
         "gRPC server started at {} with {} grpc threads", address, concurrentThreadsSupported);
 
@@ -125,7 +127,6 @@ GrpcServer::~GrpcServer()
     }
 
     _log->info("Shutdown complete");
-    spdlog::drop(kLogTag);
 }
 
 void

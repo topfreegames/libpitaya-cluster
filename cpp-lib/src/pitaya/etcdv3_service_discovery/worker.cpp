@@ -7,6 +7,7 @@
 #include <assert.h>
 #include <cpprest/json.h>
 #include <sstream>
+#include "pitaya/utils.h"
 
 using boost::optional;
 using std::string;
@@ -31,7 +32,7 @@ Worker::Worker(const Config& config,
     , _workerExiting(false)
     , _server(std::move(server))
     , _etcdClient(std::move(etcdClient))
-    , _log(spdlog::get(loggerName)->clone(kLogTag))
+    , _log(utils::CloneLoggerOrCreate(loggerName, kLogTag))
     , _numKeepAliveRetriesLeft(3)
     , _syncServersTicker(config.syncServersIntervalSec, std::bind(&Worker::SyncServers, this)) {
 
@@ -63,9 +64,7 @@ Worker::~Worker()
     }
 
     _log->debug("Finished waiting for worker thread");
-
     _log->flush();
-    spdlog::drop(kLogTag);
 }
 
 void

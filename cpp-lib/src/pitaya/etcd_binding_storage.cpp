@@ -1,6 +1,7 @@
 #include "pitaya/etcd_binding_storage.h"
 
 #include "pitaya.h"
+#include "pitaya/utils.h"
 #include "spdlog/spdlog.h"
 
 #include "spdlog/sinks/stdout_color_sinks.h"
@@ -16,7 +17,7 @@ static constexpr const char* kLogTag = "etcd_binding_storage";
 EtcdBindingStorage::EtcdBindingStorage(EtcdBindingStorageConfig config,
                                        std::unique_ptr<EtcdClient> etcdClient,
                                        const char* loggerName)
-    : _log(loggerName ? spdlog::get(loggerName)->clone(kLogTag) : spdlog::stdout_color_mt(kLogTag))
+    : _log(utils::CloneLoggerOrCreate(loggerName, kLogTag))
     , _config(std::move(config))
     , _etcdClient(std::move(etcdClient))
     , _leaseId(-1)
@@ -47,7 +48,6 @@ EtcdBindingStorage::~EtcdBindingStorage()
 {
     _log->debug("Stopping lease keep alive");
     _etcdClient->StopLeaseKeepAlive();
-    spdlog::drop(kLogTag);
 }
 
 std::string

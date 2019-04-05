@@ -106,7 +106,6 @@ std::shared_ptr<spdlog::logger>
 CloneLoggerOrCreate(const char* loggerNameToClone, const char* loggerName)
 {
     assert(loggerName);
-
     // there is a logger name, so we just clone it into the new loggerName.
     if (loggerNameToClone && spdlog::get(loggerNameToClone)) {
         return spdlog::get(loggerNameToClone)->clone(loggerName);
@@ -114,7 +113,7 @@ CloneLoggerOrCreate(const char* loggerNameToClone, const char* loggerName)
 
     auto sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
     auto logger = std::make_shared<spdlog::logger>(loggerName, sink);
-    logger->set_level(spdlog::default_logger_raw()->level());
+    logger->set_level(spdlog::default_logger()->level());
     return logger;
 }
 
