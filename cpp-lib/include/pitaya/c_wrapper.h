@@ -63,7 +63,7 @@ struct CNATSConfig
 
 struct CBindingStorageConfig
 {
-    int leaseTtlSec;
+    int32_t leaseTtlSec;
     const char* endpoint;
     const char* etcdPrefix;
 
