@@ -16,7 +16,7 @@ struct CServer
     char* type = nullptr;
     char* metadata = nullptr;
     char* hostname = nullptr;
-    int frontend = false;
+    int32_t frontend = false;
 };
 
 enum LogLevel : int
@@ -32,11 +32,11 @@ struct CSDConfig
 {
     const char* endpoints;
     const char* etcdPrefix;
-    int heartbeatTTLSec;
-    int logHeartbeat;
-    int logServerSync;
-    int logServerDetails;
-    int syncServersIntervalSec;
+    int32_t heartbeatTTLSec;
+    int32_t logHeartbeat;
+    int32_t logServerSync;
+    int32_t logServerDetails;
+    int32_t syncServersIntervalSec;
 
     pitaya::etcdv3_service_discovery::Config ToConfig();
 };
@@ -44,10 +44,10 @@ struct CSDConfig
 struct CGrpcConfig
 {
     const char* host;
-    int port;
-    int connectionTimeoutSec;
-    int serverShutdownDeadlineMs;
-    int serverMaxNumberOfRpcs;
+    int32_t port;
+    int32_t connectionTimeoutSec;
+    int32_t serverShutdownDeadlineMs;
+    int32_t serverMaxNumberOfRpcs;
 
     pitaya::GrpcConfig ToConfig();
 };
@@ -56,9 +56,9 @@ struct CNATSConfig
 {
     const char* addr;
     int64_t connectionTimeoutMs;
-    int requestTimeoutMs;
-    int maxReconnectionAttempts;
-    int maxPendingMsgs;
+    int32_t requestTimeoutMs;
+    int32_t maxReconnectionAttempts;
+    int32_t maxPendingMsgs;
 };
 
 struct CBindingStorageConfig
