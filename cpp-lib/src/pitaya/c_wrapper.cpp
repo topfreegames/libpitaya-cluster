@@ -98,6 +98,8 @@ CGrpcConfig::ToConfig()
     config.host = host;
     config.port = port;
     config.connectionTimeout = std::chrono::seconds(connectionTimeoutSec);
+    config.serverShutdownDeadline = std::chrono::milliseconds(serverShutdownDeadlineMs);
+    config.serverMaxNumberOfRpcs = serverMaxNumberOfRpcs;
     return config;
 }
 

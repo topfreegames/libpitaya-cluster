@@ -46,6 +46,8 @@ struct CGrpcConfig
     const char* host;
     int port;
     int connectionTimeoutSec;
+    int serverShutdownDeadlineMs;
+    int serverMaxNumberOfRpcs;
 
     pitaya::GrpcConfig ToConfig();
 };
