@@ -3,6 +3,8 @@
 
 #include "pitaya.h"
 
+#include "spdlog/logger.h"
+
 #include <string>
 
 namespace pitaya {
@@ -20,6 +22,9 @@ bool ParseEtcdKey(const std::string& key,
                   const std::string& etcdPrefix,
                   std::string& serverType,
                   std::string& serverId);
+
+std::shared_ptr<spdlog::logger> CloneLoggerOrCreate(const char* loggerNameToClone,
+                                                    const char* loggerName);
 
 std::size_t get_thread_id() noexcept;
 

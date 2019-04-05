@@ -38,6 +38,7 @@ public:
 
     void Finish(protos::Response res) override
     {
+        // TODO: use the right memory order.
         if (isValid) {
             status = Status::Finish;
             responder.Finish(res, grpc::Status::OK, this);
@@ -79,10 +80,12 @@ GrpcServer::GrpcServer(GrpcConfig config, RpcHandlerFunc handler, const char* lo
     }
 
     _log = loggerName ? spdlog::get(loggerName)->clone(kLogTag) : spdlog::stdout_color_mt(kLogTag);
-    _log->info("gRPC server started at: {}", address);
+    _log->info(
+        "gRPC server started at {} with {} grpc threads", address, concurrentThreadsSupported);
 
-    for (const auto& it : _completionQueues) {
-        _workerThreads.emplace_back(std::bind(&GrpcServer::ProcessRpcs, this, it.get()));
+    for (size_t i = 0; i < _completionQueues.size(); ++i) {
+        _workerThreads.emplace_back(
+            std::bind(&GrpcServer::ProcessRpcs, this, _completionQueues[i].get(), i + 1));
     }
 }
 
@@ -93,6 +96,7 @@ GrpcServer::~GrpcServer()
     // Signal other threads that the server is shutting down.
     // Now, we wait a little bit in order for the exiting rpcs to
     // finish. If the deadline passes, the current rpcs are removed and destroyed.
+    // TODO: use the right memory order here.
     _shuttingDown.store(true);
 
     // The shutdown method cancels all of the current
@@ -125,22 +129,22 @@ GrpcServer::~GrpcServer()
 }
 
 void
-GrpcServer::ProcessRpcs(ServerCompletionQueue* cq)
+GrpcServer::ProcessRpcs(ServerCompletionQueue* cq, int threadId)
 {
-    _log->info("Started processing rpcs");
+    // _log->info("Started processing rpcs on thread {}", threadId);
 
     // Request the first rpc so that the first tag can be
     // received from Next.
     auto callData = new CallData();
-    ProcessCallData(callData, cq);
+    ProcessCallData(callData, cq, threadId);
 
     for (;;) {
         void* tag; // uniquely identifies a request.
         bool ok;
 
+        // _log->debug("[thread {}] Waiting for completion queue", threadId);
         if (!cq->Next(&tag, &ok)) {
-            _log->debug("Completion queue was shut down for thread");
-
+            // _log->debug("[thread {}] Completion queue was shut down for thread", threadId);
             InvalidateInProcessRpcs();
             break;
         }
@@ -150,9 +154,11 @@ GrpcServer::ProcessRpcs(ServerCompletionQueue* cq)
         if (!ok) {
             assert(_shuttingDown);
             if (callData->status == CallData::Status::Process) {
-                _log->debug("RPC could not be started, server is shutting down");
+                _log->debug("[thread {}] RPC could not be started, server is shutting down",
+                            threadId);
             } else if (callData->status == CallData::Status::Finish) {
-                _log->warn("RPC could not be finished, server is shutting down");
+                _log->warn("[thread {}] RPC could not be finished, server is shutting down",
+                           threadId);
             } else {
                 assert(false);
             }
@@ -160,7 +166,83 @@ GrpcServer::ProcessRpcs(ServerCompletionQueue* cq)
             continue;
         }
 
-        ProcessCallData(callData, cq);
+        // _log->debug("[thread {}] Got a new tag", threadId);
+
+        ProcessCallData(callData, cq, threadId);
+    }
+}
+
+void
+GrpcServer::ProcessCallData(CallData* callData, ServerCompletionQueue* cq, int threadId)
+{
+    assert(callData);
+    assert(cq);
+
+    switch (callData->status) {
+        case CallData::Status::Create: {
+            _log->debug("[thread {}] CREATE", threadId);
+            // Request for a new Call RPC from the pitaya async service.
+            _service->RequestCall(
+                &callData->ctx, &callData->request, &callData->responder, cq, cq, callData);
+            callData->status = CallData::Status::Process;
+            break;
+        }
+        case CallData::Status::Process: {
+            // While we process the current call data, we start requesting another
+            // one from the service if the server is not shutting down.
+            // TODO: use the correct memory order for _shuttingDown.
+            if (!_shuttingDown.load()) {
+                // _log->debug("[thread {}] Adding new call data at thread", threadId);
+                auto nextCallData = new CallData();
+                ProcessCallData(nextCallData, cq, threadId);
+            }
+
+            // We lock the current in process RPCs vector and check wether there is enough space
+            // to process another RPC.
+            std::lock_guard<decltype(_inProcessRpcs)> lock(_inProcessRpcs);
+
+            const bool slotsAvailable = _inProcessRpcs.Size() < _config.serverMaxNumberOfRpcs;
+            const bool infiniteSlots = _config.serverMaxNumberOfRpcs == -1;
+
+            if (infiniteSlots || slotsAvailable) {
+                _inProcessRpcs.PushBack(callData);
+                _log->debug("[thread {}] Will start processing the next RPC ({}/{} rpcs)",
+                            threadId,
+                            _inProcessRpcs.Size(),
+                            _config.serverMaxNumberOfRpcs);
+                _handlerFunc(callData->request, callData);
+            } else {
+                _log->warn("The server is under maximum load, cannot process RPC");
+                // There are no space for processing RPCs anymore. We then just return an error
+                // to the client.
+                auto err = new protos::Error();
+                err->set_code(constants::kCodeServiceUnavailable);
+                err->set_msg("The server is under maximum load, cannot process RPC");
+
+                protos::Response errorRes;
+                errorRes.set_allocated_error(err);
+
+                callData->Finish(errorRes);
+            }
+
+            break;
+        }
+        case CallData::Status::Finish: {
+            // _log->debug("[thread {}] FINISH", threadId);
+            // The RPC was finished. Therefore we remove from the _inProcessRpcs vector.
+            std::lock_guard<decltype(_inProcessRpcs)> lock(_inProcessRpcs);
+            auto it = std::find(_inProcessRpcs.begin(), _inProcessRpcs.end(), callData);
+            if (it != _inProcessRpcs.end()) {
+                _inProcessRpcs.Erase(it);
+                // _log->debug("[thread {}] Decreasing number of in process rpcs: {}",
+                //             threadId,
+                //             _inProcessRpcs.Size());
+            }
+
+            // The RPC was finished. Therefore we delete the CallData instance.
+            delete callData;
+            break;
+        }
     }
 }
 
@@ -173,61 +255,12 @@ GrpcServer::InvalidateInProcessRpcs()
     }
 
     for (auto rpc : _inProcessRpcs) {
+        // TODO: use the right memory order here instead of the
+        // strongest one.
         rpc->isValid.store(false);
     }
 
     _inProcessRpcs.Clear();
-}
-
-void
-GrpcServer::ProcessCallData(CallData* callData, ServerCompletionQueue* cq)
-{
-    assert(callData);
-    assert(cq);
-
-    switch (callData->status) {
-        case CallData::Status::Create: {
-            // Request for a new Call RPC from the pitaya async service.
-            _service->RequestCall(
-                &callData->ctx, &callData->request, &callData->responder, cq, cq, callData);
-            callData->status = CallData::Status::Process;
-            break;
-        }
-        case CallData::Status::Process: {
-            // While we process the current call data, we start requesting another
-            // one from the service if the server is not shutting down.
-            if (!_shuttingDown) {
-                auto nextCallData = new CallData();
-                ProcessCallData(nextCallData, cq);
-            }
-            // Another RPC will start to be processed
-            {
-                std::lock_guard<decltype(_inProcessRpcs)> lock(_inProcessRpcs);
-                _inProcessRpcs.PushBack(callData);
-                _log->debug("Increasing number of in process rpcs: {}", _inProcessRpcs.Size());
-            }
-
-            // TODO: have some way of specifying a deadline for the client to complete
-            // the request.
-            _handlerFunc(callData->request, callData);
-            break;
-        }
-        case CallData::Status::Finish: {
-            // The RPC was finished. Therefore we decrement
-            // the count and delete the CallData instance.
-            delete callData;
-
-            // The RPC was finished. Therefore we remove from the _inProcessRpcs vector.
-            std::lock_guard<decltype(_inProcessRpcs)> lock(_inProcessRpcs);
-            auto it = std::find(_inProcessRpcs.begin(), _inProcessRpcs.end(), callData);
-            if (it != _inProcessRpcs.end()) {
-                _inProcessRpcs.Erase(it);
-                _log->debug("Decreasing number of in process rpcs: {}", _inProcessRpcs.Size());
-            }
-
-            break;
-        }
-    }
 }
 
 } // namespace pitaya

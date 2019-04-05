@@ -9,14 +9,16 @@ namespace pitaya {
 struct GrpcConfig
 {
     std::string host;
-    int port;
+    int32_t port;
     std::chrono::milliseconds connectionTimeout;
     std::chrono::milliseconds serverShutdownDeadline;
+    int32_t serverMaxNumberOfRpcs;
 
     GrpcConfig()
         : port(0)
         , connectionTimeout(4)
         , serverShutdownDeadline(5)
+        , serverMaxNumberOfRpcs(-1)
     {}
 };
 

@@ -27,6 +27,11 @@ public:
     Iterator Erase(Iterator it) { return _vector.erase(it); }
 
     size_t Size() const { return _vector.size(); }
+    size_t SizeWithLock()
+    {
+        std::lock_guard<decltype(_mutex)> lock(_mutex);
+        return _vector.size();
+    }
     void Clear() { _vector.clear(); }
 
     // Make type iterable with range-based for loop.

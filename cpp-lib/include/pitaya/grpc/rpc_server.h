@@ -27,8 +27,8 @@ public:
     void ThreadStart();
 
 private:
-    void ProcessRpcs(grpc::ServerCompletionQueue* cq);
-    void ProcessCallData(CallData* callData, grpc::ServerCompletionQueue* cq);
+    void ProcessRpcs(grpc::ServerCompletionQueue* cq, int threadId);
+    void ProcessCallData(CallData* callData, grpc::ServerCompletionQueue* cq, int threadId);
     void InvalidateInProcessRpcs();
 
 private:

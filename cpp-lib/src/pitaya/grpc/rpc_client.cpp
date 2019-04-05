@@ -1,6 +1,7 @@
 #include "pitaya/grpc/rpc_client.h"
 
 #include "pitaya/constants.h"
+#include "pitaya/utils.h"
 #include "pitaya/utils/grpc.h"
 
 #include "spdlog/sinks/stdout_color_sinks.h"
@@ -35,7 +36,7 @@ GrpcClient::GrpcClient(GrpcConfig config,
                        std::unique_ptr<BindingStorage> bindingStorage,
                        CreateStubFunc createStub,
                        const char* loggerName)
-    : _log(loggerName ? spdlog::get(loggerName)->clone(kLogTag) : spdlog::stdout_color_mt(kLogTag))
+    : _log(utils::CloneLoggerOrCreate(loggerName, kLogTag))
     , _config(std::move(config))
     , _serviceDiscovery(std::move(serviceDiscovery))
     , _createStub(std::move(createStub))
@@ -53,7 +54,6 @@ GrpcClient::~GrpcClient()
 {
     _log->info("Unregistering gRPC client as a listener to the service discovery");
     _serviceDiscovery->RemoveListener(this);
-    spdlog::drop(kLogTag);
 }
 
 static protos::Response

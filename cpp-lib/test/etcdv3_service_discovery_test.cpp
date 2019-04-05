@@ -25,9 +25,6 @@ public:
         _config.etcdPrefix = "pitaya/";
         _config.heartbeatTTLSec = std::chrono::seconds(5);
         _config.syncServersIntervalSec = std::chrono::seconds(4);
-
-        //        spdlog::set_level(spdlog::level::debug);
-        spdlog::set_level(spdlog::level::off);
     }
 
     void TearDown() override

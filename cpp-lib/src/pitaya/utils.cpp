@@ -2,6 +2,9 @@
 
 #include "pitaya.h"
 #include "pitaya/utils/string_utils.h"
+#include "spdlog/spdlog.h"
+
+#include "spdlog/sinks/stdout_color_sinks.h"
 
 #include <assert.h>
 #include <boost/format.hpp>
@@ -97,6 +100,22 @@ get_thread_id() noexcept
         iter = thread_ids.insert(std::pair<std::thread::id, std::size_t>(id, thread_idx++)).first;
     }
     return iter->second;
+}
+
+std::shared_ptr<spdlog::logger>
+CloneLoggerOrCreate(const char* loggerNameToClone, const char* loggerName)
+{
+    assert(loggerName);
+
+    // there is a logger name, so we just clone it into the new loggerName.
+    if (loggerNameToClone && spdlog::get(loggerNameToClone)) {
+        return spdlog::get(loggerNameToClone)->clone(loggerName);
+    }
+
+    auto sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
+    auto logger = std::make_shared<spdlog::logger>(loggerName, sink);
+    logger->set_level(spdlog::default_logger_raw()->level());
+    return logger;
 }
 
 } // namespace utils

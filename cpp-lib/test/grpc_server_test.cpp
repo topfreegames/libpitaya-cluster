@@ -40,14 +40,23 @@ public:
             new pitaya::GrpcServer(_config, std::move(handler)));
     }
 
-    std::unique_ptr<pitaya::GrpcClient> CreateClient()
+    struct Client
     {
-        _mockSd = new NiceMock<MockServiceDiscovery>();
-        _mockBs = new MockBindingStorage();
-        return std::unique_ptr<pitaya::GrpcClient>(
+        NiceMock<MockServiceDiscovery>* mockSd;
+        MockBindingStorage* mockBs;
+        std::unique_ptr<pitaya::GrpcClient> client;
+    };
+
+    Client CreateClient()
+    {
+        Client c;
+        c.mockSd = new NiceMock<MockServiceDiscovery>();
+        c.mockBs = new MockBindingStorage();
+        c.client = std::unique_ptr<pitaya::GrpcClient>(
             new pitaya::GrpcClient(_config,
-                                   std::shared_ptr<ServiceDiscovery>(_mockSd),
-                                   std::unique_ptr<BindingStorage>(_mockBs)));
+                                   std::shared_ptr<ServiceDiscovery>(c.mockSd),
+                                   std::unique_ptr<BindingStorage>(c.mockBs)));
+        return c;
     }
 
     void TearDown() override { _client.reset(); }
@@ -56,8 +65,6 @@ protected:
     pitaya::GrpcConfig _config;
     pitaya::Server _server;
     std::unique_ptr<pitaya::GrpcClient> _client;
-    NiceMock<MockServiceDiscovery>* _mockSd;
-    MockBindingStorage* _mockBs;
 };
 
 TEST_F(GrpcServerTest, ServerCanBeCreatedAndDestroyed)
@@ -89,12 +96,14 @@ TEST_F(GrpcServerTest, CallHandleDoesSupportRpcSys)
         rpc->Finish(protos::Response());
     });
 
-    auto client = CreateClient();
-    client->ServerAdded(_server);
+    NiceMock<ServiceDiscovery>* mockSd;
+    MockBindingStorage* mockBs;
+    auto c = CreateClient();
+    c.client->ServerAdded(_server);
 
     protos::Request req;
 
-    auto res = client->Call(_server, req);
+    auto res = c.client->Call(_server, req);
 
     ASSERT_FALSE(res.has_error());
     ASSERT_TRUE(called);
@@ -114,8 +123,8 @@ TEST_F(GrpcServerTest, CallHandleSupportsRpcUser)
         rpc->Finish(res);
     });
 
-    auto client = CreateClient();
-    client->ServerAdded(_server);
+    auto c = CreateClient();
+    c.client->ServerAdded(_server);
 
     auto msg = new protos::Msg();
     msg->set_route("my.custom.route");
@@ -124,7 +133,7 @@ TEST_F(GrpcServerTest, CallHandleSupportsRpcUser)
     req.set_type(protos::RPCType::User);
     req.set_allocated_msg(msg);
 
-    auto res = client->Call(_server, req);
+    auto res = c.client->Call(_server, req);
 
     ASSERT_FALSE(res.has_error());
     ASSERT_TRUE(called);
@@ -148,8 +157,8 @@ TEST_F(GrpcServerTest, HasGracefulShutdown)
         t.detach();
     });
 
-    auto client = CreateClient();
-    client->ServerAdded(_server);
+    auto c = CreateClient();
+    c.client->ServerAdded(_server);
 
     auto msg = new protos::Msg();
     msg->set_route("my.custom.route");
@@ -167,7 +176,7 @@ TEST_F(GrpcServerTest, HasGracefulShutdown)
     });
     t.detach();
 
-    auto res = client->Call(_server, req);
+    auto res = c.client->Call(_server, req);
     ASSERT_FALSE(res.has_error());
     EXPECT_TRUE(called);
     EXPECT_EQ(res.data(), "SERVER DATA");
@@ -186,18 +195,19 @@ TEST_F(GrpcServerTest, HasForcefulShutdownIfDeadlinePasses)
     auto server = CreateServer([&](const protos::Request& req, pitaya::Rpc* rpc) {
         EXPECT_EQ(req.msg().route(), "my.custom.route");
 
-        std::thread([rpc, &called]() {
+        auto t = std::thread([rpc, &called]() {
             // Wait longer than _config.serverShutdownDeadline
             std::this_thread::sleep_for(milliseconds(700));
             protos::Response res;
             res.set_data("SERVER DATA");
             called = true;
             rpc->Finish(res);
-        }).detach();
+        });
+        t.detach();
     });
 
-    auto client = CreateClient();
-    client->ServerAdded(_server);
+    auto c = CreateClient();
+    c.client->ServerAdded(_server);
 
     auto msg = new protos::Msg();
     msg->set_route("my.custom.route");
@@ -214,7 +224,7 @@ TEST_F(GrpcServerTest, HasForcefulShutdownIfDeadlinePasses)
         server.reset();
     });
 
-    auto res = client->Call(_server, req);
+    auto res = c.client->Call(_server, req);
     ASSERT_FALSE(called);
     ASSERT_TRUE(res.has_error());
     EXPECT_EQ(res.error().code(), constants::kCodeInternalError);
@@ -225,4 +235,59 @@ TEST_F(GrpcServerTest, HasForcefulShutdownIfDeadlinePasses)
     }
 
     std::this_thread::sleep_for(seconds(1));
+}
+
+TEST_F(GrpcServerTest, CanHandleALimitedAmountOfRpcs)
+{
+    using namespace std::chrono;
+    // The server will only handle 2 rpcs at a time.
+    _config.serverMaxNumberOfRpcs = 2;
+
+    auto server = CreateServer([&](const protos::Request& req, pitaya::Rpc* rpc) {
+        EXPECT_EQ(req.msg().route(), "my.custom.route");
+
+        auto t = std::thread([rpc]() {
+            std::this_thread::sleep_for(seconds(1));
+            protos::Response res;
+            res.set_data("SERVER DATA");
+            rpc->Finish(res);
+        });
+        t.detach();
+    });
+
+    std::vector<std::thread> clientThreads(4);
+    std::atomic_int numSuccessful(0);
+    std::atomic_int numFailures(0);
+
+    for (size_t i = 0; i < clientThreads.size(); ++i) {
+        clientThreads[i] = std::thread([this, i, &numSuccessful, &numFailures]() {
+            auto c = CreateClient();
+            c.client->ServerAdded(_server);
+
+            auto msg = new protos::Msg();
+            msg->set_route("my.custom.route");
+
+            protos::Request req;
+            req.set_type(protos::RPCType::User);
+            req.set_allocated_msg(msg);
+
+            auto res = c.client->Call(_server, req);
+            if (res.has_error()) {
+                EXPECT_EQ(res.error().code(), constants::kCodeServiceUnavailable);
+                numFailures++;
+            } else {
+                EXPECT_EQ(res.data(), "SERVER DATA");
+                numSuccessful++;
+            }
+        });
+    }
+
+    for (auto& thread : clientThreads) {
+        if (thread.joinable()) {
+            thread.join();
+        }
+    }
+
+    EXPECT_EQ(numSuccessful, _config.serverMaxNumberOfRpcs);
+    EXPECT_EQ(numFailures, clientThreads.size() - numSuccessful);
 }
