@@ -30,7 +30,7 @@ using service_discovery::ServiceDiscovery;
 
 void
 Cluster::InitializeWithGrpc(GrpcConfig config,
-                            etcdv3_service_discovery::Config&& sdConfig,
+                            etcdv3_service_discovery::Config sdConfig,
                             EtcdBindingStorageConfig bindingStorageConfig,
                             Server server,
                             const char* loggerName)
@@ -41,8 +41,11 @@ Cluster::InitializeWithGrpc(GrpcConfig config,
     server.WithMetadata(constants::kGrpcHostKey, config.host)
         .WithMetadata(constants::kGrpcPortKey, std::to_string(config.port));
 
+    assert(!sdConfig.endpoints.empty());
+    assert(!bindingStorageConfig.endpoint.empty());
+
     auto sd = std::shared_ptr<ServiceDiscovery>(new Etcdv3ServiceDiscovery(
-        std::move(sdConfig),
+        sdConfig,
         server,
         std::unique_ptr<EtcdClient>(new EtcdClientV3(
             sdConfig.endpoints, sdConfig.etcdPrefix, sdConfig.logHeartbeat, loggerName)),
@@ -70,8 +73,8 @@ Cluster::InitializeWithGrpc(GrpcConfig config,
 }
 
 void
-Cluster::InitializeWithNats(NatsConfig&& natsConfig,
-                            etcdv3_service_discovery::Config&& sdConfig,
+Cluster::InitializeWithNats(NatsConfig natsConfig,
+                            etcdv3_service_discovery::Config sdConfig,
                             Server server,
                             const char* loggerName)
 {
@@ -111,6 +114,7 @@ Cluster::Terminate()
     _sd.reset();
     _rpcClient.reset();
     _rpcSv.reset();
+    _log.reset();
 }
 
 optional<PitayaError>

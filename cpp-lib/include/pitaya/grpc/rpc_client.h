@@ -47,8 +47,8 @@ public:
 private:
     std::shared_ptr<spdlog::logger> _log;
     GrpcConfig _config;
-    std::shared_ptr<service_discovery::ServiceDiscovery> _serviceDiscovery;
     utils::SyncMap<std::string, std::unique_ptr<protos::Pitaya::StubInterface>> _stubsForServers;
+    std::shared_ptr<service_discovery::ServiceDiscovery> _serviceDiscovery;
     CreateStubFunc _createStub;
     std::unique_ptr<BindingStorage> _bindingStorage;
 };

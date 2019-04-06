@@ -29,15 +29,17 @@ EtcdBindingStorage::EtcdBindingStorage(EtcdBindingStorageConfig config,
         throw PitayaException(fmt::format("Lease grant failed: {}", res.errorMsg));
     }
 
+    auto logCopy = _log;
+
     _leaseId = res.leaseId;
-    _etcdClient->LeaseKeepAlive(res.leaseId, [this](EtcdLeaseKeepAliveStatus status) {
+    _etcdClient->LeaseKeepAlive(res.leaseId, [logCopy](EtcdLeaseKeepAliveStatus status) {
         switch (status) {
             case EtcdLeaseKeepAliveStatus::Ok: {
-                _log->debug("lease keep alive finished");
+                logCopy->debug("lease keep alive finished");
                 break;
             }
             case EtcdLeaseKeepAliveStatus::Fail: {
-                _log->error("Lease keep alive failed");
+                logCopy->error("Lease keep alive failed");
                 break;
             }
         }

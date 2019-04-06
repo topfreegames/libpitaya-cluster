@@ -38,6 +38,7 @@ GrpcClient::GrpcClient(GrpcConfig config,
                        const char* loggerName)
     : _log(utils::CloneLoggerOrCreate(loggerName, kLogTag))
     , _config(std::move(config))
+    , _stubsForServers()
     , _serviceDiscovery(std::move(serviceDiscovery))
     , _createStub(std::move(createStub))
     , _bindingStorage(std::move(bindingStorage))

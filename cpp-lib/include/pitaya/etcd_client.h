@@ -65,6 +65,7 @@ public:
     virtual GetResponse Get(const std::string& key) = 0;
     virtual ListResponse List(const std::string& prefix) = 0;
     virtual void Watch(std::function<void(WatchResponse)> onWatch) = 0;
+    virtual void CancelWatch() = 0;
 
     virtual void LeaseKeepAlive(int64_t leaseId,
                                 std::function<void(EtcdLeaseKeepAliveStatus)> onExit) = 0;
@@ -85,6 +86,7 @@ public:
     GetResponse Get(const std::string& key) override;
     ListResponse List(const std::string& prefix) override;
     void Watch(std::function<void(WatchResponse)> onWatch) override;
+    void CancelWatch() override;
 
     void LeaseKeepAlive(int64_t leaseId,
                         std::function<void(EtcdLeaseKeepAliveStatus)> onExit) override;

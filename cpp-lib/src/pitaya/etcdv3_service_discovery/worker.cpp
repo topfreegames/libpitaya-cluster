@@ -52,6 +52,7 @@ Worker::~Worker()
     _log->debug("Worker Destructor");
 
     {
+        // Notify the thread about the shutdown.
         std::lock_guard<decltype(_jobQueue)> lock(_jobQueue);
         _jobQueue.PushBack(Job(JobInfo::Shutdown));
         _semaphore.Notify();
@@ -59,6 +60,7 @@ Worker::~Worker()
 
     _log->debug("Will wait for worker thread");
 
+    // Wait for the worker thread to shutdown first.
     if (_workerThread.joinable()) {
         _workerThread.join();
     }
@@ -71,6 +73,8 @@ void
 Worker::Shutdown()
 {
     _log->info("Shutting down");
+    // Make sure that we cancel the watch before destructing the worker thread.
+    _etcdClient->CancelWatch();
     _workerExiting = true;
     _etcdClient->StopLeaseKeepAlive();
     _log->debug("Stopping servers ticker");
@@ -442,11 +446,11 @@ Worker::OnWatch(WatchResponse res)
             return;
         }
         AddServer(std::move(server.value()));
-        PrintServers();
     } else if (res.action == "delete") {
         DeleteServer(serverId);
-        PrintServers();
     }
+
+    PrintServers();
 }
 
 void
@@ -550,7 +554,9 @@ void
 Worker::RemoveListener(service_discovery::Listener* listener)
 {
     std::lock_guard<decltype(_listeners)> lock(_listeners);
-    _listeners.Erase(std::remove(_listeners.begin(), _listeners.end(), listener), _listeners.end());
+    if (std::find(_listeners.begin(), _listeners.end(), listener) != _listeners.end()) {
+        _listeners.Erase(std::remove(_listeners.begin(), _listeners.end(), listener), _listeners.end());
+    }
 }
 
 void

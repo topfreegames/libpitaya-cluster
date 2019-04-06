@@ -1,5 +1,7 @@
 #include "pitaya/etcd_client.h"
 
+#include "pitaya.h"
+
 #include "spdlog/sinks/stdout_color_sinks.h"
 
 using std::placeholders::_1;
@@ -112,9 +114,19 @@ EtcdClientV3::StopLeaseKeepAlive()
 void
 EtcdClientV3::Watch(std::function<void(WatchResponse)> onWatch)
 {
-    _onWatch = std::move(onWatch);
-    _watcher = std::unique_ptr<etcd::Watcher>(
-        new etcd::Watcher(_endpoint, _prefix, std::bind(&EtcdClientV3::OnWatch, this, _1)));
+    try {
+        _onWatch = std::move(onWatch);
+        _watcher = std::unique_ptr<etcd::Watcher>(
+            new etcd::Watcher(_endpoint, _prefix, std::bind(&EtcdClientV3::OnWatch, this, _1)));
+    } catch (const etcd::watch_error& exc) {
+        throw PitayaException(exc.what());
+    }
+}
+
+void
+EtcdClientV3::CancelWatch()
+{
+    _watcher.reset();
 }
 
 void
