@@ -436,6 +436,14 @@ extern "C"
     {
         Cluster::RpcData rpcData = Cluster::Instance().WaitForRpc();
 
+        if (rpcData.rpc == nullptr) {
+            // There are no RPCs left
+            CRpc* crpc = new CRpc();
+            crpc->req = nullptr;
+            crpc->tag = nullptr;
+            return crpc;
+        }
+
         MemoryBuffer* reqBuffer = new MemoryBuffer();
         size_t size = rpcData.req.ByteSizeLong();
         reqBuffer->data = malloc(size);

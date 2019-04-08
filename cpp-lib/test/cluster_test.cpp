@@ -36,8 +36,6 @@ public:
                                                std::shared_ptr<ServiceDiscovery>(_mockSd),
                                                std::unique_ptr<RpcServer>(_mockRpcSv),
                                                std::unique_ptr<RpcClient>(_mockRpcClient));
-
-        spdlog::set_level(spdlog::level::critical);
     }
 
     void TearDown() override { pitaya::Cluster::Instance().Terminate(); }

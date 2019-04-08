@@ -210,9 +210,11 @@ Cluster::OnIncomingRpc(const protos::Request& req, Rpc* rpc)
 Cluster::RpcData
 Cluster::WaitForRpc()
 {
+    // TODO: there are probably too many locks being used here.
+    // After adding some benchmarks, research a better way of doing this.
+    // (e.g., merging the semaphore and queue, atomics, etc.)
     _waitingRpcsSemaphore.Wait();
     std::lock_guard<decltype(_waitingRpcs)> lock(_waitingRpcs);
-    //_log->info("Will consume new rpc");
 
     // TODO: define better when there are no more rpc incoming
     if (_waitingRpcs.Empty()) {

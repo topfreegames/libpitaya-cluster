@@ -59,10 +59,10 @@ static constexpr const char* kLogTag = "grpc_server";
 
 GrpcServer::GrpcServer(GrpcConfig config, RpcHandlerFunc handler, const char* loggerName)
     : RpcServer(handler)
+    , _log(utils::CloneLoggerOrCreate(loggerName, kLogTag))
     , _shuttingDown(false)
     , _config(std::move(config))
     , _service(new protos::Pitaya::AsyncService())
-    , _log(utils::CloneLoggerOrCreate(loggerName, kLogTag))
 {
     const auto address = _config.host + ":" + std::to_string(_config.port);
 
@@ -117,6 +117,9 @@ GrpcServer::~GrpcServer()
             thread.join();
         }
     }
+
+    // We call the handler function with nullptr, showing that no more RPCs are coming.
+    _handlerFunc(protos::Request(), nullptr);
 
     {
         std::lock_guard<decltype(_inProcessRpcs)> lock(_inProcessRpcs);
