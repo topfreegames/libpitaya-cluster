@@ -47,6 +47,10 @@ GrpcClient::GrpcClient(GrpcConfig config,
     assert(_serviceDiscovery != nullptr);
 
     _log->info("Registering gRPC client as a listener to the service discovery");
+
+    // FIXME: this call here makes the service discovery call the GRPC client sometimes when the
+    // object is NOT initialized. This is currently not causing problems, but should be changed in order
+    // to avoid future issues.
     _serviceDiscovery->AddListener(this);
     _log->info("gRPC RPC client created");
 }
