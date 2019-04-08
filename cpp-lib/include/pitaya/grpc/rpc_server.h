@@ -22,17 +22,22 @@ namespace pitaya {
 class GrpcServer : public RpcServer
 {
 public:
-    GrpcServer(GrpcConfig config, RpcHandlerFunc handler, const char* loggerName = nullptr);
+    GrpcServer(GrpcConfig config, const char* loggerName = nullptr);
     ~GrpcServer();
-    void ThreadStart();
+    
+    void Start(RpcHandlerFunc handler) override;
+
+    void Shutdown() override;
 
 private:
+    void ThreadStart();
     void ProcessRpcs(grpc::ServerCompletionQueue* cq, int threadId);
     void ProcessCallData(CallData* callData, grpc::ServerCompletionQueue* cq, int threadId);
     void InvalidateInProcessRpcs();
 
 private:
     std::shared_ptr<spdlog::logger> _log;
+    RpcHandlerFunc _handlerFunc;
     std::atomic_bool _shuttingDown;
     GrpcConfig _config;
     std::unique_ptr<grpc::Server> _grpcServer;

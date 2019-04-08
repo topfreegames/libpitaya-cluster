@@ -36,8 +36,9 @@ public:
 
     std::unique_ptr<pitaya::GrpcServer> CreateServer(pitaya::RpcHandlerFunc handler)
     {
-        return std::unique_ptr<pitaya::GrpcServer>(
-            new pitaya::GrpcServer(_config, std::move(handler)));
+        auto server = std::unique_ptr<pitaya::GrpcServer>(new pitaya::GrpcServer(_config));
+        server->Start(std::move(handler));
+        return server;
     }
 
     struct Client
@@ -69,12 +70,15 @@ protected:
 
 TEST_F(GrpcServerTest, ServerCanBeCreatedAndDestroyed)
 {
-    EXPECT_NO_THROW(CreateServer([](const protos::Request& req, pitaya::Rpc* rpc) {
+    auto server = CreateServer([](const protos::Request& req, pitaya::Rpc* rpc) {
         (void)req;
         if (rpc) {
             rpc->Finish(protos::Response());
         }
-    }));
+    });
+    
+    server->Shutdown();
+    server.reset();
 }
 
 TEST_F(GrpcServerTest, ThrowsIfAddressIsInvalid)
@@ -112,6 +116,8 @@ TEST_F(GrpcServerTest, CallHandleDoesSupportRpcSys)
     ASSERT_FALSE(res.has_error());
     ASSERT_TRUE(called);
     EXPECT_EQ(res.data(), "");
+    
+    server->Shutdown();
 }
 
 TEST_F(GrpcServerTest, CallHandleSupportsRpcUser)
@@ -143,6 +149,8 @@ TEST_F(GrpcServerTest, CallHandleSupportsRpcUser)
     ASSERT_FALSE(res.has_error());
     ASSERT_TRUE(called);
     EXPECT_EQ(res.data(), "SERVER DATA");
+    
+    server->Shutdown();
 }
 
 TEST_F(GrpcServerTest, HasGracefulShutdown)
@@ -179,6 +187,7 @@ TEST_F(GrpcServerTest, HasGracefulShutdown)
         // the server should wait a maximum of _config.serverShutdownDeadline until
         // the remaining RPC is completed.
         std::this_thread::sleep_for(std::chrono::milliseconds(50));
+        server->Shutdown();
         server.reset();
     });
     t.detach();
@@ -231,6 +240,7 @@ TEST_F(GrpcServerTest, HasForcefulShutdownIfDeadlinePasses)
         // the server should wait a maximum of _config.serverShutdownDeadline until
         // the remaining RPC is completed.
         std::this_thread::sleep_for(milliseconds(50));
+        server->Shutdown();
         server.reset();
     });
 
@@ -301,6 +311,8 @@ TEST_F(GrpcServerTest, CanHandleALimitedAmountOfRpcs)
 
     EXPECT_EQ(numSuccessful, _config.serverMaxNumberOfRpcs);
     EXPECT_EQ(numFailures, clientThreads.size() - numSuccessful);
+
+    server->Shutdown();
 }
 
 TEST_F(GrpcServerTest, TheLastRpcIsNull)
@@ -321,8 +333,6 @@ TEST_F(GrpcServerTest, TheLastRpcIsNull)
     });
 
     std::vector<std::thread> clientThreads(10);
-    std::atomic_int numSuccessful(0);
-    std::atomic_int numFailures(0);
 
     for (size_t i = 0; i < clientThreads.size(); ++i) {
         clientThreads[i] = std::thread([this]() {
@@ -349,6 +359,6 @@ TEST_F(GrpcServerTest, TheLastRpcIsNull)
     }
 
     EXPECT_NE(lastRpc, nullptr);
-    server.reset();
+    server->Shutdown();
     EXPECT_EQ(lastRpc, nullptr);
 }

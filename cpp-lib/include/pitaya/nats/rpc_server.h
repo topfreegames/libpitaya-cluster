@@ -17,13 +17,13 @@ namespace nats {
 class NatsRpcServer : public RpcServer
 {
 public:
-    NatsRpcServer(const Server& server,
-                  const NatsConfig& config,
-                  RpcHandlerFunc handler,
-                  const char* loggerName = nullptr);
+    NatsRpcServer(const Server& server, const NatsConfig& config, const char* loggerName = nullptr);
 
     ~NatsRpcServer();
-    void ThreadStart();
+
+    void Start(RpcHandlerFunc handler) override;
+
+    void Shutdown() override;
 
 private:
     void PrintSubStatus(natsSubscription* sub);
@@ -41,6 +41,8 @@ private:
 
 private:
     std::shared_ptr<spdlog::logger> _log;
+    RpcHandlerFunc _handlerFunc;
+    Server _server;
     natsOptions* _opts;
     natsConnection* _nc;
     natsSubscription* _sub;

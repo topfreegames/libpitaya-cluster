@@ -57,15 +57,25 @@ namespace pitaya {
 
 static constexpr const char* kLogTag = "grpc_server";
 
-GrpcServer::GrpcServer(GrpcConfig config, RpcHandlerFunc handler, const char* loggerName)
-    : RpcServer(handler)
-    , _log(utils::CloneLoggerOrCreate(loggerName, kLogTag))
+GrpcServer::GrpcServer(GrpcConfig config, const char* loggerName)
+    : _log(utils::CloneLoggerOrCreate(loggerName, kLogTag))
+    , _handlerFunc(nullptr)
     , _shuttingDown(false)
     , _config(std::move(config))
     , _service(new protos::Pitaya::AsyncService())
-{
-    const auto address = _config.host + ":" + std::to_string(_config.port);
+{}
 
+GrpcServer::~GrpcServer()
+{
+    assert(_grpcServer == nullptr);
+}
+
+void
+GrpcServer::Start(pitaya::RpcHandlerFunc handler)
+{
+    _handlerFunc = handler;
+
+    const auto address = _config.host + ":" + std::to_string(_config.port);
     grpc::ServerBuilder builder;
 
     auto concurrentThreadsSupported = std::thread::hardware_concurrency();
@@ -81,7 +91,6 @@ GrpcServer::GrpcServer(GrpcConfig config, RpcHandlerFunc handler, const char* lo
         throw PitayaException(fmt::format("Failed to start gRPC server at address {}", address));
     }
 
-    // _log = loggerName ? spdlog::get(loggerName)->clone(kLogTag) : spdlog::stdout_color_mt(kLogTag);
     _log->info(
         "gRPC server started at {} with {} grpc threads", address, concurrentThreadsSupported);
 
@@ -91,7 +100,8 @@ GrpcServer::GrpcServer(GrpcConfig config, RpcHandlerFunc handler, const char* lo
     }
 }
 
-GrpcServer::~GrpcServer()
+void
+GrpcServer::Shutdown()
 {
     using namespace std::chrono;
 
@@ -129,6 +139,7 @@ GrpcServer::~GrpcServer()
         }
     }
 
+    _grpcServer.reset();
     _log->info("Shutdown complete");
 }
 

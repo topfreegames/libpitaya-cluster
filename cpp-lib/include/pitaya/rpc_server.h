@@ -9,14 +9,11 @@ namespace pitaya {
 class RpcServer
 {
 public:
-    RpcServer(pitaya::RpcHandlerFunc handler)
-        : _handlerFunc(handler)
-    {}
-
     virtual ~RpcServer() = default;
 
-protected:
-    pitaya::RpcHandlerFunc _handlerFunc;
+    virtual void Start(pitaya::RpcHandlerFunc handler) = 0;
+
+    virtual void Shutdown() = 0;
 };
 
 } // namespace pitaya

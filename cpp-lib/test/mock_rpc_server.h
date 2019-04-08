@@ -6,9 +6,8 @@
 class MockRpcServer : public pitaya::RpcServer
 {
 public:
-    MockRpcServer(pitaya::RpcHandlerFunc handler)
-        : pitaya::RpcServer(handler)
-    {}
+    MOCK_METHOD1(Start, void(pitaya::RpcHandlerFunc));
+    MOCK_METHOD0(Shutdown, void());
 };
 
 #endif // MOCK_RPC_SERVER_H

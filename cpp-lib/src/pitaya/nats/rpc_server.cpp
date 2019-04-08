@@ -24,15 +24,14 @@ std::atomic_int NatsRpcServer::_cnt;
 
 NatsRpcServer::NatsRpcServer(const Server& server,
                              const NatsConfig& config,
-                             RpcHandlerFunc handlerFunc,
                              const char* loggerName)
-    : RpcServer(handlerFunc)
-    , _log(utils::CloneLoggerOrCreate(loggerName, kLogTag))
+    : _log(utils::CloneLoggerOrCreate(loggerName, kLogTag))
+    , _server(server)
     , _opts(nullptr)
     , _nc(nullptr)
     , _sub(nullptr)
 {
-    auto s = natsOptions_Create(&_opts);
+    natsStatus s = natsOptions_Create(&_opts);
     if (s != NATS_OK) {
         throw PitayaException("error configuring nats server;");
     }
@@ -44,12 +43,24 @@ NatsRpcServer::NatsRpcServer(const Server& server,
     natsOptions_SetReconnectedCB(_opts, ReconnectedCb, this);
     natsOptions_SetErrorHandler(_opts, ErrHandler, this);
     natsOptions_SetURL(_opts, config.natsAddr.c_str());
+}
 
-    s = natsConnection_Connect(&_nc, _opts);
+NatsRpcServer::~NatsRpcServer()
+{
+    natsOptions_Destroy(_opts);
+    _log->flush();
+}
+
+void
+NatsRpcServer::Start(RpcHandlerFunc handler)
+{
+    _handlerFunc = handler;
+
+    natsStatus s = natsConnection_Connect(&_nc, _opts);
     if (s == NATS_OK) {
         s = natsConnection_Subscribe(&_sub,
                                      _nc,
-                                     utils::GetTopicForServer(server.Id(), server.Type()).c_str(),
+                                     utils::GetTopicForServer(_server.Id(), _server.Type()).c_str(),
                                      HandleMsg,
                                      this);
         _log->info("nats rpc server configured!");
@@ -59,15 +70,13 @@ NatsRpcServer::NatsRpcServer(const Server& server,
     }
 }
 
-NatsRpcServer::~NatsRpcServer()
+void
+NatsRpcServer::Shutdown()
 {
     _log->info("Stopping rpc server");
     natsSubscription_Destroy(_sub);
     natsConnection_Destroy(_nc);
-    natsOptions_Destroy(_opts);
-
     _log->info("rpc server shut down");
-    _log->flush();
 }
 
 class CallData : public pitaya::Rpc
