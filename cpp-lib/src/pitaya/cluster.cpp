@@ -35,14 +35,14 @@ Cluster::InitializeWithGrpc(GrpcConfig config,
                             Server server,
                             const char* loggerName)
 {
+    assert(!sdConfig.endpoints.empty());
+    assert(!bindingStorageConfig.endpoint.empty());
+
     // In order to other servers know how to connect to our grpc server,
     // we need to publish our host and port as metadata of the server.
     // This needs to happen before the ServiceDiscovery is created.
     server.WithMetadata(constants::kGrpcHostKey, config.host)
         .WithMetadata(constants::kGrpcPortKey, std::to_string(config.port));
-
-    assert(!sdConfig.endpoints.empty());
-    assert(!bindingStorageConfig.endpoint.empty());
 
     auto sd = std::shared_ptr<ServiceDiscovery>(new Etcdv3ServiceDiscovery(
         sdConfig,
@@ -59,17 +59,16 @@ Cluster::InitializeWithGrpc(GrpcConfig config,
 
     Initialize(server,
                sd,
-               std::unique_ptr<RpcServer>(new GrpcServer(
-                   config, std::bind(&Cluster::OnIncomingRpc, this, _1, _2), loggerName)),
-               std::unique_ptr<RpcClient>(
-                   new GrpcClient(config,
-                                  sd,
-                                  std::move(bindingStorage),
-                                  [](std::shared_ptr<grpc::ChannelInterface> channel)
-                                      -> std::unique_ptr<protos::Pitaya::StubInterface> {
-                                      return protos::Pitaya::NewStub(channel);
-                                  },
-                                  loggerName)));
+               std::unique_ptr<RpcServer>(new GrpcServer(config, loggerName)),
+               std::unique_ptr<RpcClient>(new GrpcClient(
+                   config,
+                   sd,
+                   std::move(bindingStorage),
+                   [](std::shared_ptr<grpc::ChannelInterface> channel)
+                       -> std::unique_ptr<protos::Pitaya::StubInterface> {
+                       return protos::Pitaya::NewStub(channel);
+                   },
+                   loggerName)));
 }
 
 void
@@ -78,17 +77,15 @@ Cluster::InitializeWithNats(NatsConfig natsConfig,
                             Server server,
                             const char* loggerName)
 {
-    Initialize(
-        server,
-        std::shared_ptr<ServiceDiscovery>(new Etcdv3ServiceDiscovery(
-            std::move(sdConfig),
-            server,
-            std::unique_ptr<EtcdClient>(new EtcdClientV3(
-                sdConfig.endpoints, sdConfig.etcdPrefix, sdConfig.logHeartbeat, loggerName)),
-            loggerName)),
-        std::unique_ptr<RpcServer>(new nats::NatsRpcServer(
-            server, natsConfig, std::bind(&Cluster::OnIncomingRpc, this, _1, _2), loggerName)),
-        std::unique_ptr<RpcClient>(new NatsRpcClient(natsConfig, loggerName)));
+    Initialize(server,
+               std::shared_ptr<ServiceDiscovery>(new Etcdv3ServiceDiscovery(
+                   std::move(sdConfig),
+                   server,
+                   std::unique_ptr<EtcdClient>(new EtcdClientV3(
+                       sdConfig.endpoints, sdConfig.etcdPrefix, sdConfig.logHeartbeat, loggerName)),
+                   loggerName)),
+               std::unique_ptr<RpcServer>(new nats::NatsRpcServer(server, natsConfig, loggerName)),
+               std::unique_ptr<RpcClient>(new NatsRpcClient(natsConfig, loggerName)));
 }
 
 void
@@ -99,10 +96,13 @@ Cluster::Initialize(Server server,
                     const char* loggerName)
 {
     _log = utils::CloneLoggerOrCreate(loggerName, "cluster");
+    _waitingRpcsFinished = false;
     _sd = std::move(sd);
     _rpcSv = std::move(rpcServer);
     _rpcClient = std::move(rpcClient);
     _server = server;
+
+    _rpcSv->Start(std::bind(&Cluster::OnIncomingRpc, this, _1, _2));
 }
 
 void
@@ -113,7 +113,10 @@ Cluster::Terminate()
     }
     _sd.reset();
     _rpcClient.reset();
-    _rpcSv.reset();
+    if (_rpcSv) {
+        _rpcSv->Shutdown();
+        _rpcSv.reset();
+    }
     _log.reset();
 }
 
@@ -198,33 +201,47 @@ void
 Cluster::OnIncomingRpc(const protos::Request& req, Rpc* rpc)
 {
     std::lock_guard<decltype(_waitingRpcs)> lock(_waitingRpcs);
+    
+    assert(_waitingRpcsFinished == false);
 
-    RpcData rpcData = {};
-    rpcData.req = req;
-    rpcData.rpc = rpc;
-
-    _waitingRpcs.PushBack(rpcData);
-    _waitingRpcsSemaphore.Notify();
+    if (rpc) {
+        RpcData rpcData = {};
+        rpcData.req = req;
+        rpcData.rpc = rpc;
+        _waitingRpcs.PushBack(rpcData);
+        _waitingRpcsSemaphore.Notify();
+    } else {
+        // TODO, FIXME: intead of incrementing the count to 2000 here,
+        // solve this in a more elegant way.
+        _waitingRpcsFinished = true;
+        _waitingRpcsSemaphore.NotifyAll(2000);
+    }
 }
 
-Cluster::RpcData
+optional<Cluster::RpcData>
 Cluster::WaitForRpc()
 {
     // TODO: there are probably too many locks being used here.
     // After adding some benchmarks, research a better way of doing this.
     // (e.g., merging the semaphore and queue, atomics, etc.)
     _waitingRpcsSemaphore.Wait();
+
     std::lock_guard<decltype(_waitingRpcs)> lock(_waitingRpcs);
 
-    // TODO: define better when there are no more rpc incoming
-    if (_waitingRpcs.Empty()) {
-        RpcData rpcData = {};
-        rpcData.rpc = nullptr;
-        return rpcData;
-    } else {
+    if (_waitingRpcs.Size() > 0) {
+        // There are still rpcs to process, so return one.
         RpcData rpcData = _waitingRpcs.PopFront();
         return rpcData;
     }
+
+    // There are no more RPCs in the queue. Since the thread was woken up,
+    // it means that the queue was finished.
+    if (_waitingRpcsFinished) {
+        return boost::none;
+    }
+
+    _log->warn("The waiting rpcs queue is empty but the queue is not finished!");
+    return boost::none;
 }
 
 } // namespace pitaya

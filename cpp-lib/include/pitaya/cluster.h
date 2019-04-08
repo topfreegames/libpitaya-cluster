@@ -30,7 +30,6 @@ public:
         return instance;
     }
 
-    std::shared_ptr<RpcServer> _rpcSv;
     void Initialize(Server server,
                     std::shared_ptr<service_discovery::ServiceDiscovery> sd,
                     std::unique_ptr<RpcServer> rpcServer,
@@ -75,7 +74,7 @@ public:
         Rpc* rpc;
     };
 
-    RpcData WaitForRpc();
+    boost::optional<RpcData> WaitForRpc();
 
 private:
     void OnIncomingRpc(const protos::Request& req, Rpc* rpc);
@@ -84,9 +83,12 @@ private:
     std::shared_ptr<spdlog::logger> _log;
     std::shared_ptr<service_discovery::ServiceDiscovery> _sd;
     std::unique_ptr<RpcClient> _rpcClient;
+    std::unique_ptr<RpcServer> _rpcSv;
     Server _server;
+
     utils::SyncDeque<RpcData> _waitingRpcs;
     utils::Semaphore _waitingRpcsSemaphore;
+    bool _waitingRpcsFinished;
 };
 
 } // namespace pitaya

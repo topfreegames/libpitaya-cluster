@@ -21,6 +21,7 @@ using namespace std;
 using namespace pitaya;
 using namespace pitaya::service_discovery;
 using namespace pitaya::etcdv3_service_discovery;
+using boost::optional;
 
 static char*
 ConvertToCString(const std::string& str)
@@ -434,22 +435,19 @@ extern "C"
 
     CRpc* tfg_pitc_WaitForRpc()
     {
-        Cluster::RpcData rpcData = Cluster::Instance().WaitForRpc();
+        optional<Cluster::RpcData> rpcData = Cluster::Instance().WaitForRpc();
 
-        if (rpcData.rpc == nullptr) {
+        if (!rpcData) {
             // There are no RPCs left
-            CRpc* crpc = new CRpc();
-            crpc->req = nullptr;
-            crpc->tag = nullptr;
-            return crpc;
+            return nullptr;
         }
 
         MemoryBuffer* reqBuffer = new MemoryBuffer();
-        size_t size = rpcData.req.ByteSizeLong();
+        size_t size = rpcData->req.ByteSizeLong();
         reqBuffer->data = malloc(size);
         reqBuffer->size = size;
 
-        bool success = rpcData.req.SerializeToArray(reqBuffer->data, size);
+        bool success = rpcData->req.SerializeToArray(reqBuffer->data, size);
         if (!success) {
             // TODO: send in response?
             gLogger->error("failed to serialize protobuf request!");
@@ -457,7 +455,7 @@ extern "C"
 
         CRpc* crpc = new CRpc();
         crpc->req = reqBuffer;
-        crpc->tag = rpcData.rpc;
+        crpc->tag = rpcData->rpc;
 
         return crpc;
     }

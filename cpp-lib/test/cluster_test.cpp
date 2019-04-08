@@ -2,6 +2,7 @@
 
 #include "pitaya/cluster.h"
 #include "pitaya/constants.h"
+#include "pitaya/grpc/rpc_server.h"
 
 #include "mock_rpc_client.h"
 #include "mock_rpc_server.h"
@@ -14,23 +15,19 @@ using namespace ::testing;
 using boost::optional;
 using pitaya::service_discovery::ServiceDiscovery;
 
-void
-RpcFunc(protos::Request req, pitaya::Rpc* rpc)
-{
-    (void)req;
-    rpc->Finish(protos::Response());
-}
-
 class ClusterTest : public ::testing::Test
 {
 public:
     void SetUp() override
     {
         _mockSd = new MockServiceDiscovery();
-        _mockRpcSv = new MockRpcServer(RpcFunc);
+        _mockRpcSv = new MockRpcServer();
         _mockRpcClient = new MockRpcClient();
 
         _server = Server(Server::Kind::Backend, "my-server-id", "connector");
+
+        EXPECT_CALL(*_mockRpcSv, Start(_))
+            .WillOnce(SaveArg<0>(&_handlerFunc));
 
         pitaya::Cluster::Instance().Initialize(_server,
                                                std::shared_ptr<ServiceDiscovery>(_mockSd),
@@ -45,26 +42,26 @@ protected:
     MockServiceDiscovery* _mockSd;
     MockRpcServer* _mockRpcSv;
     MockRpcClient* _mockRpcClient;
+    pitaya::RpcHandlerFunc _handlerFunc;
 };
 
 TEST_F(ClusterTest, RpcsCanBeDoneSuccessfuly)
 {
+    EXPECT_CALL(*_mockRpcSv, Shutdown());
     Server serverToReturn(Server::Kind::Backend, "my-server-id", "connector", "random-host");
-
-    Sequence seq;
-
-    EXPECT_CALL(*_mockSd, GetServerById("my-server-id"))
-        .InSequence(seq)
-        .WillOnce(Return(serverToReturn));
 
     protos::Response resToReturn;
     resToReturn.set_data("ABACATE");
 
-    EXPECT_CALL(
-        *_mockRpcClient,
-        Call(Eq(serverToReturn), Property(&protos::Request::type, Eq(protos::RPCType::User))))
-        .InSequence(seq)
-        .WillOnce(Return(resToReturn));
+    {
+        // InSequence seq;
+        EXPECT_CALL(*_mockSd, GetServerById("my-server-id")).WillOnce(Return(serverToReturn));
+
+        EXPECT_CALL(
+            *_mockRpcClient,
+            Call(Eq(serverToReturn), Property(&protos::Request::type, Eq(protos::RPCType::User))))
+            .WillOnce(Return(resToReturn));
+    }
 
     auto msg = new protos::Msg();
     msg->set_data("hello my friend");
@@ -82,19 +79,19 @@ TEST_F(ClusterTest, RpcsCanBeDoneSuccessfuly)
         EXPECT_FALSE(err);
     }
 
-    EXPECT_CALL(*_mockSd, GetServersByType("mytest"))
-        .InSequence(seq)
-        .WillOnce(Return(std::vector<pitaya::Server>{ serverToReturn }));
+    {
+        // InSequence seq;
 
-    EXPECT_CALL(*_mockSd, GetServerById("my-server-id"))
-        .InSequence(seq)
-        .WillOnce(Return(serverToReturn));
+        EXPECT_CALL(*_mockSd, GetServersByType("mytest"))
+            .WillOnce(Return(std::vector<pitaya::Server>{ serverToReturn }));
 
-    EXPECT_CALL(
-        *_mockRpcClient,
-        Call(Eq(serverToReturn), Property(&protos::Request::type, Eq(protos::RPCType::User))))
-        .InSequence(seq)
-        .WillOnce(Return(resToReturn));
+        EXPECT_CALL(*_mockSd, GetServerById("my-server-id")).WillOnce(Return(serverToReturn));
+
+        EXPECT_CALL(
+            *_mockRpcClient,
+            Call(Eq(serverToReturn), Property(&protos::Request::type, Eq(protos::RPCType::User))))
+            .WillOnce(Return(resToReturn));
+    }
 
     {
         optional<PitayaError> err = Cluster::Instance().RPC("mytest.routehandler.route", req, res);
@@ -105,6 +102,7 @@ TEST_F(ClusterTest, RpcsCanBeDoneSuccessfuly)
 TEST_F(ClusterTest, FailsWhenNoServerIsFound)
 {
     EXPECT_CALL(*_mockSd, GetServerById("my-server-id")).WillOnce(Return(boost::none));
+    EXPECT_CALL(*_mockRpcSv, Shutdown());
 
     auto msg = new protos::Msg();
     msg->set_data("hello my friend");
@@ -125,6 +123,8 @@ TEST_F(ClusterTest, FailsWhenNoServerIsFound)
 
 TEST_F(ClusterTest, RpcReturnsErrorWhenTheCallFails)
 {
+    EXPECT_CALL(*_mockRpcSv, Shutdown());
+
     Server serverToReturn(Server::Kind::Backend, "my-server-id", "connector", "random-host");
 
     Sequence seq;
@@ -164,4 +164,38 @@ TEST_F(ClusterTest, RpcReturnsErrorWhenTheCallFails)
     PitayaError pErr = err.value();
     EXPECT_EQ(pErr.code, constants::kCodeInternalError);
     EXPECT_EQ(pErr.msg, "Horrible error");
+}
+
+ACTION_P(SendEmptyRpc, handlerFunc)
+{
+    handlerFunc(protos::Request(), nullptr);
+}
+
+TEST_F(ClusterTest, ThreadsWaitingForRpcsReceiveFinishedNotification)
+{
+    using namespace std::chrono;
+    
+    EXPECT_NE(_handlerFunc, nullptr);
+    EXPECT_CALL(*_mockRpcSv, Shutdown())
+        .WillOnce(SendEmptyRpc(_handlerFunc));
+    
+    // Define 10 threads waiting for RPCs
+    std::vector<std::thread> rpcListeners(10);
+
+    for (auto& thread : rpcListeners) {
+        thread = std::thread([]() {
+            optional<Cluster::RpcData> data = Cluster::Instance().WaitForRpc();
+            EXPECT_EQ(data, boost::none);
+        });
+    }
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(50));
+
+    Cluster::Instance().Terminate();
+
+    for (auto& thread : rpcListeners) {
+        if (thread.joinable()) {
+            thread.join();
+        }
+    }
 }
