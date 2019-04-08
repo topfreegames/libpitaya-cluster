@@ -26,9 +26,11 @@ namespace etcdv3_service_discovery {
 
 enum class JobInfo
 {
+    SyncServers,
+    Watch,
+    AddListener,
     EtcdReconnectionFailure,
     WatchError,
-    NewListener,
     Shutdown,
 };
 
@@ -36,10 +38,34 @@ struct Job
 {
     JobInfo info;
     service_discovery::Listener* listener;
+    WatchResponse watchRes;
 
-    explicit Job(JobInfo info, service_discovery::Listener* listener = nullptr)
+    static Job NewWatch(WatchResponse res)
+    {
+        Job j(JobInfo::Watch);
+        j.watchRes = std::move(res);
+        return j;
+    }
+
+    static Job NewWatchError() { return Job(JobInfo::WatchError); }
+
+    static Job NewShutdown() { return Job(JobInfo::Shutdown); }
+
+    static Job NewEtcdReconnectionFailure() { return Job(JobInfo::EtcdReconnectionFailure); }
+
+    static Job NewSyncServers() { return Job(JobInfo::SyncServers); }
+
+    static Job NewAddListener(service_discovery::Listener* listener)
+    {
+        Job j(JobInfo::AddListener);
+        j.listener = listener;
+        return j;
+    }
+
+private:
+    Job(JobInfo info)
         : info(info)
-        , listener(listener)
+        , listener(nullptr)
     {}
 };
 
@@ -83,7 +109,6 @@ private:
 
 private:
     Config _config;
-    std::atomic_bool _workerExiting;
 
     std::promise<void> _initPromise;
     pitaya::Server _server;

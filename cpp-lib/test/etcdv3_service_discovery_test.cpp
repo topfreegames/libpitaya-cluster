@@ -115,6 +115,7 @@ TEST_F(Etcdv3ServiceDiscoveryTest, NoneIsReturnedWhenThereAreNoServers)
     {
         InSequence seq;
         EXPECT_CALL(*_mockEtcdClient, LeaseKeepAlive(Eq(leaseGrantRes.leaseId), _));
+        EXPECT_CALL(*_mockEtcdClient, CancelWatch());
         EXPECT_CALL(*_mockEtcdClient, StopLeaseKeepAlive());
     }
 
@@ -153,6 +154,7 @@ TEST_F(Etcdv3ServiceDiscoveryTest, WatchesForKeysAddedAndRemoved)
     {
         InSequence seq;
         EXPECT_CALL(*_mockEtcdClient, LeaseKeepAlive(Eq(leaseGrantRes.leaseId), _));
+        EXPECT_CALL(*_mockEtcdClient, CancelWatch());
         EXPECT_CALL(*_mockEtcdClient, StopLeaseKeepAlive());
     }
 
@@ -169,6 +171,7 @@ TEST_F(Etcdv3ServiceDiscoveryTest, WatchesForKeysAddedAndRemoved)
         watchRes.key = "pitaya/servers/mytype/myid";
         watchRes.value = "{\"id\": \"myid\", \"type\": \"mytype\"}";
         _mockEtcdClient->onWatch(watchRes);
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
 
         auto server = _serviceDiscovery->GetServerById("myid");
         ASSERT_EQ(server, Server(Server::Kind::Backend, "myid", "mytype"));
@@ -179,6 +182,7 @@ TEST_F(Etcdv3ServiceDiscoveryTest, WatchesForKeysAddedAndRemoved)
         watchRes.key = "pitaya/servers/mytype/myid";
         watchRes.value = "{\"id\": \"myid\", \"type\": \"mytype\"}";
         _mockEtcdClient->onWatch(watchRes);
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
 
         auto server = _serviceDiscovery->GetServerById("myid");
         ASSERT_EQ(server, boost::none);
@@ -225,6 +229,7 @@ TEST_F(Etcdv3ServiceDiscoveryTest, SynchronizesServersEveryInterval)
     {
         InSequence seq;
         EXPECT_CALL(*_mockEtcdClient, LeaseKeepAlive(Eq(leaseGrantRes.leaseId), _));
+        EXPECT_CALL(*_mockEtcdClient, CancelWatch());
         EXPECT_CALL(*_mockEtcdClient, StopLeaseKeepAlive());
     }
 
@@ -249,15 +254,21 @@ TEST_F(Etcdv3ServiceDiscoveryTest, SynchronizesServersEveryInterval)
 
     ASSERT_NE(_mockEtcdClient->onWatch, nullptr);
 
+    std::this_thread::sleep_for(std::chrono::milliseconds(5));
+
     {
         auto server = _serviceDiscovery->GetServerById("myid");
         EXPECT_TRUE(server);
-        EXPECT_EQ(server.value(), Server(Server::Kind::Backend, "myid", "connector"));
+        if (server) {
+            EXPECT_EQ(server.value(), Server(Server::Kind::Backend, "myid", "connector"));
+        }
     }
     {
         auto server = _serviceDiscovery->GetServerById("awesome-id");
         EXPECT_TRUE(server);
-        EXPECT_EQ(server.value(), Server(Server::Kind::Frontend, "awesome-id", "room"));
+        if (server) {
+            EXPECT_EQ(server.value(), Server(Server::Kind::Frontend, "awesome-id", "room"));
+        }
     }
 
     std::this_thread::sleep_for(std::chrono::milliseconds(1100));
@@ -269,7 +280,9 @@ TEST_F(Etcdv3ServiceDiscoveryTest, SynchronizesServersEveryInterval)
     {
         auto server = _serviceDiscovery->GetServerById("awesome-id");
         EXPECT_TRUE(server);
-        EXPECT_EQ(server.value(), Server(Server::Kind::Frontend, "awesome-id", "room"));
+        if (server) {
+            EXPECT_EQ(server.value(), Server(Server::Kind::Frontend, "awesome-id", "room"));
+        }
     }
     {
         auto server = _serviceDiscovery->GetServerById("super-id");
@@ -317,6 +330,7 @@ TEST_F(Etcdv3ServiceDiscoveryTest, ListenersCanBeAddedAndRemoved)
     {
         InSequence seq;
         EXPECT_CALL(*_mockEtcdClient, LeaseKeepAlive(Eq(leaseGrantRes.leaseId), _));
+        EXPECT_CALL(*_mockEtcdClient, CancelWatch());
         EXPECT_CALL(*_mockEtcdClient, StopLeaseKeepAlive());
     }
 
@@ -408,6 +422,7 @@ TEST_F(Etcdv3ServiceDiscoveryTest, ServerIsIgnoredInSyncServersIfGetFromEtcdFail
     {
         InSequence seq;
         EXPECT_CALL(*_mockEtcdClient, LeaseKeepAlive(Eq(leaseGrantRes.leaseId), _));
+        EXPECT_CALL(*_mockEtcdClient, CancelWatch());
         EXPECT_CALL(*_mockEtcdClient, StopLeaseKeepAlive());
     }
 
@@ -429,6 +444,8 @@ TEST_F(Etcdv3ServiceDiscoveryTest, ServerIsIgnoredInSyncServersIfGetFromEtcdFail
     _serviceDiscovery = std::unique_ptr<Etcdv3ServiceDiscovery>(
         new Etcdv3ServiceDiscovery(_config, _server, std::unique_ptr<EtcdClient>(_mockEtcdClient)));
 
+    std::this_thread::sleep_for(std::chrono::milliseconds(5));
+
     ASSERT_NE(_mockEtcdClient->onWatch, nullptr);
 
     {
@@ -438,6 +455,8 @@ TEST_F(Etcdv3ServiceDiscoveryTest, ServerIsIgnoredInSyncServersIfGetFromEtcdFail
     {
         auto server = _serviceDiscovery->GetServerById("awesome-id");
         EXPECT_TRUE(server);
-        EXPECT_EQ(server.value(), Server(Server::Kind::Frontend, "awesome-id", "room"));
+        if (server) {
+            EXPECT_EQ(server.value(), Server(Server::Kind::Frontend, "awesome-id", "room"));
+        }
     }
 }

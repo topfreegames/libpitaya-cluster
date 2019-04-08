@@ -21,6 +21,8 @@ public:
         this->onWatch = std::move(onWatch);
     }
 
+    MOCK_METHOD0(CancelWatch, void());
+
     MOCK_METHOD2(LeaseKeepAlive,
                  void(int64_t, std::function<void(pitaya::EtcdLeaseKeepAliveStatus)>));
     MOCK_METHOD0(StopLeaseKeepAlive, void());

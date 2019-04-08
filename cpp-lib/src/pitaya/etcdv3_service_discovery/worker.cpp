@@ -7,7 +7,6 @@
 #include <assert.h>
 #include <cpprest/json.h>
 #include <sstream>
-#include "pitaya/utils.h"
 
 using boost::optional;
 using std::string;
@@ -29,7 +28,6 @@ Worker::Worker(const Config& config,
                std::unique_ptr<EtcdClient> etcdClient,
                const char* loggerName) try
     : _config(config)
-    , _workerExiting(false)
     , _server(std::move(server))
     , _etcdClient(std::move(etcdClient))
     , _log(utils::CloneLoggerOrCreate(loggerName, kLogTag))
@@ -50,11 +48,12 @@ Worker::Worker(const Config& config,
 Worker::~Worker()
 {
     _log->debug("Worker Destructor");
+    _etcdClient->CancelWatch();
 
     {
         // Notify the thread about the shutdown.
         std::lock_guard<decltype(_jobQueue)> lock(_jobQueue);
-        _jobQueue.PushBack(Job(JobInfo::Shutdown));
+        _jobQueue.PushBack(Job::NewShutdown());
         _semaphore.Notify();
     }
 
@@ -74,8 +73,7 @@ Worker::Shutdown()
 {
     _log->info("Shutting down");
     // Make sure that we cancel the watch before destructing the worker thread.
-    _etcdClient->CancelWatch();
-    _workerExiting = true;
+    RevokeLease();
     _etcdClient->StopLeaseKeepAlive();
     _log->debug("Stopping servers ticker");
     _syncServersTicker.Stop();
@@ -108,7 +106,80 @@ Worker::StartThread()
 
         Job job = _jobQueue.PopFront();
         switch (job.info) {
-            case JobInfo::NewListener: {
+            case JobInfo::SyncServers: {
+                if (_config.logServerSync) {
+                    _log->debug("Will synchronize servers");
+                }
+
+                ListResponse res = _etcdClient->List(_config.etcdPrefix);
+                if (!res.ok) {
+                    _log->warn("Error synchronizing servers: {}", res.errorMsg);
+                    break;
+                }
+
+                vector<string> allIds;
+
+                for (size_t i = 0; i < res.keys.size(); ++i) {
+                    // 1. Parse key
+                    string serverType, serverId;
+                    if (!utils::ParseEtcdKey(
+                            res.keys[i], _config.etcdPrefix, serverType, serverId)) {
+                        _log->debug("Ignoring key {}", res.keys[i]);
+                        continue;
+                    }
+
+                    allIds.push_back(serverId);
+
+                    if (_serversById.FindWithLock(serverId) == _serversById.end()) {
+                        _log->info("Loading info from missing server: {}/{}", serverType, serverId);
+                        auto server = GetServerFromEtcd(serverId, serverType);
+                        if (!server) {
+                            _log->error("Error getting server from etcd: {}", serverId);
+                            continue;
+                        }
+
+                        AddServer(std::move(server.value()));
+                    }
+                }
+
+                DeleteLocalInvalidServers(std::move(allIds));
+
+                if (_config.logServerDetails) {
+                    PrintServers();
+                }
+                if (_config.logServerSync) {
+                    _log->debug("Servers synchronized");
+                }
+                break;
+            }
+            case JobInfo::Watch: {
+                assert(!job.watchRes.key.empty());
+                assert(!job.watchRes.action.empty());
+
+                // First we need to parse the etcd key to figure out if it
+                // belongs to the same prefix and it is actually a server.
+                string serverType, serverId;
+                if (!utils::ParseEtcdKey(
+                        job.watchRes.key, _config.etcdPrefix, serverType, serverId)) {
+                    _log->debug("Watch: Ignoring {}", job.watchRes.key);
+                    break;
+                }
+
+                if (job.watchRes.action == "create") {
+                    auto server = ParseServer(job.watchRes.value);
+                    if (!server) {
+                        _log->error("Watch: Error parsing server: {}", job.watchRes.value);
+                        break;
+                    }
+                    AddServer(std::move(server.value()));
+                } else if (job.watchRes.action == "delete") {
+                    DeleteServer(serverId);
+                }
+
+                PrintServers();
+                break;
+            }
+            case JobInfo::AddListener: {
                 assert(job.listener && "listener should not be null");
                 // Whenever we add a new listener, we want to call ServerAdded
                 // for all existent servers on the class.
@@ -146,16 +217,15 @@ Worker::StartThread()
 
                 break;
             }
-            case JobInfo::Shutdown: {
-                _log->info("Shutting down");
-                RevokeLease();
-                Shutdown();
-                _log->debug("Exiting loop");
-                return;
-            }
             case JobInfo::WatchError: {
                 _log->error("Watch error");
                 break;
+            }
+            case JobInfo::Shutdown: {
+                _log->info("Shutting down");
+                Shutdown();
+                _log->debug("Exiting loop");
+                return;
             }
         }
     }
@@ -179,7 +249,7 @@ Worker::StartLeaseKeepAlive()
             case EtcdLeaseKeepAliveStatus::Fail: {
                 _log->error("lease keep alive failed!");
                 std::lock_guard<decltype(_jobQueue)> lock(_jobQueue);
-                _jobQueue.PushBack(Job(JobInfo::EtcdReconnectionFailure));
+                _jobQueue.PushBack(Job::NewEtcdReconnectionFailure());
                 _syncServersTicker.Stop();
                 _semaphore.Notify();
             } break;
@@ -255,50 +325,9 @@ Worker::AddServer(const Server& server)
 void
 Worker::SyncServers()
 {
-    if (_workerExiting) {
-        _log->info("Worker exiting, no need to synchronize servers");
-        return;
-    }
-
-    if (_config.logServerSync)
-        _log->debug("Will synchronize servers");
-
-    ListResponse res = _etcdClient->List(_config.etcdPrefix);
-    if (!res.ok) {
-        _log->error("Error synchronizing servers");
-        return;
-    }
-
-    vector<string> allIds;
-
-    for (size_t i = 0; i < res.keys.size(); ++i) {
-        // 1. Parse key
-        string serverType, serverId;
-        if (!utils::ParseEtcdKey(res.keys[i], _config.etcdPrefix, serverType, serverId)) {
-            _log->debug("Ignoring key {}", res.keys[i]);
-            continue;
-        }
-
-        allIds.push_back(serverId);
-
-        if (_serversById.FindWithLock(serverId) == _serversById.end()) {
-            _log->info("Loading info from missing server: {}/{}", serverType, serverId);
-            auto server = GetServerFromEtcd(serverId, serverType);
-            if (!server) {
-                _log->error("Error getting server from etcd: {}", serverId);
-                continue;
-            }
-
-            AddServer(std::move(server.value()));
-        }
-    }
-
-    DeleteLocalInvalidServers(std::move(allIds));
-
-    if (_config.logServerDetails)
-        PrintServers();
-    if (_config.logServerSync)
-        _log->debug("Servers synchronized");
+    std::lock_guard<decltype(_jobQueue)> lock(_jobQueue);
+    _jobQueue.PushBack(Job::NewSyncServers());
+    _semaphore.Notify();
 }
 
 optional<pitaya::Server>
@@ -418,39 +447,14 @@ Worker::GetServersByType(const std::string& type)
 void
 Worker::OnWatch(WatchResponse res)
 {
-    if (_workerExiting) {
-        _log->debug("OnWatch: Worker is exiting, ignoring call");
-        return;
-    }
-
-    if (!res.ok) {
-        _log->error("OnWatch error");
-        std::lock_guard<decltype(_jobQueue)> lock(_jobQueue);
-        _jobQueue.PushBack(Job(JobInfo::WatchError));
+    std::lock_guard<decltype(_jobQueue)> lock(_jobQueue);
+    if (res.ok) {
+        _jobQueue.PushBack(Job::NewWatch(res));
         _semaphore.Notify();
-        return;
+    } else {
+        _jobQueue.PushBack(Job::NewWatchError());
+        _semaphore.Notify();
     }
-
-    // First we need to parse the etcd key to figure out if it
-    // belongs to the same prefix and it is actually a server.
-    string serverType, serverId;
-    if (!utils::ParseEtcdKey(res.key, _config.etcdPrefix, serverType, serverId)) {
-        _log->debug("OnWatch: Ignoring {}", res.key);
-        return;
-    }
-
-    if (res.action == "create") {
-        auto server = ParseServer(res.value);
-        if (!server) {
-            _log->error("OnWatch: Error parsing server: {}", res.value);
-            return;
-        }
-        AddServer(std::move(server.value()));
-    } else if (res.action == "delete") {
-        DeleteServer(serverId);
-    }
-
-    PrintServers();
 }
 
 void
@@ -546,7 +550,7 @@ Worker::AddListener(service_discovery::Listener* listener)
 {
     assert(listener && "listener should not be null");
     std::lock_guard<decltype(_jobQueue)> lock(_jobQueue);
-    _jobQueue.PushBack(Job(JobInfo::NewListener, listener));
+    _jobQueue.PushBack(Job::NewAddListener(listener));
     _semaphore.Notify();
 }
 
@@ -555,7 +559,8 @@ Worker::RemoveListener(service_discovery::Listener* listener)
 {
     std::lock_guard<decltype(_listeners)> lock(_listeners);
     if (std::find(_listeners.begin(), _listeners.end(), listener) != _listeners.end()) {
-        _listeners.Erase(std::remove(_listeners.begin(), _listeners.end(), listener), _listeners.end());
+        _listeners.Erase(std::remove(_listeners.begin(), _listeners.end(), listener),
+                         _listeners.end());
     }
 }
 
