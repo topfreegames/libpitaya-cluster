@@ -1,12 +1,12 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "npitaya", "npitaya\npitaya.csproj", "{465A09E9-B3EB-48CC-97F9-71A361A170CF}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NPitaya", "NPitaya\NPitaya.csproj", "{465A09E9-B3EB-48CC-97F9-71A361A170CF}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "exampleapp", "exampleapp\exampleapp.csproj", "{A50BECF7-8EBD-4451-B390-9B8F33636247}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExampleEFCore", "ExampleEFCore\ExampleEFCore.csproj", "{A677E03C-B5B5-4D0B-9E9B-5CAB6D0591DC}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NPitayaTest", "NPitayaTest\NPitayaTest.csproj", "{1ADE34A2-E893-4DDA-901C-905D7FC7B394}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NPitaya.Tests", "NPitaya.Tests\NPitaya.Tests.csproj", "{1ADE34A2-E893-4DDA-901C-905D7FC7B394}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

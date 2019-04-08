@@ -105,9 +105,7 @@ namespace NPitaya
             RegisterRemote(remote, name, DefaultRemoteNameFunc);
         }
 
-        public static void
-            RegisterRemote(BaseRemote remote, string name,
-                RemoteNameFunc remoteNameFunc) // TODO remote function name func
+        public static void RegisterRemote(BaseRemote remote, string name, RemoteNameFunc remoteNameFunc) // TODO remote function name func
         {
             Dictionary<string, RemoteMethod> m = remote.getRemotesMap();
             foreach (KeyValuePair<string, RemoteMethod> kvp in m)

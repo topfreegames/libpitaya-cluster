@@ -7,10 +7,6 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\npitaya\npitaya.csproj" />
-    </ItemGroup>
-
-    <ItemGroup>
       <PackageReference Include="Google.Protobuf" Version="3.7.0" />
       <PackageReference Include="Grpc.Tools" Version="1.19.0" PrivateAssets="All" />
       <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="2.2.3" />
@@ -23,6 +19,10 @@
 
     <ItemGroup>
         <Protobuf Include="./Protos/*.proto" OutputDir="./src/Gen/Protos" PrivateAssets="All" GrpcServices="None" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\NPitaya\NPitaya.csproj" />
     </ItemGroup>
 
 </Project>

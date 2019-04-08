@@ -53,7 +53,6 @@ namespace NPitaya
         Critical = 4,
     }
 
-
     [StructLayout(LayoutKind.Sequential)]
     public struct SDConfig
     {
@@ -87,12 +86,17 @@ namespace NPitaya
         public string host;
         public int port;
         public int connectionTimeoutSec;
+        public int serverShutdownDeadlineMs;
+        public int serverMaxNumberOfRpcs;
 
-        public GrpcConfig(string host, int port, int connectionTimeoutSec)
+        public GrpcConfig(string host, int port, int connectionTimeoutSec,
+            int serverShutdownDeadlineMs, int serverMaxNumberOfRpcs)
         {
             this.host = host;
             this.port = port;
             this.connectionTimeoutSec = connectionTimeoutSec;
+            this.serverShutdownDeadlineMs = serverShutdownDeadlineMs;
+            this.serverMaxNumberOfRpcs = serverMaxNumberOfRpcs;
         }
     }
 
@@ -120,7 +124,7 @@ namespace NPitaya
 
         public static Route FromString(string r)
         {
-            string[] res = r.Split(new string[] { "." }, StringSplitOptions.None);
+            string[] res = r.Split(new[] { "." }, StringSplitOptions.None);
             if (res.Length == 3)
             {
                 return new Route(res[0], res[1], res[2]);
@@ -129,16 +133,16 @@ namespace NPitaya
             {
                 return new Route(res[0], res[1]);
             }
-            throw new Exception(String.Format("invalid route: {0}", r));
+            throw new Exception($"invalid route: {r}");
         }
 
         public override string ToString()
         {
             if (svType.Length > 0)
             {
-                return string.Format("{0}.{1}.{2}", svType, service, method);
+                return $"{svType}.{service}.{method}";
             }
-            return string.Format("{0}.{1}", service, method);
+            return $"{service}.{method}";
         }
     }
 
@@ -175,7 +179,6 @@ namespace NPitaya
             this.maxPendingMessages = maxPendingMessages;
         }
     }
-
 }
 
 class StructWrapper : IDisposable
@@ -184,15 +187,8 @@ class StructWrapper : IDisposable
 
     public StructWrapper(object obj)
     {
-        if (Ptr != null)
-        {
-            Ptr = Marshal.AllocHGlobal(Marshal.SizeOf(obj));
-            Marshal.StructureToPtr(obj, Ptr, false);
-        }
-        else
-        {
-            Ptr = IntPtr.Zero;
-        }
+        Ptr = Marshal.AllocHGlobal(Marshal.SizeOf(obj));
+        Marshal.StructureToPtr(obj, Ptr, false);
     }
 
     ~StructWrapper()

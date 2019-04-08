@@ -9,11 +9,11 @@ namespace ExampleORM
 {
     class App
     {
-        static void Main(string[] args)
+        private static void Main(string[] args)
         {
             Logger.SetLevel(LogLevel.INFO);
 
-            string serverId = System.Guid.NewGuid().ToString();
+            var serverId = System.Guid.NewGuid().ToString();
 
             var sdConfig = new SDConfig(
                 endpoints: "http://127.0.0.1:2379",
@@ -31,7 +31,13 @@ namespace ExampleORM
                 hostname: "localhost",
                 frontend: false);
 
-            GrpcConfig grpcConfig = new GrpcConfig("127.0.0.1", 5444, 2);
+            var grpcConfig = new GrpcConfig(
+                host: "127.0.0.1",
+                port: 5444,
+                connectionTimeoutSec: 2,
+                serverShutdownDeadlineMs: 3000,
+                serverMaxNumberOfRpcs: 500
+            );
 
             PitayaCluster.AddSignalHandler(() =>
             {

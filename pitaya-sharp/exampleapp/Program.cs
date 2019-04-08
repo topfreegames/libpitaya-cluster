@@ -33,11 +33,15 @@ namespace PitayaCSharpExample
          hostname: "localhost",
          frontend: false);
 
-      NatsConfig natsConfig = new NatsConfig("127.0.0.1:4222", 2000, 1000, 3, 100);
+      var natsConfig = new NatsConfig("127.0.0.1:4222", 2000, 1000, 3, 100);
 
-      GrpcConfig grpcConfig = new GrpcConfig("127.0.0.1", 5444, 2);
-
-      PitayaCluster cluster = null;
+      var grpcConfig = new GrpcConfig(
+        host: "127.0.0.1",
+        port: 5444,
+        connectionTimeoutSec: 2,
+        serverShutdownDeadlineMs: 2000,
+        serverMaxNumberOfRpcs: 200
+      );
 
       PitayaCluster.AddSignalHandler(() =>
       {
@@ -61,18 +65,18 @@ namespace PitayaCSharpExample
 
       Logger.Info("pitaya lib initialized successfully :)");
 
-      TestRemote tr = new TestRemote();
+      var tr = new TestRemote();
       PitayaCluster.RegisterRemote(tr);
-      TestHandler th = new TestHandler();
+      var th = new TestHandler();
       PitayaCluster.RegisterHandler(th);
 
-      System.Threading.Thread.Sleep(1000);
+      Thread.Sleep(1000);
 
       while (true)
       {
         Thread.Sleep(10);
       }
-     
+
       //try
       //{
       //  var res = PitayaCluster.Rpc<Protos.RPCRes>(Route.FromString("csharp.testremote.remote"), null);

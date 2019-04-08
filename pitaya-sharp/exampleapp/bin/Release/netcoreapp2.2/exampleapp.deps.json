@@ -27,7 +27,7 @@
           "Google.Protobuf": "3.7.0"
         },
         "runtime": {
-          "npitaya.dll": {}
+          "NPitaya.dll": {}
         }
       }
     }
