@@ -174,6 +174,7 @@ if(BUILD_TESTING AND NOT BUILD_MACOSX_BUNDLE)
         test/utils_test.cpp
         test/grpc_client_test.cpp
         test/grpc_server_test.cpp
+        test/c_wrapper_test.cpp
         test/main_test.cpp)
 
     message(WARNING "Adding profiling data into the library and the tests executable, do not ship this library to production (compile with -DBUILD_TESTING=OFF)")

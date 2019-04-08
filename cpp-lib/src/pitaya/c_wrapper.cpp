@@ -225,11 +225,11 @@ extern "C"
             gLogger = CreateLogger(logFile);
         }
         SetLogLevel(logLevel);
-        NatsConfig natsCfg = NatsConfig(nc->addr ? std::string(nc->addr) : "",
-                                        std::chrono::milliseconds(nc->requestTimeoutMs),
-                                        std::chrono::milliseconds(nc->connectionTimeoutMs),
-                                        nc->maxReconnectionAttempts,
-                                        nc->maxPendingMsgs);
+        auto natsCfg = NatsConfig(nc->addr ? std::string(nc->addr) : "",
+                                  std::chrono::milliseconds(nc->requestTimeoutMs),
+                                  std::chrono::milliseconds(nc->connectionTimeoutMs),
+                                  nc->maxReconnectionAttempts,
+                                  nc->maxPendingMsgs);
         Server server = CServerToServer(sv);
 
         try {
@@ -266,7 +266,7 @@ extern "C"
         pitaya::Cluster::Instance().Terminate();
         gLogger->info("Cluster destroyed");
         gLogger->flush();
-        spdlog::drop_all();
+        //        spdlog::drop_all();
     }
 
     static bool sendResponseToManaged(MemoryBuffer** outBuf,
