@@ -18,6 +18,8 @@ out
 dist
 *.egg-info
 .idea
+.projectile
+.dir-locals.el
 
 NugetOutput/lib
 NugetOutput/*.nupkg
