@@ -36,4 +36,15 @@
         </Content>
     </ItemGroup>
 
+    <Target Name="PreBuild" BeforeTargets="PreBuildEvent">
+        <Exec
+            Condition=" '$(OS)' == 'Unix' "
+            Command="
+              LINK_FILE=$(ProjectDir)$(OutDir)/libpitaya_cluster.dylib
+              if [[ ! -f $LINK_FILE ]]; then
+                  ln -s $(ProjectDir)../../precompiled/libpitaya_cluster.dylib $LINK_FILE
+              fi
+            " />
+    </Target>
+
 </Project>
