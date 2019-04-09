@@ -24,7 +24,7 @@ class GrpcServer : public RpcServer
 public:
     GrpcServer(GrpcConfig config, const char* loggerName = nullptr);
     ~GrpcServer();
-    
+
     void Start(RpcHandlerFunc handler) override;
 
     void Shutdown() override;

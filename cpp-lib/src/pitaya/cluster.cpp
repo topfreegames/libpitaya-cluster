@@ -201,7 +201,7 @@ void
 Cluster::OnIncomingRpc(const protos::Request& req, Rpc* rpc)
 {
     std::lock_guard<decltype(_waitingRpcs)> lock(_waitingRpcs);
-    
+
     assert(_waitingRpcsFinished == false);
 
     if (rpc) {

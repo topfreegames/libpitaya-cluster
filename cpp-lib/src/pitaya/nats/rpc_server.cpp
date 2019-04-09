@@ -22,9 +22,7 @@ namespace nats {
 
 std::atomic_int NatsRpcServer::_cnt;
 
-NatsRpcServer::NatsRpcServer(const Server& server,
-                             const NatsConfig& config,
-                             const char* loggerName)
+NatsRpcServer::NatsRpcServer(const Server& server, const NatsConfig& config, const char* loggerName)
     : _log(utils::CloneLoggerOrCreate(loggerName, kLogTag))
     , _server(server)
     , _opts(nullptr)

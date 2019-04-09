@@ -26,8 +26,7 @@ public:
 
         _server = Server(Server::Kind::Backend, "my-server-id", "connector");
 
-        EXPECT_CALL(*_mockRpcSv, Start(_))
-            .WillOnce(SaveArg<0>(&_handlerFunc));
+        EXPECT_CALL(*_mockRpcSv, Start(_)).WillOnce(SaveArg<0>(&_handlerFunc));
 
         pitaya::Cluster::Instance().Initialize(_server,
                                                std::shared_ptr<ServiceDiscovery>(_mockSd),
@@ -174,11 +173,10 @@ ACTION_P(SendEmptyRpc, handlerFunc)
 TEST_F(ClusterTest, ThreadsWaitingForRpcsReceiveFinishedNotification)
 {
     using namespace std::chrono;
-    
+
     EXPECT_NE(_handlerFunc, nullptr);
-    EXPECT_CALL(*_mockRpcSv, Shutdown())
-        .WillOnce(SendEmptyRpc(_handlerFunc));
-    
+    EXPECT_CALL(*_mockRpcSv, Shutdown()).WillOnce(SendEmptyRpc(_handlerFunc));
+
     // Define 10 threads waiting for RPCs
     std::vector<std::thread> rpcListeners(10);
 

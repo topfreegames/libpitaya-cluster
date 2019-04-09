@@ -76,7 +76,7 @@ TEST_F(GrpcServerTest, ServerCanBeCreatedAndDestroyed)
             rpc->Finish(protos::Response());
         }
     });
-    
+
     server->Shutdown();
     server.reset();
 }
@@ -88,8 +88,8 @@ TEST_F(GrpcServerTest, ThrowsIfAddressIsInvalid)
 
     EXPECT_THROW(CreateServer([](const protos::Request& req, pitaya::Rpc* rpc) {
                      if (rpc) {
-                        (void)req;
-                        rpc->Finish(protos::Response());
+                         (void)req;
+                         rpc->Finish(protos::Response());
                      }
                  }),
                  pitaya::PitayaException);
@@ -116,7 +116,7 @@ TEST_F(GrpcServerTest, CallHandleDoesSupportRpcSys)
     ASSERT_FALSE(res.has_error());
     ASSERT_TRUE(called);
     EXPECT_EQ(res.data(), "");
-    
+
     server->Shutdown();
 }
 
@@ -149,7 +149,7 @@ TEST_F(GrpcServerTest, CallHandleSupportsRpcUser)
     ASSERT_FALSE(res.has_error());
     ASSERT_TRUE(called);
     EXPECT_EQ(res.data(), "SERVER DATA");
-    
+
     server->Shutdown();
 }
 

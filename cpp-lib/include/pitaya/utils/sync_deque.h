@@ -27,7 +27,7 @@ public:
     }
 
     bool Empty() const { return _deque.empty(); }
-    
+
     size_t Size() const { return _deque.size(); }
 
 private:
