@@ -20,6 +20,7 @@ dist
 .idea
 .projectile
 .dir-locals.el
+CHANGELOG.html
 
 NugetOutput/lib
 NugetOutput/*.nupkg
