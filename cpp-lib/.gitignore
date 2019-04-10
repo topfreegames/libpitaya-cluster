@@ -3,3 +3,4 @@ build
 cmake-build-*
 .idea
 .ccls-cache
+temp-build

@@ -2,6 +2,7 @@
 
 #include "pitaya/constants.h"
 #include "pitaya/etcd_binding_storage.h"
+#include "pitaya/etcd_client_v3.h"
 #include "pitaya/etcdv3_service_discovery.h"
 #include "pitaya/grpc/rpc_client.h"
 #include "pitaya/grpc/rpc_server.h"

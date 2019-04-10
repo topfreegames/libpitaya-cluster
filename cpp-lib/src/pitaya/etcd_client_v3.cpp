@@ -1,4 +1,4 @@
-#include "pitaya/etcd_client.h"
+#include "pitaya/etcd_client_v3.h"
 
 #include "pitaya.h"
 
@@ -140,4 +140,4 @@ EtcdClientV3::OnWatch(etcd::Response res)
     _onWatch(watchRes);
 }
 
-} // namespace pitaya
+}

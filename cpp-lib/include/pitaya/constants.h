@@ -1,8 +1,6 @@
 #ifndef PITAYA_CONSTANTS_H
 #define PITAYA_CONSTANTS_H
 
-#include <string>
-
 namespace pitaya {
 namespace constants {
 

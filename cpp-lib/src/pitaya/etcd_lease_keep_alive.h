@@ -1,6 +1,7 @@
 #ifndef PITAYA_ETCD_LEASE_KEEP_ALIVE_H
 #define PITAYA_ETCD_LEASE_KEEP_ALIVE_H
 
+#include "pitaya/etcd_client.h"
 #include "spdlog/spdlog.h"
 
 #include <etcd/Client.hpp>
@@ -10,12 +11,6 @@
 #include <string>
 
 namespace pitaya {
-
-enum class EtcdLeaseKeepAliveStatus
-{
-    Ok,
-    Fail,
-};
 
 class EtcdLeaseKeepAlive
 {
