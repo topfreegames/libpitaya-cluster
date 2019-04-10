@@ -69,8 +69,6 @@ add_library(pitaya_cluster ${LIB_TYPE}
     include/pitaya/rpc_client.h
     include/pitaya/rpc_server.h
     include/pitaya/nats/config.h
-    include/pitaya/nats/rpc_client.h
-    include/pitaya/nats/rpc_server.h
     include/pitaya/grpc/rpc_client.h
     include/pitaya/grpc/rpc_server.h
     include/pitaya/grpc/config.h
@@ -92,7 +90,9 @@ add_library(pitaya_cluster ${LIB_TYPE}
     src/pitaya/etcdv3_service_discovery/worker.h
     src/pitaya/etcd_binding_storage.h
     src/pitaya/etcd_binding_storage.cpp
+    src/pitaya/nats/rpc_server.h
     src/pitaya/nats/rpc_server.cpp
+    src/pitaya/nats/rpc_client.h
     src/pitaya/nats/rpc_client.cpp
     src/pitaya/grpc/rpc_client.cpp
     src/pitaya/grpc/rpc_server.cpp
