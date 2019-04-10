@@ -36,3 +36,9 @@ start-deps:
 
 stop-deps:
 	@docker-compose down
+
+build-go-server:
+	@cd ./go-server && dep ensure
+
+run-go-server:
+	@go run ./go-server/main.go

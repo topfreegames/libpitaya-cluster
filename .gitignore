@@ -21,6 +21,7 @@ dist
 .projectile
 .dir-locals.el
 CHANGELOG.html
+README.html
 
 NugetOutput/lib
 NugetOutput/*.nupkg
