@@ -2,7 +2,7 @@
 #define PITAYA_GRPC_RPC_SERVER_H
 
 #include "pitaya.h"
-#include "pitaya/grpc/config.h"
+#include "pitaya/grpc_config.h"
 #include "pitaya/protos/pitaya.grpc.pb.h"
 #include "pitaya/protos/request.pb.h"
 #include "pitaya/protos/response.pb.h"

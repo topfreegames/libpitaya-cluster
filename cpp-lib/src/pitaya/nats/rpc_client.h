@@ -2,7 +2,7 @@
 #define PITAYA_NATS_RPC_CLIENT_H
 
 #include "pitaya.h"
-#include "pitaya/nats/config.h"
+#include "pitaya/nats_config.h"
 #include "pitaya/nats_client.h"
 #include "pitaya/protos/request.pb.h"
 #include "pitaya/protos/response.pb.h"

@@ -3,8 +3,8 @@
 
 #include "pitaya.h"
 #include "pitaya/etcd_config.h"
-#include "pitaya/grpc/config.h"
-#include "pitaya/nats/config.h"
+#include "pitaya/grpc_config.h"
+#include "pitaya/nats_config.h"
 #include "pitaya/protos/request.pb.h"
 #include "pitaya/protos/response.pb.h"
 #include "pitaya/rpc_client.h"

@@ -2,7 +2,7 @@
 #define PITAYA_NATS_CLIENT_H
 
 #include "pitaya.h"
-#include "pitaya/nats/config.h"
+#include "pitaya/nats_config.h"
 
 #include <chrono>
 #include <memory>

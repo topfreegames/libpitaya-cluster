@@ -2,7 +2,7 @@
 #define PITAYA_GRPC_RPC_CLIENT_H
 
 #include "pitaya/binding_storage.h"
-#include "pitaya/grpc/config.h"
+#include "pitaya/grpc_config.h"
 #include "pitaya/protos/pitaya.grpc.pb.h"
 #include "pitaya/rpc_client.h"
 #include "pitaya/service_discovery.h"

@@ -68,8 +68,8 @@ add_library(pitaya_cluster ${LIB_TYPE}
 
     include/pitaya/rpc_client.h
     include/pitaya/rpc_server.h
-    include/pitaya/nats/config.h
-    include/pitaya/grpc/config.h
+    include/pitaya/nats_config.h
+    include/pitaya/grpc_config.h
 
     include/pitaya/utils.h
     include/pitaya/utils/semaphore.h
