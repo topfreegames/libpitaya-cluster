@@ -19,7 +19,6 @@
 #include <thread>
 
 using namespace pitaya;
-using namespace pitaya::nats;
 using pitaya::service_discovery::ServiceDiscovery;
 
 int x;

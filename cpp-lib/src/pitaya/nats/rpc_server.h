@@ -12,7 +12,6 @@
 #include <string>
 
 namespace pitaya {
-namespace nats {
 
 class NatsRpcServer : public RpcServer
 {
@@ -49,7 +48,6 @@ private:
     static std::atomic_int _cnt;
 };
 
-} // namespace nats
 } // namespace pitaya
 
 #endif // PITAYA_NATS_RPC_SERVER_H

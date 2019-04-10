@@ -85,7 +85,7 @@ Cluster::InitializeWithNats(NatsConfig natsConfig,
                    std::unique_ptr<EtcdClient>(new EtcdClientV3(
                        sdConfig.endpoints, sdConfig.etcdPrefix, sdConfig.logHeartbeat, loggerName)),
                    loggerName)),
-               std::unique_ptr<RpcServer>(new nats::NatsRpcServer(server, natsConfig, loggerName)),
+               std::unique_ptr<RpcServer>(new NatsRpcServer(server, natsConfig, loggerName)),
                std::unique_ptr<RpcClient>(new NatsRpcClient(natsConfig, loggerName)));
 }
 

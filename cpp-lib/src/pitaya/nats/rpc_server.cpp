@@ -18,7 +18,6 @@ using namespace pitaya;
 static constexpr const char* kLogTag = "nats_rpc_server";
 
 namespace pitaya {
-namespace nats {
 
 std::atomic_int NatsRpcServer::_cnt;
 
@@ -185,5 +184,4 @@ NatsRpcServer::ClosedCb(natsConnection* nc, void* closure)
     // TODO: exit server here, but need to do this gracefully
 }
 
-} // namespace nats
 } // namespace pitaya
