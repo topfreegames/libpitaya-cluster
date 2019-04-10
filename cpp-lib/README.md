@@ -34,4 +34,4 @@ In order to run the tests you have to generate a build with support for them (se
 
 ## Limitations
 - Currently there is no support for Windows. However building the library on Windows should not be too difficult. We will gladly accept PR's for this.
-- The RPC server does not implement a convenient handlers for C++ like it does for C#. What it means is that the main way of handling RPC's is by manually fetching RPCs with `Cluster::Instance().WaitForRpc`, and by finishing them with `pitaya::Rpc::Finish`. If you want multiple threads handling multiple RPCs this has to be done manually for now. We plan on adding better support for this in order to make building C++ servers easier.
+- The RPC server does not implement a convenient way of implementing handlers for C++ like it does for C#. What it means is that the main way of handling RPC's is by manually fetching RPCs with `Cluster::Instance().WaitForRpc`, and by finishing them with `pitaya::Rpc::Finish`. If you want multiple threads handling multiple RPCs this has to be done manually for now. We plan on adding better support for this in order to make building C++ servers easier.
