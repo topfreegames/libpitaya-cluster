@@ -10,23 +10,27 @@ namespace NPitaya.Utils {
 
     public static class Utils {
 
-        public static string DefaultRemoteNameFunc(string methodName){
+        public static string DefaultRemoteNameFunc(string methodName)
+        {
             var name = methodName;
             if (name != string.Empty && char.IsUpper(name[0]))
             {
                 name = char.ToLower(name[0]) + name.Substring(1);
             }
             return name;
-        } 
-    
-        public static IEnumerable<Type> GetTypesWithAttribute(Assembly assembly, Type attribute) {
-            foreach(Type type in assembly.GetTypes()) {
-                if (type.GetCustomAttributes(attribute, true).Length > 0) {
+        }
+
+        public static IEnumerable<Type> GetTypesWithAttribute(Assembly assembly, Type attribute)
+        {
+            foreach (Type type in assembly.GetTypes())
+            {
+                if (type.GetCustomAttributes(attribute, true).Length > 0)
+                {
                     yield return type;
                 }
             }
         }
-    
+
         internal static Protos.Response GetErrorResponse(string code, string msg)
         {
             var response = new Protos.Response {Error = new Protos.Error {Code = code, Msg = msg}};
@@ -39,7 +43,7 @@ namespace NPitaya.Utils {
             Marshal.Copy(data, 0, ptr, data.Length);
             return ptr;
         }
-    
+
         internal static T GetProtoMessageFromMemoryBuffer<T>(MemoryBuffer rpcRes)
         {
             byte[] resData = rpcRes.GetData();

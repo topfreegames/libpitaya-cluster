@@ -6,6 +6,6 @@ namespace NPitaya.Models
     public interface IBaseRemote
     {
         string GetName();
-        Dictionary<string, RemoteMethod> getRemotesMap();
+        Dictionary<string, RemoteMethod> GetRemotesMap();
     }
 }

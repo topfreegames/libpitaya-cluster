@@ -12,7 +12,7 @@ namespace NPitaya.Models
             return GetType().Name;
         }
 
-        public Dictionary<string, RemoteMethod> getRemotesMap()
+        public Dictionary<string, RemoteMethod> GetRemotesMap()
         {
             Dictionary<string, RemoteMethod> dict = new Dictionary<string, RemoteMethod>();
             MethodBase[] methods = GetType().GetMethods(BindingFlags.Instance |

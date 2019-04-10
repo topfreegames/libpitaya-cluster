@@ -11,7 +11,7 @@ namespace NPitaya.Models
             return GetType().Name;
         }
 
-        public Dictionary<string, RemoteMethod> getRemotesMap()
+        public Dictionary<string, RemoteMethod> GetRemotesMap()
         {
             Dictionary<string, RemoteMethod> dict = new Dictionary<string, RemoteMethod>();
             MethodBase[] methods = this.GetType().GetMethods(BindingFlags.Instance | BindingFlags.Public);
@@ -36,11 +36,10 @@ namespace NPitaya.Models
                             }
                         }
 
-                        if (parameters.Length == 1)
-                            if (typeof(PitayaSession) == parameters[0].ParameterType)
-                            {
-                                dict[m.Name] = new RemoteMethod(this, m, returnType, null);
-                            }
+                        if (parameters.Length == 1 && typeof(PitayaSession) == parameters[0].ParameterType)
+                        {
+                            dict[m.Name] = new RemoteMethod(this, m, returnType, null);
+                        }
                     }
                 }
             }

@@ -107,7 +107,7 @@ namespace NPitaya
 
         public static void RegisterRemote(BaseRemote remote, string name, RemoteNameFunc remoteNameFunc) // TODO remote function name func
         {
-            Dictionary<string, RemoteMethod> m = remote.getRemotesMap();
+            Dictionary<string, RemoteMethod> m = remote.GetRemotesMap();
             foreach (KeyValuePair<string, RemoteMethod> kvp in m)
             {
                 var rn = remoteNameFunc(kvp.Key);
@@ -135,7 +135,7 @@ namespace NPitaya
 
         public static void RegisterHandler(BaseHandler handler, string name, RemoteNameFunc remoteNameFunc)
         {
-            Dictionary<string, RemoteMethod> m = handler.getRemotesMap();
+            Dictionary<string, RemoteMethod> m = handler.GetRemotesMap();
             foreach (KeyValuePair<string, RemoteMethod> kvp in m)
             {
                 var rn = remoteNameFunc(kvp.Key);
