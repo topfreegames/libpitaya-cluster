@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.7)
 
-project(PitayaCluster)
+project(PitayaCpp)
 
 # Prefer static libraries over dynamic ones.
 if(UNIX AND NOT APPLE)
@@ -55,7 +55,7 @@ endif()
 file(GLOB protobuf_files
     "include/pitaya/protos/*")
 
-add_library(pitaya_cluster ${LIB_TYPE}
+add_library(pitaya_cpp ${LIB_TYPE}
     include/pitaya.h
     include/pitaya/constants.h
     include/pitaya/cluster.h
@@ -112,21 +112,21 @@ add_library(pitaya_cluster ${LIB_TYPE}
     deps/protobuf-c/protobuf-c/protobuf-c.h
     ${protobuf_files})
 
-add_library(pitaya::pitaya_cluster ALIAS pitaya_cluster)
+add_library(TFG::pitaya_cpp ALIAS pitaya_cpp)
 
 if(BUILD_MACOSX_BUNDLE)
     message(STATUS "Setting properties for MacOSX bundle")
-    set_target_properties(pitaya_cluster
+    set_target_properties(pitaya_cpp
       PROPERTIES
         SUFFIX ".bundle")
 endif()
 
-set_target_properties(pitaya_cluster
+set_target_properties(pitaya_cpp
   PROPERTIES
     CXX_STANDARD 11
     POSITION_INDEPENDENT_CODE ON)
 
-target_include_directories(pitaya_cluster
+target_include_directories(pitaya_cpp
   PUBLIC
     $<BUILD_INTERFACE:
       ${CMAKE_SOURCE_DIR}/include
@@ -135,7 +135,7 @@ target_include_directories(pitaya_cluster
   PRIVATE
     src)
 
-target_link_libraries(pitaya_cluster
+target_link_libraries(pitaya_cpp
   PUBLIC
     nats_static
     etcd-cpp-api
@@ -150,7 +150,7 @@ if(BUILD_TESTING AND NOT BUILD_MACOSX_BUNDLE)
     # ===============================
     add_executable(main src/pitaya_cluster.cpp)
 
-    target_link_libraries(main PRIVATE pitaya_cluster)
+    target_link_libraries(main PRIVATE pitaya_cpp)
 
     set_target_properties(main PROPERTIES CXX_STANDARD 11)
 
@@ -160,7 +160,7 @@ if(BUILD_TESTING AND NOT BUILD_MACOSX_BUNDLE)
     find_package(gtest REQUIRED)
     find_package(Boost REQUIRED COMPONENTS system thread)
 
-    add_executable(pitaya_cluster_tests
+    add_executable(pitaya_cpp_tests
         test/test_common.h
         test/mock_service_discovery.h
         test/mock_rpc_client.h
@@ -180,21 +180,21 @@ if(BUILD_TESTING AND NOT BUILD_MACOSX_BUNDLE)
 
     message(WARNING "Adding profiling data into the library and the tests executable, do not ship this library to production (compile with -DBUILD_TESTING=OFF)")
 
-    target_compile_options(pitaya_cluster
+    target_compile_options(pitaya_cpp
       PRIVATE -fprofile-instr-generate -fcoverage-mapping -O0)
 
-    target_link_libraries(pitaya_cluster
+    target_link_libraries(pitaya_cpp
       PRIVATE -fprofile-instr-generate -fcoverage-mapping)
 
-    target_include_directories(pitaya_cluster_tests PUBLIC src)
+    target_include_directories(pitaya_cpp_tests PUBLIC src)
 
-    set_target_properties(pitaya_cluster_tests PROPERTIES
+    set_target_properties(pitaya_cpp_tests PROPERTIES
         CXX_STANDARD 14
         OUTPUT_NAME tests)
 
-    target_link_libraries(pitaya_cluster_tests
+    target_link_libraries(pitaya_cpp_tests
       PRIVATE
-        pitaya_cluster
+        pitaya_cpp
         Boost::boost
         Boost::system
         Boost::thread
@@ -202,3 +202,19 @@ if(BUILD_TESTING AND NOT BUILD_MACOSX_BUNDLE)
 
     add_test(tests tests)
 endif()
+
+#------------------------------------------------------
+# Installation configuration for pitaya cpp
+#------------------------------------------------------
+install(
+  TARGETS pitaya_cpp
+  # EXPORT ${PROJECT_NAME}Targets
+  INCLUDES DESTINATION "include"
+  LIBRARY DESTINATION "lib/${PROJECT_NAME}"
+  ARCHIVE DESTINATION "lib/${PROJECT_NAME}"
+  RUNTIME DESTINATION "bin")
+
+install(
+  DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/include/"
+  DESTINATION "include")
+
