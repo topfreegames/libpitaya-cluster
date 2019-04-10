@@ -69,8 +69,6 @@ add_library(pitaya_cluster ${LIB_TYPE}
     include/pitaya/rpc_client.h
     include/pitaya/rpc_server.h
     include/pitaya/nats/config.h
-    include/pitaya/grpc/rpc_client.h
-    include/pitaya/grpc/rpc_server.h
     include/pitaya/grpc/config.h
 
     include/pitaya/utils.h
@@ -94,7 +92,9 @@ add_library(pitaya_cluster ${LIB_TYPE}
     src/pitaya/nats/rpc_server.cpp
     src/pitaya/nats/rpc_client.h
     src/pitaya/nats/rpc_client.cpp
+    src/pitaya/grpc/rpc_client.h
     src/pitaya/grpc/rpc_client.cpp
+    src/pitaya/grpc/rpc_server.h
     src/pitaya/grpc/rpc_server.cpp
     src/pitaya/utils/string_utils.cpp
     src/pitaya/cluster.cpp
