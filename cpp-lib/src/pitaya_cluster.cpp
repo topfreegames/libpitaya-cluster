@@ -1,7 +1,6 @@
 #include "pitaya.h"
 #include "pitaya/c_wrapper.h"
 #include "pitaya/cluster.h"
-#include "pitaya/etcdv3_service_discovery.h"
 #include "pitaya/etcd_config.h"
 #include "pitaya/grpc/rpc_client.h"
 #include "pitaya/grpc/rpc_server.h"
@@ -21,7 +20,6 @@
 
 using namespace pitaya;
 using namespace pitaya::nats;
-using pitaya::etcdv3_service_discovery::Etcdv3ServiceDiscovery;
 using pitaya::service_discovery::ServiceDiscovery;
 
 int x;
@@ -96,7 +94,7 @@ main()
 
     pitaya::Server server(Server::Kind::Frontend, "someid", "sometype");
 
-    etcdv3_service_discovery::Config sdConfig;
+    EtcdServiceDiscoveryConfig sdConfig;
     sdConfig.endpoints = "http://127.0.0.1:2379";
     sdConfig.etcdPrefix = "pitaya/";
     sdConfig.logHeartbeat = false;

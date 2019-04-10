@@ -64,7 +64,6 @@ add_library(pitaya_cluster ${LIB_TYPE}
 
     include/pitaya/service_discovery.h
     include/pitaya/etcd_config.h
-    include/pitaya/etcd_client.h
     include/pitaya/nats_client.h
 
     include/pitaya/rpc_client.h
@@ -84,6 +83,7 @@ add_library(pitaya_cluster ${LIB_TYPE}
     include/pitaya/utils/sync_vector.h
 
     src/pitaya.cpp
+    src/pitaya/etcd_client.h
     src/pitaya/etcd_client_v3.h
     src/pitaya/etcd_client_v3.cpp
     src/pitaya/etcdv3_service_discovery.h
