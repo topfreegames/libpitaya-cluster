@@ -23,7 +23,7 @@ namespace etcdv3_service_discovery {
 static string ServerAsJson(const Server& server);
 static string GetServerKey(const std::string& serverId, const std::string& serverType);
 
-Worker::Worker(const Config& config,
+Worker::Worker(const EtcdServiceDiscoveryConfig& config,
                pitaya::Server server,
                std::unique_ptr<EtcdClient> etcdClient,
                const char* loggerName) try

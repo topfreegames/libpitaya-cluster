@@ -2,7 +2,7 @@
 #include "pitaya/c_wrapper.h"
 #include "pitaya/cluster.h"
 #include "pitaya/etcdv3_service_discovery.h"
-#include "pitaya/etcdv3_service_discovery/config.h"
+#include "pitaya/etcd_config.h"
 #include "pitaya/grpc/rpc_client.h"
 #include "pitaya/grpc/rpc_server.h"
 #include "pitaya/nats/rpc_client.h"

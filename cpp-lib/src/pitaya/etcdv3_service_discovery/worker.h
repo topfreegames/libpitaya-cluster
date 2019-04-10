@@ -3,7 +3,7 @@
 
 #include "pitaya.h"
 #include "pitaya/etcd_client.h"
-#include "pitaya/etcdv3_service_discovery/config.h"
+#include "pitaya/etcd_config.h"
 #include "pitaya/service_discovery.h"
 #include "pitaya/utils/semaphore.h"
 #include "pitaya/utils/sync_deque.h"
@@ -72,7 +72,7 @@ private:
 class Worker
 {
 public:
-    Worker(const Config& config,
+    Worker(const EtcdServiceDiscoveryConfig& config,
            pitaya::Server server,
            std::unique_ptr<EtcdClient> etcdClient,
            const char* loggerName);
@@ -108,7 +108,7 @@ private:
     void BroadcastServerRemoved(const pitaya::Server& server);
 
 private:
-    Config _config;
+    EtcdServiceDiscoveryConfig _config;
 
     std::promise<void> _initPromise;
     pitaya::Server _server;

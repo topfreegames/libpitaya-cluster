@@ -78,10 +78,10 @@ FreeServer(CServer* sv)
     // free(sv);
 }
 
-pitaya::etcdv3_service_discovery::Config
+pitaya::EtcdServiceDiscoveryConfig
 CSDConfig::ToConfig()
 {
-    pitaya::etcdv3_service_discovery::Config config;
+    pitaya::EtcdServiceDiscoveryConfig config;
     config.endpoints = endpoints ? std::string(endpoints) : "";
     config.etcdPrefix = etcdPrefix ? std::string(etcdPrefix) : "";
     config.heartbeatTTLSec = std::chrono::seconds(heartbeatTTLSec);

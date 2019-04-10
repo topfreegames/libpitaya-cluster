@@ -1,13 +1,12 @@
-#ifndef PITAYA_ETCDV3_SERVICE_DISCOVERY_CONFIG_H
-#define PITAYA_ETCDV3_SERVICE_DISCOVERY_CONFIG_H
+#ifndef PITAYA_ETCD_CONFIG_H
+#define PITAYA_ETCD_CONFIG_H
 
 #include <chrono>
 #include <string>
 
 namespace pitaya {
-namespace etcdv3_service_discovery {
 
-struct Config
+struct EtcdServiceDiscoveryConfig
 {
     std::string endpoints;
     std::string etcdPrefix;
@@ -17,7 +16,7 @@ struct Config
     bool logServerDetails;
     std::chrono::seconds syncServersIntervalSec;
 
-    Config()
+    EtcdServiceDiscoveryConfig()
         : heartbeatTTLSec(std::chrono::seconds(60))
         , logHeartbeat(true)
         , logServerSync(true)
@@ -26,7 +25,13 @@ struct Config
     {}
 };
 
-} // namespace etcdv3_service_discovery
+struct EtcdBindingStorageConfig
+{
+    std::chrono::seconds leaseTtl;
+    std::string endpoint;
+    std::string etcdPrefix;
+};
+
 } // namespace pitaya
 
-#endif // PITAYA_ETCDV3_SERVICE_DISCOVERY_CONFIG_H
+#endif // PITAYA_ETCD_CONFIG_H

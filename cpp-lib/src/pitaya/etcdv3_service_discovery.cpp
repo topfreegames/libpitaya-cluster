@@ -28,7 +28,7 @@ namespace pitaya {
 namespace etcdv3_service_discovery {
 
 // Helper functions
-Etcdv3ServiceDiscovery::Etcdv3ServiceDiscovery(const Config& config,
+Etcdv3ServiceDiscovery::Etcdv3ServiceDiscovery(const EtcdServiceDiscoveryConfig& config,
                                                Server server,
                                                std::unique_ptr<EtcdClient> etcdClient,
                                                const char* loggerName)

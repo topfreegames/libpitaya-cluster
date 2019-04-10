@@ -31,7 +31,7 @@ using service_discovery::ServiceDiscovery;
 
 void
 Cluster::InitializeWithGrpc(GrpcConfig config,
-                            etcdv3_service_discovery::Config sdConfig,
+                            EtcdServiceDiscoveryConfig sdConfig,
                             EtcdBindingStorageConfig bindingStorageConfig,
                             Server server,
                             const char* loggerName)
@@ -74,7 +74,7 @@ Cluster::InitializeWithGrpc(GrpcConfig config,
 
 void
 Cluster::InitializeWithNats(NatsConfig natsConfig,
-                            etcdv3_service_discovery::Config sdConfig,
+                            EtcdServiceDiscoveryConfig sdConfig,
                             Server server,
                             const char* loggerName)
 {

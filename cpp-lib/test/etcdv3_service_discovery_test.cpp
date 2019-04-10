@@ -2,7 +2,7 @@
 
 #include "pitaya.h"
 #include "pitaya/etcdv3_service_discovery.h"
-#include "pitaya/etcdv3_service_discovery/config.h"
+#include "pitaya/etcd_config.h"
 
 #include "mock_etcd_client.h"
 #include "mock_service_discovery.h"
@@ -21,7 +21,7 @@ public:
 
         _server = Server(Server::Kind::Backend, "my-server-id", "connector");
 
-        _config = Config();
+        _config = EtcdServiceDiscoveryConfig();
         _config.etcdPrefix = "pitaya/";
         _config.heartbeatTTLSec = std::chrono::seconds(5);
         _config.syncServersIntervalSec = std::chrono::seconds(4);
@@ -37,7 +37,7 @@ protected:
     std::unique_ptr<etcdv3_service_discovery::Etcdv3ServiceDiscovery> _serviceDiscovery;
     Server _server;
     MockEtcdClient* _mockEtcdClient;
-    Config _config;
+    EtcdServiceDiscoveryConfig _config;
 };
 
 static LeaseGrantResponse

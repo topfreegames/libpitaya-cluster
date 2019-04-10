@@ -38,7 +38,7 @@ struct CSDConfig
     int32_t logServerDetails;
     int32_t syncServersIntervalSec;
 
-    pitaya::etcdv3_service_discovery::Config ToConfig();
+    pitaya::EtcdServiceDiscoveryConfig ToConfig();
 };
 
 struct CGrpcConfig

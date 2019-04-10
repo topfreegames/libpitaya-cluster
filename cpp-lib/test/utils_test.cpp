@@ -3,7 +3,7 @@
 #include "pitaya.h"
 #include "pitaya/constants.h"
 #include "pitaya/etcdv3_service_discovery.h"
-#include "pitaya/etcdv3_service_discovery/config.h"
+#include "pitaya/etcd_config.h"
 #include "pitaya/utils.h"
 #include "pitaya/utils/grpc.h"
 

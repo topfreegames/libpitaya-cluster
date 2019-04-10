@@ -1,6 +1,7 @@
 #ifndef PITAYA_ETCD_BINDING_STORAGE_H
 #define PITAYA_ETCD_BINDING_STORAGE_H
 
+#include "pitaya/etcd_config.h"
 #include "pitaya/binding_storage.h"
 #include "pitaya/etcd_client.h"
 
@@ -9,13 +10,6 @@
 #include <chrono>
 
 namespace pitaya {
-
-struct EtcdBindingStorageConfig
-{
-    std::chrono::seconds leaseTtl;
-    std::string endpoint;
-    std::string etcdPrefix;
-};
 
 class EtcdBindingStorage : public BindingStorage
 {

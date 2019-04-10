@@ -2,8 +2,7 @@
 #define PITAYA_CLUSTER_H
 
 #include "pitaya.h"
-#include "pitaya/etcd_binding_storage.h"
-#include "pitaya/etcdv3_service_discovery/config.h"
+#include "pitaya/etcd_config.h"
 #include "pitaya/grpc/config.h"
 #include "pitaya/nats/config.h"
 #include "pitaya/protos/request.pb.h"
@@ -37,12 +36,12 @@ public:
                     const char* loggerName = nullptr);
 
     void InitializeWithNats(NatsConfig natsConfig,
-                            etcdv3_service_discovery::Config sdConfig,
+                            EtcdServiceDiscoveryConfig sdConfig,
                             Server server,
                             const char* loggerName = nullptr);
 
     void InitializeWithGrpc(GrpcConfig config,
-                            etcdv3_service_discovery::Config sdConfig,
+                            EtcdServiceDiscoveryConfig sdConfig,
                             EtcdBindingStorageConfig bindingStorageConfig,
                             Server server,
                             const char* loggerName = nullptr);
