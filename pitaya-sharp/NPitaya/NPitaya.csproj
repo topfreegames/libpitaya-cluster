@@ -1,10 +1,10 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
-    <Import Project="../netfx.props" /> <!-- File necessary to build with net45 -->
+    <Import Project="../netfx.props" />
     <PropertyGroup>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <PackageId>NPitaya</PackageId>
-        <PackageVersion>0.2.0</PackageVersion>
+        <PackageVersion>0.3.0-alpha.1</PackageVersion>
         <Title>NPitaya</Title>
         <Authors>TFG Co</Authors>
         <Description>A full implementation of pitaya backend framework for .NET</Description>
@@ -22,7 +22,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Protobuf Include="../../pitaya-protos/*.proto" OutputDir="./src/gen" CompileOutputs="false" PrivateAssets="All" />
+      <Protobuf CompileOutputs="false" Include="../../pitaya-protos/*.proto" OutputDir="./src/gen" PrivateAssets="All" />
     </ItemGroup>
 
     <ItemGroup>
@@ -36,15 +36,8 @@
         </Content>
     </ItemGroup>
 
-    <Target Name="PreBuild" BeforeTargets="PreBuildEvent">
-        <Exec
-            Condition=" '$(OS)' == 'Unix' "
-            Command="
-              LINK_FILE=$(ProjectDir)$(OutDir)/libpitaya_cluster.dylib
-              if [[ ! -f $LINK_FILE ]]; then
-                  ln -s $(ProjectDir)../../precompiled/libpitaya_cluster.dylib $LINK_FILE
-              fi
-            " />
+    <Target BeforeTargets="PreBuildEvent" Name="PreBuild">
+        <Exec Command="LINK_FILE=$(ProjectDir)$(OutDir)/libpitaya_cluster.dylib; if [[ ! -f $LINK_FILE ]]; then ln -s $(ProjectDir)../../precompiled/libpitaya_cluster.dylib $LINK_FILE; fi " Condition=" '$(OS)' == 'Unix' " />
     </Target>
 
 </Project>
