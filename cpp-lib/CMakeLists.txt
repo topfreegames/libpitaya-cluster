@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.7)
 
-project(PitayaCpp)
+file(STRINGS "version.txt", VERSION)
+project(PitayaCpp VERSION "${VERSION}")
 
 # Prefer static libraries over dynamic ones.
 if(UNIX AND NOT APPLE)

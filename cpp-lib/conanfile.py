@@ -1,9 +1,17 @@
+from os.path import join, dirname
 from conans import ConanFile, CMake
 from conans.errors import ConanInvalidConfiguration
 
+
+def get_version():
+    with open(join(dirname(__file__), 'version.txt'), 'r') as f:
+        content = f.read()
+        return content.strip()
+
+
 class PitayaCpp(ConanFile):
     name = 'pitaya_cpp'
-    version = '0.3.0'
+    version = get_version()
     url = 'https://github.com/topfreegames.com/libpitaya-cluster'
     description = 'C++ library that allows the creation of Pitaya servers.'
     settings = 'os', 'compiler', 'build_type', 'arch'
@@ -22,15 +30,12 @@ class PitayaCpp(ConanFile):
         'gtest/1.8.1@bincrafters/stable'
     )
     generators = 'cmake_paths', 'cmake'
-    exports_sources = (
-        '*',
-        '!_builds',
-        '!boost_install_libc++',
-        '!build',
-        '!compile_commands.json',
-        '!*bad_symlink*',
-        '!test',
-    )
+    exports = 'version.txt'
+
+    def source(self):
+        self.run('git clone --branch {} --recursive https://github.com/topfreegames/libpitaya-cluster'.format(
+            self.version
+        ))
 
     def configure(self):
         if self.settings.os != 'Linux' and self.settings.os != 'Macos':
@@ -46,7 +51,7 @@ class PitayaCpp(ConanFile):
         cmake.definitions['BUILD_SHARED_LIBS'] = 'OFF'
         cmake.definitions['CMAKE_INSTALL_PREFIX'] = 'cmake_install'
         if self.should_configure:
-            cmake.configure()
+            cmake.configure(source_folder='libpitaya-cluster')
         if self.should_build:
             cmake.build()
         if self.should_install:
