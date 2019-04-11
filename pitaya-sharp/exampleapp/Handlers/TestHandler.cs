@@ -19,8 +19,9 @@ namespace exampleapp.Handlers
             };
             return response;
         }
-    
-        public async Task NotifyBind(PitayaSession pitayaSession, RPCMsg msg) {
+
+        public async Task NotifyBind(PitayaSession pitayaSession, RPCMsg msg)
+        {
             var response = new Protos.RPCRes
             {
                 Msg = $"hello from csharp handler!!! :) {Guid.NewGuid().ToString()}",
@@ -69,7 +70,7 @@ namespace exampleapp.Handlers
             public int Code;
         }
 
-        public async Task <TestClass> OnlyValidWithJson(PitayaSession s, TestClass t)
+        public async Task<TestClass> OnlyValidWithJson(PitayaSession s, TestClass t)
         {
             return t;
         }
