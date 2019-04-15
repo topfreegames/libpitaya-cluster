@@ -67,7 +67,7 @@ TEST(Ticker, DoesNotRespectTheIntervalForReallySmallOnes)
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
     ticker.Stop();
 
-    EXPECT_LT(called, 90);
+    EXPECT_LT(called, 95);
 }
 
 TEST(Ticker, CallbackIsNotCalledFromTheMainThread)
