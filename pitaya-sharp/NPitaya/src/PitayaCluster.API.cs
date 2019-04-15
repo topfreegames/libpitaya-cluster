@@ -19,7 +19,7 @@ namespace NPitaya
         private static ISerializer serializer = new ProtobufSerializer();
 
         public delegate string RemoteNameFunc(string methodName);
-        
+
         private delegate void OnSignalFunc();
 
         private static readonly Dictionary<string, RemoteMethod> RemotesDict = new Dictionary<string, RemoteMethod>();
@@ -53,7 +53,7 @@ namespace NPitaya
             {
                 throw new PitayaException("Initialization failed");
             }
-            
+
             ListenToIncomingRPCs();
         }
 
@@ -61,12 +61,18 @@ namespace NPitaya
         {
             for (int i = 0; i < ProcessorsCount; i++)
             {
+                var threadId = i + 1;
                 new Thread(() =>
                 {
-                    Console.WriteLine("consumer thread started");
+                    Logger.Debug($"[Consumer thread {threadId}] Started");
                     for (;;)
                     {
                         var cRpcPtr = tfg_pitc_WaitForRpc();
+                        if (cRpcPtr == IntPtr.Zero)
+                        {
+                            Logger.Debug($"[Consumer thread {threadId}] No more incoming RPCs, exiting");
+                            break;
+                        }
 #pragma warning disable 4014
                         HandleIncomingRpc(cRpcPtr);
 #pragma warning restore 4014
@@ -82,7 +88,7 @@ namespace NPitaya
             IntPtr sdCfgPtr = new StructWrapper(sdCfg);
             IntPtr serverPtr = new StructWrapper(server);
 
-            bool ok = InitializeWithNatsInternal(natsCfgPtr, sdCfgPtr, serverPtr, 
+            bool ok = InitializeWithNatsInternal(natsCfgPtr, sdCfgPtr, serverPtr,
                 logLevel,
                 logFile);
 
