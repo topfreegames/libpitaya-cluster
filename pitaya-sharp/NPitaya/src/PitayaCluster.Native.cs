@@ -5,7 +5,7 @@ namespace NPitaya
 {
     public partial class PitayaCluster
     {
-        private const string LibName = "pitaya_cluster";
+        private const string LibName = "libpitaya_cpp";
 
         [DllImport(LibName, CallingConvention = CallingConvention.Cdecl, EntryPoint = "tfg_pitc_InitializeWithNats")]
         private static extern bool InitializeWithNatsInternal(IntPtr natsCfg, IntPtr sdCfg, IntPtr server, NativeLogLevel logLevel, string logFile);
