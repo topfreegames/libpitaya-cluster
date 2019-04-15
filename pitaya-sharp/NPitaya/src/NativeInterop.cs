@@ -167,14 +167,24 @@ namespace NPitaya
         public string endpoint;
         public Int64 connectionTimeoutMs;
         public int requestTimeoutMs;
+        public int serverShutdownDeadlineMs;
+        public int serverMaxNumberOfRpcs;
         public int maxConnectionRetries;
         public int maxPendingMessages;
 
-        public NatsConfig(string endpoint, int connectionTimeoutMs, int requestTimeoutMs, int maxConnectionRetries, int maxPendingMessages)
+        public NatsConfig(string endpoint,
+                          int connectionTimeoutMs,
+                          int requestTimeoutMs,
+                          int serverShutdownDeadlineMs,
+                          int serverMaxNumberOfRpcs,
+                          int maxConnectionRetries,
+                          int maxPendingMessages)
         {
             this.endpoint = endpoint;
             this.connectionTimeoutMs = connectionTimeoutMs;
             this.requestTimeoutMs = requestTimeoutMs;
+            this.serverShutdownDeadlineMs = serverShutdownDeadlineMs;
+            this.serverMaxNumberOfRpcs = serverMaxNumberOfRpcs;
             this.maxConnectionRetries = maxConnectionRetries;
             this.maxPendingMessages = maxPendingMessages;
         }
