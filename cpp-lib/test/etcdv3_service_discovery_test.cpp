@@ -1,8 +1,8 @@
 #include "test_common.h"
 
 #include "pitaya.h"
-#include "pitaya/etcdv3_service_discovery.h"
 #include "pitaya/etcd_config.h"
+#include "pitaya/etcdv3_service_discovery.h"
 
 #include "mock_etcd_client.h"
 #include "mock_service_discovery.h"

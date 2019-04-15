@@ -14,12 +14,12 @@ public:
                                     const std::vector<uint8_t>& data,
                                     std::chrono::milliseconds timeout));
 
-    MOCK_METHOD2(Subscribe,
-                 pitaya::NatsClient::SubscriptionHandle(
-                     const std::string& topic,
-                     std::function<void(std::shared_ptr<pitaya::NatsMsg>)> onMessage));
+    MOCK_METHOD2(
+        Subscribe,
+        pitaya::NatsStatus(const std::string& topic,
+                           std::function<void(std::shared_ptr<pitaya::NatsMsg>)> onMessage));
 
-    MOCK_METHOD1(Unsubscribe, void(pitaya::NatsClient::SubscriptionHandle handle));
+    MOCK_METHOD0(Unsubscribe, void());
 
     MOCK_METHOD2(Publish, pitaya::NatsStatus(const char* reply, const std::vector<uint8_t>& buf));
 };

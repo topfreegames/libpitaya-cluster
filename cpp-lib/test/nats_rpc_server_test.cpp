@@ -44,7 +44,7 @@ TEST_F(NatsRpcServerTest, CanBeStartedAndStopped)
     auto mockClient = new MockNatsClient();
 
     EXPECT_CALL(*mockClient, Subscribe(_, _))
-        .WillOnce(Return((void*)0xdeadbeef)); // mock of valid pointer
+        .WillOnce(Return(NatsStatus::Ok)); // mock of valid pointer
 
     auto server = CreateServer(mockClient);
     bool called = false;
@@ -61,7 +61,8 @@ TEST_F(NatsRpcServerTest, StartThrowsExceptionIfItFails)
 {
     auto mockClient = new MockNatsClient();
 
-    EXPECT_CALL(*mockClient, Subscribe(_, _)).WillOnce(Return(nullptr)); // mock of valid pointer
+    EXPECT_CALL(*mockClient, Subscribe(_, _))
+        .WillOnce(Return(NatsStatus::SubscriptionErr)); // mock of valid pointer
 
     auto server = CreateServer(mockClient);
     EXPECT_THROW(
@@ -108,11 +109,9 @@ TEST_F(NatsRpcServerTest, CanHandleRpcs)
     EXPECT_CALL(*mockNatsMsg, GetReply()).WillOnce(Return("my.reply.server"));
 
     {
-        void* returnedSubscriptionHandle = (void*)0xdeadbeef;
-
         EXPECT_CALL(*mockClient, Subscribe(_, _))
             .WillOnce(DoAll(ExecuteCallback<1>(std::shared_ptr<NatsMsg>(mockNatsMsg)),
-                            Return(returnedSubscriptionHandle)));
+                            Return(NatsStatus::Ok)));
 
         std::vector<uint8_t> serverResponseBuf(serverResponse.ByteSizeLong());
         serverResponse.SerializeToArray(serverResponseBuf.data(), serverResponseBuf.size());
@@ -171,10 +170,9 @@ TEST_F(NatsRpcServerTest, HasGracefulShutdown)
     EXPECT_CALL(*mockNatsMsg, GetReply()).WillOnce(Return("my.reply.server"));
 
     {
-        void* returnedSubscriptionHandle = (void*)0xdeadbeef;
         EXPECT_CALL(*mockClient, Subscribe(_, _))
             .WillOnce(DoAll(ExecuteCallback<1>(std::shared_ptr<NatsMsg>(mockNatsMsg)),
-                            Return(returnedSubscriptionHandle)));
+                            Return(NatsStatus::Ok)));
 
         std::vector<uint8_t> serverResponseBuf(serverResponse.ByteSizeLong());
         serverResponse.SerializeToArray(serverResponseBuf.data(), serverResponseBuf.size());
