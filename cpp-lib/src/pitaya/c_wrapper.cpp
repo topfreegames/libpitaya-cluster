@@ -265,12 +265,9 @@ extern "C"
     void tfg_pitc_Terminate()
     {
         pitaya::Cluster::Instance().Terminate();
-        gLogger->info("Cluster destroyed");
-        gLogger->flush();
-        //        spdlog::drop_all();
     }
 
-    static bool sendResponseToManaged(MemoryBuffer** outBuf,
+    static bool SendResponseToManaged(MemoryBuffer** outBuf,
                                       const protos::Response& res,
                                       CPitayaError*& retErr)
     {
@@ -380,7 +377,7 @@ extern "C"
             return false;
         }
 
-        return sendResponseToManaged(outBuf, res, retErr);
+        return SendResponseToManaged(outBuf, res, retErr);
     }
 
     void tfg_pitc_FreeMem(void* mem) { free(mem); }

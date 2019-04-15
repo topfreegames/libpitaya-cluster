@@ -3,6 +3,8 @@
 
 #include "pitaya/rpc_server.h"
 
+#include <gmock/gmock.h>
+
 class MockRpcServer : public pitaya::RpcServer
 {
 public:

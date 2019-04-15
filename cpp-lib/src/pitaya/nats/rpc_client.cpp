@@ -22,7 +22,10 @@ static constexpr const char* kLogTag = "nats_rpc_client";
 namespace pitaya {
 
 NatsRpcClient::NatsRpcClient(const NatsConfig& config, const char* loggerName)
-    : NatsRpcClient(config, std::unique_ptr<NatsClient>(new NatsClientImpl(config)), loggerName)
+    : NatsRpcClient(
+          config,
+          std::unique_ptr<NatsClient>(new NatsClientImpl(NatsApiType::Synchronous, config)),
+          loggerName)
 {}
 
 NatsRpcClient::NatsRpcClient(const NatsConfig& config,
