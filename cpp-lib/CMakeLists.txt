@@ -1,7 +1,6 @@
 cmake_minimum_required(VERSION 3.7)
 
-file(STRINGS "version.txt", VERSION)
-project(PitayaCpp VERSION "${VERSION}")
+project(PitayaCpp)
 
 # Prefer static libraries over dynamic ones.
 if(UNIX AND NOT APPLE)
@@ -172,6 +171,7 @@ if(BUILD_TESTING AND NOT BUILD_MACOSX_BUNDLE)
         test/cluster_test.cpp
         test/ticker_test.cpp
         test/nats_rpc_client_test.cpp
+        test/nats_rpc_server_test.cpp
         test/etcdv3_service_discovery_test.cpp
         test/utils_test.cpp
         test/grpc_client_test.cpp
