@@ -51,7 +51,13 @@ TEST_F(CWrapperTest, CanInitializeAndTerminate)
     for (size_t i = 0; i < 20; ++i) {
         bool ok = tfg_pitc_InitializeWithGrpc(
             &grpcConfig, &sdConfig, &server, LogLevel_Critical, nullptr);
+        (void)ok;
 
         tfg_pitc_Terminate();
     }
+}
+
+TEST_F(CWrapperTest, RunningOnlyTerminateShouldDoNothing)
+{
+    tfg_pitc_Terminate();
 }
