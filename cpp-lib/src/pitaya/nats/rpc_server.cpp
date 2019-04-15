@@ -1,6 +1,7 @@
 #include "pitaya/nats/rpc_server.h"
 
 #include "pitaya.h"
+#include "pitaya/constants.h"
 #include "pitaya/protos/request.pb.h"
 #include "pitaya/protos/response.pb.h"
 #include "pitaya/utils.h"
@@ -25,17 +26,21 @@ struct NatsRpcServer::CallData : public pitaya::Rpc
     NatsClient* natsClient;
     std::shared_ptr<NatsMsg> msg;
     utils::SyncVector<CallData*>* inProcessRpcs;
+    std::shared_ptr<spdlog::logger> log;
 
     CallData(NatsClient* natsClient,
              std::shared_ptr<NatsMsg> msg,
-             utils::SyncVector<CallData*>* inProcessRpcs)
+             utils::SyncVector<CallData*>* inProcessRpcs,
+             std::shared_ptr<spdlog::logger> log)
         : natsClient(natsClient)
         , msg(msg)
         , inProcessRpcs(inProcessRpcs)
+        , log(log)
     {
         assert(this->natsClient);
         assert(this->msg);
         assert(this->inProcessRpcs);
+        assert(this->log);
     }
 
     void Finish(protos::Response res) override
@@ -59,16 +64,14 @@ struct NatsRpcServer::CallData : public pitaya::Rpc
 
                 NatsStatus status = natsClient->Publish(msg->GetReply(), std::move(buf));
                 if (status != NatsStatus::Ok) {
-                    // TODO: log here
-                    // _log->error("Failed to publish RPC response");
+                    log->error("Failed to publish RPC response");
                 }
 
                 // the RPC response was published, now remove it from the in process rpcs
                 auto it = std::find(inProcessRpcs->begin(), inProcessRpcs->end(), this);
                 if (it != inProcessRpcs->end()) {
                     inProcessRpcs->Erase(it);
-                    // TODO: log here
-                    // _log->debug("Decreasing number of in process rpcs: {}", _inProcessRpcs.Size());
+                    log->debug("Decreasing number of in process rpcs: {}", inProcessRpcs->Size());
                 }
             }
         }
@@ -94,7 +97,6 @@ NatsRpcServer::NatsRpcServer(const Server& server,
     : _log(utils::CloneLoggerOrCreate(loggerName, kLogTag))
     , _config(config)
     , _natsClient(std::move(natsClient))
-    , _subscriptionHandle(NatsClient::kInvalidSubscriptionHandle)
     , _server(server)
 {}
 
@@ -110,10 +112,10 @@ NatsRpcServer::Start(RpcHandlerFunc handler)
     _handlerFunc = handler;
 
     auto topic = utils::GetTopicForServer(_server.Id(), _server.Type());
-    _subscriptionHandle =
+    NatsStatus status =
         _natsClient->Subscribe(topic, std::bind(&NatsRpcServer::OnNewMessage, this, _1));
 
-    if (_subscriptionHandle == NatsClient::kInvalidSubscriptionHandle) {
+    if (status != NatsStatus::Ok) {
         throw PitayaException(
             fmt::format("Failed to create a new subscription at topic {}", topic));
     }
@@ -126,7 +128,21 @@ void
 NatsRpcServer::Shutdown()
 {
     assert(_handlerFunc);
-    std::this_thread::sleep_for(_config.serverShutdownDeadline);
+
+    // Check if we need to wait for RPCs to finish.
+    bool shouldWait = false;
+    {
+        std::lock_guard<decltype(_inProcessRpcs)> lock(_inProcessRpcs);
+        if (_inProcessRpcs.Size() > 0) {
+            // There are still rpcs being processed, so we signal
+            // the thread to wait until the deadline.
+            shouldWait = true;
+        }
+    }
+
+    if (shouldWait) {
+        std::this_thread::sleep_for(_config.serverShutdownDeadline);
+    }
 
     // Invalidate RPCs that are still being processed
     std::lock_guard<decltype(_inProcessRpcs)> lock(_inProcessRpcs);
@@ -162,15 +178,40 @@ NatsRpcServer::OnNewMessage(std::shared_ptr<NatsMsg> msg)
         return;
     }
 
-    auto callData = new CallData(_natsClient.get(), msg, &_inProcessRpcs);
+    auto callData = new CallData(_natsClient.get(), msg, &_inProcessRpcs, _log);
 
+    // Check wether the rpc should be processed or not.
+    bool shouldProcessRpc;
     {
-        _log->info("Saving new call data to queue: {}", (void*)callData);
         std::lock_guard<decltype(_inProcessRpcs)> lock(_inProcessRpcs);
-        _inProcessRpcs.PushBack(callData);
+        if (_inProcessRpcs.Size() == _config.serverMaxNumberOfRpcs) {
+            _log->debug("Will NOT process rpc");
+            shouldProcessRpc = false;
+        } else {
+            shouldProcessRpc = true;
+            _log->info("Saving new call data to queue: {}", (void*)callData);
+            _inProcessRpcs.PushBack(callData);
+        }
     }
 
-    _handlerFunc(req, callData);
+    if (shouldProcessRpc) {
+        _handlerFunc(req, callData);
+    } else {
+        auto error = new protos::Error();
+        error->set_code(constants::kCodeServiceUnavailable);
+        error->set_msg("The server is already processing the maximum amount of RPC's");
+
+        protos::Response res;
+        res.set_allocated_error(error);
+
+        std::vector<uint8_t> buf(res.ByteSizeLong());
+        res.SerializeToArray(buf.data(), buf.size());
+
+        NatsStatus status = _natsClient->Publish(msg->GetReply(), std::move(buf));
+        if (status != NatsStatus::Ok) {
+            _log->error("Failed to publish RPC response");
+        }
+    }
 }
 
 void

@@ -221,7 +221,8 @@ extern "C"
         auto natsCfg = NatsConfig(nc->addr ? std::string(nc->addr) : "",
                                   milliseconds(nc->requestTimeoutMs),
                                   milliseconds(nc->connectionTimeoutMs),
-                                  milliseconds(nc->serverShutdownDeadline),
+                                  milliseconds(nc->serverShutdownDeadlineMs),
+                                  nc->serverMaxNumberOfRpcs,
                                   nc->maxReconnectionAttempts,
                                   nc->maxPendingMsgs);
         Server server = CServerToServer(sv);
@@ -255,10 +256,7 @@ extern "C"
 
     void tfg_pitc_FreeServer(CServer* cServer) { FreeServer(cServer); }
 
-    void tfg_pitc_Terminate()
-    {
-        pitaya::Cluster::Instance().Terminate();
-    }
+    void tfg_pitc_Terminate() { pitaya::Cluster::Instance().Terminate(); }
 
     static bool SendResponseToManaged(MemoryBuffer** outBuf,
                                       const protos::Response& res,

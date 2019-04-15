@@ -140,4 +140,4 @@ EtcdClientV3::OnWatch(etcd::Response res)
     _onWatch(watchRes);
 }
 
-}
+} // namespace pitaya

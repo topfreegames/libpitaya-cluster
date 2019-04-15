@@ -1,5 +1,7 @@
 #include "pitaya/nats_client.h"
 
+#include "pitaya/utils.h"
+
 namespace pitaya {
 
 //
@@ -34,12 +36,18 @@ NatsMsgImpl::GetReply() const
     return natsMsg_GetReply(_msg);
 }
 
+static constexpr const char* kLogTag = "nats_client";
+
 //
 // NatsClientImpl
 //
-NatsClientImpl::NatsClientImpl(NatsApiType apiType, const NatsConfig& config)
-    : _opts(nullptr)
+NatsClientImpl::NatsClientImpl(NatsApiType apiType,
+                               const NatsConfig& config,
+                               const char* loggerName)
+    : _log(utils::CloneLoggerOrCreate(loggerName, kLogTag))
+    , _opts(nullptr)
     , _conn(nullptr)
+    , _sub(nullptr)
 {
     if (config.natsAddr.empty()) {
         throw PitayaException("NATS address should not be empty");
@@ -74,6 +82,14 @@ NatsClientImpl::NatsClientImpl(NatsApiType apiType, const NatsConfig& config)
 
 NatsClientImpl::~NatsClientImpl()
 {
+    natsStatus status =
+        natsSubscription_WaitForDrainCompletion(_sub, _subscriptionDrainTimeout.count());
+
+    if (status != NATS_OK) {
+        _log->error("Failed to wait for subscription drain");
+    }
+
+    natsSubscription_Destroy(_sub);
     natsConnection_Destroy(_conn);
     natsOptions_Destroy(_opts);
 }
@@ -100,51 +116,30 @@ NatsClientImpl::Request(std::shared_ptr<NatsMsg>* msg,
     }
 }
 
-NatsClient::SubscriptionHandle
-NatsClientImpl::Subscribe(const std::string& topic, std::function<void(std::shared_ptr<NatsMsg>)> onMessage)
+NatsStatus
+NatsClientImpl::Subscribe(const std::string& topic,
+                          std::function<void(std::shared_ptr<NatsMsg>)> onMessage)
 {
-    natsSubscription* sub;
-    natsStatus status = natsConnection_Subscribe(&sub, _conn, topic.c_str(), HandleMsg, this);
+    _onMessage = std::move(onMessage);
+    natsStatus status = natsConnection_Subscribe(&_sub, _conn, topic.c_str(), HandleMsg, this);
     if (status != NATS_OK) {
-        // TODO: log error here
-        return NatsClient::kInvalidSubscriptionHandle;
+        _log->error("Failed to subscribe");
+        return NatsStatus::SubscriptionErr;
     }
-    
-    SubscriptionHandler handler;
-    handler.natsSubscription = sub;
-    handler.onMessage = std::move(onMessage);
-
-    _subscriptions.push_back(handler);
-    return static_cast<void*>(sub);
+    return NatsStatus::Ok;
 }
 
 void
-NatsClientImpl::Unsubscribe(SubscriptionHandle handle)
+NatsClientImpl::Unsubscribe()
 {
-    if (handle == NatsClient::kInvalidSubscriptionHandle) {
-        throw PitayaException("Cannot unsubscribe invalid handle " +
-                              std::to_string((size_t)handle));
+    if (!_sub) {
+        throw PitayaException("Cannot unsubscribe, since the client is not subscribed yet.");
     }
 
-    auto it = std::find_if(
-        _subscriptions.begin(), _subscriptions.end(), [=](const SubscriptionHandler& handler) {
-            auto subscription = static_cast<natsSubscription*>(handle);
-            return subscription == handler.natsSubscription;
-        });
-
-    if (it == _subscriptions.end()) {
-        // If the handle was not found we throw an exception
-        throw PitayaException("Cannot unsubscribe invalid handle " +
-                              std::to_string((size_t)handle));
-    }
-
-    //
-    // TODO: what to do here exactly?
-    //
-    natsSubscription_Drain(it->natsSubscription);
-    natsSubscription_Unsubscribe(it->natsSubscription);
-    natsSubscription_Destroy(it->natsSubscription);
-    _subscriptions.erase(it);
+    // Remove interest from the subscription. Note that pending message may still
+    // be received by the client.
+    natsSubscription_Drain(_sub);
+    natsSubscription_Unsubscribe(_sub);
 }
 
 NatsStatus
@@ -159,7 +154,7 @@ NatsClientImpl::Publish(const char* reply, const std::vector<uint8_t>& buf)
             return NatsStatus::UnknownErr;
         }
     }
-    
+
     return NatsStatus::Ok;
 }
 
@@ -167,21 +162,8 @@ void
 NatsClientImpl::HandleMsg(natsConnection* nc, natsSubscription* sub, natsMsg* msg, void* user)
 {
     auto natsClient = static_cast<NatsClientImpl*>(user);
-
-    // Find the handler
-    auto it = std::find_if(natsClient->_subscriptions.begin(),
-                           natsClient->_subscriptions.end(),
-                           [sub](const SubscriptionHandler& handler) {
-                               return handler.natsSubscription == sub;
-                           });
-    
-
-    if (it == natsClient->_subscriptions.end()) {
-        // TODO: log error here
-        return;
-    }
-
-    it->onMessage(std::shared_ptr<NatsMsg>(new NatsMsgImpl(msg)));
+    assert(natsClient->_onMessage);
+    natsClient->_onMessage(std::shared_ptr<NatsMsg>(new NatsMsgImpl(msg)));
 }
 
 void
@@ -197,7 +179,7 @@ NatsClientImpl::ReconnectedCb(natsConnection* nc, void* user)
 {
     auto instance = reinterpret_cast<NatsClientImpl*>(user);
     // TODO: implement logic here
-    // instance->_log->error("nats reconnected!");
+    instance->_log->error("nats reconnected!");
 }
 
 void
@@ -205,7 +187,7 @@ NatsClientImpl::ClosedCb(natsConnection* nc, void* user)
 {
     auto instance = reinterpret_cast<NatsClientImpl*>(user);
     // TODO: implement logic here
-    // instance->_log->error("failed all nats reconnection attempts!");
+    instance->_log->error("failed all nats reconnection attempts!");
     // TODO: exit server here, but need to do this gracefully
 }
 
@@ -217,9 +199,9 @@ NatsClientImpl::ErrHandler(natsConnection* nc,
 {
     auto instance = reinterpret_cast<NatsClientImpl*>(user);
     if (err == NATS_SLOW_CONSUMER) {
-        std::cerr << "nats runtime error: slow consumer\n";
+        instance->_log->error("nats runtime error: slow consumer");
     } else {
-        std::cerr << "nats runtime error: " << err;
+        instance->_log->error("nats runtime error: {}", err);
     }
 }
 

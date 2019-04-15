@@ -4,6 +4,8 @@
 #include "pitaya.h"
 #include "pitaya/nats_config.h"
 
+#include "spdlog/logger.h"
+
 #include <chrono>
 #include <memory>
 #include <nats/nats.h>
@@ -40,6 +42,7 @@ enum class NatsStatus
     Ok = 0,
     Timeout,
     UnknownErr,
+    SubscriptionErr,
 };
 
 enum class NatsApiType
@@ -51,9 +54,6 @@ enum class NatsApiType
 class NatsClient
 {
 public:
-    using SubscriptionHandle = void*;
-    static constexpr SubscriptionHandle kInvalidSubscriptionHandle = nullptr;
-
     virtual ~NatsClient() = default;
 
     virtual NatsStatus Request(std::shared_ptr<NatsMsg>* natsMsg,
@@ -61,11 +61,10 @@ public:
                                const std::vector<uint8_t>& data,
                                std::chrono::milliseconds timeout) = 0;
 
-    virtual SubscriptionHandle Subscribe(
-        const std::string& topic,
-        std::function<void(std::shared_ptr<NatsMsg>)> onMessage) = 0;
+    virtual NatsStatus Subscribe(const std::string& topic,
+                                 std::function<void(std::shared_ptr<NatsMsg>)> onMessage) = 0;
 
-    virtual void Unsubscribe(SubscriptionHandle handle) = 0;
+    virtual void Unsubscribe() = 0;
 
     virtual NatsStatus Publish(const char* reply, const std::vector<uint8_t>& buf) = 0;
 };
@@ -73,7 +72,7 @@ public:
 class NatsClientImpl : public NatsClient
 {
 public:
-    NatsClientImpl(NatsApiType apiType, const NatsConfig& opts);
+    NatsClientImpl(NatsApiType apiType, const NatsConfig& opts, const char* loggerName = nullptr);
     ~NatsClientImpl();
 
     NatsStatus Request(std::shared_ptr<NatsMsg>* natsMsg,
@@ -81,10 +80,10 @@ public:
                        const std::vector<uint8_t>& data,
                        std::chrono::milliseconds timeout) override;
 
-    SubscriptionHandle Subscribe(const std::string& topic,
-                                 std::function<void(std::shared_ptr<NatsMsg>)> onMessage) override;
+    NatsStatus Subscribe(const std::string& topic,
+                         std::function<void(std::shared_ptr<NatsMsg>)> onMessage) override;
 
-    void Unsubscribe(SubscriptionHandle handle) override;
+    void Unsubscribe() override;
 
     NatsStatus Publish(const char* reply, const std::vector<uint8_t>& buf) override;
 
@@ -105,9 +104,13 @@ private:
         std::function<void(std::shared_ptr<NatsMsg>)> onMessage;
     };
 
+private:
+    std::shared_ptr<spdlog::logger> _log;
+    std::chrono::milliseconds _subscriptionDrainTimeout;
     natsOptions* _opts;
     natsConnection* _conn;
-    std::vector<SubscriptionHandler> _subscriptions;
+    natsSubscription* _sub;
+    std::function<void(std::shared_ptr<NatsMsg>)> _onMessage;
 };
 
 } // namespace pitaya
