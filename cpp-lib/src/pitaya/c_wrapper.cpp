@@ -122,16 +122,6 @@ OnSignal(int signum)
     }
 }
 
-void
-print_data(void* dt, int sz)
-{
-    int j;
-    printf("data on c: ");
-    for (j = 0; j < sz; ++j)
-        printf("%02x ", ((uint8_t*)dt)[j]);
-    printf("\n");
-}
-
 static std::shared_ptr<spdlog::logger>
 CreateLogger(const char* logFile)
 {
@@ -222,13 +212,16 @@ extern "C"
                                      LogLevel logLevel,
                                      const char* logFile)
     {
+        using std::chrono::milliseconds;
+
         if (!spdlog::get("c_wrapper")) {
             gLogger = CreateLogger(logFile);
         }
         SetLogLevel(logLevel);
         auto natsCfg = NatsConfig(nc->addr ? std::string(nc->addr) : "",
-                                  std::chrono::milliseconds(nc->requestTimeoutMs),
-                                  std::chrono::milliseconds(nc->connectionTimeoutMs),
+                                  milliseconds(nc->requestTimeoutMs),
+                                  milliseconds(nc->connectionTimeoutMs),
+                                  milliseconds(nc->serverShutdownDeadline),
                                   nc->maxReconnectionAttempts,
                                   nc->maxPendingMsgs);
         Server server = CServerToServer(sv);

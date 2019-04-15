@@ -39,6 +39,7 @@ private:
 
 private:
     std::shared_ptr<spdlog::logger> _log;
+    NatsConfig _config;
     std::unique_ptr<NatsClient> _natsClient;
     NatsClient::SubscriptionHandle _subscriptionHandle;
     RpcHandlerFunc _handlerFunc;

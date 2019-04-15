@@ -92,6 +92,7 @@ NatsRpcServer::NatsRpcServer(const Server& server,
                              std::unique_ptr<NatsClient> natsClient,
                              const char* loggerName)
     : _log(utils::CloneLoggerOrCreate(loggerName, kLogTag))
+    , _config(config)
     , _natsClient(std::move(natsClient))
     , _subscriptionHandle(NatsClient::kInvalidSubscriptionHandle)
     , _server(server)
@@ -125,7 +126,7 @@ void
 NatsRpcServer::Shutdown()
 {
     assert(_handlerFunc);
-    std::this_thread::sleep_for(std::chrono::seconds(1));
+    std::this_thread::sleep_for(_config.serverShutdownDeadline);
 
     // Invalidate RPCs that are still being processed
     std::lock_guard<decltype(_inProcessRpcs)> lock(_inProcessRpcs);

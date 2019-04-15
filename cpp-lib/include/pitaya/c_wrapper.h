@@ -57,6 +57,7 @@ struct CNATSConfig
     const char* addr;
     int64_t connectionTimeoutMs;
     int32_t requestTimeoutMs;
+    int32_t serverShutdownDeadline;
     int32_t maxReconnectionAttempts;
     int32_t maxPendingMsgs;
 };
