@@ -6,7 +6,7 @@ then
     exit 1
 fi
 
-tests_executable=$(realpath $1)
+tests_executable=$(python3 -c "import os; print(os.path.realpath('$1'))")
 
 shift 1
 
