@@ -1,0 +1,21 @@
+<package>
+  <metadata>
+    <id>NPitaya</id>
+    <version>0.3.0</version>
+    <authors>leonardohahn</authors>
+    <owners>TFG</owners>
+    <projectUrl>https://github.com/topfreegames/libpitaya-cluster</projectUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>C# binding to the pitaya-cpp library</description>
+    <releaseNotes>First release</releaseNotes>
+    <copyright>Copyright TFG co</copyright>
+    <tags>pitaya server grpc nats</tags>
+    <dependencies>
+        <dependency id="Google.Protobuf" version="3.7.1" />
+    </dependencies>
+  </metadata>
+  
+  <files>
+      <file src="Assets/NPitaya/**/*" target="" />
+  </files>
+</package>
