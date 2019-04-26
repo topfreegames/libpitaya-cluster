@@ -1,8 +1,9 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
-using Pitaya;
 using System;
 using AOT;
+using NPitaya;
+using NPitaya.Models;
 
 public class LibPitayaExample : MonoBehaviour {
 
@@ -18,13 +19,11 @@ public class LibPitayaExample : MonoBehaviour {
 		//Debug.Log(msg);
 	}
 
-	private PitayaCluster _cluster;
-
-    void InitButtonClicked()
+    private void Init()
     {
 	    Debug.Log("Init button clicked!");
 
-        Pitaya.Logger.SetLevel(LogLevel.DEBUG);
+        NPitaya.Models.Logger.SetLevel(LogLevel.DEBUG);
         Console.WriteLine("c# prog running");
 
 	    string serverId = Guid.NewGuid().ToString();
@@ -37,6 +36,15 @@ public class LibPitayaExample : MonoBehaviour {
 		    logServerSync: true,
 		    logServerDetails: false,
 		    syncServersIntervalSec: 60);
+
+        var grpcConfig = new GrpcConfig(
+            host: "127.0.0.1",
+            port: 3000,
+            connectionTimeoutSec: 5,
+            serverShutdownDeadlineMs: 3000,
+            serverMaxNumberOfRpcs: 1000
+        );
+
 
 	    var sv = new Server(
 		    serverId,
@@ -53,15 +61,21 @@ public class LibPitayaExample : MonoBehaviour {
 	    try
 	    {
 		    Debug.Log("Initializing PitayaCluster");
-		    PitayaCluster.Initialize(sdConfig, nc, sv);
+		    // PitayaCluster.Initialize(sdConfig, nc, sv);
+		    #if UNITY_EDITOR
+		    PitayaCluster.Initialize(grpcConfig, sdConfig, sv, NativeLogLevel.Debug, "MY_LOG_FILE.txt");
+		    #else
+		    PitayaCluster.Initialize(grpcConfig, sdConfig, sv, NativeLogLevel.Debug);
+            #endif
 	    }
 	    catch (PitayaException e)
 	    {
 		    Debug.LogError($"Failed to create cluster {e.Message}");
 		    Application.Quit();
+		    return;
 	    }
 
-	    Pitaya.Logger.Info("pitaya lib initialized successfully :)");
+	    NPitaya.Models.Logger.Info("pitaya lib initialized successfully :)");
 
 	    var tr = new TestRemote();
 	    PitayaCluster.RegisterRemote(tr);
@@ -72,19 +86,19 @@ public class LibPitayaExample : MonoBehaviour {
 	{
 	    PitayaCluster.AddSignalHandler(() =>
 	    {
-		    {
-			    PitayaCluster.Terminate();
-		    }
+		    Debug.Log("Got signal handler, quitting pitaya cluster");
+            PitayaCluster.Terminate();
 		    Application.Quit();
 	    });
 	}
 
-	void SendRPCButtonClicked()
+	private void SendRpcButtonClicked()
 	{
 		var msg = new Protos.RPCMsg {Msg = inputRPC.text};
 		try
         {
-            var res = PitayaCluster.Rpc<Protos.RPCRes>(Route.FromString("csharp.testremote.remote"), msg);
+            // var res = PitayaCluster.Rpc<Protos.RPCRes>(Route.FromString("csharp.testremote.remote"), msg);
+            var res = PitayaCluster.Rpc<Protos.RPCRes>(Route.FromString("room.room.test"), msg);
             Debug.Log($"received rpc res: {res.Msg}");
         }
 		catch (Exception e)
@@ -94,15 +108,15 @@ public class LibPitayaExample : MonoBehaviour {
     }
 
 	// Use this for initialization
-	void Start ()
+	private void Start ()
 	{
-		_cluster = null;
-
 		Button btnInit = initButton.GetComponent<Button>();
-		btnInit.onClick.AddListener(InitButtonClicked);
+		btnInit.onClick.AddListener(Init);
 
 		Button btnSendRpc = sendRPCButton.GetComponent<Button>();
-		btnSendRpc.onClick.AddListener(SendRPCButtonClicked);
+		btnSendRpc.onClick.AddListener(SendRpcButtonClicked);
+
+		Init();
 	}
 
 	// Update is called once per frame
@@ -112,6 +126,7 @@ public class LibPitayaExample : MonoBehaviour {
 
 	private void OnDestroy()
 	{
+		Debug.Log("Destroying pitaya cluster");
 		PitayaCluster.Terminate();
 	}
 }

@@ -1,6 +1,7 @@
 using System;
 using Google.Protobuf;
-using Pitaya;
+using NPitaya;
+using NPitaya.Models;
 
 class TestRemote : BaseRemote
 {
