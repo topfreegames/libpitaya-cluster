@@ -8,13 +8,13 @@ namespace NPitaya.Serializer
     {
         public byte[] Marshal(object o)
         {
-            return Encoding.UTF8.GetBytes(SimpleJson.SerializeObject(o));
+            return Encoding.UTF8.GetBytes(PitayaSimpleJson.SimpleJson.SerializeObject(o));
         }
 
         public object Unmarshal(byte[] bytes, Type t)
         {
             if (bytes.Length == 0) bytes = Encoding.UTF8.GetBytes("{}");
-            return SimpleJson.DeserializeObject(Encoding.UTF8.GetString(bytes), t);
+            return PitayaSimpleJson.SimpleJson.DeserializeObject(Encoding.UTF8.GetString(bytes), t);
         }
     }
 }
