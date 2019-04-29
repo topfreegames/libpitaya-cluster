@@ -44,6 +44,7 @@ run-go-server:
 	@go run ./go-server/main.go
 
 nuget-pack:
+	@rm -rf NugetOutput
 	@nuget pack unity-example/NPitaya.nuspec -OutputDirectory NugetOutput
 
 nuget-push:
