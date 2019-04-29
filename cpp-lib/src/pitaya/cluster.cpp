@@ -45,12 +45,10 @@ Cluster::InitializeWithGrpc(GrpcConfig config,
     server.WithMetadata(constants::kGrpcHostKey, config.host)
         .WithMetadata(constants::kGrpcPortKey, std::to_string(config.port));
 
-    auto sd = std::shared_ptr<ServiceDiscovery>(new Etcdv3ServiceDiscovery(
-        sdConfig,
-        server,
-        std::unique_ptr<EtcdClient>(new EtcdClientV3(
-            sdConfig.endpoints, sdConfig.etcdPrefix, sdConfig.logHeartbeat, loggerName)),
-        loggerName));
+    // NOTE: we want to start the RPC server before the service discovery. This is necessary,
+    // because as soon as we register the server in the etcd, other servers can start calling it,
+    // therefore maybe calling a server that it is not started yet.
+    auto rpcServer = std::unique_ptr<RpcServer>(new GrpcServer(config, loggerName));
 
     auto bindingStorage = std::unique_ptr<BindingStorage>(new EtcdBindingStorage(
         bindingStorageConfig,
@@ -58,18 +56,23 @@ Cluster::InitializeWithGrpc(GrpcConfig config,
             bindingStorageConfig.endpoint, bindingStorageConfig.etcdPrefix, false, loggerName)),
         loggerName));
 
-    Initialize(server,
-               sd,
-               std::unique_ptr<RpcServer>(new GrpcServer(config, loggerName)),
-               std::unique_ptr<RpcClient>(new GrpcClient(
-                   config,
-                   sd,
-                   std::move(bindingStorage),
-                   [](std::shared_ptr<grpc::ChannelInterface> channel)
-                       -> std::unique_ptr<protos::Pitaya::StubInterface> {
-                       return protos::Pitaya::NewStub(channel);
-                   },
-                   loggerName)));
+    auto serviceDiscovery = std::shared_ptr<ServiceDiscovery>(new Etcdv3ServiceDiscovery(
+        sdConfig,
+        server,
+        std::unique_ptr<EtcdClient>(new EtcdClientV3(
+            sdConfig.endpoints, sdConfig.etcdPrefix, sdConfig.logHeartbeat, loggerName)),
+        loggerName));
+
+    auto rpcClient = std::unique_ptr<RpcClient>(
+        new GrpcClient(config,
+                       serviceDiscovery,
+                       std::move(bindingStorage),
+                       [](std::shared_ptr<grpc::ChannelInterface> channel)
+                           -> std::unique_ptr<protos::Pitaya::StubInterface> {
+                           return protos::Pitaya::NewStub(channel);
+                       }));
+
+    Initialize(server, serviceDiscovery, std::move(rpcServer), std::move(rpcClient), loggerName);
 }
 
 void
@@ -78,15 +81,17 @@ Cluster::InitializeWithNats(NatsConfig natsConfig,
                             Server server,
                             const char* loggerName)
 {
-    Initialize(server,
-               std::shared_ptr<ServiceDiscovery>(new Etcdv3ServiceDiscovery(
-                   std::move(sdConfig),
-                   server,
-                   std::unique_ptr<EtcdClient>(new EtcdClientV3(
-                       sdConfig.endpoints, sdConfig.etcdPrefix, sdConfig.logHeartbeat, loggerName)),
-                   loggerName)),
-               std::unique_ptr<RpcServer>(new NatsRpcServer(server, natsConfig, loggerName)),
-               std::unique_ptr<RpcClient>(new NatsRpcClient(natsConfig, loggerName)));
+    // NOTE: we want to start the RPC server before the service discovery. This is necessary,
+    // because as soon as we register the server in the etcd, other servers can start calling it,
+    // therefore maybe calling a server that it is not started yet.
+    auto rpcServer = std::unique_ptr<RpcServer>(new NatsRpcServer(server, natsConfig, loggerName));
+    auto rpcClient = std::unique_ptr<RpcClient>(new NatsRpcClient(natsConfig, loggerName));
+    auto etcdClient = std::unique_ptr<EtcdClient>(new EtcdClientV3(
+        sdConfig.endpoints, sdConfig.etcdPrefix, sdConfig.logHeartbeat, loggerName));
+    auto serviceDiscovery = std::shared_ptr<ServiceDiscovery>(
+        new Etcdv3ServiceDiscovery(std::move(sdConfig), server, std::move(etcdClient)));
+
+    Initialize(server, std::move(serviceDiscovery), std::move(rpcServer), std::move(rpcClient));
 }
 
 void
