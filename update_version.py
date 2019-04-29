@@ -33,6 +33,16 @@ def update_csharp_version(new_version):
     tree.write(csproj, xml_declaration=False, encoding='utf-8')
 
 
+def update_unity_version(new_version):
+    nuspec = os.path.join("unity-example", "NPitaya.nuspec")
+    tree = ElementTree.parse(nuspec)
+    version_el = tree.getroot().find('metadata').find('version')
+    current_version = version_el.text
+    print("Replacing {} in NPitaya.nuspec for {}".format(current_version, new_version))
+    version_el.text = new_version
+    tree.write(nuspec, xml_declaration=False, encoding='utf-8')
+
+
 def update_cpp_version(new_version):
     version_txt = os.path.join("cpp-lib", "version.txt")
     current_version = open(version_txt, "r").read()
@@ -43,4 +53,5 @@ def update_cpp_version(new_version):
 
 update_cpp_version(new_version)
 update_csharp_version(new_version)
+update_unity_version(new_version)
 
