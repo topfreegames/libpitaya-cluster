@@ -5,7 +5,7 @@ clean-cpp-mac:
 
 # Builds the native libraries and copies them to the
 # precompiled folder.
-build-cpp-mac:
+build-cpp-on-mac:
 	@cd cpp-lib && $(MAKE) build-all-mac
 	@cp cpp-lib/_builds/mac/libpitaya_cluster.dylib precompiled/
 	@cp cpp-lib/_builds/mac-unity/libpitaya_cluster.bundle precompiled/
@@ -42,3 +42,9 @@ build-go-server:
 
 run-go-server:
 	@go run ./go-server/main.go
+
+nuget-pack:
+	@nuget pack unity-example/NPitaya.nuspec -OutputDirectory NugetOutput
+
+nuget-push:
+	@nuget push NugetOutput/*.nupkg $(NUGET_API_KEY) -Source nuget.org

@@ -40,7 +40,7 @@ def update_unity_version(new_version):
     current_version = version_el.text
     print("Replacing {} in NPitaya.nuspec for {}".format(current_version, new_version))
     version_el.text = new_version
-    tree.write(nuspec, xml_declaration=False, encoding='utf-8')
+    tree.write(nuspec, xml_declaration=True, encoding='utf-8')
 
 
 def update_cpp_version(new_version):

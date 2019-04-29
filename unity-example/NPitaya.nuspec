@@ -1,8 +1,9 @@
+<?xml version='1.0' encoding='utf-8'?>
 <package>
   <metadata>
     <id>NPitaya</id>
-    <version>0.3.0</version>
-    <authors>leonardohahn</authors>
+    <version>0.3.0-beta.1</version>
+    <authors>leonardohahn,felipejfc</authors>
     <owners>TFG</owners>
     <projectUrl>https://github.com/topfreegames/libpitaya-cluster</projectUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
@@ -14,8 +15,9 @@
         <dependency id="Google.Protobuf" version="3.7.1" />
     </dependencies>
   </metadata>
-  
+
   <files>
-      <file src="Assets/NPitaya/**/*" target="" />
+      <file src="../pitaya-sharp/NPitaya/src/**/*" target="" />
+      <file src="../precompiled/*" target="Plugins" />
   </files>
 </package>
