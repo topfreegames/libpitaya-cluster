@@ -11,7 +11,6 @@ namespace NPitayaTest.Tests.Integration
             var grpcConfig = new GrpcConfig(
                 host: "127.0.0.1",
                 port: 40405,
-                connectionTimeoutSec: 2,
                 serverShutdownDeadlineMs: 2000,
                 serverMaxNumberOfRpcs: 100
             );
@@ -51,7 +50,6 @@ namespace NPitayaTest.Tests.Integration
             var grpcConfig = new GrpcConfig(
                 host: "127.0.0.1",
                 port: 40405,
-                connectionTimeoutSec: 2,
                 serverShutdownDeadlineMs: 2000,
                 serverMaxNumberOfRpcs: 100
             );

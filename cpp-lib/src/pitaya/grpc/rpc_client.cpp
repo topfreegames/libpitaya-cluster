@@ -224,13 +224,6 @@ GrpcClient::ServerAdded(const pitaya::Server& server)
     }
 
     auto channel = grpc::CreateChannel(address, ::grpc::InsecureChannelCredentials());
-
-    if (channel->WaitForConnected(std::chrono::system_clock::now() + _config.connectionTimeout)) {
-        _log->info("Successfully connected to gPRC server at {}", address);
-    } else {
-        _log->warn("Failed to connect to gRPC server at {}", address);
-    }
-
     auto stub = _createStub(std::move(channel));
 
     std::lock_guard<decltype(_stubsForServers)> lock(_stubsForServers);

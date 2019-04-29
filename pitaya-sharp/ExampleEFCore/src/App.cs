@@ -34,7 +34,6 @@ namespace ExampleORM
             var grpcConfig = new GrpcConfig(
                 host: "127.0.0.1",
                 port: 5444,
-                connectionTimeoutSec: 2,
                 serverShutdownDeadlineMs: 3000,
                 serverMaxNumberOfRpcs: 500
             );
@@ -46,7 +45,7 @@ namespace ExampleORM
                 Logger.Info("Cluster terminated, exiting app");
                 Environment.Exit(1);
             });
-            
+
             PitayaCluster.RegisterHandler(new UserHandler());
             PitayaCluster.SetSerializer(new JSONSerializer()); // Using json serializer for easier interop with pitaya-cli
 
@@ -59,7 +58,7 @@ namespace ExampleORM
                 Logger.Error("Failed to create cluster: {0}", exc.Message);
                 Environment.Exit(1);
             }
-            
+
             while (true)
             {
                 Thread.Sleep(10);

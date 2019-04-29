@@ -28,7 +28,6 @@ protected:
 TEST_F(CWrapperTest, CanInitializeAndTerminate)
 {
     CGrpcConfig grpcConfig = {};
-    grpcConfig.connectionTimeoutSec = 4;
     grpcConfig.host = "127.0.0.1";
     grpcConfig.port = 40000;
     grpcConfig.serverMaxNumberOfRpcs = 100;

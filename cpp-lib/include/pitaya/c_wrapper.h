@@ -45,7 +45,6 @@ struct CGrpcConfig
 {
     const char* host;
     int32_t port;
-    int32_t connectionTimeoutSec;
     int32_t serverShutdownDeadlineMs;
     int32_t serverMaxNumberOfRpcs;
 

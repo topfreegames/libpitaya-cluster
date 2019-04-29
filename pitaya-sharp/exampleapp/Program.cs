@@ -27,18 +27,24 @@ namespace PitayaCSharpExample
         syncServersIntervalSec: 30);
 
       var sv = new Server(
-         id: serverId,
-         type: "csharp",
-         metadata: "",
-         hostname: "localhost",
-         frontend: false);
+          id: serverId,
+          type: "csharp",
+          metadata: "",
+          hostname: "localhost",
+          frontend: false);
 
-      var natsConfig = new NatsConfig("127.0.0.1:4222", 2000, 1000, 3, 100);
+      var natsConfig = new NatsConfig(
+          endpoint: "127.0.0.1:4222",
+          connectionTimeoutMs: 2000,
+          requestTimeoutMs: 1000,
+          serverShutdownDeadlineMs: 3,
+          serverMaxNumberOfRpcs: 100,
+          maxConnectionRetries: 3,
+          maxPendingMessages: 1000);
 
       var grpcConfig = new GrpcConfig(
         host: "127.0.0.1",
         port: 5444,
-        connectionTimeoutSec: 2,
         serverShutdownDeadlineMs: 2000,
         serverMaxNumberOfRpcs: 200
       );

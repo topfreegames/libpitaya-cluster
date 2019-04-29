@@ -24,7 +24,6 @@ public:
     void SetUp() override
     {
         _config = pitaya::GrpcConfig();
-        _config.connectionTimeout = std::chrono::seconds(1);
         _config.host = "localhost";
         _config.port = 58000;
         _config.serverShutdownDeadline = std::chrono::milliseconds(500);

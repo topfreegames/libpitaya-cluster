@@ -85,16 +85,14 @@ namespace NPitaya
         [MarshalAs(UnmanagedType.LPStr)]
         public string host;
         public int port;
-        public int connectionTimeoutSec;
         public int serverShutdownDeadlineMs;
         public int serverMaxNumberOfRpcs;
 
-        public GrpcConfig(string host, int port, int connectionTimeoutSec,
-            int serverShutdownDeadlineMs, int serverMaxNumberOfRpcs)
+        public GrpcConfig(string host, int port,
+                          int serverShutdownDeadlineMs, int serverMaxNumberOfRpcs)
         {
             this.host = host;
             this.port = port;
-            this.connectionTimeoutSec = connectionTimeoutSec;
             this.serverShutdownDeadlineMs = serverShutdownDeadlineMs;
             this.serverMaxNumberOfRpcs = serverMaxNumberOfRpcs;
         }
