@@ -1,2 +1,4 @@
 .idea
 Assembly-CSharp*
+Assets/Plugins/libpitaya_cpp.bundle
+Assets/Plugins/libpitaya_cpp.bundle.meta
