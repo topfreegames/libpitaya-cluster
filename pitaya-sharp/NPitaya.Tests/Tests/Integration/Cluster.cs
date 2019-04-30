@@ -22,7 +22,8 @@ namespace NPitayaTest.Tests.Integration
                 logHeartbeat: false,
                 logServerSync: false,
                 logServerDetails: false,
-                syncServersIntervalSec: 10
+                syncServersIntervalSec: 10,
+                maxNumberOfRetries: 0
             );
 
             var server = new Server(
@@ -61,7 +62,8 @@ namespace NPitayaTest.Tests.Integration
                 logHeartbeat: false,
                 logServerSync: false,
                 logServerDetails: false,
-                syncServersIntervalSec: 10
+                syncServersIntervalSec: 10,
+                maxNumberOfRetries: 0
             );
 
             var server = new Server(

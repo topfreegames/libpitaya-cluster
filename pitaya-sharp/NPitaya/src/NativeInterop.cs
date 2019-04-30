@@ -65,9 +65,10 @@ namespace NPitaya
         public int logServerSync;
         public int logServerDetails;
         public int syncServersIntervalSec;
+        public int maxNumberOfRetries;
 
         public SDConfig(string endpoints, string etcdPrefix, int heartbeatTTLSec, bool logHeartbeat,
-            bool logServerSync, bool logServerDetails, int syncServersIntervalSec)
+            bool logServerSync, bool logServerDetails, int syncServersIntervalSec, int maxNumberOfRetries)
         {
             this.endpoints = endpoints;
             this.etcdPrefix = etcdPrefix;
@@ -76,6 +77,7 @@ namespace NPitaya
             this.logServerSync = Convert.ToInt32(logServerSync);
             this.logServerDetails = Convert.ToInt32(logServerDetails);
             this.syncServersIntervalSec = syncServersIntervalSec;
+            this.maxNumberOfRetries = maxNumberOfRetries;
         }
     }
 

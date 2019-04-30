@@ -21,6 +21,8 @@ EtcdLeaseKeepAlive::EtcdLeaseKeepAlive(etcd::Client& client, bool shouldLog, con
 pplx::task<EtcdLeaseKeepAliveStatus>
 EtcdLeaseKeepAlive::Start()
 {
+    _log->info("Starting lease keep alive");
+
     if (_leaseId == -1) {
         _log->error("lease id is -1, not starting.");
         return pplx::task_from_result(EtcdLeaseKeepAliveStatus::Fail);
@@ -57,12 +59,13 @@ EtcdLeaseKeepAlive::TickWrapper()
         if (_shouldLog)
             _log->debug("Renewing lease");
 
+        assert(_leaseId != -1);
         auto res = _client.lease_keep_alive(_leaseId).get();
         if (!res.is_ok()) {
             if (res.status.etcd_error_code == etcdv3::V3StatusCode::UNDERLYING_GRPC_ERROR) {
-                _log->error("Failed to renew lease, stopping ({})", res.status.grpc_error_message);
+                _log->error("Failed to renew lease, stopping (grpc: {})", res.status.grpc_error_message);
             } else {
-                _log->error("Failed to renew lease, stopping ({})", res.status.etcd_error_message);
+                _log->error("Failed to renew lease, stopping (etcd: {})", res.status.etcd_error_message);
             }
             _leaseId = -1;
             return EtcdLeaseKeepAliveStatus::Fail;

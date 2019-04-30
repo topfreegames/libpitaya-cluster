@@ -15,6 +15,7 @@ struct EtcdServiceDiscoveryConfig
     bool logServerSync;
     bool logServerDetails;
     std::chrono::seconds syncServersIntervalSec;
+    int32_t maxNumberOfRetries;
 
     EtcdServiceDiscoveryConfig()
         : heartbeatTTLSec(std::chrono::seconds(60))
@@ -22,6 +23,7 @@ struct EtcdServiceDiscoveryConfig
         , logServerSync(true)
         , logServerDetails(false)
         , syncServersIntervalSec(std::chrono::seconds(60))
+        , maxNumberOfRetries(10)
     {}
 };
 

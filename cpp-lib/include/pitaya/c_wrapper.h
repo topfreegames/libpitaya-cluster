@@ -37,6 +37,7 @@ struct CSDConfig
     int32_t logServerSync;
     int32_t logServerDetails;
     int32_t syncServersIntervalSec;
+    int32_t maxNumberOfRetries;
 
     pitaya::EtcdServiceDiscoveryConfig ToConfig();
 };

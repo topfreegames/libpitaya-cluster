@@ -31,7 +31,7 @@ Worker::Worker(const EtcdServiceDiscoveryConfig& config,
     , _server(std::move(server))
     , _etcdClient(std::move(etcdClient))
     , _log(utils::CloneLoggerOrCreate(loggerName, kLogTag))
-    , _numKeepAliveRetriesLeft(3)
+    , _numKeepAliveRetriesLeft(_config.maxNumberOfRetries)
     , _syncServersTicker(config.syncServersIntervalSec, std::bind(&Worker::SyncServers, this)) {
 
     if (_config.logServerSync) {
@@ -97,14 +97,19 @@ Worker::StartThread()
     for (;;) {
         _semaphore.Wait();
 
-        std::lock_guard<decltype(_jobQueue)> lock(_jobQueue);
-
-        if (_jobQueue.Empty()) {
-            _log->warn("Job queue empty, ignoring");
-            continue;
+        // Get the next job from the queue
+        Job job;
+        {
+            std::lock_guard<decltype(_jobQueue)> lock(_jobQueue);
+            if (_jobQueue.Empty()) {
+                _log->warn("Job queue empty, ignoring");
+                continue;
+            }
+            job = _jobQueue.PopFront();
         }
 
-        Job job = _jobQueue.PopFront();
+        assert(job.info != JobInfo::Invalid);
+
         switch (job.info) {
             case JobInfo::SyncServers: {
                 if (_config.logServerSync) {
@@ -201,7 +206,7 @@ Worker::StartThread()
                     auto ok = Bootstrap();
                     if (ok) {
                         _log->info("Etcd reconnection successful");
-                        _numKeepAliveRetriesLeft = 3;
+                        _numKeepAliveRetriesLeft = _config.maxNumberOfRetries;
                         StartLeaseKeepAlive();
                         break;
                     }
@@ -226,6 +231,10 @@ Worker::StartThread()
                 Shutdown();
                 _log->debug("Exiting loop");
                 return;
+            }
+            default: {
+                _log->error("This code should be unreachable");
+                assert(false);
             }
         }
     }
@@ -287,6 +296,7 @@ Worker::Bootstrap()
     // and synchronizing the remote servers locally.
     auto ok = AddServerToEtcd(_server);
     if (!ok) {
+        _log->error("Failed to add server to etcd");
         return false;
     }
 
@@ -297,6 +307,7 @@ Worker::Bootstrap()
 bool
 Worker::AddServerToEtcd(const Server& server)
 {
+    _log->info("Adding server to etcd with lease {}", _leaseId);
     string key = fmt::format("{}{}", _config.etcdPrefix, GetServerKey(server.Id(), server.Type()));
     SetResponse res = _etcdClient->Set(key, ServerAsJson(server), _leaseId);
     return res.ok;

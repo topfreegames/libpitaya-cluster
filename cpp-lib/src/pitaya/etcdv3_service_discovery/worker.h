@@ -32,6 +32,7 @@ enum class JobInfo
     EtcdReconnectionFailure,
     WatchError,
     Shutdown,
+    Invalid,
 };
 
 struct Job
@@ -39,6 +40,11 @@ struct Job
     JobInfo info;
     service_discovery::Listener* listener;
     WatchResponse watchRes;
+
+    Job()
+        : info(JobInfo::Invalid)
+        , listener(nullptr)
+    {}
 
     static Job NewWatch(WatchResponse res)
     {
