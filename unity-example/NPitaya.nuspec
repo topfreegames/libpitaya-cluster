@@ -2,13 +2,13 @@
 <package>
   <metadata>
     <id>NPitaya</id>
-    <version>0.3.0-beta.2</version>
+    <version>0.3.0</version>
     <authors>leonardohahn,felipejfc</authors>
     <owners>TFG</owners>
     <projectUrl>https://github.com/topfreegames/libpitaya-cluster</projectUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>C# binding to the pitaya-cpp library</description>
-    <releaseNotes>Remove connection timeout functionality from grpc server</releaseNotes>
+    <releaseNotes>Fix deadlock whenever the service discovery failed and tried to reconnect. Add max number of retries to the service discovery config.</releaseNotes>
     <copyright>Copyright TFG co</copyright>
     <tags>pitaya server grpc nats</tags>
     <dependencies>
