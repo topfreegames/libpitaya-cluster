@@ -20,37 +20,10 @@ EtcdBindingStorage::EtcdBindingStorage(EtcdBindingStorageConfig config,
     : _log(utils::CloneLoggerOrCreate(loggerName, kLogTag))
     , _config(std::move(config))
     , _etcdClient(std::move(etcdClient))
-    , _leaseId(-1)
-{
-    using std::placeholders::_1;
-
-    auto res = _etcdClient->LeaseGrant(_config.leaseTtl);
-    if (!res.ok) {
-        throw PitayaException(fmt::format("Lease grant failed: {}", res.errorMsg));
-    }
-
-    auto logCopy = _log;
-
-    _leaseId = res.leaseId;
-    _etcdClient->LeaseKeepAlive(res.leaseId, [logCopy](EtcdLeaseKeepAliveStatus status) {
-        switch (status) {
-            case EtcdLeaseKeepAliveStatus::Ok: {
-                logCopy->debug("lease keep alive finished");
-                break;
-            }
-            case EtcdLeaseKeepAliveStatus::Fail: {
-                logCopy->error("Lease keep alive failed");
-                break;
-            }
-        }
-    });
-}
+{}
 
 EtcdBindingStorage::~EtcdBindingStorage()
-{
-    _log->debug("Stopping lease keep alive");
-    _etcdClient->StopLeaseKeepAlive();
-}
+{}
 
 std::string
 EtcdBindingStorage::GetUserFrontendId(const std::string& uid, const std::string& frontendType)

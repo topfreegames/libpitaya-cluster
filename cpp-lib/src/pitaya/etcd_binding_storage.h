@@ -28,7 +28,6 @@ private:
     std::shared_ptr<spdlog::logger> _log;
     EtcdBindingStorageConfig _config;
     std::unique_ptr<EtcdClient> _etcdClient;
-    int64_t _leaseId;
 };
 
 } // namespace pitaya
