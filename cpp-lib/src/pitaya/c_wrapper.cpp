@@ -34,21 +34,18 @@ ConvertToCString(const std::string& str)
 }
 
 static CsharpFreeCb freePinvoke;
-
 static RpcPinvokeCb gPinvokeCb;
 static std::shared_ptr<spdlog::logger> gLogger;
 static void (*gSignalHandler)() = nullptr;
 
-static CServer*
-FromPitayaServer(const pitaya::Server& pServer)
+void
+FromPitayaServer(CServer* server, const pitaya::Server& pServer)
 {
-    auto server = (CServer*)malloc(sizeof(CServer));
     server->id = ConvertToCString(pServer.Id());
     server->type = ConvertToCString(pServer.Type());
     server->metadata = ConvertToCString(pServer.Metadata());
     server->hostname = ConvertToCString(pServer.Hostname());
     server->frontend = pServer.IsFrontend();
-    return server;
 }
 
 static CPitayaError*
@@ -69,14 +66,48 @@ FreePitayaError(CPitayaError* err)
 }
 
 static void
-FreeServer(CServer* sv)
+FreeServer(const CServer* sv)
 {
     free(sv->id);
     free(sv->type);
     free(sv->metadata);
     free(sv->hostname);
-    // free(sv);
 }
+
+class CServiceDiscoveryListener : public service_discovery::Listener
+{
+public:
+    using ServerAddedOrRemovedCb = void (*)(int32_t serverAdded, CServer* server, void* user);
+
+    CServiceDiscoveryListener(ServerAddedOrRemovedCb cb, void* user)
+        : _onServerAddedOrRemoved(cb)
+        , _user(user)
+    {}
+
+    void ServerAdded(const pitaya::Server& server) override
+    {
+        CServer cServer;
+        FromPitayaServer(&cServer, server);
+
+        _onServerAddedOrRemoved(true, &cServer, _user);
+
+        FreeServer(&cServer);
+    }
+
+    void ServerRemoved(const pitaya::Server& server) override
+    {
+        CServer cServer;
+        FromPitayaServer(&cServer, server);
+
+        _onServerAddedOrRemoved(false, &cServer, _user);
+
+        FreeServer(&cServer);
+    }
+
+private:
+    ServerAddedOrRemovedCb _onServerAddedOrRemoved;
+    void* _user;
+};
 
 pitaya::EtcdServiceDiscoveryConfig
 CSDConfig::ToConfig()
@@ -445,5 +476,25 @@ extern "C"
         crpc->tag = rpcData->rpc;
 
         return crpc;
+    }
+
+    void* tfg_pitc_AddServiceDiscoveryListener(CServiceDiscoveryListener::ServerAddedOrRemovedCb cb,
+                                               void* user)
+    {
+        gLogger->info("Adding native service discovery listener");
+        auto listener = new CServiceDiscoveryListener(cb, user);
+        Cluster::Instance().AddServiceDiscoveryListener(listener);
+        return listener;
+    }
+
+    void tfg_pitc_RemoveServiceDiscoveryListener(service_discovery::Listener* listener)
+    {
+        gLogger->info("Removing native service discovery listener");
+        if (listener) {
+            Cluster::Instance().RemoveServiceDiscoveryListener(listener);
+            delete listener;
+        } else {
+            gLogger->warn("Received a null listener");
+        }
     }
 }

@@ -111,7 +111,7 @@ namespace NPitaya
             Task ans;
             if (handler.ArgType != null)
             {
-                var arg = serializer.Unmarshal(data, handler.ArgType);
+                var arg = _serializer.Unmarshal(data, handler.ArgType);
                 if (type == RPCType.Sys)
                     ans = handler.Method.Invoke(handler.Obj, new[] {s, arg}) as Task;
                 else
@@ -132,7 +132,7 @@ namespace NPitaya
             {
                 ansBytes = SerializerUtils.SerializeOrRaw(ans.GetType().
                     GetProperty("Result")
-                    ?.GetValue(ans), serializer);
+                    ?.GetValue(ans), _serializer);
             }
             else
             {

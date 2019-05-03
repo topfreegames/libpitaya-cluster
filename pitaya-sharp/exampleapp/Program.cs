@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Threading;
 using exampleapp.Handlers;
 using exampleapp.remotes;
@@ -61,7 +62,29 @@ namespace PitayaCSharpExample
 
       try
       {
-        PitayaCluster.Initialize(grpcConfig, sdConfig, sv, NativeLogLevel.Debug, "");
+        PitayaCluster.Initialize(
+            grpcConfig,
+            sdConfig,
+            sv,
+            NativeLogLevel.Debug,
+            new PitayaCluster.ServiceDiscoveryListener((action, server) =>
+            {
+                switch (action)
+                {
+                    case PitayaCluster.ServiceDiscoveryAction.ServerAdded:
+                        Console.WriteLine("Server was added");
+                        Console.WriteLine("    id: " + server.id);
+                        Console.WriteLine("  type: " + server.type);
+                        break;
+                    case PitayaCluster.ServiceDiscoveryAction.ServerRemoved:
+                        Console.WriteLine("Server was removed");
+                        Console.WriteLine("    id: " + server.id);
+                        Console.WriteLine("  type: " + server.type);
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException(nameof(action), action, null);
+                }
+            }));
         //PitayaCluster.Initialize(natsConfig, sdConfig, sv, NativeLogLevel.Debug, "");
       }
       catch (PitayaException exc)
@@ -79,10 +102,15 @@ namespace PitayaCSharpExample
 
       Thread.Sleep(1000);
 
-      while (true)
-      {
-        Thread.Sleep(10);
-      }
+      Console.ReadLine();
+
+      PitayaCluster.Terminate();
+
+      Console.WriteLine("EXITING PROGRAM");
+      // while (true)
+      // {
+      //   Thread.Sleep(10);
+      // }
 
       //try
       //{

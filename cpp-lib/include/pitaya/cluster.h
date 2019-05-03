@@ -48,6 +48,10 @@ public:
 
     void Terminate();
 
+    void AddServiceDiscoveryListener(service_discovery::Listener* listener);
+
+    void RemoveServiceDiscoveryListener(service_discovery::Listener* listener);
+
     service_discovery::ServiceDiscovery& GetServiceDiscovery() { return *_sd.get(); }
 
     boost::optional<PitayaError> RPC(const std::string& serverId,

@@ -52,7 +52,26 @@ namespace ExampleORM
 
             try
             {
-                PitayaCluster.Initialize(grpcConfig, sdConfig, sv, NativeLogLevel.Debug, "");
+                PitayaCluster.Initialize(
+                    grpcConfig,
+                    sdConfig,
+                    sv,
+                    NativeLogLevel.Debug,
+                    new PitayaCluster.ServiceDiscoveryListener((action, server) =>
+                    {
+                        switch (action)
+                        {
+                            case PitayaCluster.ServiceDiscoveryAction.ServerAdded:
+                                Console.WriteLine($"Server added: {server}");
+                                break;
+                            case PitayaCluster.ServiceDiscoveryAction.ServerRemoved:
+                                Console.WriteLine($"Server removed: {server}");
+                                break;
+                            default:
+                                throw new ArgumentOutOfRangeException(nameof(action), action, null);
+                        }
+                    })
+                );
             }
             catch (PitayaException exc)
             {

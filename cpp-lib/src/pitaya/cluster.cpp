@@ -126,6 +126,18 @@ Cluster::Terminate()
     _log.reset();
 }
 
+void
+Cluster::AddServiceDiscoveryListener(service_discovery::Listener* listener)
+{
+    _sd->AddListener(listener);
+}
+
+void
+Cluster::RemoveServiceDiscoveryListener(service_discovery::Listener* listener)
+{
+    _sd->RemoveListener(listener);
+}
+
 optional<PitayaError>
 Cluster::RPC(const string& route, protos::Request& req, protos::Response& ret)
 {

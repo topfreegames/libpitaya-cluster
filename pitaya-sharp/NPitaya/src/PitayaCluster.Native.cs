@@ -5,6 +5,8 @@ namespace NPitaya
 {
     public partial class PitayaCluster
     {
+        private delegate void ServerAddedOrRemoved(int serverAdded, IntPtr server, IntPtr user);
+
         private const string LibName = "libpitaya_cpp";
 
         [DllImport(LibName, CallingConvention = CallingConvention.Cdecl, EntryPoint = "tfg_pitc_InitializeWithNats")]
@@ -45,5 +47,11 @@ namespace NPitaya
 
         [DllImport(LibName, CallingConvention = CallingConvention.Cdecl, EntryPoint = "tfg_pitc_SendKickToUser")]
         private static extern unsafe bool KickInternal(string serverId, string serverType, IntPtr pushData, MemoryBuffer** buffer, ref Error retErr);
+
+        [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
+        private static extern IntPtr tfg_pitc_AddServiceDiscoveryListener(ServerAddedOrRemoved cb, IntPtr user);
+
+        [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
+        private static extern void tfg_pitc_RemoveServiceDiscoveryListener(IntPtr listener);
     }
 }
