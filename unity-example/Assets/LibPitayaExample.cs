@@ -35,16 +35,15 @@ public class LibPitayaExample : MonoBehaviour {
 		    logHeartbeat: false,
 		    logServerSync: true,
 		    logServerDetails: false,
-		    syncServersIntervalSec: 60);
+		    syncServersIntervalSec: 60,
+		    maxNumberOfRetries: 10);
 
         var grpcConfig = new GrpcConfig(
             host: "127.0.0.1",
             port: 3000,
-            connectionTimeoutSec: 5,
             serverShutdownDeadlineMs: 3000,
             serverMaxNumberOfRpcs: 1000
         );
-
 
 	    var sv = new Server(
 		    serverId,
@@ -53,7 +52,14 @@ public class LibPitayaExample : MonoBehaviour {
 		    "localhost",
 		    false);
 
-	    NatsConfig nc = new NatsConfig("127.0.0.1:4222", 2000, 1000, 3, 100);
+	    var nc = new NatsConfig(
+		    endpoint: "127.0.0.1:4222",
+		    connectionTimeoutMs: 2000,
+		    requestTimeoutMs: 2000,
+		    serverShutdownDeadlineMs: 4000,
+		    serverMaxNumberOfRpcs: 1000,
+		    maxConnectionRetries: 10,
+		    maxPendingMessages: 100);
 
 	    Debug.Log("Adding signal handler");
 	    Debug.Log("Adding signal handler DONE");
@@ -62,10 +68,29 @@ public class LibPitayaExample : MonoBehaviour {
 	    {
 		    Debug.Log("Initializing PitayaCluster");
 		    // PitayaCluster.Initialize(sdConfig, nc, sv);
+
+		    var listener = new PitayaCluster.ServiceDiscoveryListener((action, server) =>
+		    {
+			    switch (action)
+			    {
+				    case PitayaCluster.ServiceDiscoveryAction.ServerAdded:
+					    Debug.Log("Server added:");
+					    Debug.Log("    id:  " + server.id);
+					    Debug.Log("    type:" + server.type);
+					    break;
+				    case PitayaCluster.ServiceDiscoveryAction.ServerRemoved:
+					    Debug.Log("Server removed:");
+					    Debug.Log("    id:  " + server.id);
+					    Debug.Log("    type:" + server.type);
+					    break;
+				    default:
+					    throw new ArgumentOutOfRangeException(nameof(action), action, null);
+			    }
+		    });
 		    #if UNITY_EDITOR
-		    PitayaCluster.Initialize(grpcConfig, sdConfig, sv, NativeLogLevel.Debug, "MY_LOG_FILE.txt");
+		    PitayaCluster.Initialize(grpcConfig, sdConfig, sv, NativeLogLevel.Debug, listener, "MY_LOG_FILE.txt");
 		    #else
-		    PitayaCluster.Initialize(grpcConfig, sdConfig, sv, NativeLogLevel.Debug);
+		    PitayaCluster.Initialize(grpcConfig, sdConfig, sv, NativeLogLevel.Debug, listener);
             #endif
 	    }
 	    catch (PitayaException e)
@@ -87,7 +112,6 @@ public class LibPitayaExample : MonoBehaviour {
 	    PitayaCluster.AddSignalHandler(() =>
 	    {
 		    Debug.Log("Got signal handler, quitting pitaya cluster");
-            PitayaCluster.Terminate();
 		    Application.Quit();
 	    });
 	}
