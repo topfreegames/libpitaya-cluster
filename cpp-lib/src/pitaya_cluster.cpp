@@ -112,7 +112,6 @@ main()
         GrpcConfig grpcConfig;
         grpcConfig.host = "127.0.0.1";
         grpcConfig.port = 5440;
-        grpcConfig.connectionTimeout = std::chrono::seconds(2);
 
         Cluster::Instance().InitializeWithGrpc(std::move(grpcConfig),
                                                std::move(sdConfig),
@@ -138,13 +137,14 @@ main()
             // Now, wait for RPCs
             for (;;) {
                 auto rpcData = Cluster::Instance().WaitForRpc();
+                if (rpcData) {
+                    logger->debug("Processing new rpc...");
 
-                logger->debug("Processing new rpc...");
+                    protos::Response res;
+                    res.set_data("MY DATA MAAAAAAAAAAAN");
 
-                protos::Response res;
-                res.set_data("MY DATA MAAAAAAAAAAAN");
-
-                rpcData.rpc->Finish(res);
+                    rpcData->rpc->Finish(res);
+                }
             }
 
             thr.join();
