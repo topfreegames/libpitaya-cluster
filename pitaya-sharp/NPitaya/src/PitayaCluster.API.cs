@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using NPitaya.Models;
 using NPitaya.Serializer;
-using Protos;
+using NPitaya.Protos;
 using static NPitaya.Utils.Utils;
 
 // TODO profiling

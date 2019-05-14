@@ -9,7 +9,7 @@ using pb = global::Google.Protobuf;
 using pbc = global::Google.Protobuf.Collections;
 using pbr = global::Google.Protobuf.Reflection;
 using scg = global::System.Collections.Generic;
-namespace Protos {
+namespace NPitaya.Protos {
 
   /// <summary>Holder for reflection information generated from push.proto</summary>
   public static partial class PushReflection {
@@ -29,7 +29,7 @@ namespace Protos {
       descriptor = pbr::FileDescriptor.FromGeneratedCode(descriptorData,
           new pbr::FileDescriptor[] { },
           new pbr::GeneratedClrTypeInfo(null, new pbr::GeneratedClrTypeInfo[] {
-            new pbr::GeneratedClrTypeInfo(typeof(global::Protos.Push), global::Protos.Push.Parser, new[]{ "Route", "Uid", "Data" }, null, null, null)
+            new pbr::GeneratedClrTypeInfo(typeof(global::NPitaya.Protos.Push), global::NPitaya.Protos.Push.Parser, new[]{ "Route", "Uid", "Data" }, null, null, null)
           }));
     }
     #endregion
@@ -44,7 +44,7 @@ namespace Protos {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Protos.PushReflection.Descriptor.MessageTypes[0]; }
+      get { return global::NPitaya.Protos.PushReflection.Descriptor.MessageTypes[0]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]

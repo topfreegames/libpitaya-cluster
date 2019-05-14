@@ -9,7 +9,7 @@ using pb = global::Google.Protobuf;
 using pbc = global::Google.Protobuf.Collections;
 using pbr = global::Google.Protobuf.Reflection;
 using scg = global::System.Collections.Generic;
-namespace Protos {
+namespace NPitaya.Protos {
 
   /// <summary>Holder for reflection information generated from request.proto</summary>
   public static partial class RequestReflection {
@@ -31,9 +31,9 @@ namespace Protos {
             "ZGF0YRgFIAEoDCocCgdSUENUeXBlEgcKA1N5cxAAEggKBFVzZXIQAWIGcHJv",
             "dG8z"));
       descriptor = pbr::FileDescriptor.FromGeneratedCode(descriptorData,
-          new pbr::FileDescriptor[] { global::Protos.SessionReflection.Descriptor, global::Protos.MsgReflection.Descriptor, },
-          new pbr::GeneratedClrTypeInfo(new[] {typeof(global::Protos.RPCType), }, new pbr::GeneratedClrTypeInfo[] {
-            new pbr::GeneratedClrTypeInfo(typeof(global::Protos.Request), global::Protos.Request.Parser, new[]{ "Type", "Session", "Msg", "FrontendID", "Metadata" }, null, null, null)
+          new pbr::FileDescriptor[] { global::NPitaya.Protos.SessionReflection.Descriptor, global::NPitaya.Protos.MsgReflection.Descriptor, },
+          new pbr::GeneratedClrTypeInfo(new[] {typeof(global::NPitaya.Protos.RPCType), }, new pbr::GeneratedClrTypeInfo[] {
+            new pbr::GeneratedClrTypeInfo(typeof(global::NPitaya.Protos.Request), global::NPitaya.Protos.Request.Parser, new[]{ "Type", "Session", "Msg", "FrontendID", "Metadata" }, null, null, null)
           }));
     }
     #endregion
@@ -56,7 +56,7 @@ namespace Protos {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Protos.RequestReflection.Descriptor.MessageTypes[0]; }
+      get { return global::NPitaya.Protos.RequestReflection.Descriptor.MessageTypes[0]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -88,9 +88,9 @@ namespace Protos {
 
     /// <summary>Field number for the "type" field.</summary>
     public const int TypeFieldNumber = 1;
-    private global::Protos.RPCType type_ = 0;
+    private global::NPitaya.Protos.RPCType type_ = 0;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public global::Protos.RPCType Type {
+    public global::NPitaya.Protos.RPCType Type {
       get { return type_; }
       set {
         type_ = value;
@@ -99,9 +99,9 @@ namespace Protos {
 
     /// <summary>Field number for the "session" field.</summary>
     public const int SessionFieldNumber = 2;
-    private global::Protos.Session session_;
+    private global::NPitaya.Protos.Session session_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public global::Protos.Session Session {
+    public global::NPitaya.Protos.Session Session {
       get { return session_; }
       set {
         session_ = value;
@@ -110,9 +110,9 @@ namespace Protos {
 
     /// <summary>Field number for the "msg" field.</summary>
     public const int MsgFieldNumber = 3;
-    private global::Protos.Msg msg_;
+    private global::NPitaya.Protos.Msg msg_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public global::Protos.Msg Msg {
+    public global::NPitaya.Protos.Msg Msg {
       get { return msg_; }
       set {
         msg_ = value;
@@ -242,13 +242,13 @@ namespace Protos {
       }
       if (other.session_ != null) {
         if (session_ == null) {
-          session_ = new global::Protos.Session();
+          session_ = new global::NPitaya.Protos.Session();
         }
         Session.MergeFrom(other.Session);
       }
       if (other.msg_ != null) {
         if (msg_ == null) {
-          msg_ = new global::Protos.Msg();
+          msg_ = new global::NPitaya.Protos.Msg();
         }
         Msg.MergeFrom(other.Msg);
       }
@@ -270,19 +270,19 @@ namespace Protos {
             _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, input);
             break;
           case 8: {
-            type_ = (global::Protos.RPCType) input.ReadEnum();
+            type_ = (global::NPitaya.Protos.RPCType) input.ReadEnum();
             break;
           }
           case 18: {
             if (session_ == null) {
-              session_ = new global::Protos.Session();
+              session_ = new global::NPitaya.Protos.Session();
             }
             input.ReadMessage(session_);
             break;
           }
           case 26: {
             if (msg_ == null) {
-              msg_ = new global::Protos.Msg();
+              msg_ = new global::NPitaya.Protos.Msg();
             }
             input.ReadMessage(msg_);
             break;

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using Google.Protobuf;
 using NPitaya.Constants;
 using Json = PitayaSimpleJson.SimpleJson;
-using Protos;
+using NPitaya.Protos;
 
 namespace NPitaya.Models
 {

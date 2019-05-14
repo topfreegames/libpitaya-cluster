@@ -9,7 +9,7 @@ using pb = global::Google.Protobuf;
 using pbc = global::Google.Protobuf.Collections;
 using pbr = global::Google.Protobuf.Reflection;
 using scg = global::System.Collections.Generic;
-namespace Protos {
+namespace NPitaya.Protos {
 
   /// <summary>Holder for reflection information generated from msg.proto</summary>
   public static partial class MsgReflection {
@@ -31,8 +31,8 @@ namespace Protos {
             "dXNoEANiBnByb3RvMw=="));
       descriptor = pbr::FileDescriptor.FromGeneratedCode(descriptorData,
           new pbr::FileDescriptor[] { },
-          new pbr::GeneratedClrTypeInfo(new[] {typeof(global::Protos.MsgType), }, new pbr::GeneratedClrTypeInfo[] {
-            new pbr::GeneratedClrTypeInfo(typeof(global::Protos.Msg), global::Protos.Msg.Parser, new[]{ "Id", "Route", "Data", "Reply", "Type" }, null, null, null)
+          new pbr::GeneratedClrTypeInfo(new[] {typeof(global::NPitaya.Protos.MsgType), }, new pbr::GeneratedClrTypeInfo[] {
+            new pbr::GeneratedClrTypeInfo(typeof(global::NPitaya.Protos.Msg), global::NPitaya.Protos.Msg.Parser, new[]{ "Id", "Route", "Data", "Reply", "Type" }, null, null, null)
           }));
     }
     #endregion
@@ -57,7 +57,7 @@ namespace Protos {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Protos.MsgReflection.Descriptor.MessageTypes[0]; }
+      get { return global::NPitaya.Protos.MsgReflection.Descriptor.MessageTypes[0]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -133,9 +133,9 @@ namespace Protos {
 
     /// <summary>Field number for the "type" field.</summary>
     public const int TypeFieldNumber = 5;
-    private global::Protos.MsgType type_ = 0;
+    private global::NPitaya.Protos.MsgType type_ = 0;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public global::Protos.MsgType Type {
+    public global::NPitaya.Protos.MsgType Type {
       get { return type_; }
       set {
         type_ = value;
@@ -281,7 +281,7 @@ namespace Protos {
             break;
           }
           case 40: {
-            type_ = (global::Protos.MsgType) input.ReadEnum();
+            type_ = (global::NPitaya.Protos.MsgType) input.ReadEnum();
             break;
           }
         }

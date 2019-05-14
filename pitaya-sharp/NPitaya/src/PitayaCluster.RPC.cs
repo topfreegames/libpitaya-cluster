@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 using Google.Protobuf;
 using NPitaya.Models;
 using NPitaya.Serializer;
-using Protos;
+using NPitaya.Protos;
 using static NPitaya.Utils.Utils;
 
 namespace NPitaya

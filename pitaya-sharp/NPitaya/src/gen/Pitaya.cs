@@ -9,7 +9,7 @@ using pb = global::Google.Protobuf;
 using pbc = global::Google.Protobuf.Collections;
 using pbr = global::Google.Protobuf.Reflection;
 using scg = global::System.Collections.Generic;
-namespace Protos {
+namespace NPitaya.Protos {
 
   /// <summary>Holder for reflection information generated from pitaya.proto</summary>
   public static partial class PitayaReflection {
@@ -32,7 +32,7 @@ namespace Protos {
             "aW5kTXNnGhAucHJvdG9zLlJlc3BvbnNlIgASMQoIS2lja1VzZXISDy5wcm90",
             "b3MuS2lja01zZxoSLnByb3Rvcy5LaWNrQW5zd2VyIgBiBnByb3RvMw=="));
       descriptor = pbr::FileDescriptor.FromGeneratedCode(descriptorData,
-          new pbr::FileDescriptor[] { global::Protos.RequestReflection.Descriptor, global::Protos.ResponseReflection.Descriptor, global::Protos.PushReflection.Descriptor, global::Protos.BindReflection.Descriptor, global::Protos.KickReflection.Descriptor, },
+          new pbr::FileDescriptor[] { global::NPitaya.Protos.RequestReflection.Descriptor, global::NPitaya.Protos.ResponseReflection.Descriptor, global::NPitaya.Protos.PushReflection.Descriptor, global::NPitaya.Protos.BindReflection.Descriptor, global::NPitaya.Protos.KickReflection.Descriptor, },
           new pbr::GeneratedClrTypeInfo(null, null));
     }
     #endregion

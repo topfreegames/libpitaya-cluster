@@ -1,10 +1,10 @@
 using System;
 using System.Threading.Tasks;
 using ExampleORM.Models;
-using Gen.Protos;
+using NPitaya.Gen.Protos;
 using Microsoft.EntityFrameworkCore;
 using NPitaya.Models;
-using User = Gen.Protos.User;
+using User = NPitaya.Gen.Protos.User;
 
 namespace ExampleORM.Servers.BusinessLogic.Handlers
 {

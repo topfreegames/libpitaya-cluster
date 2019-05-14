@@ -9,7 +9,7 @@ using pb = global::Google.Protobuf;
 using pbc = global::Google.Protobuf.Collections;
 using pbr = global::Google.Protobuf.Reflection;
 using scg = global::System.Collections.Generic;
-namespace Protos {
+namespace NPitaya.Protos {
 
   /// <summary>Holder for reflection information generated from response.proto</summary>
   public static partial class ResponseReflection {
@@ -28,9 +28,9 @@ namespace Protos {
             "b25zZRIMCgRkYXRhGAEgASgMEhwKBWVycm9yGAIgASgLMg0ucHJvdG9zLkVy",
             "cm9yYgZwcm90bzM="));
       descriptor = pbr::FileDescriptor.FromGeneratedCode(descriptorData,
-          new pbr::FileDescriptor[] { global::Protos.ErrorReflection.Descriptor, },
+          new pbr::FileDescriptor[] { global::NPitaya.Protos.ErrorReflection.Descriptor, },
           new pbr::GeneratedClrTypeInfo(null, new pbr::GeneratedClrTypeInfo[] {
-            new pbr::GeneratedClrTypeInfo(typeof(global::Protos.Response), global::Protos.Response.Parser, new[]{ "Data", "Error" }, null, null, null)
+            new pbr::GeneratedClrTypeInfo(typeof(global::NPitaya.Protos.Response), global::NPitaya.Protos.Response.Parser, new[]{ "Data", "Error" }, null, null, null)
           }));
     }
     #endregion
@@ -45,7 +45,7 @@ namespace Protos {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Protos.ResponseReflection.Descriptor.MessageTypes[0]; }
+      get { return global::NPitaya.Protos.ResponseReflection.Descriptor.MessageTypes[0]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -85,9 +85,9 @@ namespace Protos {
 
     /// <summary>Field number for the "error" field.</summary>
     public const int ErrorFieldNumber = 2;
-    private global::Protos.Error error_;
+    private global::NPitaya.Protos.Error error_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public global::Protos.Error Error {
+    public global::NPitaya.Protos.Error Error {
       get { return error_; }
       set {
         error_ = value;
@@ -168,7 +168,7 @@ namespace Protos {
       }
       if (other.error_ != null) {
         if (error_ == null) {
-          error_ = new global::Protos.Error();
+          error_ = new global::NPitaya.Protos.Error();
         }
         Error.MergeFrom(other.Error);
       }
@@ -189,7 +189,7 @@ namespace Protos {
           }
           case 18: {
             if (error_ == null) {
-              error_ = new global::Protos.Error();
+              error_ = new global::NPitaya.Protos.Error();
             }
             input.ReadMessage(error_);
             break;

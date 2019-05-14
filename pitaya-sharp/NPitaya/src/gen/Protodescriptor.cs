@@ -9,7 +9,7 @@ using pb = global::Google.Protobuf;
 using pbc = global::Google.Protobuf.Collections;
 using pbr = global::Google.Protobuf.Reflection;
 using scg = global::System.Collections.Generic;
-namespace Protos {
+namespace NPitaya.Protos {
 
   /// <summary>Holder for reflection information generated from protodescriptor.proto</summary>
   public static partial class ProtodescriptorReflection {
@@ -31,10 +31,10 @@ namespace Protos {
       descriptor = pbr::FileDescriptor.FromGeneratedCode(descriptorData,
           new pbr::FileDescriptor[] { },
           new pbr::GeneratedClrTypeInfo(null, new pbr::GeneratedClrTypeInfo[] {
-            new pbr::GeneratedClrTypeInfo(typeof(global::Protos.ProtoDescriptor), global::Protos.ProtoDescriptor.Parser, new[]{ "Desc" }, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Protos.ProtoName), global::Protos.ProtoName.Parser, new[]{ "Name" }, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Protos.ProtoDescriptors), global::Protos.ProtoDescriptors.Parser, new[]{ "Desc" }, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Protos.ProtoNames), global::Protos.ProtoNames.Parser, new[]{ "Name" }, null, null, null)
+            new pbr::GeneratedClrTypeInfo(typeof(global::NPitaya.Protos.ProtoDescriptor), global::NPitaya.Protos.ProtoDescriptor.Parser, new[]{ "Desc" }, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::NPitaya.Protos.ProtoName), global::NPitaya.Protos.ProtoName.Parser, new[]{ "Name" }, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::NPitaya.Protos.ProtoDescriptors), global::NPitaya.Protos.ProtoDescriptors.Parser, new[]{ "Desc" }, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::NPitaya.Protos.ProtoNames), global::NPitaya.Protos.ProtoNames.Parser, new[]{ "Name" }, null, null, null)
           }));
     }
     #endregion
@@ -52,7 +52,7 @@ namespace Protos {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Protos.ProtodescriptorReflection.Descriptor.MessageTypes[0]; }
+      get { return global::NPitaya.Protos.ProtodescriptorReflection.Descriptor.MessageTypes[0]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -181,7 +181,7 @@ namespace Protos {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Protos.ProtodescriptorReflection.Descriptor.MessageTypes[1]; }
+      get { return global::NPitaya.Protos.ProtodescriptorReflection.Descriptor.MessageTypes[1]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -310,7 +310,7 @@ namespace Protos {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Protos.ProtodescriptorReflection.Descriptor.MessageTypes[2]; }
+      get { return global::NPitaya.Protos.ProtodescriptorReflection.Descriptor.MessageTypes[2]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -431,7 +431,7 @@ namespace Protos {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Protos.ProtodescriptorReflection.Descriptor.MessageTypes[3]; }
+      get { return global::NPitaya.Protos.ProtodescriptorReflection.Descriptor.MessageTypes[3]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
