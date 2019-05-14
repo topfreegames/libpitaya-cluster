@@ -146,6 +146,7 @@ GrpcServer::Shutdown()
 void
 GrpcServer::ProcessRpcs(ServerCompletionQueue* cq, int threadId)
 {
+    utils::SetThreadName("NPitGrpcSvWk", _log);
     // _log->info("Started processing rpcs on thread {}", threadId);
 
     // Request the first rpc so that the first tag can be

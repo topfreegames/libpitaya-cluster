@@ -84,6 +84,7 @@ void
 Worker::StartThread()
 {
     _log->info("Thread started");
+    utils::SetThreadName("NPitSrvcDisWk", _log);
 
     bool ok = Init();
 
