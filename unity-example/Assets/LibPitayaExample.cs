@@ -29,7 +29,7 @@ public class LibPitayaExample : MonoBehaviour {
 	    string serverId = Guid.NewGuid().ToString();
 
 	    var sdConfig = new SDConfig(
-		    endpoints: "http://10.0.21.121:2379",
+		    endpoints: "http://10.0.21.167:2379",
 		    etcdPrefix: "pitaya/",
 		    heartbeatTTLSec: 60,
 		    logHeartbeat: false,
