@@ -81,11 +81,7 @@ namespace NPitaya
                 throw new PitayaException("Initialization failed");
             }
 
-            if (serviceDiscoveryListener != null)
-            {
-                AddServiceDiscoveryListener(serviceDiscoveryListener);
-            }
-
+            AddServiceDiscoveryListener(serviceDiscoveryListener);
             ListenToIncomingRPCs();
         }
 
@@ -133,11 +129,7 @@ namespace NPitaya
                 throw new PitayaException("Initialization failed");
             }
 
-            if (serviceDiscoveryListener != null)
-            {
-                AddServiceDiscoveryListener(serviceDiscoveryListener);
-            }
-
+            AddServiceDiscoveryListener(serviceDiscoveryListener);
             ListenToIncomingRPCs();
         }
 
@@ -353,9 +345,10 @@ namespace NPitaya
 
         private static void AddServiceDiscoveryListener(ServiceDiscoveryListener listener)
         {
-            if (listener == null) return;
-
             _serviceDiscoveryListener = listener;
+            if (listener == null)
+                return;
+
             _serviceDiscoveryListenerHandle = GCHandle.Alloc(_serviceDiscoveryListener);
 
             IntPtr nativeListenerHandle = tfg_pitc_AddServiceDiscoveryListener(
@@ -368,8 +361,12 @@ namespace NPitaya
 
         private static void RemoveServiceDiscoveryListener(ServiceDiscoveryListener listener)
         {
-            tfg_pitc_RemoveServiceDiscoveryListener(listener.NativeListenerHandle);
-            _serviceDiscoveryListenerHandle.Free();
+            if (listener != null)
+            {
+                tfg_pitc_RemoveServiceDiscoveryListener(listener.NativeListenerHandle);
+                _serviceDiscoveryListenerHandle.Free();
+                _serviceDiscoveryListener = null;
+            }
         }
     }
 }
