@@ -48,6 +48,7 @@ struct CGrpcConfig
     int32_t port;
     int32_t serverShutdownDeadlineMs;
     int32_t serverMaxNumberOfRpcs;
+    int32_t clientRpcTimeoutMs;
 
     pitaya::GrpcConfig ToConfig();
 };

@@ -12,11 +12,13 @@ struct GrpcConfig
     int32_t port;
     std::chrono::milliseconds serverShutdownDeadline;
     int32_t serverMaxNumberOfRpcs;
+    std::chrono::milliseconds clientRpcTimeout;
 
     GrpcConfig()
         : port(0)
         , serverShutdownDeadline(5)
         , serverMaxNumberOfRpcs(-1)
+        , clientRpcTimeout(60000)
     {}
 };
 

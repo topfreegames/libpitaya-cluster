@@ -62,10 +62,10 @@ GrpcClient::~GrpcClient()
 }
 
 static protos::Response
-NewErrorResponse(const std::string& msg)
+NewErrorResponse(const std::string& errorCode, const std::string& msg)
 {
     auto error = new protos::Error();
-    error->set_code(constants::kCodeInternalError);
+    error->set_code(errorCode);
     error->set_msg(msg);
 
     protos::Response res;
@@ -84,7 +84,7 @@ GrpcClient::Call(const pitaya::Server& target, const protos::Request& req)
             auto msg = fmt::format(
                 "Cannot call server {}, since it is not added to the connections map", target.Id());
             _log->error(msg);
-            return NewErrorResponse(msg);
+            return NewErrorResponse(constants::kCodeInternalError, msg);
         }
     }
 
@@ -95,12 +95,18 @@ GrpcClient::Call(const pitaya::Server& target, const protos::Request& req)
 
         protos::Response res;
         grpc::ClientContext context;
+        _log->debug("Making RPC call with {} milliseconds of timeout", _config.clientRpcTimeout.count());
+        context.set_deadline(std::chrono::system_clock::now() + _config.clientRpcTimeout);
         auto status = stub->Call(&context, req, &res);
 
         if (!status.ok()) {
             auto msg = fmt::format("Call RPC failed: {}", status.error_message());
             _log->error(msg);
-            return NewErrorResponse(msg);
+            if (status.error_code() == grpc::StatusCode::DEADLINE_EXCEEDED) {
+                return NewErrorResponse(constants::kCodeTimeout, msg);
+            } else {
+                return NewErrorResponse(constants::kCodeInternalError, msg);
+            }
         }
 
         return res;

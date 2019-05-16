@@ -131,6 +131,7 @@ CGrpcConfig::ToConfig()
     config.port = port;
     config.serverShutdownDeadline = std::chrono::milliseconds(serverShutdownDeadlineMs);
     config.serverMaxNumberOfRpcs = serverMaxNumberOfRpcs;
+    config.clientRpcTimeout = std::chrono::milliseconds(clientRpcTimeoutMs);
     return config;
 }
 
@@ -396,6 +397,8 @@ extern "C"
             retErr->msg = ConvertToCString(err->msg);
             gLogger->error("received error on RPC: {}: {}", retErr->code, retErr->msg);
             return false;
+        } else {
+            gLogger->debug("received message on RPC: {}", res.data());
         }
 
         return SendResponseToManaged(outBuf, res, retErr);

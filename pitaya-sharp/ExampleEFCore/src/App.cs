@@ -36,7 +36,8 @@ namespace ExampleORM
                 host: "127.0.0.1",
                 port: 5444,
                 serverShutdownDeadlineMs: 3000,
-                serverMaxNumberOfRpcs: 500
+                serverMaxNumberOfRpcs: 500,
+                clientRpcTimeoutMs: 10000
             );
 
             PitayaCluster.AddSignalHandler(() =>

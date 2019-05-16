@@ -179,6 +179,7 @@ Worker::StartThread()
                     }
                     AddServer(std::move(server.value()));
                 } else if (job.watchRes.action == "delete") {
+                    _log->debug("Watch: received delete action for server {}", job.watchRes.key);
                     DeleteServer(serverId);
                 }
 
@@ -272,6 +273,7 @@ Worker::Init()
 {
     bool ok = Bootstrap();
     if (!ok) {
+        _log->error("Service discovery bootstrap failed");
         return false;
     }
 

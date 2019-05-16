@@ -12,7 +12,8 @@ namespace NPitayaTest.Tests.Integration
                 host: "127.0.0.1",
                 port: 40405,
                 serverShutdownDeadlineMs: 2000,
-                serverMaxNumberOfRpcs: 100
+                serverMaxNumberOfRpcs: 100,
+                clientRpcTimeoutMs: 10000
             );
 
             var sdCfg = new SDConfig(
@@ -52,7 +53,8 @@ namespace NPitayaTest.Tests.Integration
                 host: "127.0.0.1",
                 port: 40405,
                 serverShutdownDeadlineMs: 2000,
-                serverMaxNumberOfRpcs: 100
+                serverMaxNumberOfRpcs: 100,
+                clientRpcTimeoutMs: 10000
             );
 
             var sdCfg = new SDConfig(

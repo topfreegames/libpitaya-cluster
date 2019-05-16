@@ -32,7 +32,7 @@ std::size_t get_thread_id() noexcept;
 inline void SetThreadName(const char* name, std::shared_ptr<spdlog::logger> log)
 {
 #ifdef linux
-    log->info("Setting thread name for linux to {}", name);
+    log->debug("Setting thread name for linux to {}", name);
     // Under linux we give the thread a name for debugging purposes.
     // There are no cross platform ways of doing that.
     char buf[16];
@@ -46,7 +46,7 @@ inline void SetThreadName(const char* name, std::shared_ptr<spdlog::logger> log)
 #elif _WIN32
     log->warn("Not setting thread id, not implemented on windows yet");
 #else
-    log->info("Setting thread name for macosx to {}", name);
+    log->debug("Setting thread name for macosx to {}", name);
     pthread_setname_np(name);
 #endif
 }

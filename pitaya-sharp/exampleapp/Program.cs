@@ -48,7 +48,8 @@ namespace PitayaCSharpExample
         host: "127.0.0.1",
         port: 5444,
         serverShutdownDeadlineMs: 2000,
-        serverMaxNumberOfRpcs: 200
+        serverMaxNumberOfRpcs: 200,
+        clientRpcTimeoutMs: 10000
       );
 
       PitayaCluster.AddSignalHandler(() =>

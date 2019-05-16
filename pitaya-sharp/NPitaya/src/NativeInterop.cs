@@ -89,14 +89,20 @@ namespace NPitaya
         public int port;
         public int serverShutdownDeadlineMs;
         public int serverMaxNumberOfRpcs;
+        public int clientRpcTimeoutMs;
 
-        public GrpcConfig(string host, int port,
-                          int serverShutdownDeadlineMs, int serverMaxNumberOfRpcs)
+        public GrpcConfig(
+            string host,
+            int port,
+            int serverShutdownDeadlineMs,
+            int serverMaxNumberOfRpcs,
+            int clientRpcTimeoutMs)
         {
             this.host = host;
             this.port = port;
             this.serverShutdownDeadlineMs = serverShutdownDeadlineMs;
             this.serverMaxNumberOfRpcs = serverMaxNumberOfRpcs;
+            this.clientRpcTimeoutMs = clientRpcTimeoutMs;
         }
     }
 
