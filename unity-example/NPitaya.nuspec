@@ -2,13 +2,13 @@
 <package>
   <metadata>
     <id>NPitaya</id>
-    <version>0.5.0</version>
+    <version>0.6.0</version>
     <authors>leonardohahn,felipejfc</authors>
     <owners>TFG</owners>
     <projectUrl>https://github.com/topfreegames/libpitaya-cluster</projectUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>C# binding to the pitaya-cpp library</description>
-    <releaseNotes>Threads have names on native code, fix conflict in namespaces of protos.</releaseNotes>
+    <releaseNotes>Add timeout to gRPC RPC call on the client.</releaseNotes>
     <copyright>Copyright TFG co</copyright>
     <tags>pitaya server grpc nats</tags>
     <dependencies>
