@@ -184,15 +184,15 @@ Cluster::SendKickToUser(const string& serverId, const string& serverType, protos
 }
 
 optional<PitayaError>
-Cluster::RPC(const string& server_id,
+Cluster::RPC(const string& serverId,
              const string& route,
              protos::Request& req,
              protos::Response& ret)
 {
-    _log->debug("Calling RPC on server {}", server_id);
-    auto sv = _sd->GetServerById(server_id);
+    _log->debug("Calling RPC on server {}", serverId);
+    auto sv = _sd->GetServerById(serverId);
     if (!sv) {
-        _log->error("Did not find server id {}", server_id);
+        _log->error("Did not find server id {}", serverId);
         return PitayaError(constants::kCodeNotFound, "server not found");
     }
 
@@ -208,6 +208,8 @@ Cluster::RPC(const string& server_id,
     if (ret.has_error()) {
         _log->error("Received error calling client rpc: {}", ret.error().msg());
         return PitayaError(ret.error().code(), ret.error().msg());
+    } else {
+        _log->info("RPC to server {} succeeded", serverId);
     }
 
     _log->debug("Successfuly called rpc: {}", ret.data());

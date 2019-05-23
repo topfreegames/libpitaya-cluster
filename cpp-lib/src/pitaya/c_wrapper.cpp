@@ -33,8 +33,6 @@ ConvertToCString(const std::string& str)
     return cString;
 }
 
-static CsharpFreeCb freePinvoke;
-static RpcPinvokeCb gPinvokeCb;
 static std::shared_ptr<spdlog::logger> gLogger;
 static void (*gSignalHandler)() = nullptr;
 
@@ -46,15 +44,6 @@ FromPitayaServer(CServer* server, const pitaya::Server& pServer)
     server->metadata = ConvertToCString(pServer.Metadata());
     server->hostname = ConvertToCString(pServer.Hostname());
     server->frontend = pServer.IsFrontend();
-}
-
-static CPitayaError*
-NewPitayaError(const std::string& codeStr, const std::string& msgStr)
-{
-    CPitayaError* err = (CPitayaError*)malloc(sizeof(CPitayaError));
-    err->code = ConvertToCString(codeStr);
-    err->msg = ConvertToCString(msgStr);
-    return err;
 }
 
 static void

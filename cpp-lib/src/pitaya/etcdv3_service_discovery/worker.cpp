@@ -172,6 +172,7 @@ Worker::StartThread()
                 }
 
                 if (job.watchRes.action == "create") {
+                    _log->debug("Watch: received create action for server {}", job.watchRes.key);
                     auto server = ParseServer(job.watchRes.value);
                     if (!server) {
                         _log->error("Watch: Error parsing server: {}", job.watchRes.value);

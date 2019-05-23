@@ -85,6 +85,8 @@ GrpcClient::Call(const pitaya::Server& target, const protos::Request& req)
                 "Cannot call server {}, since it is not added to the connections map", target.Id());
             _log->error(msg);
             return NewErrorResponse(constants::kCodeInternalError, msg);
+        } else {
+            _log->debug("Found server on the connections map");
         }
     }
 
@@ -101,6 +103,9 @@ GrpcClient::Call(const pitaya::Server& target, const protos::Request& req)
 
         if (!status.ok()) {
             auto msg = fmt::format("Call RPC failed: {}", status.error_message());
+            if (!status.error_details().empty()) {
+                msg += ", details: " + status.error_details();
+            }
             _log->error(msg);
             if (status.error_code() == grpc::StatusCode::DEADLINE_EXCEEDED) {
                 return NewErrorResponse(constants::kCodeTimeout, msg);
