@@ -109,6 +109,7 @@ CSDConfig::ToConfig()
     config.logServerSync = logServerSync;
     config.logServerDetails = logServerDetails;
     config.syncServersIntervalSec = std::chrono::seconds(syncServersIntervalSec);
+    config.maxNumberOfRetries = maxNumberOfRetries;
     return config;
 }
 
