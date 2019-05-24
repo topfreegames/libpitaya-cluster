@@ -113,9 +113,7 @@ Worker::StartThread()
 
         switch (job.info) {
             case JobInfo::SyncServers: {
-                if (_config.logServerSync) {
-                    _log->debug("Will synchronize servers");
-                }
+                _log->debug("Will synchronize servers");
 
                 ListResponse res = _etcdClient->List(_config.etcdPrefix);
                 if (!res.ok) {
@@ -210,6 +208,8 @@ Worker::StartThread()
                     if (ok) {
                         _log->info("Etcd reconnection successful");
                         _numKeepAliveRetriesLeft = _config.maxNumberOfRetries;
+                        _log->info("Restarting etcd watcher");
+                        _etcdClient->Watch(std::bind(&Worker::OnWatch, this, _1));
                         StartLeaseKeepAlive();
                         break;
                     }
