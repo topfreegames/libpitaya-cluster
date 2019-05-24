@@ -186,13 +186,19 @@ Worker::StartThread()
                 break;
             }
             case JobInfo::AddListener: {
+                _log->debug("Adding listener");
                 assert(job.listener && "listener should not be null");
                 // Whenever we add a new listener, we want to call ServerAdded
                 // for all existent servers on the class.
-                for (const auto& pair : _serversById) {
-                    const Server& server = pair.second;
-                    job.listener->ServerAdded(server);
+                {
+                    std::lock_guard<decltype(_serversById)> lock(_serversById);
+                    for (const auto& pair : _serversById) {
+                        const Server& server = pair.second;
+                        _log->debug("Broadcasting server added to the listener for id {}", server.Id());
+                        job.listener->ServerAdded(server);
+                    }
                 }
+
                 std::lock_guard<decltype(_listeners)> lock(_listeners);
                 _listeners.PushBack(job.listener);
                 break;
