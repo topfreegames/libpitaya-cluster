@@ -26,15 +26,19 @@ public:
         _config.heartbeatTTLSec = std::chrono::seconds(5);
         _config.syncServersIntervalSec = std::chrono::seconds(4);
     }
+    
+    std::unique_ptr<etcdv3_service_discovery::Etcdv3ServiceDiscovery> CreateServiceDiscovery()
+    {
+        return std::unique_ptr<Etcdv3ServiceDiscovery>(
+            new Etcdv3ServiceDiscovery(_config, _server, std::unique_ptr<EtcdClient>(_mockEtcdClient)));
+    }
 
     void TearDown() override
     {
-        _serviceDiscovery.reset();
         _mockEtcdClient = nullptr;
     }
 
 protected:
-    std::unique_ptr<etcdv3_service_discovery::Etcdv3ServiceDiscovery> _serviceDiscovery;
     Server _server;
     MockEtcdClient* _mockEtcdClient;
     EtcdServiceDiscoveryConfig _config;
@@ -45,7 +49,7 @@ NewSuccessfullLeaseGrantResponse(int64_t leaseId)
 {
     LeaseGrantResponse leaseGrantRes;
     leaseGrantRes.ok = true;
-    leaseGrantRes.leaseId = 1293102390123;
+    leaseGrantRes.leaseId = leaseId;
     return leaseGrantRes;
 }
 
@@ -119,12 +123,11 @@ TEST_F(Etcdv3ServiceDiscoveryTest, NoneIsReturnedWhenThereAreNoServers)
         EXPECT_CALL(*_mockEtcdClient, StopLeaseKeepAlive());
     }
 
-    _serviceDiscovery = std::unique_ptr<Etcdv3ServiceDiscovery>(
-        new Etcdv3ServiceDiscovery(_config, _server, std::unique_ptr<EtcdClient>(_mockEtcdClient)));
+    auto serviceDiscovery = CreateServiceDiscovery();
 
     ASSERT_NE(_mockEtcdClient->onWatch, nullptr);
 
-    auto server = _serviceDiscovery->GetServerById("random-id");
+    auto server = serviceDiscovery->GetServerById("random-id");
     ASSERT_EQ(server, boost::none);
 }
 
@@ -158,8 +161,7 @@ TEST_F(Etcdv3ServiceDiscoveryTest, WatchesForKeysAddedAndRemoved)
         EXPECT_CALL(*_mockEtcdClient, StopLeaseKeepAlive());
     }
 
-    _serviceDiscovery = std::unique_ptr<Etcdv3ServiceDiscovery>(
-        new Etcdv3ServiceDiscovery(_config, _server, std::unique_ptr<EtcdClient>(_mockEtcdClient)));
+    auto serviceDiscovery = CreateServiceDiscovery();
 
     ASSERT_NE(_mockEtcdClient->onWatch, nullptr);
 
@@ -173,7 +175,7 @@ TEST_F(Etcdv3ServiceDiscoveryTest, WatchesForKeysAddedAndRemoved)
         _mockEtcdClient->onWatch(watchRes);
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
 
-        auto server = _serviceDiscovery->GetServerById("myid");
+        auto server = serviceDiscovery->GetServerById("myid");
         ASSERT_EQ(server, Server(Server::Kind::Backend, "myid", "mytype"));
     }
 
@@ -184,7 +186,7 @@ TEST_F(Etcdv3ServiceDiscoveryTest, WatchesForKeysAddedAndRemoved)
         _mockEtcdClient->onWatch(watchRes);
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
 
-        auto server = _serviceDiscovery->GetServerById("myid");
+        auto server = serviceDiscovery->GetServerById("myid");
         ASSERT_EQ(server, boost::none);
     }
 }
@@ -249,22 +251,21 @@ TEST_F(Etcdv3ServiceDiscoveryTest, SynchronizesServersEveryInterval)
             .WillOnce(Return(secondGetRes));
     }
 
-    _serviceDiscovery = std::unique_ptr<Etcdv3ServiceDiscovery>(
-        new Etcdv3ServiceDiscovery(_config, _server, std::unique_ptr<EtcdClient>(_mockEtcdClient)));
+    auto serviceDiscovery = CreateServiceDiscovery();
 
     ASSERT_NE(_mockEtcdClient->onWatch, nullptr);
 
     std::this_thread::sleep_for(std::chrono::milliseconds(5));
 
     {
-        auto server = _serviceDiscovery->GetServerById("myid");
+        auto server = serviceDiscovery->GetServerById("myid");
         EXPECT_TRUE(server);
         if (server) {
             EXPECT_EQ(server.value(), Server(Server::Kind::Backend, "myid", "connector"));
         }
     }
     {
-        auto server = _serviceDiscovery->GetServerById("awesome-id");
+        auto server = serviceDiscovery->GetServerById("awesome-id");
         EXPECT_TRUE(server);
         if (server) {
             EXPECT_EQ(server.value(), Server(Server::Kind::Frontend, "awesome-id", "room"));
@@ -274,18 +275,18 @@ TEST_F(Etcdv3ServiceDiscoveryTest, SynchronizesServersEveryInterval)
     std::this_thread::sleep_for(std::chrono::milliseconds(1100));
 
     {
-        auto server = _serviceDiscovery->GetServerById("myid");
+        auto server = serviceDiscovery->GetServerById("myid");
         EXPECT_EQ(server, boost::none);
     }
     {
-        auto server = _serviceDiscovery->GetServerById("awesome-id");
+        auto server = serviceDiscovery->GetServerById("awesome-id");
         EXPECT_TRUE(server);
         if (server) {
             EXPECT_EQ(server.value(), Server(Server::Kind::Frontend, "awesome-id", "room"));
         }
     }
     {
-        auto server = _serviceDiscovery->GetServerById("super-id");
+        auto server = serviceDiscovery->GetServerById("super-id");
         EXPECT_EQ(server, boost::none);
     }
 }
@@ -364,10 +365,8 @@ TEST_F(Etcdv3ServiceDiscoveryTest, ListenersCanBeAddedAndRemoved)
         EXPECT_CALL(*listener, ServerRemoved(Server(Server::Kind::Backend, "myid", "connector")));
     }
 
-    _serviceDiscovery = std::unique_ptr<Etcdv3ServiceDiscovery>(
-        new Etcdv3ServiceDiscovery(_config, _server, std::unique_ptr<EtcdClient>(_mockEtcdClient)));
-
-    _serviceDiscovery->AddListener(listener.get());
+    auto serviceDiscovery = CreateServiceDiscovery();
+    serviceDiscovery->AddListener(listener.get());
 
     ASSERT_NE(_mockEtcdClient->onWatch, nullptr);
 
@@ -379,14 +378,14 @@ TEST_F(Etcdv3ServiceDiscoveryTest, ListenersCanBeAddedAndRemoved)
     watchRes.action = "delete";
     watchRes.key = "pitaya/servers/room/awesome-id";
 
-    _serviceDiscovery->RemoveListener(listener.get());
+    serviceDiscovery->RemoveListener(listener.get());
     _mockEtcdClient->onWatch(watchRes);
 
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
 
     // We removed the listener, therefore we do not receive a notification that the
     // server was removed, however we can check that by trying the get the server by id.
-    auto server = _serviceDiscovery->GetServerById("awesome-id");
+    auto server = serviceDiscovery->GetServerById("awesome-id");
     EXPECT_EQ(server, boost::none);
 }
 
@@ -441,22 +440,180 @@ TEST_F(Etcdv3ServiceDiscoveryTest, ServerIsIgnoredInSyncServersIfGetFromEtcdFail
             .WillOnce(Return(secondGetRes));
     }
 
-    _serviceDiscovery = std::unique_ptr<Etcdv3ServiceDiscovery>(
-        new Etcdv3ServiceDiscovery(_config, _server, std::unique_ptr<EtcdClient>(_mockEtcdClient)));
+    auto serviceDiscovery = CreateServiceDiscovery();
 
     std::this_thread::sleep_for(std::chrono::milliseconds(5));
 
     ASSERT_NE(_mockEtcdClient->onWatch, nullptr);
 
     {
-        auto server = _serviceDiscovery->GetServerById("myid");
+        auto server = serviceDiscovery->GetServerById("myid");
         EXPECT_FALSE(server);
     }
     {
-        auto server = _serviceDiscovery->GetServerById("awesome-id");
+        auto server = serviceDiscovery->GetServerById("awesome-id");
         EXPECT_TRUE(server);
         if (server) {
             EXPECT_EQ(server.value(), Server(Server::Kind::Frontend, "awesome-id", "room"));
         }
     }
+}
+
+ACTION_TEMPLATE(SaveFunction,
+                HAS_1_TEMPLATE_PARAMS(int, k),
+                AND_1_VALUE_PARAMS(pointer))
+{
+    *pointer = std::get<k>(args);
+}
+
+TEST_F(Etcdv3ServiceDiscoveryTest, ReconnectsIfLosesConnectionToEtcd)
+{
+    // First lease grant will succeed but the second will fail.
+    auto firstLeaseGrantRes = NewSuccessfullLeaseGrantResponse(712381283);
+    auto setRes = NewSuccessfullSetResponse();
+
+    ListResponse listRes;
+    listRes.ok = true;
+    
+    LeaseRevokeResponse revokeRes;
+    revokeRes.ok = true;
+    
+    EXPECT_CALL(*_mockEtcdClient, List(Eq(_config.etcdPrefix))).WillRepeatedly(Return(listRes));
+    
+    {
+        InSequence seq;
+        EXPECT_CALL(*_mockEtcdClient, LeaseGrant(Eq(_config.heartbeatTTLSec)))
+        .WillOnce(Return(firstLeaseGrantRes));
+        EXPECT_CALL(*_mockEtcdClient, Set(_, _, Eq(firstLeaseGrantRes.leaseId)))
+        .WillOnce(Return(setRes));
+    }
+    
+    std::function<void(EtcdLeaseKeepAliveStatus)> onLeaseKeepAliveExit;
+    
+    {
+        InSequence seq;
+        EXPECT_CALL(*_mockEtcdClient, LeaseKeepAlive(Eq(firstLeaseGrantRes.leaseId), _))
+            .WillOnce(SaveFunction<1>(&onLeaseKeepAliveExit));
+        EXPECT_CALL(*_mockEtcdClient, CancelWatch());
+        EXPECT_CALL(*_mockEtcdClient, StopLeaseKeepAlive());
+    }
+    
+    auto secondLeaseGrantRes = NewSuccessfullLeaseGrantResponse(10101010);
+    {
+        // These are called after the disconnection
+        InSequence seq;
+        EXPECT_CALL(*_mockEtcdClient, StopLeaseKeepAlive());
+        EXPECT_CALL(*_mockEtcdClient, LeaseGrant(Eq(_config.heartbeatTTLSec)))
+        .WillOnce(Return(secondLeaseGrantRes));
+        EXPECT_CALL(*_mockEtcdClient, Set(_, _, Eq(secondLeaseGrantRes.leaseId)))
+        .WillOnce(Return(setRes));
+        EXPECT_CALL(*_mockEtcdClient, LeaseKeepAlive(Eq(secondLeaseGrantRes.leaseId), _))
+        .WillOnce(SaveFunction<1>(&onLeaseKeepAliveExit));
+        EXPECT_CALL(*_mockEtcdClient, LeaseRevoke(Eq(secondLeaseGrantRes.leaseId)))
+        .WillOnce(Return(revokeRes));
+    }
+
+    _config.syncServersIntervalSec = std::chrono::seconds(1);
+    auto serviceDiscovery = CreateServiceDiscovery();
+    ASSERT_NE(_mockEtcdClient->onWatch, nullptr);
+    
+    pitaya::WatchResponse watchRes;
+    watchRes.ok = true;
+
+    {
+        watchRes.action = "create";
+        watchRes.key = "pitaya/servers/mytype/myid";
+        watchRes.value = "{\"id\": \"myid\", \"type\": \"mytype\"}";
+        _mockEtcdClient->onWatch(watchRes);
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+
+        auto server = serviceDiscovery->GetServerById("myid");
+        ASSERT_EQ(server, Server(Server::Kind::Backend, "myid", "mytype"));
+    }
+    
+    onLeaseKeepAliveExit(EtcdLeaseKeepAliveStatus::Fail);
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+}
+
+TEST_F(Etcdv3ServiceDiscoveryTest, SyncIsStillCalledAfterReconnection)
+{
+    // First lease grant will succeed but the second will fail.
+    auto firstLeaseGrantRes = NewSuccessfullLeaseGrantResponse(712381283);
+    auto setRes = NewSuccessfullSetResponse();
+    
+    ListResponse listRes;
+    listRes.ok = true;
+    
+    LeaseRevokeResponse revokeRes;
+    revokeRes.ok = true;
+    
+    _config.syncServersIntervalSec = std::chrono::seconds(1);
+    
+    {
+        // Synchronization will be called by the worker even after reconnection
+        InSequence seq;
+        EXPECT_CALL(*_mockEtcdClient, List(Eq(_config.etcdPrefix)))
+        .WillOnce(Return(listRes)) // First time is called in the initial connection
+        .WillOnce(Return(listRes)) // Second time is called after 1 second
+        .WillOnce(Return(listRes)) // Third time is called right after reconnection
+        .WillOnce(Return(listRes)) // Fourth time is called 2 second after reconnection
+        .WillOnce(Return(listRes)) // Fifth time is called 3 seconds after reconnection
+        .WillOnce(Return(listRes)); // Fifth time is called 4 seconds after reconnection
+    }
+
+    {
+        InSequence seq;
+        EXPECT_CALL(*_mockEtcdClient, LeaseGrant(Eq(_config.heartbeatTTLSec)))
+        .WillOnce(Return(firstLeaseGrantRes));
+        EXPECT_CALL(*_mockEtcdClient, Set(_, _, Eq(firstLeaseGrantRes.leaseId)))
+        .WillOnce(Return(setRes));
+    }
+    
+    std::function<void(EtcdLeaseKeepAliveStatus)> onLeaseKeepAliveExit;
+    
+    {
+        InSequence seq;
+        EXPECT_CALL(*_mockEtcdClient, LeaseKeepAlive(Eq(firstLeaseGrantRes.leaseId), _))
+        .WillOnce(SaveFunction<1>(&onLeaseKeepAliveExit));
+        EXPECT_CALL(*_mockEtcdClient, CancelWatch());
+        EXPECT_CALL(*_mockEtcdClient, StopLeaseKeepAlive());
+    }
+    
+    auto secondLeaseGrantRes = NewSuccessfullLeaseGrantResponse(10101010);
+    {
+        // These are called after the disconnection
+        InSequence seq;
+        EXPECT_CALL(*_mockEtcdClient, StopLeaseKeepAlive());
+        EXPECT_CALL(*_mockEtcdClient, LeaseGrant(Eq(_config.heartbeatTTLSec)))
+        .WillOnce(Return(secondLeaseGrantRes));
+        EXPECT_CALL(*_mockEtcdClient, Set(_, _, Eq(secondLeaseGrantRes.leaseId)))
+        .WillOnce(Return(setRes));
+        EXPECT_CALL(*_mockEtcdClient, LeaseKeepAlive(Eq(secondLeaseGrantRes.leaseId), _))
+        .WillOnce(SaveFunction<1>(&onLeaseKeepAliveExit));
+        EXPECT_CALL(*_mockEtcdClient, LeaseRevoke(Eq(secondLeaseGrantRes.leaseId)))
+        .WillOnce(Return(revokeRes));
+    }
+    
+    _config.syncServersIntervalSec = std::chrono::seconds(1);
+    auto serviceDiscovery = CreateServiceDiscovery();
+    ASSERT_NE(_mockEtcdClient->onWatch, nullptr);
+    
+    pitaya::WatchResponse watchRes;
+    watchRes.ok = true;
+    
+    {
+        watchRes.action = "create";
+        watchRes.key = "pitaya/servers/mytype/myid";
+        watchRes.value = "{\"id\": \"myid\", \"type\": \"mytype\"}";
+        _mockEtcdClient->onWatch(watchRes);
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        
+        auto server = serviceDiscovery->GetServerById("myid");
+        ASSERT_EQ(server, Server(Server::Kind::Backend, "myid", "mytype"));
+    }
+    
+    onLeaseKeepAliveExit(EtcdLeaseKeepAliveStatus::Fail);
+    
+    std::this_thread::sleep_for(std::chrono::milliseconds(4100)); // Sleeping a little more than 4 seconds should call List five times
 }
