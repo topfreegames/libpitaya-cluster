@@ -51,8 +51,8 @@ GrpcClient::GrpcClient(GrpcConfig config,
     // FIXME: this call here makes the service discovery call the GRPC client sometimes when the
     // object is NOT initialized. This is currently not causing problems, but should be changed in
     // order to avoid future issues.
-    _serviceDiscovery->AddListener(this);
     _log->info("gRPC RPC client created");
+    _serviceDiscovery->AddListener(this);
 }
 
 GrpcClient::~GrpcClient()
@@ -100,13 +100,13 @@ GrpcClient::Call(const pitaya::Server& target, const protos::Request& req)
         _log->debug("Making RPC call with {} milliseconds of timeout", _config.clientRpcTimeout.count());
         context.set_deadline(std::chrono::system_clock::now() + _config.clientRpcTimeout);
         auto status = stub->Call(&context, req, &res);
-
+        
         if (!status.ok()) {
-            auto msg = fmt::format("Call RPC failed: {}", status.error_message());
-            if (!status.error_details().empty()) {
-                msg += ", details: " + status.error_details();
-            }
+            auto msg = fmt::format("Call RPC failed: error_code = {}, error_message = {}, error_details = {}",
+                                   status.error_code(), status.error_message(), status.error_details());
             _log->error(msg);
+            _log->error("Server details: id = {}, type = {}, hostname = {}, isFrontend = {}, metadata = {}",
+                        target.Id(), target.Type(), target.Hostname(), target.IsFrontend(), target.Metadata());
             if (status.error_code() == grpc::StatusCode::DEADLINE_EXCEEDED) {
                 return NewErrorResponse(constants::kCodeTimeout, msg);
             } else {
