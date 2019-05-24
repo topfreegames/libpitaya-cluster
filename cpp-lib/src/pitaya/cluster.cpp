@@ -70,7 +70,8 @@ Cluster::InitializeWithGrpc(GrpcConfig config,
                        [](std::shared_ptr<grpc::ChannelInterface> channel)
                            -> std::unique_ptr<protos::Pitaya::StubInterface> {
                            return protos::Pitaya::NewStub(channel);
-                       }));
+                       },
+                       loggerName));
 
     Initialize(server, serviceDiscovery, std::move(rpcServer), std::move(rpcClient), loggerName);
 }
