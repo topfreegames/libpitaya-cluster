@@ -217,6 +217,7 @@ Worker::StartThread()
                         _log->info("Restarting etcd watcher");
                         _etcdClient->Watch(std::bind(&Worker::OnWatch, this, _1));
                         StartLeaseKeepAlive();
+                        _syncServersTicker.Start();
                         break;
                     }
                 }
