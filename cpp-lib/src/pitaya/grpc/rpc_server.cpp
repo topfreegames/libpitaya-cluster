@@ -212,6 +212,11 @@ GrpcServer::ProcessCallData(CallData* callData, ServerCompletionQueue* cq, int t
                 auto nextCallData = new CallData();
                 ProcessCallData(nextCallData, cq, threadId);
             }
+            
+            // --------------------------------------------------------------------------------
+            // TODO: Check if the RPC is already cancelled for some reason (client or timeout).
+            // If that is the case, simply ignore it.
+            // --------------------------------------------------------------------------------
 
             // We lock the current in process RPCs vector and check wether there is enough space
             // to process another RPC.
