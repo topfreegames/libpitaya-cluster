@@ -1,9 +1,10 @@
 ﻿using System;
-using System.Diagnostics;
+using System.Collections.Generic;
 using System.Threading;
 using exampleapp.Handlers;
 using exampleapp.remotes;
 using NPitaya;
+using NPitaya.Metrics;
 using NPitaya.Models;
 
 namespace PitayaCSharpExample
@@ -51,6 +52,14 @@ namespace PitayaCSharpExample
         serverMaxNumberOfRpcs: 200,
         clientRpcTimeoutMs: 10000
       );
+
+      Dictionary<string, string> constantTags = new Dictionary<string, string>
+      {
+          {"game", "game"},
+          {"serverType", "svType"}
+      };
+      var statsdMR = new StatsdMetricsReporter("localhost", 5000, "game", constantTags);
+      MetricsReporters.AddMetricReporter(statsdMR);
 
       PitayaCluster.AddSignalHandler(() =>
       {
@@ -103,48 +112,18 @@ namespace PitayaCSharpExample
 
       Thread.Sleep(1000);
 
-      Console.ReadLine();
+      try
+      {
+        var res = PitayaCluster.Rpc<NPitaya.Protos.RPCRes>(Route.FromString("csharp.testRemote.remote"), null);
+        Console.WriteLine($"Code: {res.Code}");
+        Console.WriteLine($"Msg: {res.Msg}");
+      }
+      catch (PitayaException exc)
+      {
+        Console.WriteLine($"RPC failed: {exc.Message}");
+      }
 
       PitayaCluster.Terminate();
-
-      Console.WriteLine("EXITING PROGRAM");
-      // while (true)
-      // {
-      //   Thread.Sleep(10);
-      // }
-
-      //try
-      //{
-      //  var res = PitayaCluster.Rpc<Protos.RPCRes>(Route.FromString("csharp.testremote.remote"), null);
-      //  Console.WriteLine($"Code: {res.Code}");
-      //  Console.WriteLine($"Msg: {res.Msg}");
-      //}
-      //catch (PitayaException exc)
-      //{
-      //  Console.WriteLine($"RPC failed: {exc.Message}");
-      //}
-
-      //
-      //      Server sv = PitayaCluster.GetServer(serverId);
-      //      Logger.Info("got server with id: {0}", sv.id);
-      //
-      //      Protos.RPCMsg msg = new Protos.RPCMsg();
-      //      msg.Msg = "hellow from bla";
-      //
-      //      try
-      //      {
-      //        Protos.RPCRes res = PitayaCluster.RPC<Protos.RPCRes>(Pitaya.Route.fromString("connector.testremote.test"), msg);
-      //        Logger.Info("received rpc res {0}", res);
-      //      }
-      //      catch (Exception e)
-      //      {
-      //        Logger.Error("deu ruim: {0}", e);
-      //      }
-      //
-      //      Console.ReadKey();
-      // PitayaCluster.Shutdown();
-      //    }
-      //  }
     }
   }
 }
