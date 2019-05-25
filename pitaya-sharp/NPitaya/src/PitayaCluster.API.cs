@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading;
+using NPitaya.Metrics;
 using NPitaya.Models;
 using NPitaya.Serializer;
 using NPitaya.Protos;
@@ -12,7 +13,6 @@ using static NPitaya.Utils.Utils;
 // TODO profiling
 // TODO better reflection performance in task async call
 // TODO support to sync methods
-// TODO configure max paralelism
 namespace NPitaya
 {
     public partial class PitayaCluster
@@ -293,17 +293,19 @@ namespace NPitaya
 
         public static unsafe T Rpc<T>(string serverId, Route route, object msg)
         {
-            bool ok = false;
             MemoryBuffer* memBufPtr = null;
             var retError = new Error();
-
+            var ok = false;
+            Stopwatch sw = null;
             try
             {
                 var data = SerializerUtils.SerializeOrRaw(msg, _serializer);
+                sw = Stopwatch.StartNew();
                 fixed (byte* p = data)
                 {
                     ok = RPCInternal(serverId, route.ToString(), (IntPtr) p, data.Length, &memBufPtr, ref retError);
                 }
+                sw.Stop();
 
                 if (!ok) // error
                 {
@@ -315,8 +317,19 @@ namespace NPitaya
             }
             finally
             {
+                var status = ok ? Metrics.Constants.Status.success.ToString() : Metrics.Constants.Status.fail.ToString();
+                if (sw != null) ReportTimer(status, route.ToString(), sw.Elapsed.TotalMilliseconds * 1000000);
                 if (memBufPtr != null) FreeMemoryBufferInternal(memBufPtr);
             }
+        }
+
+        private static void ReportTimer(string status, string route, double value)
+        {
+            var tags = new Dictionary<string, string>();
+            tags.Add("status", status);
+            tags.Add("route", route);
+            tags.Add("type", "rpc");
+            MetricsReporters.ReportTimer(tags, value); // to nanoseconds
         }
 
         public static T Rpc<T>(Route route, IMessage msg)

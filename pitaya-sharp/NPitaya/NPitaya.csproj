@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <Import Project="../netfx.props" />
     <PropertyGroup>
@@ -13,11 +13,12 @@
         <RepositoryUrl>https://github.com/topfreegames/libpitaya-cluster</RepositoryUrl>
         <PackageTags>pitaya,server,games,framework,rpc</PackageTags>
         <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-        <TargetFrameworks>net45;netstandard2.0</TargetFrameworks>
+        <TargetFrameworks>net451;netstandard2.0</TargetFrameworks>
         <RootNamespace>pitaya</RootNamespace>
     </PropertyGroup>
 
     <ItemGroup>
+      <PackageReference Include="DogStatsD-CSharp-Client" Version="3.3.0" />
       <PackageReference Include="Google.Protobuf" Version="3.7.0" />
     </ItemGroup>
 
