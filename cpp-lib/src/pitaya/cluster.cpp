@@ -90,9 +90,9 @@ Cluster::InitializeWithNats(NatsConfig natsConfig,
     auto etcdClient = std::unique_ptr<EtcdClient>(new EtcdClientV3(
         sdConfig.endpoints, sdConfig.etcdPrefix, sdConfig.logHeartbeat, loggerName));
     auto serviceDiscovery = std::shared_ptr<ServiceDiscovery>(
-        new Etcdv3ServiceDiscovery(std::move(sdConfig), server, std::move(etcdClient)));
+        new Etcdv3ServiceDiscovery(std::move(sdConfig), server, std::move(etcdClient), loggerName));
 
-    Initialize(server, std::move(serviceDiscovery), std::move(rpcServer), std::move(rpcClient));
+    Initialize(server, std::move(serviceDiscovery), std::move(rpcServer), std::move(rpcClient), loggerName);
 }
 
 void
@@ -108,6 +108,9 @@ Cluster::Initialize(Server server,
     _rpcSv = std::move(rpcServer);
     _rpcClient = std::move(rpcClient);
     _server = server;
+    // NOTE: Not destroying the semaphore at the Terminate func due to the fact that threads
+    // may still be running and using it. Then, it will surely crash.
+    _waitingRpcsSemaphore.reset(new utils::Semaphore());
 
     _rpcSv->Start(std::bind(&Cluster::OnIncomingRpc, this, _1, _2));
 }
@@ -230,12 +233,12 @@ Cluster::OnIncomingRpc(const protos::Request& req, Rpc* rpc)
         rpcData.req = req;
         rpcData.rpc = rpc;
         _waitingRpcs.PushBack(rpcData);
-        _waitingRpcsSemaphore.Notify();
+        _waitingRpcsSemaphore->Notify();
     } else {
         // TODO, FIXME: intead of incrementing the count to 2000 here,
         // solve this in a more elegant way.
         _waitingRpcsFinished = true;
-        _waitingRpcsSemaphore.NotifyAll(2000);
+        _waitingRpcsSemaphore->NotifyAll(2000);
     }
 }
 
@@ -245,7 +248,7 @@ Cluster::WaitForRpc()
     // TODO: there are probably too many locks being used here.
     // After adding some benchmarks, research a better way of doing this.
     // (e.g., merging the semaphore and queue, atomics, etc.)
-    _waitingRpcsSemaphore.Wait();
+    _waitingRpcsSemaphore->Wait();
 
     std::lock_guard<decltype(_waitingRpcs)> lock(_waitingRpcs);
 

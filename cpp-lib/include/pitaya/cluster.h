@@ -90,7 +90,7 @@ private:
     Server _server;
 
     utils::SyncDeque<RpcData> _waitingRpcs;
-    utils::Semaphore _waitingRpcsSemaphore;
+    std::unique_ptr<utils::Semaphore> _waitingRpcsSemaphore;
     bool _waitingRpcsFinished;
 };
 

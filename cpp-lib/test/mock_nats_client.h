@@ -19,8 +19,6 @@ public:
         pitaya::NatsStatus(const std::string& topic,
                            std::function<void(std::shared_ptr<pitaya::NatsMsg>)> onMessage));
 
-    MOCK_METHOD0(Unsubscribe, void());
-
     MOCK_METHOD2(Publish, pitaya::NatsStatus(const char* reply, const std::vector<uint8_t>& buf));
 };
 
