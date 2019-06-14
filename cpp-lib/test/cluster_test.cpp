@@ -213,11 +213,11 @@ TEST_F(ClusterTest, SemaphoreRestart)
     
     for (auto& thread : rpcListeners) {
         thread = std::thread([]() {
-            auto start = std::chrono::system_clock::now();
+            auto start = high_resolution_clock::now();
             optional<Cluster::RpcData> data = Cluster::Instance().WaitForRpc();
-            auto end = std::chrono::system_clock::now();
-            std::chrono::duration<double> elapsed_seconds = end-start;
-            EXPECT_GE(elapsed_seconds, std::chrono::duration<double>(0.050));
+            auto end = high_resolution_clock::now();
+            auto elapsed_ns = duration_cast<nanoseconds>(end-start).count();
+            EXPECT_GE(elapsed_ns, duration_cast<nanoseconds>(milliseconds(50)).count());
             EXPECT_EQ(data, boost::none);
         });
     }
