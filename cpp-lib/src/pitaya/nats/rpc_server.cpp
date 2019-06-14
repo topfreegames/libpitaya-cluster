@@ -86,7 +86,7 @@ NatsRpcServer::NatsRpcServer(const Server& server, const NatsConfig& config, con
     : NatsRpcServer(
           server,
           config,
-          std::unique_ptr<NatsClient>(new NatsClientImpl(NatsApiType::Asynchronous, config)),
+          std::unique_ptr<NatsClient>(new NatsClientImpl(NatsApiType::Asynchronous, config, loggerName)),
           loggerName)
 {}
 
@@ -102,6 +102,7 @@ NatsRpcServer::NatsRpcServer(const Server& server,
 
 NatsRpcServer::~NatsRpcServer()
 {
+    _log->info("Stopping rpc server");
     _log->flush();
 }
 

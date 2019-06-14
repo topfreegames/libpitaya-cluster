@@ -64,8 +64,6 @@ public:
     virtual NatsStatus Subscribe(const std::string& topic,
                                  std::function<void(std::shared_ptr<NatsMsg>)> onMessage) = 0;
 
-    virtual void Unsubscribe() = 0;
-
     virtual NatsStatus Publish(const char* reply, const std::vector<uint8_t>& buf) = 0;
 };
 
@@ -82,8 +80,6 @@ public:
 
     NatsStatus Subscribe(const std::string& topic,
                          std::function<void(std::shared_ptr<NatsMsg>)> onMessage) override;
-
-    void Unsubscribe() override;
 
     NatsStatus Publish(const char* reply, const std::vector<uint8_t>& buf) override;
 

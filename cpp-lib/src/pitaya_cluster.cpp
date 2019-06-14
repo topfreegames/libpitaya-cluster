@@ -119,8 +119,8 @@ main()
                                                server,
                                                "main");
 #else
-        NatsConfig natsConfig("nats://localhost:4222", 1000, 3000, 3, 100);
-
+        NatsConfig natsConfig("nats://localhost:4222", std::chrono::milliseconds(1000), std::chrono::milliseconds(3000), std::chrono::milliseconds(3), 100, 3, 10);
+        
         Cluster::Instance().InitializeWithNats(
             std::move(natsConfig), std::move(sdConfig), server, "main");
 #endif

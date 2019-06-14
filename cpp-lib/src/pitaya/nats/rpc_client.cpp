@@ -24,7 +24,7 @@ namespace pitaya {
 NatsRpcClient::NatsRpcClient(const NatsConfig& config, const char* loggerName)
     : NatsRpcClient(
           config,
-          std::unique_ptr<NatsClient>(new NatsClientImpl(NatsApiType::Synchronous, config)),
+          std::unique_ptr<NatsClient>(new NatsClientImpl(NatsApiType::Synchronous, config, loggerName)),
           loggerName)
 {}
 

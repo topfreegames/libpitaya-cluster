@@ -197,3 +197,39 @@ TEST_F(ClusterTest, ThreadsWaitingForRpcsReceiveFinishedNotification)
         }
     }
 }
+
+TEST_F(ClusterTest, SemaphoreRestart)
+{
+    using namespace std::chrono;
+    
+    EXPECT_NE(_handlerFunc, nullptr);
+    EXPECT_CALL(*_mockRpcSv, Shutdown()).WillOnce(SendEmptyRpc(_handlerFunc));
+    
+    Cluster::Instance().Terminate();
+    SetUp();
+    
+    // Define 10 threads waiting for RPCs
+    std::vector<std::thread> rpcListeners(10);
+    
+    for (auto& thread : rpcListeners) {
+        thread = std::thread([]() {
+            auto start = std::chrono::system_clock::now();
+            optional<Cluster::RpcData> data = Cluster::Instance().WaitForRpc();
+            auto end = std::chrono::system_clock::now();
+            std::chrono::duration<double> elapsed_seconds = end-start;
+            EXPECT_GE(elapsed_seconds, std::chrono::duration<double>(0.050));
+            EXPECT_EQ(data, boost::none);
+        });
+    }
+    
+    std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    
+    EXPECT_CALL(*_mockRpcSv, Shutdown()).WillOnce(SendEmptyRpc(_handlerFunc));
+    Cluster::Instance().Terminate();
+    
+    for (auto& thread : rpcListeners) {
+        if (thread.joinable()) {
+            thread.join();
+        }
+    }
+}

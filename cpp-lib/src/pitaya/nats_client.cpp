@@ -82,14 +82,20 @@ NatsClientImpl::NatsClientImpl(NatsApiType apiType,
 
 NatsClientImpl::~NatsClientImpl()
 {
-    natsStatus status =
-        natsSubscription_WaitForDrainCompletion(_sub, _subscriptionDrainTimeout.count());
-
-    if (status != NATS_OK) {
-        _log->error("Failed to wait for subscription drain");
+    if (_sub) {
+        // Remove interest from the subscription. Note that pending message may still
+        // be received by the client.
+        natsSubscription_Drain(_sub);
+        natsSubscription_Unsubscribe(_sub);
+        natsStatus status =
+            natsSubscription_WaitForDrainCompletion(_sub, _subscriptionDrainTimeout.count());
+        if (status != NATS_OK) {
+            _log->error("Failed to wait for subscription drain");
+        }
+        // Called only here, because it needs to wait for the natsSubscription_WaitForDrainCompletion
+        natsSubscription_Destroy(_sub);
     }
 
-    natsSubscription_Destroy(_sub);
     natsConnection_Destroy(_conn);
     natsOptions_Destroy(_opts);
 }
@@ -127,19 +133,6 @@ NatsClientImpl::Subscribe(const std::string& topic,
         return NatsStatus::SubscriptionErr;
     }
     return NatsStatus::Ok;
-}
-
-void
-NatsClientImpl::Unsubscribe()
-{
-    if (!_sub) {
-        throw PitayaException("Cannot unsubscribe, since the client is not subscribed yet.");
-    }
-
-    // Remove interest from the subscription. Note that pending message may still
-    // be received by the client.
-    natsSubscription_Drain(_sub);
-    natsSubscription_Unsubscribe(_sub);
 }
 
 NatsStatus
