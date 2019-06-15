@@ -42,7 +42,8 @@ public class LibPitayaExample : MonoBehaviour {
             host: "127.0.0.1",
             port: 3000,
             serverShutdownDeadlineMs: 3000,
-            serverMaxNumberOfRpcs: 1000
+            serverMaxNumberOfRpcs: 1000,
+            clientRpcTimeoutMs: 4000
         );
 
 	    var sv = new Server(
@@ -88,7 +89,7 @@ public class LibPitayaExample : MonoBehaviour {
 			    }
 		    });
 		    #if UNITY_EDITOR
-		    PitayaCluster.Initialize(grpcConfig, sdConfig, sv, NativeLogLevel.Debug, listener, "MY_LOG_FILE.txt");
+		    PitayaCluster.Initialize(nc, sdConfig, sv, NativeLogLevel.Debug, listener, "MY_LOG_FILE.txt");
 		    #else
 		    PitayaCluster.Initialize(grpcConfig, sdConfig, sv, NativeLogLevel.Debug, listener);
             #endif
@@ -148,9 +149,13 @@ public class LibPitayaExample : MonoBehaviour {
 
 	}
 
-	private void OnDestroy()
+	void OnApplicationQuit()
 	{
 		Debug.Log("Destroying pitaya cluster");
 		PitayaCluster.Terminate();
 	}
+
+//	private void OnDestroy()
+//	{
+//	}
 }
