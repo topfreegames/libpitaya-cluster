@@ -48,6 +48,7 @@ NatsClientImpl::NatsClientImpl(NatsApiType apiType,
     , _opts(nullptr)
     , _conn(nullptr)
     , _sub(nullptr)
+    , _connClosed(false)
 {
     if (config.natsAddr.empty()) {
         throw PitayaException("NATS address should not be empty");
@@ -79,15 +80,24 @@ NatsClientImpl::NatsClientImpl(NatsApiType apiType,
         throw PitayaException("unable to initialize nats server");
     }
 }
-
+    
 NatsClientImpl::~NatsClientImpl()
 {
     if (_sub) {
         // Remove interest from the subscription. Note that pending message may still
         // be received by the client.
-        natsSubscription_Drain(_sub);
-        natsSubscription_Unsubscribe(_sub);
-        natsStatus status =
+        natsStatus status;
+        status = natsSubscription_Unsubscribe(_sub);
+        if (status != NATS_OK) {
+            _log->error("Failed to unsubscribe");
+        }
+        
+        status = natsSubscription_Drain(_sub);
+        if (status != NATS_OK) {
+            _log->error("Failed to drain subscription");
+        }
+        
+        status =
             natsSubscription_WaitForDrainCompletion(_sub, _subscriptionDrainTimeout.count());
         if (status != NATS_OK) {
             _log->error("Failed to wait for subscription drain");
@@ -96,6 +106,12 @@ NatsClientImpl::~NatsClientImpl()
         natsSubscription_Destroy(_sub);
     }
 
+    natsConnection_Close(_conn);
+    while (!_connClosed) {
+        // Wait until the connection is actually closed. This will be reported on a different
+        // thread.
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    }
     natsConnection_Destroy(_conn);
     natsOptions_Destroy(_opts);
 }
@@ -126,6 +142,7 @@ NatsStatus
 NatsClientImpl::Subscribe(const std::string& topic,
                           std::function<void(std::shared_ptr<NatsMsg>)> onMessage)
 {
+    _log->info("Subscribing to topic {}", topic);
     _onMessage = std::move(onMessage);
     natsStatus status = natsConnection_Subscribe(&_sub, _conn, topic.c_str(), HandleMsg, this);
     if (status != NATS_OK) {
@@ -179,9 +196,8 @@ void
 NatsClientImpl::ClosedCb(natsConnection* nc, void* user)
 {
     auto instance = reinterpret_cast<NatsClientImpl*>(user);
-    // TODO: implement logic here
-    instance->_log->error("failed all nats reconnection attempts!");
-    // TODO: exit server here, but need to do this gracefully
+    // Signal main thread that the connection was actually closed
+    instance->_connClosed = true;
 }
 
 void
