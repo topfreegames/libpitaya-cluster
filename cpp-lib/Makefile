@@ -55,6 +55,11 @@ build-mac-unity:
 	@cmake -H. -B_builds/mac-unity -GNinja -DCMAKE_BUILD_TYPE=Release -DBUILD_MACOSX_BUNDLE=ON -DBUILD_TESTING=OFF -DBUILD_SHARED_LIBS=OFF
 	@cmake --build _builds/mac-unity
 
+build-mac-unity-debug:
+	@conan install -if _builds/mac-unity-debug .
+	@cmake -H. -B_builds/mac-unity-debug -GNinja -DCMAKE_BUILD_TYPE=Debug -DBUILD_MACOSX_BUNDLE=ON -DBUILD_TESTING=OFF -DBUILD_SHARED_LIBS=OFF
+	@cmake --build _builds/mac-unity-debug
+
 build-docker-image:
 	@docker build . -t pitaya-cluster
 
