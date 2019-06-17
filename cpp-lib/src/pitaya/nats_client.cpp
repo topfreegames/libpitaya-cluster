@@ -48,7 +48,6 @@ NatsClientImpl::NatsClientImpl(NatsApiType apiType,
     , _opts(nullptr)
     , _conn(nullptr)
     , _sub(nullptr)
-    , _connClosed(false)
 {
     if (config.natsAddr.empty()) {
         throw PitayaException("NATS address should not be empty");
@@ -107,7 +106,7 @@ NatsClientImpl::~NatsClientImpl()
     }
 
     natsConnection_Close(_conn);
-    while (!_connClosed) {
+    while (!natsConnection_IsClosed(_conn)) {
         // Wait until the connection is actually closed. This will be reported on a different
         // thread.
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
@@ -181,7 +180,7 @@ NatsClientImpl::DisconnectedCb(natsConnection* nc, void* user)
 {
     auto instance = reinterpret_cast<NatsClientImpl*>(user);
     // TODO: implement logic here
-    // instance->_log->error("nats disconnected! will try to reconnect...");
+    instance->_log->warn("nats disconnected!");
 }
 
 void
@@ -189,7 +188,7 @@ NatsClientImpl::ReconnectedCb(natsConnection* nc, void* user)
 {
     auto instance = reinterpret_cast<NatsClientImpl*>(user);
     // TODO: implement logic here
-    instance->_log->error("nats reconnected!");
+    instance->_log->info("nats reconnected!");
 }
 
 void
@@ -197,7 +196,7 @@ NatsClientImpl::ClosedCb(natsConnection* nc, void* user)
 {
     auto instance = reinterpret_cast<NatsClientImpl*>(user);
     // Signal main thread that the connection was actually closed
-    instance->_connClosed = true;
+    instance->_log->info("NATS connection closed");
 }
 
 void

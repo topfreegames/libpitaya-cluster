@@ -107,7 +107,6 @@ private:
     natsConnection* _conn;
     natsSubscription* _sub;
     std::function<void(std::shared_ptr<NatsMsg>)> _onMessage;
-    bool _connClosed;
 };
 
 } // namespace pitaya
