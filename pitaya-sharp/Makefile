@@ -5,6 +5,7 @@ stop-test-deps:
 	@docker-compose down
 
 test: start-test-deps
+	@$(MAKE) start-test-deps
 	@dotnet test NPitaya.Tests
 	@$(MAKE) stop-test-deps
 
