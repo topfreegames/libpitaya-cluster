@@ -181,7 +181,7 @@ NatsClientImpl::DisconnectedCb(natsConnection* nc, void* user)
 {
     auto instance = reinterpret_cast<NatsClientImpl*>(user);
     // TODO: implement logic here
-    // instance->_log->error("nats disconnected! will try to reconnect...");
+     instance->_log->warn("nats disconnected");
 }
 
 void
@@ -189,7 +189,7 @@ NatsClientImpl::ReconnectedCb(natsConnection* nc, void* user)
 {
     auto instance = reinterpret_cast<NatsClientImpl*>(user);
     // TODO: implement logic here
-    instance->_log->error("nats reconnected!");
+    instance->_log->info("nats reconnected!");
 }
 
 void
@@ -197,6 +197,7 @@ NatsClientImpl::ClosedCb(natsConnection* nc, void* user)
 {
     auto instance = reinterpret_cast<NatsClientImpl*>(user);
     // Signal main thread that the connection was actually closed
+    instance->_log->info("nats connection closed!");
     instance->_connClosed = true;
 }
 
