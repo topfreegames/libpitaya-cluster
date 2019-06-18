@@ -20,7 +20,7 @@ namespace NPitaya.Metrics
         {
             foreach (var reporter in reporters)
             {
-                reporter.ReportDistribution(Constants.ResponseTimeMetricKey, tags, value);
+                reporter.ReportSummary(Constants.ResponseTimeMetricKey, tags, value);
             }
         }
     }

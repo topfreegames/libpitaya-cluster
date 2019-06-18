@@ -1,5 +1,6 @@
 using NPitaya;
 using Xunit;
+[assembly: CollectionBehavior(DisableTestParallelization = true)]
 
 namespace NPitayaTest.Tests.Integration
 {

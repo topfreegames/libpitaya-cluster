@@ -34,7 +34,12 @@ namespace NPitaya.Metrics
             return res;
         }
 
-        public void ReportDistribution(string metricKey, Dictionary<string, string> tags, double value)
+        public void ReportCount(string metricKey, Dictionary<string, string> tags, double value)
+        {
+            var parsedTags = _dictTagsToStringSlice(tags);
+            DogStatsd.Counter(metricKey, value, tags:parsedTags);
+        }
+        public void ReportSummary(string metricKey, Dictionary<string, string> tags, double value)
         {
             var parsedTags = _dictTagsToStringSlice(tags);
             DogStatsd.Distribution(metricKey, value, tags:parsedTags);
