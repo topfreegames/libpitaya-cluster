@@ -25,11 +25,24 @@ namespace NPitaya.Metrics
             ReportSummary(Constants.ResponseTimeMetricKey, tags, sw.Elapsed.TotalMilliseconds * 1000000);
         }
 
+        public static void ReportNumberOfConnectedClients(double value)
+        {
+            ReportGauge(Constants.ConnectedClientsMetricKey, new Dictionary<string, string>(), value);
+        }
+
+        public static void ReportGauge(string key, Dictionary<string, string> tags, double value)
+        {
+            foreach (var reporter in _reporters)
+            {
+                reporter.ReportGauge(Constants.ConnectedClientsMetricKey, tags, value);
+            }
+        }
+
         public static void ReportSummary(string key, Dictionary<string, string> tags, double value)
         {
             foreach (var reporter in _reporters)
             {
-                reporter.ReportSummary(Constants.ResponseTimeMetricKey, tags, value);
+                reporter.ReportSummary(key, tags, value);
             }
         }
     }

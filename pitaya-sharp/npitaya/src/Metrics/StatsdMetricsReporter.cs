@@ -39,6 +39,12 @@ namespace NPitaya.Metrics
             var parsedTags = _dictTagsToStringSlice(tags);
             DogStatsd.Counter(metricKey, value, tags:parsedTags);
         }
+
+        public void ReportGauge(string metricKey, Dictionary<string, string> tags, double value)
+        {
+            var parsedTags = _dictTagsToStringSlice(tags);
+            DogStatsd.Gauge(metricKey, value, tags:parsedTags);
+        }
         public void ReportSummary(string metricKey, Dictionary<string, string> tags, double value)
         {
             var parsedTags = _dictTagsToStringSlice(tags);

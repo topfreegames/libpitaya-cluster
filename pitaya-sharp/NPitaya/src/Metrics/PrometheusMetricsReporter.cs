@@ -173,6 +173,14 @@ namespace NPitaya.Metrics
             var labelValues = _ensureLabels(tags, counter.LabelNames);
             counter.WithLabels(labelValues).Inc(value);
         }
+
+        public void ReportGauge(string metricKey, Dictionary<string, string> tags, double value)
+        {
+            if (!_gaugeReportersMap.TryGetValue(metricKey, out var gauge)) return;
+            var labelValues = _ensureLabels(tags, gauge.LabelNames);
+            gauge.WithLabels(labelValues).Set(value);
+        }
+
         public void ReportSummary(string metricKey, Dictionary<string, string> tags, double value)
         {
             if (!_summaryReportersMap.TryGetValue(metricKey, out var summary)) return;
