@@ -14,12 +14,10 @@ namespace NPitaya.Metrics
 
         public PrometheusMetricsReporter(string serverType, string game, int port, Dictionary<string, string> constantLabels = null, Dictionary<string, string> additionalLabels = null)
         {
-            _constantLabels = constantLabels;
-            if (constantLabels is null) { _constantLabels = new Dictionary<string, string>(); }
+            _constantLabels = constantLabels ?? new Dictionary<string, string>();
             _constantLabels["game"] = game;
             _constantLabels["serverType"] = serverType;
-            _additionalLabels = additionalLabels;
-            if (additionalLabels is null) { _additionalLabels = new Dictionary<string, string>(); }
+            _additionalLabels = additionalLabels ?? new Dictionary<string, string>();
             _countReportersMap = new Dictionary<string, Counter>();
             _summaryReportersMap = new Dictionary<string, Summary>();
             _gaugeReportersMap = new Dictionary<string, Gauge>();
