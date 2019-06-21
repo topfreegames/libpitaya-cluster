@@ -132,7 +132,7 @@ namespace NPitayaTest.Tests.Integration
                 {
                     Thread.CurrentThread.IsBackground = true;
                     /* run your code here */
-                    MetricsReporters.ReportTimer(new Dictionary<string, string>(), 0);
+                    MetricsReporters.ReportSummary( "response_time_ns",new Dictionary<string, string>(), 0);
                 }).Start();
             }
         }

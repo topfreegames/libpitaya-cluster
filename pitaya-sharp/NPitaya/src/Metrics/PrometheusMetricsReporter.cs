@@ -36,6 +36,90 @@ namespace NPitaya.Metrics
                 Constants.ResponseTimeMetricKey,
                 "the time to process a msg in nanoseconds",
                 new[]{"route", "status", "type", "code"});
+
+            _addSummaryReporter(
+                Constants.PitayaKey,
+                "handler",
+                Constants.ProccessDelayMetricKey,
+                "the delay to start processing a msg in nanoseconds",
+                new[]{"route", "type"});
+
+            _addGaugeReporter(
+                Constants.PitayaKey,
+                "acceptor",
+                Constants.ConnectedClientsMetricKey,
+                "the number of clients connected right now",
+                new string[]{});
+
+            _addGaugeReporter(
+                Constants.PitayaKey,
+                "service_discovery",
+                Constants.CountServersMetricKey,
+                "the number of discovered servers by service discovery",
+                new[]{"type"});
+
+            _addGaugeReporter(
+                Constants.PitayaKey,
+                "channel",
+                Constants.ChannelCapacityMetricKey,
+                "the available capacity of the channel",
+                new[]{"channel"});
+
+            _addGaugeReporter(
+                Constants.PitayaKey,
+                "rpc_server",
+                Constants.DroppedMessagesMetricKey,
+                "the number of rpc server dropped messages (messages that are not handled)",
+                new string[]{});
+
+            _addGaugeReporter(
+                Constants.PitayaKey,
+                "sys",
+                Constants.GoroutinesMetricKey,
+                "the current number of goroutines",
+                new string[]{});
+
+            _addGaugeReporter(
+                Constants.PitayaKey,
+                "sys",
+                Constants.HeapSizeMetricKey,
+                "the current heap size",
+                new string[]{});
+
+            _addGaugeReporter(
+                Constants.PitayaKey,
+                "sys",
+                Constants.HeapObjectsMetricKey,
+                "the current number of allocated heap objects",
+                new string[]{});
+
+            _addGaugeReporter(
+                Constants.PitayaKey,
+                "worker",
+                Constants.WorkerJobsRetryMetricKey,
+                "the current number of job retries",
+                new string[]{});
+
+            _addGaugeReporter(
+                Constants.PitayaKey,
+                "worker",
+                Constants.WorkerQueueSizeMetricKey,
+                "the current queue size",
+                new[]{"queue"});
+
+            _addGaugeReporter(
+                Constants.PitayaKey,
+                "worker",
+                Constants.WorkerJobsTotalMetricKey,
+                "the total executed jobs",
+                new[]{"status"});
+
+            _addCounterReporter(
+                Constants.PitayaKey,
+                "acceptor",
+                Constants.ExceededRateLimitingMetricKey,
+                "the number of blocked requests by exceeded rate limiting",
+                new string[]{});
         }
 
         private void _addSummaryReporter(string metricNamespace, string metricSubsystem, string metricName, string metricHelp, string[] metricLabels)
@@ -68,6 +152,19 @@ namespace NPitaya.Metrics
                 LabelNames = allLabels.ToArray(),
             });
             _countReportersMap[metricName] = counter;
+        }
+
+        private void _addGaugeReporter(string metricNamespace, string metricSubsystem, string metricName, string metricHelp, string[] metricLabels)
+        {
+            var allLabels = new List<string>();
+            allLabels.AddRange(_constantLabels.Keys.ToArray());
+            allLabels.AddRange(_additionalLabels.Keys.ToArray());
+            allLabels.AddRange(metricLabels);
+            var gauge = Prometheus.Metrics.CreateGauge(metricNamespace + "_" + metricSubsystem + "_" + metricName, metricHelp, new GaugeConfiguration
+            {
+                LabelNames = allLabels.ToArray(),
+            });
+            _gaugeReportersMap[metricName] = gauge;
         }
 
         public void ReportCount(string metricKey, Dictionary<string, string> tags, double value)

@@ -6,6 +6,18 @@ namespace NPitaya.Metrics
     {
         internal static string PitayaKey = "pitaya";
         internal static string ResponseTimeMetricKey = "response_time_ns";
+        internal static string ConnectedClientsMetricKey = "connected_clients";
+        internal static string CountServersMetricKey = "count_servers";
+        internal static string ChannelCapacityMetricKey = "channel_capacity";
+        internal static string DroppedMessagesMetricKey = "dropped_messages";
+        internal static string ProccessDelayMetricKey = "handler_delay_ns";
+        internal static string GoroutinesMetricKey = "goroutines";
+        internal static string HeapSizeMetricKey = "heapsize";
+        internal static string HeapObjectsMetricKey = "heapobjects";
+        internal static string WorkerJobsTotalMetricKey = "worker_jobs_total";
+        internal static string WorkerJobsRetryMetricKey = "worker_jobs_retry_total";
+        internal static string WorkerQueueSizeMetricKey = "worker_queue_size";
+        internal static string ExceededRateLimitingMetricKey = "exceeded_rate_limiting";
 
         public enum Status
         {

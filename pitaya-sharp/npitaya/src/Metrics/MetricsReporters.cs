@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace NPitaya.Metrics
 {
@@ -12,9 +13,16 @@ namespace NPitaya.Metrics
             _reporters.Add(mr);
         }
 
-        public static void ReportTimer(Dictionary<string, string> tags, double value)
+        public static void ReportMessageProccessDelay(string route, string type, Stopwatch sw)
         {
-            ReportSummary(Constants.ResponseTimeMetricKey, tags, value);
+            var tags = new Dictionary<string, string> { {"route", route}, {"type", type} };
+            ReportSummary(Constants.ProccessDelayMetricKey, tags, sw.Elapsed.TotalMilliseconds * 1000000);
+        }
+
+        public static void ReportTimer(string status, string route, string type, string code, Stopwatch sw)
+        {
+            var tags = new Dictionary<string, string> { {"status", status}, {"route", route}, {"type", type}, {"code", code} };
+            ReportSummary(Constants.ResponseTimeMetricKey, tags, sw.Elapsed.TotalMilliseconds * 1000000);
         }
 
         public static void ReportSummary(string key, Dictionary<string, string> tags, double value)

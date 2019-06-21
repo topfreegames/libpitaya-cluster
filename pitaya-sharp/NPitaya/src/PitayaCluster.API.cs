@@ -318,18 +318,9 @@ namespace NPitaya
             finally
             {
                 var status = ok ? Metrics.Constants.Status.success.ToString() : Metrics.Constants.Status.fail.ToString();
-                if (sw != null) ReportTimer(status, route.ToString(), sw.Elapsed.TotalMilliseconds * 1000000);
+                if (sw != null) MetricsReporters.ReportTimer(status, route.ToString(), "rpc", retError.code, sw);
                 if (memBufPtr != null) FreeMemoryBufferInternal(memBufPtr);
             }
-        }
-
-        private static void ReportTimer(string status, string route, double value)
-        {
-            var tags = new Dictionary<string, string>();
-            tags.Add("status", status);
-            tags.Add("route", route);
-            tags.Add("type", "rpc");
-            MetricsReporters.ReportTimer(tags, value); // to nanoseconds
         }
 
         public static T Rpc<T>(Route route, IMessage msg)
