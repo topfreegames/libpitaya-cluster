@@ -1,7 +1,9 @@
 using System;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Google.Protobuf;
+using NPitaya.Metrics;
 using NPitaya.Models;
 using NPitaya.Serializer;
 using NPitaya.Protos;
@@ -13,12 +15,13 @@ namespace NPitaya
     {
         private static async Task HandleIncomingRpc(IntPtr cRpcPtr)
         {
+            var sw = Stopwatch.StartNew();
             var res = new MemoryBuffer();
             IntPtr resPtr;
             try
             {
                 var cRpc = (CRpc) Marshal.PtrToStructure(cRpcPtr, typeof(CRpc));
-                res = await RPCCbFuncImpl(cRpc.reqBufferPtr);
+                res = await RPCCbFuncImpl(cRpc.reqBufferPtr, sw);
             }
             catch (Exception e)
             {
@@ -46,7 +49,7 @@ namespace NPitaya
             }
         }
 
-        private static async Task<MemoryBuffer> RPCCbFuncImpl(IntPtr reqBufferPtr)
+        private static async Task<MemoryBuffer> RPCCbFuncImpl(IntPtr reqBufferPtr, Stopwatch sw)
         {
             var reqBuffer = (MemoryBuffer) Marshal.PtrToStructure(reqBufferPtr, typeof(MemoryBuffer));
 
@@ -57,10 +60,10 @@ namespace NPitaya
             switch (req.Type)
             {
                 case RPCType.User:
-                    response = await HandleRpc(req, RPCType.User);
+                    response = await HandleRpc(req, RPCType.User, sw);
                     break;
                 case RPCType.Sys:
-                    response = await HandleRpc(req, RPCType.Sys);
+                    response = await HandleRpc(req, RPCType.Sys, sw);
                     break;
                 default:
                     throw new Exception($"invalid rpc type, argument:{req.Type}");
@@ -73,7 +76,7 @@ namespace NPitaya
             return res;
         }
 
-        internal static async Task<Response> HandleRpc(Protos.Request req, RPCType type)
+        internal static async Task<Response> HandleRpc(Protos.Request req, RPCType type, Stopwatch sw)
         {
             byte[] data = req.Msg.Data.ToByteArray();
             Route route = Route.FromString(req.Msg.Route);
@@ -95,6 +98,7 @@ namespace NPitaya
                 }
 
                 handler = HandlersDict[handlerName];
+                MetricsReporters.ReportMessageProccessDelay(req.Msg.Route,"local", sw);
             }
             else
             {
@@ -106,6 +110,7 @@ namespace NPitaya
                 }
 
                 handler = RemotesDict[handlerName];
+                MetricsReporters.ReportMessageProccessDelay(req.Msg.Route,"remote", sw);
             }
 
             Task ans;

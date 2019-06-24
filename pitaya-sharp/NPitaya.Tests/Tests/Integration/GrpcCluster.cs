@@ -1,9 +1,10 @@
 using NPitaya;
 using Xunit;
+[assembly: CollectionBehavior(DisableTestParallelization = true)]
 
 namespace NPitayaTest.Tests.Integration
 {
-    public class Cluster
+    public class GrpcCluster
     {
         [Fact]
         public void Can_Fail_Initialization_Multiple_Times()
