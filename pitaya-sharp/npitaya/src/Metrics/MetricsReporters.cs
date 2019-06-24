@@ -6,7 +6,7 @@ namespace NPitaya.Metrics
 {
     public static class MetricsReporters
     {
-        private static BlockingCollection<IMetricsReporter> _reporters = new BlockingCollection<IMetricsReporter>();
+        private static List<IMetricsReporter> _reporters = new List<IMetricsReporter>();
 
         public static void AddMetricReporter(IMetricsReporter mr)
         {
