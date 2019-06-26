@@ -13,6 +13,11 @@ namespace NPitaya.Metrics
             _reporters.Add(mr);
         }
 
+        public static void Terminate()
+        {
+            _reporters = new List<IMetricsReporter>();
+        }
+
         public static void ReportMessageProccessDelay(string route, string type, Stopwatch sw)
         {
             var tags = new Dictionary<string, string> { {"route", route}, {"type", type} };

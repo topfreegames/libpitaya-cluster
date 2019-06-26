@@ -198,6 +198,7 @@ namespace NPitaya
         {
             RemoveServiceDiscoveryListener(_serviceDiscoveryListener);
             TerminateInternal();
+            MetricsReporters.Terminate();
         }
 
         public static Server? GetServerById(string serverId)
