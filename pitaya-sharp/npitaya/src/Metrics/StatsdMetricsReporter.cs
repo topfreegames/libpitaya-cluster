@@ -12,7 +12,7 @@ namespace NPitaya.Metrics
             {
                 StatsdServerName = statsdHost,
                 StatsdPort = statsdPort,
-                Prefix = metricsPrefix,
+                Prefix = metricsPrefix.TrimEnd('.'),
                 ConstantTags = parsedTags
             };
             DogStatsd.Configure(statsdConfig);
