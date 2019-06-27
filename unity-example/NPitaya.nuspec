@@ -2,13 +2,13 @@
 <package>
   <metadata>
     <id>NPitaya</id>
-    <version>0.7.3</version>
+    <version>0.7.4</version>
     <authors>leonardohahn,felipejfc</authors>
     <owners>TFG</owners>
     <projectUrl>https://github.com/topfreegames/libpitaya-cluster</projectUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>C# binding to the pitaya-cpp library</description>
-    <releaseNotes>Add Prometheus dll into the project manually</releaseNotes>
+    <releaseNotes>Add Custom metrics for Prometheus to report</releaseNotes>
     <copyright>Copyright TFG co</copyright>
     <tags>pitaya server grpc nats</tags>
     <dependencies>

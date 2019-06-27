@@ -318,8 +318,17 @@ namespace NPitaya
             }
             finally
             {
-                var status = ok ? Metrics.Constants.Status.success.ToString() : Metrics.Constants.Status.fail.ToString();
-                if (sw != null) MetricsReporters.ReportTimer(status, route.ToString(), "rpc", retError.code, sw);
+                if (sw != null)
+                {
+                    if (ok)
+                    {
+                        MetricsReporters.ReportTimer(Metrics.Constants.Status.success.ToString(), route.ToString(), "rpc", "", sw);
+                    }
+                    else
+                    {
+                        MetricsReporters.ReportTimer(Metrics.Constants.Status.fail.ToString(), route.ToString(), "rpc", $"{retError.code}", sw);
+                    }
+                }
                 if (memBufPtr != null) FreeMemoryBufferInternal(memBufPtr);
             }
         }

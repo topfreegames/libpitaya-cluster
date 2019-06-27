@@ -1,4 +1,3 @@
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 
@@ -35,11 +34,18 @@ namespace NPitaya.Metrics
             ReportGauge(Constants.ConnectedClientsMetricKey, new Dictionary<string, string>(), value);
         }
 
+        public static void ReportCount(string key, Dictionary<string, string> tags, double value)
+        {
+            foreach (var reporter in _reporters)
+            {
+                reporter.ReportCount(key, tags, value);
+            }
+        }
         public static void ReportGauge(string key, Dictionary<string, string> tags, double value)
         {
             foreach (var reporter in _reporters)
             {
-                reporter.ReportGauge(Constants.ConnectedClientsMetricKey, tags, value);
+                reporter.ReportGauge(key, tags, value);
             }
         }
 
@@ -50,5 +56,6 @@ namespace NPitaya.Metrics
                 reporter.ReportSummary(key, tags, value);
             }
         }
+
     }
 }
