@@ -4,6 +4,37 @@ using Prometheus;
 
 namespace NPitaya.Metrics
 {
+    public class CustomMetricsSpec
+    {
+        public List<CustomSummary> Summaries = new List<CustomSummary>();
+        public List<CustomGauge> Gauges = new List<CustomGauge>();
+        public List<CustomCounter> Counters = new List<CustomCounter>();
+    }
+
+    public class CustomSummary
+    {
+        public string Subsystem;
+        public string Name;
+        public string Help;
+        public Dictionary<double, double> Objectives = new Dictionary<double, double>();
+        public List<string> Labels = new List<string>();
+    }
+
+    public class CustomGauge
+    {
+        public string Subsystem;
+        public string Name;
+        public string Help;
+        public List<string> Labels = new List<string>();
+    }
+
+    public class CustomCounter
+    {
+        public string Subsystem;
+        public string Name;
+        public string Help;
+        public List<string> Labels = new List<string>();
+    }
     public class PrometheusMetricsReporter: IMetricsReporter
     {
         private Dictionary<string, string> _additionalLabels;
@@ -12,7 +43,7 @@ namespace NPitaya.Metrics
         private Dictionary<string, Summary> _summaryReportersMap;
         private Dictionary<string, Gauge> _gaugeReportersMap;
 
-        public PrometheusMetricsReporter(string serverType, string game, int port, Dictionary<string, string> constantLabels = null, Dictionary<string, string> additionalLabels = null)
+        public PrometheusMetricsReporter(string serverType, string game, int port, Dictionary<string, string> constantLabels = null, Dictionary<string, string> additionalLabels = null, CustomMetricsSpec customMetricsSpec = null)
         {
             _constantLabels = constantLabels ?? new Dictionary<string, string>();
             _constantLabels["game"] = game;
@@ -22,10 +53,49 @@ namespace NPitaya.Metrics
             _summaryReportersMap = new Dictionary<string, Summary>();
             _gaugeReportersMap = new Dictionary<string, Gauge>();
 
+            if (customMetricsSpec != null)
+            {
+                _registerCustomMetrics(customMetricsSpec);
+            }
+
             _registerMetrics();
 
             var prometheusServer = new MetricServer(port: port);
             prometheusServer.Start();
+        }
+
+        private void _registerCustomMetrics(CustomMetricsSpec customMetricsSpec)
+        {
+            foreach (var summary in customMetricsSpec.Summaries)
+            {
+                _addSummaryReporter(
+                    Constants.PitayaKey,
+                    summary.Subsystem,
+                    summary.Name,
+                    summary.Help,
+                    summary.Labels.ToArray(),
+                    summary.Objectives);
+            }
+
+            foreach (var gauge in customMetricsSpec.Gauges)
+            {
+                _addGaugeReporter(
+                    Constants.PitayaKey,
+                    gauge.Subsystem,
+                    gauge.Name,
+                    gauge.Help,
+                    gauge.Labels.ToArray());
+            }
+
+            foreach (var counter in customMetricsSpec.Counters)
+            {
+                _addCounterReporter(
+                    Constants.PitayaKey,
+                    counter.Subsystem,
+                    counter.Name,
+                    counter.Help,
+                    counter.Labels.ToArray());
+            }
         }
 
         private void _registerMetrics()
@@ -122,20 +192,31 @@ namespace NPitaya.Metrics
                 new string[]{});
         }
 
-        private void _addSummaryReporter(string metricNamespace, string metricSubsystem, string metricName, string metricHelp, string[] metricLabels)
+        private void _addSummaryReporter(string metricNamespace, string metricSubsystem, string metricName, string metricHelp, string[] metricLabels, Dictionary<double, double> objectives = null)
         {
             var allLabels = new List<string>();
             allLabels.AddRange(_constantLabels.Keys.ToArray());
             allLabels.AddRange(_additionalLabels.Keys.ToArray());
             allLabels.AddRange(metricLabels);
+            var summaryObjectives = new List<QuantileEpsilonPair>();
+            if (objectives != null)
+            {
+                foreach (var kv in objectives)
+                {
+                    summaryObjectives.Add(new QuantileEpsilonPair(kv.Key, kv.Value));
+                }
+            }
+            else
+            {
+                summaryObjectives.Add(new QuantileEpsilonPair(0.7, 0.02));
+                summaryObjectives.Add(new QuantileEpsilonPair(0.95, 0.005));
+                summaryObjectives.Add(new QuantileEpsilonPair(0.99, 0.001));
+            }
+
+
             var summary = Prometheus.Metrics.CreateSummary(metricNamespace + "_" + metricSubsystem + "_" + metricName, metricHelp, new SummaryConfiguration
             {
-                Objectives = new []
-                {
-                    new QuantileEpsilonPair(0.7, 0.02),
-                    new QuantileEpsilonPair(0.95, 0.005),
-                    new QuantileEpsilonPair(0.99, 0.001),
-                },
+                Objectives = summaryObjectives,
                 LabelNames = allLabels.ToArray(),
             });
             _summaryReportersMap[metricName] = summary;
