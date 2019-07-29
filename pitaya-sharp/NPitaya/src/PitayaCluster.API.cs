@@ -4,10 +4,12 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading;
+using System.Threading.Tasks;
 using NPitaya.Metrics;
 using NPitaya.Models;
 using NPitaya.Serializer;
 using NPitaya.Protos;
+using NPitaya.Utils;
 using static NPitaya.Utils.Utils;
 
 // TODO profiling
@@ -19,13 +21,12 @@ namespace NPitaya
     {
         private static readonly int ProcessorsCount = Environment.ProcessorCount;
         private static ISerializer _serializer = new ProtobufSerializer();
-
         public delegate string RemoteNameFunc(string methodName);
-
         private delegate void OnSignalFunc();
-
         private static readonly Dictionary<string, RemoteMethod> RemotesDict = new Dictionary<string, RemoteMethod>();
         private static readonly Dictionary<string, RemoteMethod> HandlersDict = new Dictionary<string, RemoteMethod>();
+        private static readonly LimitedConcurrencyLevelTaskScheduler Lcts = new LimitedConcurrencyLevelTaskScheduler(ProcessorsCount);
+        private static TaskFactory _rpcTaskFactory = new TaskFactory(Lcts);
 
         private static Action _onSignalEvent;
 
@@ -292,48 +293,55 @@ namespace NPitaya
             }
         }
 
-        public static unsafe T Rpc<T>(string serverId, Route route, object msg)
+        public static unsafe Task<T> Rpc<T>(string serverId, Route route, object msg)
         {
-            MemoryBuffer* memBufPtr = null;
-            var retError = new Error();
-            var ok = false;
-            Stopwatch sw = null;
-            try
+            return _rpcTaskFactory.StartNew(() =>
             {
-                var data = SerializerUtils.SerializeOrRaw(msg, _serializer);
-                sw = Stopwatch.StartNew();
-                fixed (byte* p = data)
+                MemoryBuffer* memBufPtr = null;
+                var retError = new Error();
+                var ok = false;
+                Stopwatch sw = null;
+                try
                 {
-                    ok = RPCInternal(serverId, route.ToString(), (IntPtr) p, data.Length, &memBufPtr, ref retError);
-                }
-                sw.Stop();
-
-                if (!ok) // error
-                {
-                    throw new PitayaException($"RPC call failed: ({retError.code}: {retError.msg})");
-                }
-
-                var protoRet = GetProtoMessageFromMemoryBuffer<T>(*memBufPtr);
-                return protoRet;
-            }
-            finally
-            {
-                if (sw != null)
-                {
-                    if (ok)
+                    var data = SerializerUtils.SerializeOrRaw(msg, _serializer);
+                    sw = Stopwatch.StartNew();
+                    fixed (byte* p = data)
                     {
-                        MetricsReporters.ReportTimer(Metrics.Constants.Status.success.ToString(), route.ToString(), "rpc", "", sw);
+                        ok = RPCInternal(serverId, route.ToString(), (IntPtr) p, data.Length, &memBufPtr, ref retError);
                     }
-                    else
+
+                    sw.Stop();
+
+                    if (!ok) // error
                     {
-                        MetricsReporters.ReportTimer(Metrics.Constants.Status.fail.ToString(), route.ToString(), "rpc", $"{retError.code}", sw);
+                        throw new PitayaException($"RPC call failed: ({retError.code}: {retError.msg})");
                     }
+
+                    var protoRet = GetProtoMessageFromMemoryBuffer<T>(*memBufPtr);
+                    return protoRet;
                 }
-                if (memBufPtr != null) FreeMemoryBufferInternal(memBufPtr);
-            }
+                finally
+                {
+                    if (sw != null)
+                    {
+                        if (ok)
+                        {
+                            MetricsReporters.ReportTimer(Metrics.Constants.Status.success.ToString(), route.ToString(),
+                                "rpc", "", sw);
+                        }
+                        else
+                        {
+                            MetricsReporters.ReportTimer(Metrics.Constants.Status.fail.ToString(), route.ToString(),
+                                "rpc", $"{retError.code}", sw);
+                        }
+                    }
+
+                    if (memBufPtr != null) FreeMemoryBufferInternal(memBufPtr);
+                }
+            });
         }
 
-        public static T Rpc<T>(Route route, IMessage msg)
+        public static Task<T> Rpc<T>(Route route, object msg)
         {
             return Rpc<T>("", route, msg);
         }

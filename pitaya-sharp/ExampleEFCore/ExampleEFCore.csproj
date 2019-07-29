@@ -18,7 +18,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <Protobuf Include="./Protos/*.proto" OutputDir="./src/Gen/Protos" PrivateAssets="All" GrpcServices="None" />
+        <Protobuf Update="./Protos/*.proto" OutputDir="./src/Gen/Protos" PrivateAssets="All" GrpcServices="None" />
     </ItemGroup>
 
     <ItemGroup>
