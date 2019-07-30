@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading;
+using System.Threading.Tasks;
 using exampleapp.Handlers;
 using exampleapp.remotes;
 using NPitaya;
@@ -114,18 +115,22 @@ namespace PitayaCSharpExample
 
       Thread.Sleep(1000);
 
-      try
-      {
-        var res = PitayaCluster.Rpc<NPitaya.Protos.RPCRes>(Route.FromString("csharp.testRemote.remote"), null);
-        Console.WriteLine($"Code: {res.Code}");
-        Console.WriteLine($"Msg: {res.Msg}");
-      }
-      catch (PitayaException exc)
-      {
-        Console.WriteLine($"RPC failed: {exc.Message}");
-      }
-
+      TrySendRpc();
+      Console.ReadKey();
       PitayaCluster.Terminate();
+    }
+    static async void TrySendRpc(){
+        try
+        {
+            var res = await PitayaCluster.Rpc<NPitaya.Protos.RPCRes>(Route.FromString("csharp.testRemote.remote"),
+                null);
+            Console.WriteLine($"Code: {res.Code}");
+            Console.WriteLine($"Msg: {res.Msg}");
+        }
+        catch (PitayaException e)
+        {
+            Logger.Error("Error sending RPC Call: {0}", e.Message);
+        }
     }
   }
 }

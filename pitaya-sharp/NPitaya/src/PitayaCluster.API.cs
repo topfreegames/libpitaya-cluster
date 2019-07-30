@@ -4,10 +4,12 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading;
+using System.Threading.Tasks;
 using NPitaya.Metrics;
 using NPitaya.Models;
 using NPitaya.Serializer;
 using NPitaya.Protos;
+using NPitaya.Utils;
 using static NPitaya.Utils.Utils;
 
 // TODO profiling
@@ -19,13 +21,12 @@ namespace NPitaya
     {
         private static readonly int ProcessorsCount = Environment.ProcessorCount;
         private static ISerializer _serializer = new ProtobufSerializer();
-
         public delegate string RemoteNameFunc(string methodName);
-
         private delegate void OnSignalFunc();
-
         private static readonly Dictionary<string, RemoteMethod> RemotesDict = new Dictionary<string, RemoteMethod>();
         private static readonly Dictionary<string, RemoteMethod> HandlersDict = new Dictionary<string, RemoteMethod>();
+        private static readonly LimitedConcurrencyLevelTaskScheduler Lcts = new LimitedConcurrencyLevelTaskScheduler(ProcessorsCount);
+        private static TaskFactory _rpcTaskFactory = new TaskFactory(Lcts);
 
         private static Action _onSignalEvent;
 
@@ -218,122 +219,135 @@ namespace NPitaya
             return retServer;
         }
 
-        public static unsafe bool SendPushToUser(string frontendId, string serverType, string route, string uid,
+        public static unsafe Task<bool> SendPushToUser(string frontendId, string serverType, string route, string uid,
             object pushMsg)
         {
-            bool ok = false;
-            MemoryBuffer inMemBuf = new MemoryBuffer();
-            MemoryBuffer* outMemBufPtr = null;
-            var retError = new Error();
-
-            var push = new Push
+            return _rpcTaskFactory.StartNew(() =>
             {
-                Route = route,
-                Uid = uid,
-                Data = ByteString.CopyFrom(SerializerUtils.SerializeOrRaw(pushMsg, _serializer))
-            };
+                bool ok = false;
+                MemoryBuffer inMemBuf = new MemoryBuffer();
+                MemoryBuffer* outMemBufPtr = null;
+                var retError = new Error();
 
-            try
-            {
-                var data = push.ToByteArray();
-                fixed (byte* p = data)
+                var push = new Push
                 {
-                    inMemBuf.data = (IntPtr) p;
-                    inMemBuf.size = data.Length;
-                    IntPtr inMemBufPtr = new StructWrapper(inMemBuf);
+                    Route = route,
+                    Uid = uid,
+                    Data = ByteString.CopyFrom(SerializerUtils.SerializeOrRaw(pushMsg, _serializer))
+                };
 
-                    ok = PushInternal(frontendId, serverType, inMemBufPtr, &outMemBufPtr, ref retError);
+                try
+                {
+                    var data = push.ToByteArray();
+                    fixed (byte* p = data)
+                    {
+                        inMemBuf.data = (IntPtr) p;
+                        inMemBuf.size = data.Length;
+                        IntPtr inMemBufPtr = new StructWrapper(inMemBuf);
+
+                        ok = PushInternal(frontendId, serverType, inMemBufPtr, &outMemBufPtr, ref retError);
+                        if (!ok) // error
+                        {
+                            Logger.Error($"Push failed: ({retError.code}: {retError.msg})");
+                            return false;
+                        }
+
+                        return true;
+                    }
+                }
+                finally
+                {
+                    if (outMemBufPtr != null) FreeMemoryBufferInternal(outMemBufPtr);
+                }
+            });
+        }
+
+        public static unsafe Task<bool> SendKickToUser(string frontendId, string serverType, KickMsg kick)
+        {
+            return _rpcTaskFactory.StartNew(() =>
+            {
+                bool ok = false;
+                MemoryBuffer inMemBuf = new MemoryBuffer();
+                MemoryBuffer* outMemBufPtr = null;
+                var retError = new Error();
+
+                try
+                {
+                    var data = kick.ToByteArray();
+                    fixed (byte* p = data)
+                    {
+                        inMemBuf.data = (IntPtr) p;
+                        inMemBuf.size = data.Length;
+                        IntPtr inMemBufPtr = new StructWrapper(inMemBuf);
+                        ok = KickInternal(frontendId, serverType, inMemBufPtr, &outMemBufPtr, ref retError);
+                        if (!ok) // error
+                        {
+                            Logger.Error($"Push failed: ({retError.code}: {retError.msg})");
+                            return false;
+                        }
+
+                        var kickAns = new KickAnswer();
+                        kickAns.MergeFrom(new CodedInputStream(outMemBufPtr->GetData()));
+
+                        return kickAns.Kicked;
+                    }
+                }
+                finally
+                {
+                    if (outMemBufPtr != null) FreeMemoryBufferInternal(outMemBufPtr);
+                }
+            });
+        }
+
+        public static unsafe Task<T> Rpc<T>(string serverId, Route route, object msg)
+        {
+            return _rpcTaskFactory.StartNew(() =>
+            {
+                MemoryBuffer* memBufPtr = null;
+                var retError = new Error();
+                var ok = false;
+                Stopwatch sw = null;
+                try
+                {
+                    var data = SerializerUtils.SerializeOrRaw(msg, _serializer);
+                    sw = Stopwatch.StartNew();
+                    fixed (byte* p = data)
+                    {
+                        ok = RPCInternal(serverId, route.ToString(), (IntPtr) p, data.Length, &memBufPtr, ref retError);
+                    }
+
+                    sw.Stop();
+
                     if (!ok) // error
                     {
-                        Logger.Error($"Push failed: ({retError.code}: {retError.msg})");
-                        return false;
+                        throw new PitayaException($"RPC call failed: ({retError.code}: {retError.msg})");
                     }
 
-                    return true;
+                    var protoRet = GetProtoMessageFromMemoryBuffer<T>(*memBufPtr);
+                    return protoRet;
                 }
-            }
-            finally
-            {
-                if (outMemBufPtr != null) FreeMemoryBufferInternal(outMemBufPtr);
-            }
+                finally
+                {
+                    if (sw != null)
+                    {
+                        if (ok)
+                        {
+                            MetricsReporters.ReportTimer(Metrics.Constants.Status.success.ToString(), route.ToString(),
+                                "rpc", "", sw);
+                        }
+                        else
+                        {
+                            MetricsReporters.ReportTimer(Metrics.Constants.Status.fail.ToString(), route.ToString(),
+                                "rpc", $"{retError.code}", sw);
+                        }
+                    }
+
+                    if (memBufPtr != null) FreeMemoryBufferInternal(memBufPtr);
+                }
+            });
         }
 
-        public static unsafe bool SendKickToUser(string frontendId, string serverType, KickMsg kick)
-        {
-            bool ok = false;
-            MemoryBuffer inMemBuf = new MemoryBuffer();
-            MemoryBuffer* outMemBufPtr = null;
-            var retError = new Error();
-
-            try
-            {
-                var data = kick.ToByteArray();
-                fixed (byte* p = data)
-                {
-                    inMemBuf.data = (IntPtr) p;
-                    inMemBuf.size = data.Length;
-                    IntPtr inMemBufPtr = new StructWrapper(inMemBuf);
-                    ok = KickInternal(frontendId, serverType, inMemBufPtr, &outMemBufPtr, ref retError);
-                    if (!ok) // error
-                    {
-                        Logger.Error($"Push failed: ({retError.code}: {retError.msg})");
-                        return false;
-                    }
-
-                    var kickAns = new KickAnswer();
-                    kickAns.MergeFrom(new CodedInputStream(outMemBufPtr->GetData()));
-
-                    return kickAns.Kicked;
-                }
-            }
-            finally
-            {
-                if (outMemBufPtr != null) FreeMemoryBufferInternal(outMemBufPtr);
-            }
-        }
-
-        public static unsafe T Rpc<T>(string serverId, Route route, object msg)
-        {
-            MemoryBuffer* memBufPtr = null;
-            var retError = new Error();
-            var ok = false;
-            Stopwatch sw = null;
-            try
-            {
-                var data = SerializerUtils.SerializeOrRaw(msg, _serializer);
-                sw = Stopwatch.StartNew();
-                fixed (byte* p = data)
-                {
-                    ok = RPCInternal(serverId, route.ToString(), (IntPtr) p, data.Length, &memBufPtr, ref retError);
-                }
-                sw.Stop();
-
-                if (!ok) // error
-                {
-                    throw new PitayaException($"RPC call failed: ({retError.code}: {retError.msg})");
-                }
-
-                var protoRet = GetProtoMessageFromMemoryBuffer<T>(*memBufPtr);
-                return protoRet;
-            }
-            finally
-            {
-                if (sw != null)
-                {
-                    if (ok)
-                    {
-                        MetricsReporters.ReportTimer(Metrics.Constants.Status.success.ToString(), route.ToString(), "rpc", "", sw);
-                    }
-                    else
-                    {
-                        MetricsReporters.ReportTimer(Metrics.Constants.Status.fail.ToString(), route.ToString(), "rpc", $"{retError.code}", sw);
-                    }
-                }
-                if (memBufPtr != null) FreeMemoryBufferInternal(memBufPtr);
-            }
-        }
-
-        public static T Rpc<T>(Route route, IMessage msg)
+        public static Task<T> Rpc<T>(Route route, object msg)
         {
             return Rpc<T>("", route, msg);
         }
