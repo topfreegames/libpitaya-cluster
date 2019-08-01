@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Google.Protobuf;
 using NPitaya.Constants;
 using Json = PitayaSimpleJson.SimpleJson;
@@ -21,7 +22,7 @@ namespace NPitaya.Models
             _id = sessionProto.Id;
             Uid = sessionProto.Uid;
             _rawData = sessionProto.Data.ToStringUtf8();
-            if (!String.IsNullOrEmpty(_rawData)) 
+            if (!String.IsNullOrEmpty(_rawData))
                 _data = Json.DeserializeObject<Dictionary<string, object>>(_rawData);
         }
 
@@ -55,7 +56,7 @@ namespace NPitaya.Models
         {
             return GetObject(key) as string;
         }
-        
+
         public int GetInt(string key)
         {
             var obj = GetObject(key);
@@ -113,31 +114,36 @@ namespace NPitaya.Models
 
         public bool Push(object pushMsg, string route)
         {
-            return PitayaCluster.SendPushToUser(_frontendId, "", route, Uid, pushMsg);
+            Task<bool> task = PitayaCluster.SendPushToUser(_frontendId, "", route, Uid, pushMsg);
+            return task.Result;
         }
         public bool Push(object pushMsg, string svType, string route)
         {
-            return PitayaCluster.SendPushToUser("", svType, route, Uid, pushMsg);
+            Task<bool> task = PitayaCluster.SendPushToUser("", svType, route, Uid, pushMsg);
+            return task.Result;
         }
-        
+
         public bool Push(object pushMsg, string svType, string svId, string route)
         {
-            return PitayaCluster.SendPushToUser(svId, svType, route, Uid, pushMsg);
+            Task<bool> task = PitayaCluster.SendPushToUser(svId, svType, route, Uid, pushMsg);
+            return task.Result;
         }
 
         public bool Kick()
         {
-            return PitayaCluster.SendKickToUser(_frontendId, "", new KickMsg
+            Task<bool> task = PitayaCluster.SendKickToUser(_frontendId, "", new KickMsg
             {
                 UserId = Uid
             });
+            return task.Result;
         }
         public bool Kick(string svType)
         {
-            return PitayaCluster.SendKickToUser("", svType, new KickMsg
+            Task<bool> task = PitayaCluster.SendKickToUser("", svType, new KickMsg
             {
                 UserId = Uid
             });
+            return task.Result;
         }
     }
 }
