@@ -46,7 +46,7 @@ namespace exampleapp.Handlers
         {
             Console.WriteLine("got empty notify");
             var msg = Encoding.UTF8.GetBytes("test felipe");
-            var ok = pitayaSession.Push(new RPCRes{Code = 200, Msg = "testFelipe"}, "test.route");
+            var ok = await pitayaSession.Push(new RPCRes{Code = 200, Msg = "testFelipe"}, "test.route");
             if (!ok)
             {
                 Logger.Error("push to user failed!");
@@ -54,7 +54,7 @@ namespace exampleapp.Handlers
         }
         public async Task TestKick(PitayaSession pitayaSession)
         {
-            var ok = pitayaSession.Kick();
+            var ok = await pitayaSession.Kick();
             if (!ok)
             {
                 Logger.Error("kick user failed!");
