@@ -69,35 +69,37 @@ namespace NPitaya.Models
             return obj is double ? (double) obj : 0;
         }
 
-        public void PushToFrontend()
+        public Task PushToFrontend()
         {
             if (String.IsNullOrEmpty(_frontendId))
             {
-                throw new Exception("cannot push to frontend, frontendId is invalid!");
+                return Task.FromException(new Exception("cannot push to frontend, frontendId is invalid!"));
             }
-            SendRequestToFront(Routes.SessionPushRoute, true);
+            return SendRequestToFront(Routes.SessionPushRoute, true);
         }
 
-        public void Bind(string uid)
+        public Task Bind(string uid)
         {
             if (Uid != "")
             {
-                throw new Exception("session already bound!");
+                return Task.FromException(new Exception("session already bound!"));
             }
             Uid = uid;
             // TODO only if server type is backend
             // TODO bind callbacks
             if (!string.IsNullOrEmpty(_frontendId)){
-                BindInFrontend();
+                return BindInFrontend();
             }
+
+            return Task.CompletedTask;
         }
 
-        private void BindInFrontend()
+        private Task BindInFrontend()
         {
-            SendRequestToFront(Routes.SessionBindRoute, false);
+            return SendRequestToFront(Routes.SessionBindRoute, false);
         }
 
-        private void SendRequestToFront(string route, bool includeData)
+        private Task SendRequestToFront(string route, bool includeData)
         {
             var sessionProto = new Protos.Session
             {
@@ -109,41 +111,36 @@ namespace NPitaya.Models
                 sessionProto.Data = ByteString.CopyFromUtf8(_rawData);
             }
             Console.WriteLine($"sending {sessionProto}");
-            PitayaCluster.Rpc<Response>(_frontendId, Route.FromString(route), sessionProto.ToByteArray());
+            return PitayaCluster.Rpc<Response>(_frontendId, Route.FromString(route), sessionProto.ToByteArray());
         }
 
-        public bool Push(object pushMsg, string route)
+        public Task<bool> Push(object pushMsg, string route)
         {
-            Task<bool> task = PitayaCluster.SendPushToUser(_frontendId, "", route, Uid, pushMsg);
-            return task.Result;
+            return PitayaCluster.SendPushToUser(_frontendId, "", route, Uid, pushMsg);
         }
-        public bool Push(object pushMsg, string svType, string route)
+        public Task<bool> Push(object pushMsg, string svType, string route)
         {
-            Task<bool> task = PitayaCluster.SendPushToUser("", svType, route, Uid, pushMsg);
-            return task.Result;
+            return PitayaCluster.SendPushToUser("", svType, route, Uid, pushMsg);
         }
 
-        public bool Push(object pushMsg, string svType, string svId, string route)
+        public Task<bool> Push(object pushMsg, string svType, string svId, string route)
         {
-            Task<bool> task = PitayaCluster.SendPushToUser(svId, svType, route, Uid, pushMsg);
-            return task.Result;
+            return PitayaCluster.SendPushToUser(svId, svType, route, Uid, pushMsg);
         }
 
-        public bool Kick()
+        public Task<bool> Kick()
         {
-            Task<bool> task = PitayaCluster.SendKickToUser(_frontendId, "", new KickMsg
+            return PitayaCluster.SendKickToUser(_frontendId, "", new KickMsg
             {
                 UserId = Uid
             });
-            return task.Result;
         }
-        public bool Kick(string svType)
+        public Task<bool> Kick(string svType)
         {
-            Task<bool> task = PitayaCluster.SendKickToUser("", svType, new KickMsg
+            return PitayaCluster.SendKickToUser("", svType, new KickMsg
             {
                 UserId = Uid
             });
-            return task.Result;
         }
     }
 }

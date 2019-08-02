@@ -28,7 +28,7 @@ namespace exampleapp.Handlers
                 Code = 200
             };
 
-            pitayaSession.Bind("uidbla");
+            await pitayaSession.Bind("uidbla");
 
             Console.WriteLine("handler executed with arg {0}", msg);
             Console.WriteLine("handler executed with session ipversion {0}", pitayaSession.GetString("ipversion"));
@@ -39,7 +39,7 @@ namespace exampleapp.Handlers
             pitayaSession.Set("msg", "testingMsg");
             pitayaSession.Set("int", 3);
             pitayaSession.Set("double", 3.33);
-            pitayaSession.PushToFrontend();
+            await pitayaSession.PushToFrontend();
         }
 
         public async Task TestPush(PitayaSession pitayaSession)
