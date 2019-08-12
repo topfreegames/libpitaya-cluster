@@ -17,11 +17,16 @@ namespace NPitaya
         {
             var sw = Stopwatch.StartNew();
             var res = new MemoryBuffer();
+            bool success = false;
+            string route = "";
             IntPtr resPtr;
             try
             {
                 var cRpc = (CRpc) Marshal.PtrToStructure(cRpcPtr, typeof(CRpc));
-                res = await RPCCbFuncImpl(cRpc.reqBufferPtr, sw);
+                var req = BuildRequestData(cRpc.reqBufferPtr);
+                route = req.Msg.Route;
+                res = await RPCCbFuncImpl(req, sw);
+                success = true;
             }
             catch (Exception e)
             {
@@ -46,16 +51,30 @@ namespace NPitaya
 
                 Marshal.FreeHGlobal(res.data);
                 Marshal.FreeHGlobal(resPtr);
+                if (success)
+                {
+                    MetricsReporters.ReportTimer(Metrics.Constants.Status.success.ToString(), route,
+                        "handler", "", sw);
+                }
+                else
+                {
+                    MetricsReporters.ReportTimer(Metrics.Constants.Status.fail.ToString(), route,
+                        "handler", "PIT-500", sw);
+                }
             }
         }
 
-        private static async Task<MemoryBuffer> RPCCbFuncImpl(IntPtr reqBufferPtr, Stopwatch sw)
+        private static Request BuildRequestData(IntPtr reqBufferPtr)
         {
             var reqBuffer = (MemoryBuffer) Marshal.PtrToStructure(reqBufferPtr, typeof(MemoryBuffer));
 
             Request req = new Request();
             req.MergeFrom(new CodedInputStream(reqBuffer.GetData()));
+            return req;
+        }
 
+        private static async Task<MemoryBuffer> RPCCbFuncImpl(Request req, Stopwatch sw)
+        {
             Response response;
             switch (req.Type)
             {

@@ -2,13 +2,13 @@
 <package>
   <metadata>
     <id>NPitaya</id>
-    <version>0.9.0</version>
+    <version>0.9.1</version>
     <authors>leonardohahn,felipejfc</authors>
     <owners>TFG</owners>
     <projectUrl>https://github.com/topfreegames/libpitaya-cluster</projectUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>C# binding to the pitaya-cpp library</description>
-    <releaseNotes>Return tasks in PitayaSession</releaseNotes>
+    <releaseNotes>Report response_time_ns from handler</releaseNotes>
     <copyright>Copyright TFG co</copyright>
     <tags>pitaya server grpc nats</tags>
     <dependencies>
