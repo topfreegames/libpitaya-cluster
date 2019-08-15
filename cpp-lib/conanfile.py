@@ -25,6 +25,7 @@ class PitayaCpp(ConanFile):
         'OpenSSL/1.0.2o@conan/stable',
         'boost/1.65.1@conan/stable',
         'protobuf/3.6.1@bincrafters/stable',
+        'thrift/0.12.0@bincrafters/stable',
     )
     build_requires = (
         'gtest/1.8.1@bincrafters/stable'

@@ -41,6 +41,33 @@ add_subdirectory(deps/etcd-cpp-apiv3 EXCLUDE_FROM_ALL)
 set(NATS_BUILD_STREAMING OFF CACHE BOOL "")
 add_subdirectory(deps/cnats-1.8.0 EXCLUDE_FROM_ALL)
 
+#=======================================================================================
+# Add jaeger precompiled library and Opentracing
+#=======================================================================================
+if(APPLE AND NOT IOS)
+    set(JAEGER_INCLUDE_LOCATION      ${CMAKE_SOURCE_DIR}/deps/jaegertracing_install_macosx/include)
+    set(JAEGER_LIB_LOCATION ${CMAKE_SOURCE_DIR}/deps/jaegertracing_install_macosx/lib/libjaegertracing.a)
+
+    set(OPENTRACING_LIB_LOCATION     ${CMAKE_SOURCE_DIR}/deps/opentracing_install_macosx/lib/libopentracing.a)
+    set(OPENTRACING_INCLUDE_LOCATION ${CMAKE_SOURCE_DIR}/deps/opentracing_install_macosx/include)
+elseif(UNIX AND NOT ANDROID)
+    set(JAEGER_INCLUDE_LOCATION      ${CMAKE_SOURCE_DIR}/deps/jaegertracing_install_linux/include)
+    set(JAEGER_LIB_LOCATION ${CMAKE_SOURCE_DIR}/deps/jaegertracing_install_linux/lib/libjaegertracing.a)
+
+    set(OPENTRACING_LIB_LOCATION     ${CMAKE_SOURCE_DIR}/deps/opentracing_install_linux/lib/libopentracing.a)
+    set(OPENTRACING_INCLUDE_LOCATION ${CMAKE_SOURCE_DIR}/deps/opentracing_install_linux/include)
+else()
+    message(FATAL_ERROR "Platform not supported")
+endif()
+
+add_library(opentracing STATIC IMPORTED)
+set_property(TARGET opentracing PROPERTY IMPORTED_LOCATION ${OPENTRACING_LIB_LOCATION})
+target_include_directories(opentracing INTERFACE ${OPENTRACING_INCLUDE_LOCATION})
+
+add_library(jaeger STATIC IMPORTED)
+set_property(TARGET jaeger PROPERTY IMPORTED_LOCATION ${JAEGER_LIB_LOCATION})
+target_include_directories(jaeger INTERFACE ${JAEGER_INCLUDE_LOCATION})
+
 option(BUILD_MACOSX_BUNDLE "Should build a bundle for Macosx" OFF)
 
 if(BUILD_MACOSX_BUNDLE)
@@ -140,6 +167,9 @@ target_link_libraries(pitaya_cpp
     nats_static
     etcd-cpp-api
     Boost::boost
+    CONAN_PKG::thrift
+    opentracing
+    jaeger
   PRIVATE
     libprotobuf)
 
@@ -149,6 +179,8 @@ if(BUILD_TESTING AND NOT BUILD_MACOSX_BUNDLE)
     # Add example
     # ===============================
     add_executable(main src/pitaya_cluster.cpp)
+
+    #target_link_libraries(pitaya_cpp PUBLIC opentracing)
 
     target_link_libraries(main PRIVATE pitaya_cpp)
 

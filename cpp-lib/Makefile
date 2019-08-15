@@ -64,7 +64,7 @@ build-docker-image:
 	@docker build . -t pitaya-cluster
 
 build-linux-docker:
-	@docker run -v $(shell pwd):/app -ti pitaya-cluster sh -c "cd /app && make build-linux-release"
+	@docker run -v $(shell pwd):/app -ti pitaya-cluster sh -c "cd /app && conan remote add bincrafters https://api.bintray.com/conan/bincrafters/public-conan && make build-linux-release"
 
 build-all-mac: build-mac-release build-mac-unity build-linux-docker
 
