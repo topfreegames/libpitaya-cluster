@@ -48,7 +48,7 @@ namespace NPitaya.Metrics
         public void ReportSummary(string metricKey, Dictionary<string, string> tags, double value)
         {
             var parsedTags = _dictTagsToStringSlice(tags);
-            DogStatsd.Distribution(metricKey, value, tags:parsedTags);
+            DogStatsd.Timer(metricKey, value, tags:parsedTags);
         }
     }
 }
