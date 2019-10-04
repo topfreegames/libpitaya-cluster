@@ -38,6 +38,12 @@ Worker::Worker(const EtcdServiceDiscoveryConfig& config,
         _log->debug("Will synchronize servers every {} seconds",
                     _config.syncServersIntervalSec.count());
     }
+    
+    // Print debug information about the filters that will be applied to the etcd keys.
+    for (const auto& filter : config.serverTypeFilters) {
+        _log->info("Adding server type filter: {}", filter);
+    }
+    
     _etcdClient->Watch(std::bind(&Worker::OnWatch, this, _1));
     _workerThread = std::thread(&Worker::StartThread, this);
 } catch (const spdlog::spdlog_ex& exc) {
@@ -127,7 +133,7 @@ Worker::StartThread()
                     // 1. Parse key
                     string serverType, serverId;
                     if (!utils::ParseEtcdKey(
-                            res.keys[i], _config.etcdPrefix, serverType, serverId)) {
+                            res.keys[i], _config.etcdPrefix, _config.serverTypeFilters, serverType, serverId)) {
                         _log->debug("Ignoring key {}", res.keys[i]);
                         continue;
                     }
@@ -164,7 +170,7 @@ Worker::StartThread()
                 // belongs to the same prefix and it is actually a server.
                 string serverType, serverId;
                 if (!utils::ParseEtcdKey(
-                        job.watchRes.key, _config.etcdPrefix, serverType, serverId)) {
+                        job.watchRes.key, _config.etcdPrefix, _config.serverTypeFilters, serverType, serverId)) {
                     _log->debug("Watch: Ignoring {}", job.watchRes.key);
                     break;
                 }

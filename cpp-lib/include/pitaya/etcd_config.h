@@ -3,6 +3,7 @@
 
 #include <chrono>
 #include <string>
+#include <vector>
 
 namespace pitaya {
 
@@ -15,7 +16,11 @@ struct EtcdServiceDiscoveryConfig
     bool logServerSync;
     bool logServerDetails;
     std::chrono::seconds syncServersIntervalSec;
+    // TODO, FIXME(leo): Currently there is no exponential backoff for this parameter.
     int32_t maxNumberOfRetries;
+    // List of server types to filter. This filter will be added on top
+    // of the etcdPrefix.
+    std::vector<std::string> serverTypeFilters;
 
     EtcdServiceDiscoveryConfig()
         : heartbeatTTLSec(std::chrono::seconds(60))

@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using PitayaSimpleJson;
 
 namespace NPitaya
 {
@@ -60,6 +62,8 @@ namespace NPitaya
         public string endpoints;
         [MarshalAs(UnmanagedType.LPStr)]
         public string etcdPrefix;
+        [MarshalAs(UnmanagedType.LPStr)]
+        public string serverTypeFiltersStr;
         public int heartbeatTTLSec;
         public int logHeartbeat;
         public int logServerSync;
@@ -67,7 +71,7 @@ namespace NPitaya
         public int syncServersIntervalSec;
         public int maxNumberOfRetries;
 
-        public SDConfig(string endpoints, string etcdPrefix, int heartbeatTTLSec, bool logHeartbeat,
+        public SDConfig(string endpoints, string etcdPrefix, List<string> serverTypeFilters, int heartbeatTTLSec, bool logHeartbeat,
             bool logServerSync, bool logServerDetails, int syncServersIntervalSec, int maxNumberOfRetries)
         {
             this.endpoints = endpoints;
@@ -78,6 +82,14 @@ namespace NPitaya
             this.logServerDetails = Convert.ToInt32(logServerDetails);
             this.syncServersIntervalSec = syncServersIntervalSec;
             this.maxNumberOfRetries = maxNumberOfRetries;
+            try
+            {
+                serverTypeFiltersStr = SimpleJson.SerializeObject(serverTypeFilters);
+            }
+            catch (Exception e)
+            {
+                throw new Exception("Failed to serialize serverTypeFilters: " + e.Message);
+            }
         }
     }
 

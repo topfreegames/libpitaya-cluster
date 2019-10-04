@@ -23,6 +23,7 @@ namespace PitayaCSharpExample
       var sdConfig = new SDConfig(
         endpoints: "http://127.0.0.1:2379",
         etcdPrefix: "pitaya/",
+        serverTypeFilters: new List<string>(),
         heartbeatTTLSec: 60,
         logHeartbeat: true,
         logServerSync: true,

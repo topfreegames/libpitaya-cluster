@@ -49,9 +49,55 @@ TEST_F(CWrapperTest, CanInitializeAndTerminate)
 
     for (size_t i = 0; i < 20; ++i) {
         bool ok = tfg_pitc_InitializeWithGrpc(
-            &grpcConfig, &sdConfig, &server, LogLevel_Critical, nullptr);
+            &grpcConfig, &sdConfig, &server, LogLevel_Critical, nullptr, nullptr);
         (void)ok;
 
+        tfg_pitc_Terminate();
+    }
+}
+
+TEST_F(CWrapperTest, WillParseEtcdServerTypeFiltersString)
+{
+    struct {
+        const char* serverTypeFiltersStr;
+        bool ok;
+    } arr[] = {
+        { "[]", true },
+        { "[\"\"]", false },
+        { "[\"cachorro\", \"\"]", false },
+        { "[\"mamamam\", \"wqeqwe\"]", true },
+        { nullptr, true },
+        { "null", false },
+        { "{}", false },
+        { "true", false },
+        { "false", false },
+        { "", false },
+    };
+    
+    CGrpcConfig grpcConfig = {};
+    grpcConfig.host = "127.0.0.1";
+    grpcConfig.port = 40000;
+    grpcConfig.serverMaxNumberOfRpcs = 100;
+    grpcConfig.serverShutdownDeadlineMs = 3000;
+    
+    CSDConfig sdConfig = {};
+    sdConfig.endpoints = "http://127.0.0.1:2379";
+    sdConfig.etcdPrefix = "pitaya/";
+    sdConfig.heartbeatTTLSec = 5;
+    sdConfig.logHeartbeat = false;
+    sdConfig.logServerSync = false;
+    sdConfig.logServerDetails = false;
+    sdConfig.syncServersIntervalSec = 20;
+
+    CServer server = {};
+    server.frontend = true;
+    server.id = (char*)"id";
+    server.type = (char*)"type";
+    
+    for (const auto& table : arr) {
+        sdConfig.serverTypeFilters = table.serverTypeFiltersStr;
+        bool ok = tfg_pitc_InitializeWithGrpc(&grpcConfig, &sdConfig, &server, LogLevel_Critical, nullptr, nullptr);
+        EXPECT_EQ(ok, table.ok) << "String " << table.serverTypeFiltersStr << " should be " << table.ok;
         tfg_pitc_Terminate();
     }
 }

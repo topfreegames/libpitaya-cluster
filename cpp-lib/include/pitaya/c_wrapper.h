@@ -32,6 +32,7 @@ struct CSDConfig
 {
     const char* endpoints;
     const char* etcdPrefix;
+    const char* serverTypeFilters;
     int32_t heartbeatTTLSec;
     int32_t logHeartbeat;
     int32_t logServerSync;
@@ -39,7 +40,7 @@ struct CSDConfig
     int32_t syncServersIntervalSec;
     int32_t maxNumberOfRetries;
 
-    pitaya::EtcdServiceDiscoveryConfig ToConfig();
+    bool TryGetConfig(pitaya::EtcdServiceDiscoveryConfig& config);
 };
 
 struct CGrpcConfig
@@ -88,12 +89,14 @@ extern "C"
                                      CSDConfig* sdConfig,
                                      CServer* sv,
                                      LogLevel logLevel,
+                                     const char* serverTypeFilters,
                                      const char* logFile);
 
     bool tfg_pitc_InitializeWithNats(CNATSConfig* nc,
                                      CSDConfig* sdConfig,
                                      CServer* sv,
                                      LogLevel logLevel,
+                                     const char* serverTypeFilters,
                                      const char* logFile);
 
     bool tfg_pitc_GetServerById(const char* serverId, CServer* retServer);

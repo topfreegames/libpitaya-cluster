@@ -32,11 +32,14 @@ TEST(ParseEtcdKeyTest, ReturnsFalseWhenKeyIsInvalid)
         { "m", "myPrefix/" },
         { "myPrefix//mytype/myid", "myPrefix/" },
         { "myPrefix/servers/mytype/myid", "myPrefix" },
+        { "sniper3d/no-servers/room/server-id", "sniper3d/" },
+        { "sniper3d/servers//server-id", "sniper3d/" },
+        { "sniper3d/servers/room/", "sniper3d/" },
     };
 
     for (const auto& el : arr) {
         std::string serverType, serverId;
-        bool ok = ParseEtcdKey(el.key, el.prefix, serverType, serverId);
+        bool ok = ParseEtcdKey(el.key, el.prefix, std::vector<std::string>(), serverType, serverId);
         ASSERT_FALSE(ok) << "Expecting false for key " << el.key << " and prefix " << el.prefix;
         EXPECT_EQ(serverType, "");
         EXPECT_EQ(serverId, "");
@@ -59,10 +62,33 @@ TEST(ParseEtcdKeyTest, ReturnsTrueWhenKeyIsValid)
 
     for (const auto& el : arr) {
         std::string serverType, serverId;
-        bool ok = ParseEtcdKey(el.key, el.prefix, serverType, serverId);
+        bool ok = ParseEtcdKey(el.key, el.prefix, std::vector<std::string>(), serverType, serverId);
         ASSERT_TRUE(ok);
         EXPECT_EQ(serverType, el.retType);
         EXPECT_EQ(serverId, el.retId);
+    }
+}
+
+TEST(ParseEtcdKeyTest, CanFilterKeysByServerType)
+{
+    static struct
+    {
+        std::string key;
+        std::string prefix;
+        std::vector<std::string> filters;
+        bool ok;
+    } arr[] = {
+        { "sniper3d/servers/server-type1/server-id", "sniper3d/", { "server-type1" }, true },
+        { "sniper3d/servers/server-type2/server-id", "sniper3d/", { "server-type1" }, false },
+        { "sniper3d/servers/server-type2/server-id", "sniper3d/", {}, true },
+        { "sniper3d/servers/server-type3/server-id", "sniper3d/", { "server-type1", "server-type2" }, false },
+        { "sniper3d/servers/server-type3/server-id", "sniper3d/", { "server-type1", "server-type3", "server-type2" }, true },
+    };
+    
+    for (const auto& el : arr) {
+        std::string serverType, serverId;
+        bool ok = ParseEtcdKey(el.key, el.prefix, el.filters, serverType, serverId);
+        EXPECT_EQ(ok, el.ok) << "ParseEtcdKey for key " << el.key << " should have returned " << el.ok;
     }
 }
 

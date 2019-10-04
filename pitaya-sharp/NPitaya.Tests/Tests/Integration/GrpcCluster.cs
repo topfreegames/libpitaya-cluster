@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using NPitaya;
 using Xunit;
 [assembly: CollectionBehavior(DisableTestParallelization = true)]
@@ -20,6 +21,7 @@ namespace NPitayaTest.Tests.Integration
             var sdCfg = new SDConfig(
                 endpoints: "127.0.0.1:123123123",
                 etcdPrefix: "pitaya/",
+                serverTypeFilters: new List<string>(),
                 heartbeatTTLSec: 10,
                 logHeartbeat: false,
                 logServerSync: false,
@@ -61,6 +63,7 @@ namespace NPitayaTest.Tests.Integration
             var sdCfg = new SDConfig(
                 endpoints: "http://127.0.0.1:2379",
                 etcdPrefix: "pitaya/",
+                serverTypeFilters: new List<string>(),
                 heartbeatTTLSec: 10,
                 logHeartbeat: false,
                 logServerSync: false,

@@ -21,13 +21,12 @@ Server RandomServer(const std::vector<Server>& vec);
 
 bool ParseEtcdKey(const std::string& key,
                   const std::string& etcdPrefix,
+                  const std::vector<std::string>& serverTypeFilters,
                   std::string& serverType,
                   std::string& serverId);
 
 std::shared_ptr<spdlog::logger> CloneLoggerOrCreate(const char* loggerNameToClone,
                                                     const char* loggerName);
-
-std::size_t get_thread_id() noexcept;
 
 inline void SetThreadName(const char* name, std::shared_ptr<spdlog::logger> log)
 {

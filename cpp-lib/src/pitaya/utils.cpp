@@ -48,7 +48,11 @@ RandomServer(const std::vector<Server>& vec)
 }
 
 bool
-ParseEtcdKey(const string& key, const string& etcdPrefix, string& serverType, string& serverId)
+ParseEtcdKey(const string& key,
+             const string& etcdPrefix,
+             const std::vector<string>& serverTypeFilters,
+             string& outServerType,
+             string& outServerId)
 {
     assert(!etcdPrefix.empty());
     assert(!key.empty());
@@ -62,6 +66,8 @@ ParseEtcdKey(const string& key, const string& etcdPrefix, string& serverType, st
     auto comps = string_utils::Split(key, '/');
 
     auto prefix = comps[0];
+    
+    // Fail if the key does not start with "<etcdPrefix>/"
     if ((prefix + "/") != etcdPrefix) {
         return false;
     }
@@ -70,36 +76,35 @@ ParseEtcdKey(const string& key, const string& etcdPrefix, string& serverType, st
         return false;
     }
 
+    // Fail if the key does not start with "<etcdPrefix>/servers"
     auto serversLiteral = comps[1];
     if (serversLiteral != "servers") {
         return false;
     }
 
     // If it got here, it means that the key starts with <etcdPrefix>/servers/
-    serverType = comps[2];
-    serverId = comps[3];
+    outServerType = comps[2];
+    outServerId = comps[3];
 
-    if (serverType.empty() || serverId.empty()) {
+    // Neither the server type nor the server id should be empty, therefore we check for that.
+    if (outServerType.empty() || outServerId.empty()) {
+        outServerType = "";
+        outServerId = "";
         return false;
+    }
+    
+    // If there are filters in the array, we try to find the server type in the array,
+    // otherwise we return with an error.
+    if (!serverTypeFilters.empty()) {
+        auto it = std::find(serverTypeFilters.begin(), serverTypeFilters.end(), outServerType);
+        if (it == serverTypeFilters.end()) {
+            outServerType = "";
+            outServerId = "";
+            return false;
+        }
     }
 
     return true;
-}
-
-std::size_t
-get_thread_id() noexcept
-{
-    static std::size_t thread_idx = 0;
-    static std::mutex thread_mutex;
-    static std::unordered_map<std::thread::id, std::size_t> thread_ids;
-
-    std::lock_guard<std::mutex> lock(thread_mutex);
-    std::thread::id id = std::this_thread::get_id();
-    auto iter = thread_ids.find(id);
-    if (iter == thread_ids.end()) {
-        iter = thread_ids.insert(std::pair<std::thread::id, std::size_t>(id, thread_idx++)).first;
-    }
-    return iter->second;
 }
 
 std::shared_ptr<spdlog::logger>

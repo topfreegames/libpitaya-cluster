@@ -459,6 +459,90 @@ TEST_F(Etcdv3ServiceDiscoveryTest, ServerIsIgnoredInSyncServersIfGetFromEtcdFail
     }
 }
 
+TEST_F(Etcdv3ServiceDiscoveryTest, ServerIsIgnoredInSyncServersIfTheServerTypeIsFilteredOut)
+{
+    // Will synchronize servers with etcd manually every 2 seconds
+    _config.syncServersIntervalSec = std::chrono::seconds(1);
+    // We only want to keep servers that are of the following types
+    _config.serverTypeFilters = {
+        "server-type1", "server-type2", "server-type3",
+    };
+    
+    auto listRes = NewListResponse({
+        "pitaya/servers/room/awesome-id1",
+        "pitaya/servers/server-type1/awesome-id2",
+        "pitaya/servers/connector/myid",
+        "pitaya/servers/server-type3/awesome-id3",
+        "other-prefix/servers/connector/super-id4",
+        "pitaya/servers/server-type2/awesome-id5",
+    });
+    
+    LeaseRevokeResponse revokeRes;
+    revokeRes.ok = true;
+    
+    EXPECT_CALL(*_mockEtcdClient, List(Eq(_config.etcdPrefix))).WillOnce(Return(listRes));
+    
+    auto leaseGrantRes = NewSuccessfullLeaseGrantResponse(129310);
+    auto setRes = NewSuccessfullSetResponse();
+    
+    {
+        InSequence seq;
+        EXPECT_CALL(*_mockEtcdClient, LeaseGrant(Eq(_config.heartbeatTTLSec)))
+        .WillOnce(Return(leaseGrantRes));
+        EXPECT_CALL(*_mockEtcdClient, Set(_, _, Eq(leaseGrantRes.leaseId)))
+        .WillOnce(Return(setRes));
+        EXPECT_CALL(*_mockEtcdClient, LeaseRevoke(Eq(leaseGrantRes.leaseId)))
+        .WillOnce(Return(revokeRes));
+    }
+    
+    {
+        InSequence seq;
+        EXPECT_CALL(*_mockEtcdClient, LeaseKeepAlive(Eq(leaseGrantRes.leaseId), _));
+        EXPECT_CALL(*_mockEtcdClient, CancelWatch());
+        EXPECT_CALL(*_mockEtcdClient, StopLeaseKeepAlive());
+    }
+
+    {
+        GetResponse firstGetRes;
+        firstGetRes.ok = true;
+        firstGetRes.value = "{\"id\": \"awesome-id2\", \"type\": \"server-type1\", \"frontend\": true}";
+
+        GetResponse secondGetRes;
+        secondGetRes.ok = true;
+        secondGetRes.value = "{\"id\": \"awesome-id3\", \"type\": \"server-type3\", \"frontend\": true}";
+
+        GetResponse thirdGetRes;
+        thirdGetRes.ok = true;
+        thirdGetRes.value = "{\"id\": \"awesome-id5\", \"type\": \"server-type2\", \"frontend\": true}";
+
+        InSequence seq;
+        EXPECT_CALL(*_mockEtcdClient, Get("pitaya/servers/server-type1/awesome-id2"))
+        .WillOnce(Return(firstGetRes));
+        EXPECT_CALL(*_mockEtcdClient, Get("pitaya/servers/server-type3/awesome-id3"))
+        .WillOnce(Return(secondGetRes));
+        EXPECT_CALL(*_mockEtcdClient, Get("pitaya/servers/server-type2/awesome-id5"))
+        .WillOnce(Return(thirdGetRes));
+    }
+
+    auto serviceDiscovery = CreateServiceDiscovery();
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(200));
+
+    ASSERT_NE(_mockEtcdClient->onWatch, nullptr);
+    
+    // Check that the necessary servers are there
+    for (const auto& key : { "awesome-id2", "awesome-id3", "awesome-id5" }) {
+        auto server = serviceDiscovery->GetServerById(key);
+        EXPECT_TRUE(server) << "Key " << key << " should be present";
+    }
+    
+    // Check that the filtered servers are not there
+    for (const auto& key : { "awesome-id1", "myid", "super-id4" }) {
+        auto server = serviceDiscovery->GetServerById(key);
+        EXPECT_EQ(server, boost::none) << "Key " << key << " should NOT be present";
+    }
+}
+
 ACTION_TEMPLATE(SaveFunction,
                 HAS_1_TEMPLATE_PARAMS(int, k),
                 AND_1_VALUE_PARAMS(pointer))

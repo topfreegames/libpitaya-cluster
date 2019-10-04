@@ -16,11 +16,13 @@
 #include <boost/optional.hpp>
 #include <chrono>
 #include <cstdio>
+#include <cpprest/json.h>
 
 using namespace std;
 using namespace pitaya;
 using namespace pitaya::service_discovery;
 using namespace pitaya::etcdv3_service_discovery;
+using namespace web;
 using boost::optional;
 
 static char*
@@ -63,6 +65,37 @@ FreeServer(const CServer* sv)
     free(sv->hostname);
 }
 
+static bool
+ParseServerTypeFilters(std::vector<std::string>& serverTypeFilters, const char* serverTypeFiltersStr)
+{
+    serverTypeFilters = std::vector<std::string>();
+    
+    if (!serverTypeFiltersStr) {
+        return true;
+    }
+    
+    try {
+        json::value val = json::value::parse(serverTypeFiltersStr);
+        if (!val.is_array()) {
+            gLogger->error("Server type filters should be a json array: {}", serverTypeFiltersStr);
+            return false;
+        }
+        
+        for (const auto& el : val.as_array()) {
+            if (!el.is_string() || el.as_string().empty()) {
+                gLogger->error("Server type filter elements should be of type string and not empty");
+                return false;
+            }
+            serverTypeFilters.push_back(el.as_string());
+        }
+        
+        return true;
+    } catch (const json::json_exception& exc) {
+        gLogger->error("Failed to parse serverTypeFilters: {}", exc.what());
+        return false;
+    }
+}
+
 class CServiceDiscoveryListener : public service_discovery::Listener
 {
 public:
@@ -98,10 +131,10 @@ private:
     void* _user;
 };
 
-pitaya::EtcdServiceDiscoveryConfig
-CSDConfig::ToConfig()
+bool
+CSDConfig::TryGetConfig(pitaya::EtcdServiceDiscoveryConfig& config)
 {
-    pitaya::EtcdServiceDiscoveryConfig config;
+    config = pitaya::EtcdServiceDiscoveryConfig();
     config.endpoints = endpoints ? std::string(endpoints) : "";
     config.etcdPrefix = etcdPrefix ? std::string(etcdPrefix) : "";
     config.heartbeatTTLSec = std::chrono::seconds(heartbeatTTLSec);
@@ -110,7 +143,7 @@ CSDConfig::ToConfig()
     config.logServerDetails = logServerDetails;
     config.syncServersIntervalSec = std::chrono::seconds(syncServersIntervalSec);
     config.maxNumberOfRetries = maxNumberOfRetries;
-    return config;
+    return ParseServerTypeFilters(config.serverTypeFilters, this->serverTypeFilters);
 }
 
 pitaya::GrpcConfig
@@ -200,6 +233,7 @@ extern "C"
                                      CSDConfig* sdConfig,
                                      CServer* sv,
                                      LogLevel logLevel,
+                                     const char* serverTypeFiltersStr,
                                      const char* logFile)
     {
         if (!spdlog::get("c_wrapper")) {
@@ -213,13 +247,17 @@ extern "C"
         bindingStorageConfig.etcdPrefix = sdConfig->etcdPrefix;
         bindingStorageConfig.leaseTtlSec = 5;
 
+        EtcdServiceDiscoveryConfig serviceDiscoveryConfig;
+        if (!sdConfig->TryGetConfig(serviceDiscoveryConfig)) {
+            return false;
+        }
+
         try {
             Cluster::Instance().InitializeWithGrpc(grpcConfig->ToConfig(),
-                                                   sdConfig->ToConfig(),
+                                                   serviceDiscoveryConfig,
                                                    bindingStorageConfig.ToConfig(),
                                                    server,
                                                    "c_wrapper");
-
             return true;
         } catch (const PitayaException& exc) {
             gLogger->error("Failed to create cluster instance: {}", exc.what());
@@ -231,6 +269,7 @@ extern "C"
                                      CSDConfig* sdConfig,
                                      CServer* sv,
                                      LogLevel logLevel,
+                                     const char* serverTypeFiltersStr,
                                      const char* logFile)
     {
         using std::chrono::milliseconds;
@@ -248,9 +287,16 @@ extern "C"
                                   nc->maxPendingMsgs);
         Server server = CServerToServer(sv);
 
+        EtcdServiceDiscoveryConfig serviceDiscoveryConfig;
+        if (!sdConfig->TryGetConfig(serviceDiscoveryConfig)) {
+            return false;
+        }
+
         try {
-            Cluster::Instance().InitializeWithNats(
-                std::move(natsCfg), sdConfig->ToConfig(), server, "c_wrapper");
+            Cluster::Instance().InitializeWithNats(std::move(natsCfg),
+                                                   serviceDiscoveryConfig,
+                                                   server,
+                                                   "c_wrapper");
             return true;
         } catch (const PitayaException& exc) {
             gLogger->error("Failed to create cluster instance: {}", exc.what());
