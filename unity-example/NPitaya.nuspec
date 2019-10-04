@@ -2,13 +2,13 @@
 <package>
   <metadata>
     <id>NPitaya</id>
-    <version>0.9.2</version>
+    <version>0.10.0</version>
     <authors>leonardohahn,felipejfc</authors>
     <owners>TFG</owners>
     <projectUrl>https://github.com/topfreegames/libpitaya-cluster</projectUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>C# binding to the pitaya-cpp library</description>
-    <releaseNotes>Change StatsD Summary Type</releaseNotes>
+    <releaseNotes>Add option to pass filters of server types in the lib initialization</releaseNotes>
     <copyright>Copyright TFG co</copyright>
     <tags>pitaya server grpc nats</tags>
     <dependencies>
