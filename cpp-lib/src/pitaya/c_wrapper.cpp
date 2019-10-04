@@ -233,7 +233,6 @@ extern "C"
                                      CSDConfig* sdConfig,
                                      CServer* sv,
                                      LogLevel logLevel,
-                                     const char* serverTypeFiltersStr,
                                      const char* logFile)
     {
         if (!spdlog::get("c_wrapper")) {
@@ -269,7 +268,6 @@ extern "C"
                                      CSDConfig* sdConfig,
                                      CServer* sv,
                                      LogLevel logLevel,
-                                     const char* serverTypeFiltersStr,
                                      const char* logFile)
     {
         using std::chrono::milliseconds;

@@ -49,7 +49,7 @@ TEST_F(CWrapperTest, CanInitializeAndTerminate)
 
     for (size_t i = 0; i < 20; ++i) {
         bool ok = tfg_pitc_InitializeWithGrpc(
-            &grpcConfig, &sdConfig, &server, LogLevel_Critical, nullptr, nullptr);
+            &grpcConfig, &sdConfig, &server, LogLevel_Critical, nullptr);
         (void)ok;
 
         tfg_pitc_Terminate();
@@ -96,7 +96,7 @@ TEST_F(CWrapperTest, WillParseEtcdServerTypeFiltersString)
     
     for (const auto& table : arr) {
         sdConfig.serverTypeFilters = table.serverTypeFiltersStr;
-        bool ok = tfg_pitc_InitializeWithGrpc(&grpcConfig, &sdConfig, &server, LogLevel_Critical, nullptr, nullptr);
+        bool ok = tfg_pitc_InitializeWithGrpc(&grpcConfig, &sdConfig, &server, LogLevel_Critical, nullptr);
         EXPECT_EQ(ok, table.ok) << "String " << table.serverTypeFiltersStr << " should be " << table.ok;
         tfg_pitc_Terminate();
     }

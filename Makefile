@@ -11,7 +11,7 @@ build-cpp-on-mac:
 	@cp cpp-lib/_builds/mac-unity/libpitaya_cpp.bundle precompiled/
 	@cp cpp-lib/_builds/linux/libpitaya_cpp.so precompiled/
 
-build-all: nuget-clean build-csharp-lib-release build-cpp-unity
+build-all: build-csharp-lib-release build-cpp-unity
 
 submodules:
 	@git submodule update --init --recursive --remote pitaya-protos

@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
 using System;
+using System.Collections.Generic;
 using AOT;
 using NPitaya;
 using NPitaya.Models;
@@ -31,6 +32,7 @@ public class LibPitayaExample : MonoBehaviour {
 	    var sdConfig = new SDConfig(
 		    endpoints: "http://10.0.21.167:2379",
 		    etcdPrefix: "pitaya/",
+		    serverTypeFilters: new List<string>(), 
 		    heartbeatTTLSec: 60,
 		    logHeartbeat: false,
 		    logServerSync: true,
@@ -123,7 +125,7 @@ public class LibPitayaExample : MonoBehaviour {
 		try
         {
             // var res = PitayaCluster.Rpc<Protos.RPCRes>(Route.FromString("csharp.testremote.remote"), msg);
-            var res = PitayaCluster.Rpc<Protos.RPCRes>(Route.FromString("room.room.test"), msg);
+            var res = PitayaCluster.Rpc<Protos.RPCRes>(Route.FromString("room.room.test"), msg).Result;
             Debug.Log($"received rpc res: {res.Msg}");
         }
 		catch (Exception e)
