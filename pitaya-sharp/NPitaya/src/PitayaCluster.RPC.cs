@@ -36,6 +36,11 @@ namespace NPitaya
 
                 Logger.Error("Exception thrown in handler, error:{0}",
                     innerMostException.Message); // TODO externalize method and only print stacktrace when debug
+#if NPITAYA_DEBUG
+                // If we are compiling with a Debug define, we want to print a stacktrace whenever a route
+                // throws an exception.
+                Logger.Error("Stacktrace: {0}", innerMostException.StackTrace);
+#endif
 
                 var protosResponse = GetErrorResponse("PIT-500", innerMostException.Message);
                 var responseBytes = protosResponse.ToByteArray();
