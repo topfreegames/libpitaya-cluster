@@ -3,6 +3,17 @@
 A library that allows you to to create Pitaya servers in C++.
 
 ## Installation
+With xcode and xcode-select properly installed (`xcode-select --install`) run:
+
+```
+git submodules update --init --recursive
+brew install cmake
+brew install ninja
+pip3 install conan
+make generate-xcode
+make build-mac-debug
+```
+
 The library is currently distributed with [Conan](https://conan.io). To install it, you need to add the remote and add the dependency to your `conanfile.txt`:
 
 ```
@@ -30,7 +41,11 @@ cmake --build build
 ```
 
 ## Running tests
-In order to run the tests you have to generate a build with support for them (see section above: `-DBUILD_TESTING=ON`). After that you can run the `tests` executable in the build folder. You can also see the code coverage with the `run-tests-with-coverage.sh <executable-path>` script.
+After following the installation steps, run:
+
+```bash
+make run-mac-debug
+```
 
 ## Limitations
 - Currently there is no support for Windows. However building the library on Windows should not be too difficult. We will gladly accept PR's for this.

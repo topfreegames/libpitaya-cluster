@@ -3,6 +3,7 @@
 #obj
 csharp-example/csharp-example/bin
 .vscode
+.history
 *.app
 .vs
 .DS_Store
