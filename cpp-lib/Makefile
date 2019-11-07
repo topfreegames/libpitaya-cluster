@@ -68,3 +68,5 @@ build-linux-docker:
 
 build-all-mac: build-mac-release build-mac-unity build-linux-docker
 
+run-mac-debug:
+	cmake --build _builds/mac-debug && ./run-tests-with-coverage.sh _builds/mac-debug/tests

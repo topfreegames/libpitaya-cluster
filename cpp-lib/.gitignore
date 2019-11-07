@@ -2,6 +2,7 @@ _builds
 build
 cmake-build-*
 .idea
+.history
 .ccls-cache
 temp-build
 package
