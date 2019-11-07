@@ -47,6 +47,10 @@ RandomServer(const std::vector<Server>& vec)
     return random_element;
 }
 
+// key is composed by:
+// <prefix>/servers/<serverType>/<serverID>
+// 
+// etcdPrefix should be contained in the beginning of the key string
 bool
 ParseEtcdKey(const string& key,
              const string& etcdPrefix,
@@ -65,10 +69,8 @@ ParseEtcdKey(const string& key,
 
     auto comps = string_utils::Split(key, '/');
 
-    auto prefix = comps[0];
-    
-    // Fail if the key does not start with "<etcdPrefix>/"
-    if ((prefix + "/") != etcdPrefix) {
+    // Fail if etcdPrefix is not contained in the beginning of the key string
+    if (key.find(etcdPrefix) != 0 || etcdPrefix.find('/') == std::string::npos) {
         return false;
     }
 
@@ -76,13 +78,13 @@ ParseEtcdKey(const string& key,
         return false;
     }
 
-    // Fail if the key does not start with "<etcdPrefix>/servers"
+    // Fail if the key does not start with "<prefix>/servers"
     auto serversLiteral = comps[1];
     if (serversLiteral != "servers") {
         return false;
     }
 
-    // If it got here, it means that the key starts with <etcdPrefix>/servers/
+    // If it got here, it means that the key starts with <prefix>/servers/
     outServerType = comps[2];
     outServerId = comps[3];
 

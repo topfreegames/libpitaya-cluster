@@ -82,7 +82,7 @@ TEST_F(CWrapperTest, WillParseEtcdServerTypeFiltersString)
     
     CSDConfig sdConfig = {};
     sdConfig.endpoints = "http://127.0.0.1:2379";
-    sdConfig.etcdPrefix = "pitaya/";
+    sdConfig.etcdPrefix = "pitaya/servers/metagame/";
     sdConfig.heartbeatTTLSec = 5;
     sdConfig.logHeartbeat = false;
     sdConfig.logServerSync = false;

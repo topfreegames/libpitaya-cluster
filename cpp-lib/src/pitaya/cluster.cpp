@@ -60,7 +60,7 @@ Cluster::InitializeWithGrpc(GrpcConfig config,
         sdConfig,
         server,
         std::unique_ptr<EtcdClient>(new EtcdClientV3(
-            sdConfig.endpoints, sdConfig.etcdPrefix + "servers/metagame/", sdConfig.logHeartbeat, loggerName)),
+            sdConfig.endpoints, sdConfig.etcdPrefix, sdConfig.logHeartbeat, loggerName)),
         loggerName));
 
     auto rpcClient = std::unique_ptr<RpcClient>(
