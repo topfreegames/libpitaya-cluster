@@ -68,9 +68,10 @@ ParseEtcdKey(const string& key,
     }
 
     auto comps = string_utils::Split(key, '/');
+    auto prefix = comps[0];
 
-    // Fail if etcdPrefix is not contained in the beginning of the key string
-    if (key.find(etcdPrefix) != 0 || etcdPrefix.find('/') == std::string::npos) {
+    // Fail if the key does not start with "<etcdPrefix>/"
+    if ((prefix + "/") != etcdPrefix) {
         return false;
     }
 
