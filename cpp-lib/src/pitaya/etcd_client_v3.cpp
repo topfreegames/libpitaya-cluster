@@ -85,7 +85,7 @@ EtcdClientV3::Get(const std::string& key)
 ListResponse
 EtcdClientV3::List(const std::string& prefix)
 {
-    etcd::Response etcdRes = _client.ls(prefix).get();
+    etcd::Response etcdRes = _client.ls(prefix, true).get();
 
     ListResponse res;
     res.ok = etcdRes.is_ok();
