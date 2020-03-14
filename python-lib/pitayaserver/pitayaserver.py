@@ -2,29 +2,67 @@ from .route import Route
 from google.protobuf import message
 from ctypes import POINTER, byref, c_char, c_char_p, c_void_p, addressof, memmove, sizeof
 from .gen.response_pb2 import Response
+from .gen.request_pb2 import Request
 from .remote import BaseRemote
-from .c_interop import SdConfig, NatsConfig, Server, Native, FREECB, MemoryBuffer, RPCReq, RPCCB, PitayaError
+from .c_interop import SdConfig, NatsConfig, Server, Native, FREECB, MemoryBuffer, RPCReq, RPCCB, PitayaError, LogLevel
+
+from multiprocessing import cpu_count
+from threading import Thread
 
 remotes_dict = dict()
-
+rpc_worker_threads = []
 
 def default_name_func(s): return s[:1].lower() + s[1:] if s else ''
 
-
 LIB = None
-
 
 def initialize_pitaya(
         sd_config: SdConfig,
         nats_config: NatsConfig,
-        server: Server, logPath=b'/tmp/pitaya_cluster_log'):
+        server: Server, log_level: LogLevel, logPath=b'/tmp/pitaya_cluster_log'):
     """ this method initializes pitaya cluster logic and should be called on start """
     global LIB
     LIB = Native().LIB
-    res = LIB.tfg_pitc_Initialize(
-        server, sd_config, nats_config, _rpc_cb, _free_cb, logPath)
+    res = LIB.tfg_pitc_InitializeWithNats(
+        nats_config, sd_config, server, log_level, logPath)
     if not res:
         raise Exception("error initializing pitaya")
+    # initialize RPC threads
+    for i in range(cpu_count()):
+        t = Thread(target=process_rpcs, args=(i,))
+        rpc_worker_threads.append(t)
+        t.start()
+
+
+def process_rpcs(thread_num):
+    print (f"started working thread {thread_num}")
+    while True:
+        cRpcPtr = LIB.tfg_pitc_WaitForRpc()
+        if bool(cRpcPtr) == False:
+            break
+        req = cRpcPtr.contents
+        try:
+            req_data_ptr = req.buffer.contents.data
+            req_data_sz = req.buffer.contents.size
+            req_data = (c_char * req_data_sz).from_address(req_data_ptr)
+            request = Request()
+            request.MergeFromString(req_data.value)
+            route = Route.from_str(request.msg.route).str()
+            if route not in remotes_dict:
+                raise Exception("remote %s not found!" % route)
+            remote_method = remotes_dict[route]
+            arg = remote_method.arg_type()
+            arg.MergeFromString(request.msg.data)
+            res = remote_method.method(remote_method.obj, arg)
+            buf = _alloc_mem_buffer_ptr_with_response_data(res)
+            LIB.tfg_pitc_FinishRpcCall(buf, cRpcPtr)
+            LIB.tfg_pitc_FreeMem(buf)
+        except Exception as e:
+            err_str = "exception: %s: %s" % (type(e).__name__, e)
+            err = _get_error_response_c_void_p("PIT-500", err_str)
+            LIB.tfg_pitc_FinishRpcCall(err, cRpcPtr)
+            LIB.tfg_pitc_FreeMem(err)
+            continue
 
 
 def get_server_by_id(server_id: str):
@@ -66,16 +104,8 @@ def shutdown():
     LIB.tfg_pitc_Terminate()
 
 
-@FREECB
-def _free_cb(mem: c_void_p):
-    """ free cb is called internally by the c module to free allocated memory """
-    LIB.tfg_pitc_FreeMem(mem)
-
-
 def _alloc_mem_buffer_ptr_with_response_data(res: Response):
     """ internal method, this allocs a memory buffer in the global heap for sending it to c code """
-    if not isinstance(res, Response):
-        raise TypeError
     res_bytes = res.SerializeToString()
     ret_len = len(res_bytes)
     ptrData = LIB.tfg_pitc_AllocMem(ret_len)
@@ -98,29 +128,6 @@ def _get_error_response_c_void_p(code, msg):
     return _alloc_mem_buffer_ptr_with_response_data(res)
 
 
-@RPCCB
-def _rpc_cb(req: POINTER(RPCReq)) -> c_void_p:
-    """ this method is called internally by c code for receiving rpcs """
-    r = req.contents.route
-    route = Route.from_str(r).str()
-    if route not in remotes_dict:
-        return _get_error_response_c_void_p("PIT-404", "remote %s not found!" % route)
-    remote_method = remotes_dict[route]
-    try:
-        res = Response()
-        req_data_ptr = req.contents.buffer.data
-        req_data_sz = req.contents.buffer.size
-        req_data = (c_char * req_data_sz).from_address(req_data_ptr)
-        arg = remote_method.arg_type()
-        arg.MergeFromString(req_data)
-        ans = remote_method.method(remote_method.obj, arg)
-        res.data = ans.SerializeToString()
-        return _alloc_mem_buffer_ptr_with_response_data(res)
-    except Exception as e:
-        err_str = "exception: %s: %s" % (type(e).__name__, e)
-        return _get_error_response_c_void_p("PIT-500", err_str)
-
-
 def send_rpc(route: str, in_msg: message.Message, res_class: message.Message, server_id: str='') -> message.Message:
     """ sends a rpc to other pitaya server """
     if not issubclass(type(in_msg), message.Message) or not issubclass(res_class, message.Message):
@@ -139,11 +146,9 @@ def send_rpc(route: str, in_msg: message.Message, res_class: message.Message, se
     ret_bytes = (
         c_char * ret_ptr.contents.size).from_address(ret_ptr.contents.data)
     response = Response()
-    response.MergeFromString(ret_bytes)
+    response.MergeFromString(ret_bytes.value)
     LIB.tfg_pitc_FreeMemoryBuffer(ret_ptr)
-    out_msg = res_class()
-    out_msg.MergeFromString(response.data)
-    return out_msg
+    return response
 
 # MUST be called after get_server or else your code will leak
 # TODO: can we prevent the user from not calling this?

@@ -19,7 +19,7 @@ class Route(object):
     @classmethod
     def from_str(cls, route_str):
         """ creates a new route from a string """
-        route_splitted = route_str.decode().split(".")
+        route_splitted = route_str.split(".")
         if len(route_splitted) < 3:
             raise Exception("invalid route %s" % route_str)
         instance = cls(route_splitted[0], route_splitted[1], route_splitted[2])

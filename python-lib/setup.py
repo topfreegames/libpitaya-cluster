@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name='pitayaserver',
-    version='0.2.1',
+    version='0.3.0',
     author="TFG Co",
     author_email="backend@tfgco.com",
     description="A library for creating pitaya backend servers using python",

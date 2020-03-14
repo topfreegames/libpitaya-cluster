@@ -1,6 +1,8 @@
 """ this module interops with the c dll"""
 from ctypes import (c_char_p, c_int, c_longlong, c_void_p, cdll, Structure, POINTER,
                     c_bool, CFUNCTYPE)
+from typing import NewType
+from enum import Enum
 import platform
 import os
 import sys
@@ -13,16 +15,13 @@ class SdConfig(Structure):  # pylint: disable=too-few-public-methods
     _fields_ = [
         ("endpoints", c_char_p),
         ("etcd_prefix", c_char_p),
+        ("server_type_filters", c_char_p),
         ("heartbeat_ttl_sec", c_int),
         ("log_heartbeat", c_int),
         ("log_server_sync", c_int),
         ("log_server_details", c_int),
         ("sync_servers_interval_sec", c_int),
-        ("log_level", c_int)]
-
-
-(LOGLEVEL_DEBUG, LOGLEVEL_INFO, LOGLEVEL_WARN, LOGLEVEL_ERROR,
- LOGLEVEL_CRITICAL) = (0, 1, 2, 3, 4)
+        ("max_number_of_retries", c_int)]
 
 
 class NatsConfig(Structure):  # pylint: disable=too-few-public-methods
@@ -31,6 +30,8 @@ class NatsConfig(Structure):  # pylint: disable=too-few-public-methods
         ("endpoint", c_char_p),
         ("connection_timeout_ms", c_longlong),
         ("request_timeout_ms", c_int),
+        ("server_shutdown_deadline_ms", c_int),
+        ("server_max_number_of_rpcs", c_int),
         ("max_reconnection_attempts", c_int),
         ("max_pending_msgs", c_int)]
 
@@ -62,12 +63,19 @@ class MemoryBuffer(Structure):  # pylint: disable=too-few-public-methods
 class RPCReq(Structure):  # pylint: disable=too-few-public-methods
     """ rpc req class used in sendrpc and rpc cbs """
     _fields_ = [
-        ("buffer", MemoryBuffer),
-        ("route", c_char_p)]
+        ("buffer", POINTER(MemoryBuffer)),
+        ("tag", c_void_p)]
 
 
 RPCCB = CFUNCTYPE(c_void_p, POINTER(RPCReq))
 
+LevelType = NewType('Level', int)
+class LogLevel(Enum):
+    DEBUG = 0
+    INFO = 1
+    WARN = 2
+    ERROR = 3
+    CRITICAL = 4
 
 class Native(object):
     __instance = None
@@ -79,11 +87,11 @@ class Native(object):
                 system = platform.system()
 
                 if system == "Linux":
-                    lib_dir = "libpitaya_cluster.so"
+                    lib_dir = "libpitaya_cpp.so"
                 elif system == "Darwin":
-                    lib_dir = "libpitaya_cluster.dylib"
+                    lib_dir = "libpitaya_cpp.dylib"
                 elif system == "Windows":
-                    lib_dir = "libpitaya_cluster.dll"
+                    lib_dir = "libpitaya_cpp.dll"
 
                 print (
                     "PITAYA_LIB_DIR env var not set, defaulting lib to %s, make sure it's in the current dir" % lib_dir)
@@ -92,9 +100,9 @@ class Native(object):
 
             self.LIB = cdll.LoadLibrary(lib_dir)
 
-            self.LIB.tfg_pitc_Initialize.restype = c_bool
-            self.LIB.tfg_pitc_Initialize.argtypes = [POINTER(Server), POINTER(SdConfig), POINTER(NatsConfig),
-                                                     RPCCB, FREECB, c_char_p]
+            self.LIB.tfg_pitc_InitializeWithNats.restype = c_bool
+            self.LIB.tfg_pitc_InitializeWithNats.argtypes = [POINTER(NatsConfig), POINTER(SdConfig), POINTER(Server),
+                                                    c_int, c_char_p]
 
             self.LIB.tfg_pitc_GetServerById.restype = c_bool
             self.LIB.tfg_pitc_GetServerById.argtypes = [
@@ -117,6 +125,10 @@ class Native(object):
 
             self.LIB.tfg_pitc_AllocMem.restype = c_void_p
             self.LIB.tfg_pitc_AllocMem.argtypes = [c_int]
+
+            self.LIB.tfg_pitc_WaitForRpc.restype = POINTER(RPCReq)
+
+            self.LIB.tfg_pitc_FinishRpcCall.argtypes = [c_void_p,POINTER(RPCReq)]
 
     def __init__(self):
         if Native.__instance is None:
