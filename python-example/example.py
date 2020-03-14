@@ -17,11 +17,12 @@ def send_test_rpc(route):
 def run():
     sv_id = uuid4().hex
     pc.initialize_pitaya(
-        pc.SdConfig(b'http://127.0.0.1:4001', b'pitaya/', 30,
-                    True, True, True, 60, pc.LOGLEVEL_DEBUG),
-        pc.NatsConfig(b'127.0.0.1:4222', 5, 5000, 5, 100),
+        pc.SdConfig(b'http://127.0.0.1:4001', b'pitaya/', b'[]', 30,
+                    True, True, True, 30, pc.LogLevel.DEBUG.value),
+        pc.NatsConfig(b'127.0.0.1:4222', 100, 5000, 500, 1000, 5, 100),
         pc.Server(sv_id.encode('utf-8'), b'python',
                   b'{}', b'localhost', False),
+        pc.LogLevel.DEBUG.value,
     )
     print('successfully initialized pitaya!')
 
@@ -29,15 +30,21 @@ def run():
     sleep(1)
 
     # send a test RPC to connector
-    send_test_rpc("connector.testremote.test")
+    try:
+        send_test_rpc("connector.testremote.test")
+    except Exception as e:
+        print('error sending rpc to connector! ' + str(e))
 
     # register the example remote
     r = ExampleRemote()
     pc.register_remote(r, "exampleRemote", pc.default_name_func)
 
-    # send a test RPC to self
-    send_test_rpc("python.exampleRemote.testRemote")
-
+    try:
+        # send a test RPC to self
+        send_test_rpc("python.exampleRemote.testRemote")
+    except Exception as e:
+        print('error sending rpc to python ' + str(e))
+    
     input('Press enter to exit')
     pc.shutdown()
 
