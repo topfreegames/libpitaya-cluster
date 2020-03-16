@@ -26,6 +26,12 @@ In the [examples](examples) folder you can find how to create a simple server us
 *TODO*
 
 ## Building
+
+### Build Requirements (OS X)
+* Apple Clang 10.0 (Newer versions of os x comes with 11.0 preinstalled, install XCode 10.2.1 for getting 10.0 installed)
+* CMake
+* Conan
+
 If you want to build the library by yourself, you can do that with CMake (3.7 is the minimum version). There are convenient building targets in the `Makefile`, such as `make build-mac-release`, `make build-mac-unity` and `make build-linux-release`. If you want to provide the CMake variables yourself, these are the ones which have an impact on the build apart from the standard ones (e.g., CMAKE_BUILD_TYPE).
 
 - `-DBUILD_TESTING`: This variable will build the tests for the library, however it will only build the library statically and will include code coverage support in the binary. This is therefore useful for developing and running tests, but should *not* be used as a production build. You can run the tests and open a code coverage window at the end of them with the script `run-tests-with-coverage.sh`. The scripts expects the executable location as a first argument.
