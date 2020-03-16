@@ -42,6 +42,7 @@ def process_rpcs(thread_num):
             break
         req = cRpcPtr.contents
         try:
+            res = Response()
             req_data_ptr = req.buffer.contents.data
             req_data_sz = req.buffer.contents.size
             req_data = (c_char * req_data_sz).from_address(req_data_ptr)
@@ -53,7 +54,8 @@ def process_rpcs(thread_num):
             remote_method = remotes_dict[route]
             arg = remote_method.arg_type()
             arg.MergeFromString(request.msg.data)
-            res = remote_method.method(remote_method.obj, arg)
+            ans = remote_method.method(remote_method.obj, arg)
+            res.data = ans.SerializeToString()
             buf = _alloc_mem_buffer_ptr_with_response_data(res)
             LIB.tfg_pitc_FinishRpcCall(buf, cRpcPtr)
             LIB.tfg_pitc_FreeMem(buf)
@@ -147,8 +149,10 @@ def send_rpc(route: str, in_msg: message.Message, res_class: message.Message, se
         c_char * ret_ptr.contents.size).from_address(ret_ptr.contents.data)
     response = Response()
     response.MergeFromString(ret_bytes.value)
+    res = res_class()
+    res.MergeFromString(response.data)
     LIB.tfg_pitc_FreeMemoryBuffer(ret_ptr)
-    return response
+    return res
 
 # MUST be called after get_server or else your code will leak
 # TODO: can we prevent the user from not calling this?
