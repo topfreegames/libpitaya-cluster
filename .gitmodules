@@ -1,6 +1,6 @@
 [submodule "protos"]
 	path = pitaya-protos
-	url = https://github.com/topfreegames/pitaya-protos.git
+	url = https://github.com/topfreegames/pitaya-protos
 [submodule "cpp-lib/deps/grpc"]
 	path = cpp-lib/deps/grpc
 	url = https://github.com/grpc/grpc
