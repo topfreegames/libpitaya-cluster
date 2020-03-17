@@ -11,3 +11,6 @@ uuid = "==1.30"
 
 [requires]
 python_version = "3.8"
+
+[dev-packages]
+pylint = "*"

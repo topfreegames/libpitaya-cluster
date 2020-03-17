@@ -35,6 +35,12 @@ def run():
     except Exception as e:
         print('error sending rpc to connector! ' + str(e))
 
+    # send a test RPC to csharp example app
+    try:
+        send_test_rpc("csharp.testRemote.remote")
+    except Exception as e:
+        print('error sending rpc to csharp! ' + str(e))
+
     # register the example remote
     r = ExampleRemote()
     pc.register_remote(r, "exampleRemote", pc.default_name_func)

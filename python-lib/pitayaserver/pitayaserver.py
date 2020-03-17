@@ -56,14 +56,16 @@ def process_rpcs(thread_num):
             arg.MergeFromString(request.msg.data)
             ans = remote_method.method(remote_method.obj, arg)
             res.data = ans.SerializeToString()
-            buf = _alloc_mem_buffer_ptr_with_response_data(res)
-            LIB.tfg_pitc_FinishRpcCall(buf, cRpcPtr)
-            LIB.tfg_pitc_FreeMem(buf)
+            ptrBuf, ptrData = _alloc_mem_buffer_ptr_with_response_data(res)
+            LIB.tfg_pitc_FinishRpcCall(ptrBuf, cRpcPtr)
+            LIB.tfg_pitc_FreeMem(ptrData)
+            LIB.tfg_pitc_FreeMem(ptrBuf)
         except Exception as e:
             err_str = "exception: %s: %s" % (type(e).__name__, e)
-            err = _get_error_response_c_void_p("PIT-500", err_str)
-            LIB.tfg_pitc_FinishRpcCall(err, cRpcPtr)
-            LIB.tfg_pitc_FreeMem(err)
+            ptrErr, ptrData = _get_error_response_c_void_p("PIT-500", err_str)
+            LIB.tfg_pitc_FinishRpcCall(ptrErr, cRpcPtr)
+            LIB.tfg_pitc_FreeMem(ptrData)
+            LIB.tfg_pitc_FreeMem(ptrErr)
             continue
 
 
@@ -119,7 +121,7 @@ def _alloc_mem_buffer_ptr_with_response_data(res: Response):
     # we alloc mem in c side because doing so from python causes it to be freed the moment we return
     ptrStruct = LIB.tfg_pitc_AllocMem(sizeof(ret))
     memmove(ptrStruct, addressof(ret), sizeof(ret))
-    return ptrStruct
+    return ptrStruct, ptrData
 
 
 def _get_error_response_c_void_p(code, msg):
