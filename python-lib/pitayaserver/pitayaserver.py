@@ -16,6 +16,29 @@ def default_name_func(s): return s[:1].lower() + s[1:] if s else ''
 
 LIB = None
 
+class UnsafeResponseData:
+    __data_ptr = None
+    response_ptr = None
+
+    def __init__(self, res:Response):
+        """ internal method, this allocs a memory buffer in the global heap for sending it to c code """
+        res_bytes = res.SerializeToString()
+        ret_len = len(res_bytes)
+        self.__data_ptr = LIB.tfg_pitc_AllocMem(ret_len)
+        ret_data = (c_char * ret_len)(*res_bytes)
+        memmove(self.__data_ptr, ret_data, ret_len)
+        ret = MemoryBuffer()
+        ret.data = self.__data_ptr
+        ret.size = ret_len
+        # we alloc mem in c side because doing so from python causes it to be freed the moment we return
+        self.response_ptr = LIB.tfg_pitc_AllocMem(sizeof(ret))
+        memmove(self.response_ptr, addressof(ret), sizeof(ret))
+    
+    def __del__(self):
+        LIB.tfg_pitc_FreeMem(self.__data_ptr)
+        LIB.tfg_pitc_FreeMem(self.response_ptr)
+
+
 def initialize_pitaya(
         sd_config: SdConfig,
         nats_config: NatsConfig,
@@ -56,16 +79,12 @@ def process_rpcs(thread_num):
             arg.MergeFromString(request.msg.data)
             ans = remote_method.method(remote_method.obj, arg)
             res.data = ans.SerializeToString()
-            ptrBuf, ptrData = _alloc_mem_buffer_ptr_with_response_data(res)
-            LIB.tfg_pitc_FinishRpcCall(ptrBuf, cRpcPtr)
-            LIB.tfg_pitc_FreeMem(ptrData)
-            LIB.tfg_pitc_FreeMem(ptrBuf)
+            r = UnsafeResponseData(res)
+            LIB.tfg_pitc_FinishRpcCall(r.response_ptr, cRpcPtr)
         except Exception as e:
             err_str = "exception: %s: %s" % (type(e).__name__, e)
-            ptrErr, ptrData = _get_error_response_c_void_p("PIT-500", err_str)
-            LIB.tfg_pitc_FinishRpcCall(ptrErr, cRpcPtr)
-            LIB.tfg_pitc_FreeMem(ptrData)
-            LIB.tfg_pitc_FreeMem(ptrErr)
+            r = _get_error_response_c_void_p("PIT-500", err_str)
+            LIB.tfg_pitc_FinishRpcCall(r.response_ptr, cRpcPtr)
             continue
 
 
@@ -80,7 +99,7 @@ def get_server_by_id(server_id: str):
     return sv
 
 
-def register_remote(remote: BaseRemote, name="", nameFunc=None):
+def register_remote(remote: BaseRemote, name="", name_func=None):
     """ register a remote, the remote should be a class that inherits from BaseRemote """
     if name == "":
         name = remote.__class__.__name__.lower()
@@ -92,9 +111,9 @@ def register_remote(remote: BaseRemote, name="", nameFunc=None):
     m_map = remote.get_remotes_map()
     for m in m_map.keys():
         rn = m
-        if nameFunc is None:
-            nameFunc = default_name_func
-        rn = nameFunc(rn)
+        if name_func is None:
+            name_func = default_name_func
+        rn = name_func(rn)
         name = "%s.%s" % (name, rn)
         if name in remotes_dict:
             raise Exception("tried to register same remote twice! %s" % name)
@@ -108,28 +127,12 @@ def shutdown():
     LIB.tfg_pitc_Terminate()
 
 
-def _alloc_mem_buffer_ptr_with_response_data(res: Response):
-    """ internal method, this allocs a memory buffer in the global heap for sending it to c code """
-    res_bytes = res.SerializeToString()
-    ret_len = len(res_bytes)
-    ptrData = LIB.tfg_pitc_AllocMem(ret_len)
-    ret_data = (c_char * ret_len)(*res_bytes)
-    memmove(ptrData, ret_data, ret_len)
-    ret = MemoryBuffer()
-    ret.data = ptrData
-    ret.size = ret_len
-    # we alloc mem in c side because doing so from python causes it to be freed the moment we return
-    ptrStruct = LIB.tfg_pitc_AllocMem(sizeof(ret))
-    memmove(ptrStruct, addressof(ret), sizeof(ret))
-    return ptrStruct, ptrData
-
-
 def _get_error_response_c_void_p(code, msg):
     """ gets an allocated buffer of an error response """
     res = Response()
     res.error.code = code
     res.error.msg = msg
-    return _alloc_mem_buffer_ptr_with_response_data(res)
+    return UnsafeResponseData(res)
 
 
 def send_rpc(route: str, in_msg: message.Message, res_class: message.Message, server_id: str='') -> message.Message:
