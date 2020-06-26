@@ -2,7 +2,7 @@
 
     <PropertyGroup>
         <OutputType>Exe</OutputType>
-        <TargetFramework>netcoreapp2.2</TargetFramework>
+        <TargetFramework>netcoreapp3.1</TargetFramework>
     </PropertyGroup>
 
     <ItemGroup>
@@ -10,7 +10,8 @@
     </ItemGroup>
 
     <Target Name="PreBuild" BeforeTargets="PreBuildEvent">
-        <Exec Condition=" '$(OS)' == 'Unix' " Command="&#xA;              LINK_FILE=$(ProjectDir)$(OutDir)/libpitaya_cpp.dylib&#xA;              if [[ ! -f $LINK_FILE ]]; then&#xA;                  ln -s $(ProjectDir)../../precompiled/libpitaya_cpp.dylib $LINK_FILE&#xA;              fi&#xA;            " />
+        <Exec Condition=" '$(OS)' == 'OSX' " Command="&#xA;              LINK_FILE=$(ProjectDir)$(OutDir)/libpitaya_cpp.dylib&#xA;              if [[ ! -f $LINK_FILE ]]; then&#xA;                  ln -s $(ProjectDir)../../precompiled/libpitaya_cpp.dylib $LINK_FILE&#xA;              fi&#xA;            " />
+        <Exec Condition=" '$(OS)' == 'Unix' " Command="&#xA;              LINK_FILE=$(ProjectDir)$(OutDir)/libpitaya_cpp.so&#xA;              if [[ ! -f $LINK_FILE ]]; then&#xA;                  ln -s $(ProjectDir)../../precompiled/libpitaya_cpp.so $LINK_FILE&#xA;              fi&#xA;            " />
     </Target>
 
 </Project>

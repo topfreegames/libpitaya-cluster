@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace NPitaya.Models
 {
-    public class BaseRemote : IBaseRemote
+    public class BaseRemote : IRemote
     {
         public string GetName()
         {

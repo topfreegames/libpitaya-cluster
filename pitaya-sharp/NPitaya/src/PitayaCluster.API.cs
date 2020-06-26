@@ -11,6 +11,7 @@ using NPitaya.Serializer;
 using NPitaya.Protos;
 using NPitaya.Utils;
 using static NPitaya.Utils.Utils;
+using System.Linq;
 
 // TODO profiling
 // TODO better reflection performance in task async call
@@ -86,8 +87,25 @@ namespace NPitaya
             ListenToIncomingRPCs();
         }
 
+        private static List<Type> GetAllInheriting(Type type)
+        {
+            return AppDomain.CurrentDomain.GetAssemblies().SelectMany(x => x.GetTypes())
+                .Where(x => type.IsAssignableFrom(x) && !x.IsInterface && !x.IsAbstract && x.FullName != type.FullName)
+                .Select(x => x).ToList();
+        }
+
         private static void ListenToIncomingRPCs()
         {
+            var handlers = GetAllInheriting(typeof(BaseHandler));
+            foreach (var handler in handlers){
+                RegisterHandler((BaseHandler)Activator.CreateInstance(handler));
+            }
+
+            var remotes = GetAllInheriting(typeof(BaseRemote));
+            foreach (var remote in remotes){
+                RegisterRemote((BaseRemote)Activator.CreateInstance(remote));
+            }
+
             for (int i = 0; i < ProcessorsCount; i++)
             {
                 var threadId = i + 1;
@@ -134,18 +152,13 @@ namespace NPitaya
             ListenToIncomingRPCs();
         }
 
-        public static void RegisterRemote(BaseRemote remote)
+        private static void RegisterRemote(BaseRemote remote)
         {
             string className = DefaultRemoteNameFunc(remote.GetName());
             RegisterRemote(remote, className, DefaultRemoteNameFunc);
         }
 
-        public static void RegisterRemote(BaseRemote remote, string name)
-        {
-            RegisterRemote(remote, name, DefaultRemoteNameFunc);
-        }
-
-        public static void RegisterRemote(BaseRemote remote, string name, RemoteNameFunc remoteNameFunc) // TODO remote function name func
+        private static void RegisterRemote(BaseRemote remote, string name, RemoteNameFunc remoteNameFunc) // TODO remote function name func
         {
             Dictionary<string, RemoteMethod> m = remote.GetRemotesMap();
             foreach (KeyValuePair<string, RemoteMethod> kvp in m)
@@ -162,17 +175,13 @@ namespace NPitaya
             }
         }
 
-        public static void RegisterHandler(BaseHandler handler)
+        private static void RegisterHandler(BaseHandler handler)
         {
             string className = DefaultRemoteNameFunc(handler.GetName());
             RegisterHandler(handler, className, DefaultRemoteNameFunc);
         }
 
-        public static void RegisterHandler(BaseHandler handler, string name)
-        {
-            RegisterHandler(handler, name, DefaultRemoteNameFunc);
-        }
-
+        // TODO create method to override defaultRemoteNameFunc
         public static void RegisterHandler(BaseHandler handler, string name, RemoteNameFunc remoteNameFunc)
         {
             Dictionary<string, RemoteMethod> m = handler.GetRemotesMap();
