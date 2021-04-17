@@ -157,7 +157,7 @@ if(BUILD_TESTING AND NOT BUILD_MACOSX_BUNDLE)
     #==============================
     # Enable tests
     #==============================
-    find_package(gtest REQUIRED)
+    find_package(GTest REQUIRED)
     find_package(Boost REQUIRED COMPONENTS system thread)
 
     add_executable(pitaya_cpp_tests
