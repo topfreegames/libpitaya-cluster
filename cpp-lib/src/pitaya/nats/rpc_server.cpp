@@ -8,7 +8,7 @@
 
 #include "spdlog/sinks/stdout_color_sinks.h"
 
-#include "nats/nats.h"
+#include "nats.h"
 #include <boost/format.hpp>
 #include <cstdio>
 #include <iostream>

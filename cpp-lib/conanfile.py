@@ -22,9 +22,10 @@ class PitayaCpp(ConanFile):
         'macosx_bundle': False,
     }
     requires = (
-        'OpenSSL/1.0.2o@conan/stable',
-        'boost/1.65.1@conan/stable',
-        'protobuf/3.6.1@bincrafters/stable',
+        'zlib/1.2.11',
+        'openssl/1.1.1k',
+        'boost/1.75.0',
+        'protobuf/3.9.1@bincrafters/stable',
     )
     build_requires = (
         'gtest/1.8.1@bincrafters/stable'
