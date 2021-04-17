@@ -36,7 +36,7 @@ generate-xcode:
 	@cmake -H. -B_builds/xcode -GXcode -DBUILD_TESTING=ON -DBUILD_SHARED_LIBS=OFF
 
 build-linux-release:
-	@conan install -if _builds/linux .
+	@conan install -if _builds/linux . --build
 	@cmake -H. -B_builds/linux -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF -DBUILD_SHARED_LIBS=OFF -GNinja
 	@cmake --build _builds/linux
 
