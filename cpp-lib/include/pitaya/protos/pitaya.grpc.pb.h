@@ -7,25 +7,24 @@
 #include "pitaya.pb.h"
 
 #include <functional>
+#include <grpc/impl/codegen/port_platform.h>
 #include <grpcpp/impl/codegen/async_generic_service.h>
 #include <grpcpp/impl/codegen/async_stream.h>
 #include <grpcpp/impl/codegen/async_unary_call.h>
 #include <grpcpp/impl/codegen/client_callback.h>
-#include <grpcpp/impl/codegen/method_handler_impl.h>
+#include <grpcpp/impl/codegen/client_context.h>
+#include <grpcpp/impl/codegen/completion_queue.h>
+#include <grpcpp/impl/codegen/message_allocator.h>
+#include <grpcpp/impl/codegen/method_handler.h>
 #include <grpcpp/impl/codegen/proto_utils.h>
 #include <grpcpp/impl/codegen/rpc_method.h>
 #include <grpcpp/impl/codegen/server_callback.h>
+#include <grpcpp/impl/codegen/server_callback_handlers.h>
+#include <grpcpp/impl/codegen/server_context.h>
 #include <grpcpp/impl/codegen/service_type.h>
 #include <grpcpp/impl/codegen/status.h>
 #include <grpcpp/impl/codegen/stub_options.h>
 #include <grpcpp/impl/codegen/sync_stream.h>
-
-namespace grpc {
-class CompletionQueue;
-class Channel;
-class ServerCompletionQueue;
-class ServerContext;
-}  // namespace grpc
 
 namespace protos {
 
@@ -69,10 +68,36 @@ class Pitaya final {
      public:
       virtual ~experimental_async_interface() {}
       virtual void Call(::grpc::ClientContext* context, const ::protos::Request* request, ::protos::Response* response, std::function<void(::grpc::Status)>) = 0;
+      #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
+      virtual void Call(::grpc::ClientContext* context, const ::protos::Request* request, ::protos::Response* response, ::grpc::ClientUnaryReactor* reactor) = 0;
+      #else
+      virtual void Call(::grpc::ClientContext* context, const ::protos::Request* request, ::protos::Response* response, ::grpc::experimental::ClientUnaryReactor* reactor) = 0;
+      #endif
       virtual void PushToUser(::grpc::ClientContext* context, const ::protos::Push* request, ::protos::Response* response, std::function<void(::grpc::Status)>) = 0;
+      #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
+      virtual void PushToUser(::grpc::ClientContext* context, const ::protos::Push* request, ::protos::Response* response, ::grpc::ClientUnaryReactor* reactor) = 0;
+      #else
+      virtual void PushToUser(::grpc::ClientContext* context, const ::protos::Push* request, ::protos::Response* response, ::grpc::experimental::ClientUnaryReactor* reactor) = 0;
+      #endif
       virtual void SessionBindRemote(::grpc::ClientContext* context, const ::protos::BindMsg* request, ::protos::Response* response, std::function<void(::grpc::Status)>) = 0;
+      #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
+      virtual void SessionBindRemote(::grpc::ClientContext* context, const ::protos::BindMsg* request, ::protos::Response* response, ::grpc::ClientUnaryReactor* reactor) = 0;
+      #else
+      virtual void SessionBindRemote(::grpc::ClientContext* context, const ::protos::BindMsg* request, ::protos::Response* response, ::grpc::experimental::ClientUnaryReactor* reactor) = 0;
+      #endif
       virtual void KickUser(::grpc::ClientContext* context, const ::protos::KickMsg* request, ::protos::KickAnswer* response, std::function<void(::grpc::Status)>) = 0;
+      #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
+      virtual void KickUser(::grpc::ClientContext* context, const ::protos::KickMsg* request, ::protos::KickAnswer* response, ::grpc::ClientUnaryReactor* reactor) = 0;
+      #else
+      virtual void KickUser(::grpc::ClientContext* context, const ::protos::KickMsg* request, ::protos::KickAnswer* response, ::grpc::experimental::ClientUnaryReactor* reactor) = 0;
+      #endif
     };
+    #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
+    typedef class experimental_async_interface async_interface;
+    #endif
+    #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
+    async_interface* async() { return experimental_async(); }
+    #endif
     virtual class experimental_async_interface* experimental_async() { return nullptr; }
   private:
     virtual ::grpc::ClientAsyncResponseReaderInterface< ::protos::Response>* AsyncCallRaw(::grpc::ClientContext* context, const ::protos::Request& request, ::grpc::CompletionQueue* cq) = 0;
@@ -119,9 +144,29 @@ class Pitaya final {
       public StubInterface::experimental_async_interface {
      public:
       void Call(::grpc::ClientContext* context, const ::protos::Request* request, ::protos::Response* response, std::function<void(::grpc::Status)>) override;
+      #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
+      void Call(::grpc::ClientContext* context, const ::protos::Request* request, ::protos::Response* response, ::grpc::ClientUnaryReactor* reactor) override;
+      #else
+      void Call(::grpc::ClientContext* context, const ::protos::Request* request, ::protos::Response* response, ::grpc::experimental::ClientUnaryReactor* reactor) override;
+      #endif
       void PushToUser(::grpc::ClientContext* context, const ::protos::Push* request, ::protos::Response* response, std::function<void(::grpc::Status)>) override;
+      #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
+      void PushToUser(::grpc::ClientContext* context, const ::protos::Push* request, ::protos::Response* response, ::grpc::ClientUnaryReactor* reactor) override;
+      #else
+      void PushToUser(::grpc::ClientContext* context, const ::protos::Push* request, ::protos::Response* response, ::grpc::experimental::ClientUnaryReactor* reactor) override;
+      #endif
       void SessionBindRemote(::grpc::ClientContext* context, const ::protos::BindMsg* request, ::protos::Response* response, std::function<void(::grpc::Status)>) override;
+      #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
+      void SessionBindRemote(::grpc::ClientContext* context, const ::protos::BindMsg* request, ::protos::Response* response, ::grpc::ClientUnaryReactor* reactor) override;
+      #else
+      void SessionBindRemote(::grpc::ClientContext* context, const ::protos::BindMsg* request, ::protos::Response* response, ::grpc::experimental::ClientUnaryReactor* reactor) override;
+      #endif
       void KickUser(::grpc::ClientContext* context, const ::protos::KickMsg* request, ::protos::KickAnswer* response, std::function<void(::grpc::Status)>) override;
+      #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
+      void KickUser(::grpc::ClientContext* context, const ::protos::KickMsg* request, ::protos::KickAnswer* response, ::grpc::ClientUnaryReactor* reactor) override;
+      #else
+      void KickUser(::grpc::ClientContext* context, const ::protos::KickMsg* request, ::protos::KickAnswer* response, ::grpc::experimental::ClientUnaryReactor* reactor) override;
+      #endif
      private:
       friend class Stub;
       explicit experimental_async(Stub* stub): stub_(stub) { }
@@ -160,7 +205,7 @@ class Pitaya final {
   template <class BaseClass>
   class WithAsyncMethod_Call : public BaseClass {
    private:
-    void BaseClassMustBeDerivedFromService(const Service *service) {}
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithAsyncMethod_Call() {
       ::grpc::Service::MarkMethodAsync(0);
@@ -169,7 +214,7 @@ class Pitaya final {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status Call(::grpc::ServerContext* context, const ::protos::Request* request, ::protos::Response* response) override {
+    ::grpc::Status Call(::grpc::ServerContext* /*context*/, const ::protos::Request* /*request*/, ::protos::Response* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -180,7 +225,7 @@ class Pitaya final {
   template <class BaseClass>
   class WithAsyncMethod_PushToUser : public BaseClass {
    private:
-    void BaseClassMustBeDerivedFromService(const Service *service) {}
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithAsyncMethod_PushToUser() {
       ::grpc::Service::MarkMethodAsync(1);
@@ -189,7 +234,7 @@ class Pitaya final {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status PushToUser(::grpc::ServerContext* context, const ::protos::Push* request, ::protos::Response* response) override {
+    ::grpc::Status PushToUser(::grpc::ServerContext* /*context*/, const ::protos::Push* /*request*/, ::protos::Response* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -200,7 +245,7 @@ class Pitaya final {
   template <class BaseClass>
   class WithAsyncMethod_SessionBindRemote : public BaseClass {
    private:
-    void BaseClassMustBeDerivedFromService(const Service *service) {}
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithAsyncMethod_SessionBindRemote() {
       ::grpc::Service::MarkMethodAsync(2);
@@ -209,7 +254,7 @@ class Pitaya final {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status SessionBindRemote(::grpc::ServerContext* context, const ::protos::BindMsg* request, ::protos::Response* response) override {
+    ::grpc::Status SessionBindRemote(::grpc::ServerContext* /*context*/, const ::protos::BindMsg* /*request*/, ::protos::Response* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -220,7 +265,7 @@ class Pitaya final {
   template <class BaseClass>
   class WithAsyncMethod_KickUser : public BaseClass {
    private:
-    void BaseClassMustBeDerivedFromService(const Service *service) {}
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithAsyncMethod_KickUser() {
       ::grpc::Service::MarkMethodAsync(3);
@@ -229,7 +274,7 @@ class Pitaya final {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status KickUser(::grpc::ServerContext* context, const ::protos::KickMsg* request, ::protos::KickAnswer* response) override {
+    ::grpc::Status KickUser(::grpc::ServerContext* /*context*/, const ::protos::KickMsg* /*request*/, ::protos::KickAnswer* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -241,108 +286,200 @@ class Pitaya final {
   template <class BaseClass>
   class ExperimentalWithCallbackMethod_Call : public BaseClass {
    private:
-    void BaseClassMustBeDerivedFromService(const Service *service) {}
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     ExperimentalWithCallbackMethod_Call() {
-      ::grpc::Service::experimental().MarkMethodCallback(0,
-        new ::grpc::internal::CallbackUnaryHandler< ::protos::Request, ::protos::Response>(
-          [this](::grpc::ServerContext* context,
-                 const ::protos::Request* request,
-                 ::protos::Response* response,
-                 ::grpc::experimental::ServerCallbackRpcController* controller) {
-                   return this->Call(context, request, response, controller);
-                 }));
+    #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
+      ::grpc::Service::
+    #else
+      ::grpc::Service::experimental().
+    #endif
+        MarkMethodCallback(0,
+          new ::grpc::internal::CallbackUnaryHandler< ::protos::Request, ::protos::Response>(
+            [this](
+    #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
+                   ::grpc::CallbackServerContext*
+    #else
+                   ::grpc::experimental::CallbackServerContext*
+    #endif
+                     context, const ::protos::Request* request, ::protos::Response* response) { return this->Call(context, request, response); }));}
+    void SetMessageAllocatorFor_Call(
+        ::grpc::experimental::MessageAllocator< ::protos::Request, ::protos::Response>* allocator) {
+    #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(0);
+    #else
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::experimental().GetHandler(0);
+    #endif
+      static_cast<::grpc::internal::CallbackUnaryHandler< ::protos::Request, ::protos::Response>*>(handler)
+              ->SetMessageAllocator(allocator);
     }
     ~ExperimentalWithCallbackMethod_Call() override {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status Call(::grpc::ServerContext* context, const ::protos::Request* request, ::protos::Response* response) override {
+    ::grpc::Status Call(::grpc::ServerContext* /*context*/, const ::protos::Request* /*request*/, ::protos::Response* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
-    virtual void Call(::grpc::ServerContext* context, const ::protos::Request* request, ::protos::Response* response, ::grpc::experimental::ServerCallbackRpcController* controller) { controller->Finish(::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "")); }
+    #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
+    virtual ::grpc::ServerUnaryReactor* Call(
+      ::grpc::CallbackServerContext* /*context*/, const ::protos::Request* /*request*/, ::protos::Response* /*response*/)
+    #else
+    virtual ::grpc::experimental::ServerUnaryReactor* Call(
+      ::grpc::experimental::CallbackServerContext* /*context*/, const ::protos::Request* /*request*/, ::protos::Response* /*response*/)
+    #endif
+      { return nullptr; }
   };
   template <class BaseClass>
   class ExperimentalWithCallbackMethod_PushToUser : public BaseClass {
    private:
-    void BaseClassMustBeDerivedFromService(const Service *service) {}
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     ExperimentalWithCallbackMethod_PushToUser() {
-      ::grpc::Service::experimental().MarkMethodCallback(1,
-        new ::grpc::internal::CallbackUnaryHandler< ::protos::Push, ::protos::Response>(
-          [this](::grpc::ServerContext* context,
-                 const ::protos::Push* request,
-                 ::protos::Response* response,
-                 ::grpc::experimental::ServerCallbackRpcController* controller) {
-                   return this->PushToUser(context, request, response, controller);
-                 }));
+    #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
+      ::grpc::Service::
+    #else
+      ::grpc::Service::experimental().
+    #endif
+        MarkMethodCallback(1,
+          new ::grpc::internal::CallbackUnaryHandler< ::protos::Push, ::protos::Response>(
+            [this](
+    #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
+                   ::grpc::CallbackServerContext*
+    #else
+                   ::grpc::experimental::CallbackServerContext*
+    #endif
+                     context, const ::protos::Push* request, ::protos::Response* response) { return this->PushToUser(context, request, response); }));}
+    void SetMessageAllocatorFor_PushToUser(
+        ::grpc::experimental::MessageAllocator< ::protos::Push, ::protos::Response>* allocator) {
+    #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(1);
+    #else
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::experimental().GetHandler(1);
+    #endif
+      static_cast<::grpc::internal::CallbackUnaryHandler< ::protos::Push, ::protos::Response>*>(handler)
+              ->SetMessageAllocator(allocator);
     }
     ~ExperimentalWithCallbackMethod_PushToUser() override {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status PushToUser(::grpc::ServerContext* context, const ::protos::Push* request, ::protos::Response* response) override {
+    ::grpc::Status PushToUser(::grpc::ServerContext* /*context*/, const ::protos::Push* /*request*/, ::protos::Response* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
-    virtual void PushToUser(::grpc::ServerContext* context, const ::protos::Push* request, ::protos::Response* response, ::grpc::experimental::ServerCallbackRpcController* controller) { controller->Finish(::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "")); }
+    #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
+    virtual ::grpc::ServerUnaryReactor* PushToUser(
+      ::grpc::CallbackServerContext* /*context*/, const ::protos::Push* /*request*/, ::protos::Response* /*response*/)
+    #else
+    virtual ::grpc::experimental::ServerUnaryReactor* PushToUser(
+      ::grpc::experimental::CallbackServerContext* /*context*/, const ::protos::Push* /*request*/, ::protos::Response* /*response*/)
+    #endif
+      { return nullptr; }
   };
   template <class BaseClass>
   class ExperimentalWithCallbackMethod_SessionBindRemote : public BaseClass {
    private:
-    void BaseClassMustBeDerivedFromService(const Service *service) {}
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     ExperimentalWithCallbackMethod_SessionBindRemote() {
-      ::grpc::Service::experimental().MarkMethodCallback(2,
-        new ::grpc::internal::CallbackUnaryHandler< ::protos::BindMsg, ::protos::Response>(
-          [this](::grpc::ServerContext* context,
-                 const ::protos::BindMsg* request,
-                 ::protos::Response* response,
-                 ::grpc::experimental::ServerCallbackRpcController* controller) {
-                   return this->SessionBindRemote(context, request, response, controller);
-                 }));
+    #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
+      ::grpc::Service::
+    #else
+      ::grpc::Service::experimental().
+    #endif
+        MarkMethodCallback(2,
+          new ::grpc::internal::CallbackUnaryHandler< ::protos::BindMsg, ::protos::Response>(
+            [this](
+    #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
+                   ::grpc::CallbackServerContext*
+    #else
+                   ::grpc::experimental::CallbackServerContext*
+    #endif
+                     context, const ::protos::BindMsg* request, ::protos::Response* response) { return this->SessionBindRemote(context, request, response); }));}
+    void SetMessageAllocatorFor_SessionBindRemote(
+        ::grpc::experimental::MessageAllocator< ::protos::BindMsg, ::protos::Response>* allocator) {
+    #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(2);
+    #else
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::experimental().GetHandler(2);
+    #endif
+      static_cast<::grpc::internal::CallbackUnaryHandler< ::protos::BindMsg, ::protos::Response>*>(handler)
+              ->SetMessageAllocator(allocator);
     }
     ~ExperimentalWithCallbackMethod_SessionBindRemote() override {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status SessionBindRemote(::grpc::ServerContext* context, const ::protos::BindMsg* request, ::protos::Response* response) override {
+    ::grpc::Status SessionBindRemote(::grpc::ServerContext* /*context*/, const ::protos::BindMsg* /*request*/, ::protos::Response* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
-    virtual void SessionBindRemote(::grpc::ServerContext* context, const ::protos::BindMsg* request, ::protos::Response* response, ::grpc::experimental::ServerCallbackRpcController* controller) { controller->Finish(::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "")); }
+    #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
+    virtual ::grpc::ServerUnaryReactor* SessionBindRemote(
+      ::grpc::CallbackServerContext* /*context*/, const ::protos::BindMsg* /*request*/, ::protos::Response* /*response*/)
+    #else
+    virtual ::grpc::experimental::ServerUnaryReactor* SessionBindRemote(
+      ::grpc::experimental::CallbackServerContext* /*context*/, const ::protos::BindMsg* /*request*/, ::protos::Response* /*response*/)
+    #endif
+      { return nullptr; }
   };
   template <class BaseClass>
   class ExperimentalWithCallbackMethod_KickUser : public BaseClass {
    private:
-    void BaseClassMustBeDerivedFromService(const Service *service) {}
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     ExperimentalWithCallbackMethod_KickUser() {
-      ::grpc::Service::experimental().MarkMethodCallback(3,
-        new ::grpc::internal::CallbackUnaryHandler< ::protos::KickMsg, ::protos::KickAnswer>(
-          [this](::grpc::ServerContext* context,
-                 const ::protos::KickMsg* request,
-                 ::protos::KickAnswer* response,
-                 ::grpc::experimental::ServerCallbackRpcController* controller) {
-                   return this->KickUser(context, request, response, controller);
-                 }));
+    #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
+      ::grpc::Service::
+    #else
+      ::grpc::Service::experimental().
+    #endif
+        MarkMethodCallback(3,
+          new ::grpc::internal::CallbackUnaryHandler< ::protos::KickMsg, ::protos::KickAnswer>(
+            [this](
+    #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
+                   ::grpc::CallbackServerContext*
+    #else
+                   ::grpc::experimental::CallbackServerContext*
+    #endif
+                     context, const ::protos::KickMsg* request, ::protos::KickAnswer* response) { return this->KickUser(context, request, response); }));}
+    void SetMessageAllocatorFor_KickUser(
+        ::grpc::experimental::MessageAllocator< ::protos::KickMsg, ::protos::KickAnswer>* allocator) {
+    #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(3);
+    #else
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::experimental().GetHandler(3);
+    #endif
+      static_cast<::grpc::internal::CallbackUnaryHandler< ::protos::KickMsg, ::protos::KickAnswer>*>(handler)
+              ->SetMessageAllocator(allocator);
     }
     ~ExperimentalWithCallbackMethod_KickUser() override {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status KickUser(::grpc::ServerContext* context, const ::protos::KickMsg* request, ::protos::KickAnswer* response) override {
+    ::grpc::Status KickUser(::grpc::ServerContext* /*context*/, const ::protos::KickMsg* /*request*/, ::protos::KickAnswer* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
-    virtual void KickUser(::grpc::ServerContext* context, const ::protos::KickMsg* request, ::protos::KickAnswer* response, ::grpc::experimental::ServerCallbackRpcController* controller) { controller->Finish(::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "")); }
+    #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
+    virtual ::grpc::ServerUnaryReactor* KickUser(
+      ::grpc::CallbackServerContext* /*context*/, const ::protos::KickMsg* /*request*/, ::protos::KickAnswer* /*response*/)
+    #else
+    virtual ::grpc::experimental::ServerUnaryReactor* KickUser(
+      ::grpc::experimental::CallbackServerContext* /*context*/, const ::protos::KickMsg* /*request*/, ::protos::KickAnswer* /*response*/)
+    #endif
+      { return nullptr; }
   };
+  #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
+  typedef ExperimentalWithCallbackMethod_Call<ExperimentalWithCallbackMethod_PushToUser<ExperimentalWithCallbackMethod_SessionBindRemote<ExperimentalWithCallbackMethod_KickUser<Service > > > > CallbackService;
+  #endif
+
   typedef ExperimentalWithCallbackMethod_Call<ExperimentalWithCallbackMethod_PushToUser<ExperimentalWithCallbackMethod_SessionBindRemote<ExperimentalWithCallbackMethod_KickUser<Service > > > > ExperimentalCallbackService;
   template <class BaseClass>
   class WithGenericMethod_Call : public BaseClass {
    private:
-    void BaseClassMustBeDerivedFromService(const Service *service) {}
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithGenericMethod_Call() {
       ::grpc::Service::MarkMethodGeneric(0);
@@ -351,7 +488,7 @@ class Pitaya final {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status Call(::grpc::ServerContext* context, const ::protos::Request* request, ::protos::Response* response) override {
+    ::grpc::Status Call(::grpc::ServerContext* /*context*/, const ::protos::Request* /*request*/, ::protos::Response* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -359,7 +496,7 @@ class Pitaya final {
   template <class BaseClass>
   class WithGenericMethod_PushToUser : public BaseClass {
    private:
-    void BaseClassMustBeDerivedFromService(const Service *service) {}
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithGenericMethod_PushToUser() {
       ::grpc::Service::MarkMethodGeneric(1);
@@ -368,7 +505,7 @@ class Pitaya final {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status PushToUser(::grpc::ServerContext* context, const ::protos::Push* request, ::protos::Response* response) override {
+    ::grpc::Status PushToUser(::grpc::ServerContext* /*context*/, const ::protos::Push* /*request*/, ::protos::Response* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -376,7 +513,7 @@ class Pitaya final {
   template <class BaseClass>
   class WithGenericMethod_SessionBindRemote : public BaseClass {
    private:
-    void BaseClassMustBeDerivedFromService(const Service *service) {}
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithGenericMethod_SessionBindRemote() {
       ::grpc::Service::MarkMethodGeneric(2);
@@ -385,7 +522,7 @@ class Pitaya final {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status SessionBindRemote(::grpc::ServerContext* context, const ::protos::BindMsg* request, ::protos::Response* response) override {
+    ::grpc::Status SessionBindRemote(::grpc::ServerContext* /*context*/, const ::protos::BindMsg* /*request*/, ::protos::Response* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -393,7 +530,7 @@ class Pitaya final {
   template <class BaseClass>
   class WithGenericMethod_KickUser : public BaseClass {
    private:
-    void BaseClassMustBeDerivedFromService(const Service *service) {}
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithGenericMethod_KickUser() {
       ::grpc::Service::MarkMethodGeneric(3);
@@ -402,7 +539,7 @@ class Pitaya final {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status KickUser(::grpc::ServerContext* context, const ::protos::KickMsg* request, ::protos::KickAnswer* response) override {
+    ::grpc::Status KickUser(::grpc::ServerContext* /*context*/, const ::protos::KickMsg* /*request*/, ::protos::KickAnswer* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -410,7 +547,7 @@ class Pitaya final {
   template <class BaseClass>
   class WithRawMethod_Call : public BaseClass {
    private:
-    void BaseClassMustBeDerivedFromService(const Service *service) {}
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawMethod_Call() {
       ::grpc::Service::MarkMethodRaw(0);
@@ -419,7 +556,7 @@ class Pitaya final {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status Call(::grpc::ServerContext* context, const ::protos::Request* request, ::protos::Response* response) override {
+    ::grpc::Status Call(::grpc::ServerContext* /*context*/, const ::protos::Request* /*request*/, ::protos::Response* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -430,7 +567,7 @@ class Pitaya final {
   template <class BaseClass>
   class WithRawMethod_PushToUser : public BaseClass {
    private:
-    void BaseClassMustBeDerivedFromService(const Service *service) {}
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawMethod_PushToUser() {
       ::grpc::Service::MarkMethodRaw(1);
@@ -439,7 +576,7 @@ class Pitaya final {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status PushToUser(::grpc::ServerContext* context, const ::protos::Push* request, ::protos::Response* response) override {
+    ::grpc::Status PushToUser(::grpc::ServerContext* /*context*/, const ::protos::Push* /*request*/, ::protos::Response* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -450,7 +587,7 @@ class Pitaya final {
   template <class BaseClass>
   class WithRawMethod_SessionBindRemote : public BaseClass {
    private:
-    void BaseClassMustBeDerivedFromService(const Service *service) {}
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawMethod_SessionBindRemote() {
       ::grpc::Service::MarkMethodRaw(2);
@@ -459,7 +596,7 @@ class Pitaya final {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status SessionBindRemote(::grpc::ServerContext* context, const ::protos::BindMsg* request, ::protos::Response* response) override {
+    ::grpc::Status SessionBindRemote(::grpc::ServerContext* /*context*/, const ::protos::BindMsg* /*request*/, ::protos::Response* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -470,7 +607,7 @@ class Pitaya final {
   template <class BaseClass>
   class WithRawMethod_KickUser : public BaseClass {
    private:
-    void BaseClassMustBeDerivedFromService(const Service *service) {}
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawMethod_KickUser() {
       ::grpc::Service::MarkMethodRaw(3);
@@ -479,7 +616,7 @@ class Pitaya final {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status KickUser(::grpc::ServerContext* context, const ::protos::KickMsg* request, ::protos::KickAnswer* response) override {
+    ::grpc::Status KickUser(::grpc::ServerContext* /*context*/, const ::protos::KickMsg* /*request*/, ::protos::KickAnswer* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -490,117 +627,176 @@ class Pitaya final {
   template <class BaseClass>
   class ExperimentalWithRawCallbackMethod_Call : public BaseClass {
    private:
-    void BaseClassMustBeDerivedFromService(const Service *service) {}
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     ExperimentalWithRawCallbackMethod_Call() {
-      ::grpc::Service::experimental().MarkMethodRawCallback(0,
-        new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
-          [this](::grpc::ServerContext* context,
-                 const ::grpc::ByteBuffer* request,
-                 ::grpc::ByteBuffer* response,
-                 ::grpc::experimental::ServerCallbackRpcController* controller) {
-                   this->Call(context, request, response, controller);
-                 }));
+    #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
+      ::grpc::Service::
+    #else
+      ::grpc::Service::experimental().
+    #endif
+        MarkMethodRawCallback(0,
+          new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
+            [this](
+    #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
+                   ::grpc::CallbackServerContext*
+    #else
+                   ::grpc::experimental::CallbackServerContext*
+    #endif
+                     context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->Call(context, request, response); }));
     }
     ~ExperimentalWithRawCallbackMethod_Call() override {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status Call(::grpc::ServerContext* context, const ::protos::Request* request, ::protos::Response* response) override {
+    ::grpc::Status Call(::grpc::ServerContext* /*context*/, const ::protos::Request* /*request*/, ::protos::Response* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
-    virtual void Call(::grpc::ServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response, ::grpc::experimental::ServerCallbackRpcController* controller) { controller->Finish(::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "")); }
+    #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
+    virtual ::grpc::ServerUnaryReactor* Call(
+      ::grpc::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/, ::grpc::ByteBuffer* /*response*/)
+    #else
+    virtual ::grpc::experimental::ServerUnaryReactor* Call(
+      ::grpc::experimental::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/, ::grpc::ByteBuffer* /*response*/)
+    #endif
+      { return nullptr; }
   };
   template <class BaseClass>
   class ExperimentalWithRawCallbackMethod_PushToUser : public BaseClass {
    private:
-    void BaseClassMustBeDerivedFromService(const Service *service) {}
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     ExperimentalWithRawCallbackMethod_PushToUser() {
-      ::grpc::Service::experimental().MarkMethodRawCallback(1,
-        new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
-          [this](::grpc::ServerContext* context,
-                 const ::grpc::ByteBuffer* request,
-                 ::grpc::ByteBuffer* response,
-                 ::grpc::experimental::ServerCallbackRpcController* controller) {
-                   this->PushToUser(context, request, response, controller);
-                 }));
+    #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
+      ::grpc::Service::
+    #else
+      ::grpc::Service::experimental().
+    #endif
+        MarkMethodRawCallback(1,
+          new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
+            [this](
+    #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
+                   ::grpc::CallbackServerContext*
+    #else
+                   ::grpc::experimental::CallbackServerContext*
+    #endif
+                     context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->PushToUser(context, request, response); }));
     }
     ~ExperimentalWithRawCallbackMethod_PushToUser() override {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status PushToUser(::grpc::ServerContext* context, const ::protos::Push* request, ::protos::Response* response) override {
+    ::grpc::Status PushToUser(::grpc::ServerContext* /*context*/, const ::protos::Push* /*request*/, ::protos::Response* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
-    virtual void PushToUser(::grpc::ServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response, ::grpc::experimental::ServerCallbackRpcController* controller) { controller->Finish(::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "")); }
+    #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
+    virtual ::grpc::ServerUnaryReactor* PushToUser(
+      ::grpc::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/, ::grpc::ByteBuffer* /*response*/)
+    #else
+    virtual ::grpc::experimental::ServerUnaryReactor* PushToUser(
+      ::grpc::experimental::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/, ::grpc::ByteBuffer* /*response*/)
+    #endif
+      { return nullptr; }
   };
   template <class BaseClass>
   class ExperimentalWithRawCallbackMethod_SessionBindRemote : public BaseClass {
    private:
-    void BaseClassMustBeDerivedFromService(const Service *service) {}
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     ExperimentalWithRawCallbackMethod_SessionBindRemote() {
-      ::grpc::Service::experimental().MarkMethodRawCallback(2,
-        new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
-          [this](::grpc::ServerContext* context,
-                 const ::grpc::ByteBuffer* request,
-                 ::grpc::ByteBuffer* response,
-                 ::grpc::experimental::ServerCallbackRpcController* controller) {
-                   this->SessionBindRemote(context, request, response, controller);
-                 }));
+    #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
+      ::grpc::Service::
+    #else
+      ::grpc::Service::experimental().
+    #endif
+        MarkMethodRawCallback(2,
+          new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
+            [this](
+    #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
+                   ::grpc::CallbackServerContext*
+    #else
+                   ::grpc::experimental::CallbackServerContext*
+    #endif
+                     context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->SessionBindRemote(context, request, response); }));
     }
     ~ExperimentalWithRawCallbackMethod_SessionBindRemote() override {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status SessionBindRemote(::grpc::ServerContext* context, const ::protos::BindMsg* request, ::protos::Response* response) override {
+    ::grpc::Status SessionBindRemote(::grpc::ServerContext* /*context*/, const ::protos::BindMsg* /*request*/, ::protos::Response* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
-    virtual void SessionBindRemote(::grpc::ServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response, ::grpc::experimental::ServerCallbackRpcController* controller) { controller->Finish(::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "")); }
+    #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
+    virtual ::grpc::ServerUnaryReactor* SessionBindRemote(
+      ::grpc::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/, ::grpc::ByteBuffer* /*response*/)
+    #else
+    virtual ::grpc::experimental::ServerUnaryReactor* SessionBindRemote(
+      ::grpc::experimental::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/, ::grpc::ByteBuffer* /*response*/)
+    #endif
+      { return nullptr; }
   };
   template <class BaseClass>
   class ExperimentalWithRawCallbackMethod_KickUser : public BaseClass {
    private:
-    void BaseClassMustBeDerivedFromService(const Service *service) {}
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     ExperimentalWithRawCallbackMethod_KickUser() {
-      ::grpc::Service::experimental().MarkMethodRawCallback(3,
-        new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
-          [this](::grpc::ServerContext* context,
-                 const ::grpc::ByteBuffer* request,
-                 ::grpc::ByteBuffer* response,
-                 ::grpc::experimental::ServerCallbackRpcController* controller) {
-                   this->KickUser(context, request, response, controller);
-                 }));
+    #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
+      ::grpc::Service::
+    #else
+      ::grpc::Service::experimental().
+    #endif
+        MarkMethodRawCallback(3,
+          new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
+            [this](
+    #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
+                   ::grpc::CallbackServerContext*
+    #else
+                   ::grpc::experimental::CallbackServerContext*
+    #endif
+                     context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->KickUser(context, request, response); }));
     }
     ~ExperimentalWithRawCallbackMethod_KickUser() override {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status KickUser(::grpc::ServerContext* context, const ::protos::KickMsg* request, ::protos::KickAnswer* response) override {
+    ::grpc::Status KickUser(::grpc::ServerContext* /*context*/, const ::protos::KickMsg* /*request*/, ::protos::KickAnswer* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
-    virtual void KickUser(::grpc::ServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response, ::grpc::experimental::ServerCallbackRpcController* controller) { controller->Finish(::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "")); }
+    #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
+    virtual ::grpc::ServerUnaryReactor* KickUser(
+      ::grpc::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/, ::grpc::ByteBuffer* /*response*/)
+    #else
+    virtual ::grpc::experimental::ServerUnaryReactor* KickUser(
+      ::grpc::experimental::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/, ::grpc::ByteBuffer* /*response*/)
+    #endif
+      { return nullptr; }
   };
   template <class BaseClass>
   class WithStreamedUnaryMethod_Call : public BaseClass {
    private:
-    void BaseClassMustBeDerivedFromService(const Service *service) {}
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithStreamedUnaryMethod_Call() {
       ::grpc::Service::MarkMethodStreamed(0,
-        new ::grpc::internal::StreamedUnaryHandler< ::protos::Request, ::protos::Response>(std::bind(&WithStreamedUnaryMethod_Call<BaseClass>::StreamedCall, this, std::placeholders::_1, std::placeholders::_2)));
+        new ::grpc::internal::StreamedUnaryHandler<
+          ::protos::Request, ::protos::Response>(
+            [this](::grpc::ServerContext* context,
+                   ::grpc::ServerUnaryStreamer<
+                     ::protos::Request, ::protos::Response>* streamer) {
+                       return this->StreamedCall(context,
+                         streamer);
+                  }));
     }
     ~WithStreamedUnaryMethod_Call() override {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable regular version of this method
-    ::grpc::Status Call(::grpc::ServerContext* context, const ::protos::Request* request, ::protos::Response* response) override {
+    ::grpc::Status Call(::grpc::ServerContext* /*context*/, const ::protos::Request* /*request*/, ::protos::Response* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -610,17 +806,24 @@ class Pitaya final {
   template <class BaseClass>
   class WithStreamedUnaryMethod_PushToUser : public BaseClass {
    private:
-    void BaseClassMustBeDerivedFromService(const Service *service) {}
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithStreamedUnaryMethod_PushToUser() {
       ::grpc::Service::MarkMethodStreamed(1,
-        new ::grpc::internal::StreamedUnaryHandler< ::protos::Push, ::protos::Response>(std::bind(&WithStreamedUnaryMethod_PushToUser<BaseClass>::StreamedPushToUser, this, std::placeholders::_1, std::placeholders::_2)));
+        new ::grpc::internal::StreamedUnaryHandler<
+          ::protos::Push, ::protos::Response>(
+            [this](::grpc::ServerContext* context,
+                   ::grpc::ServerUnaryStreamer<
+                     ::protos::Push, ::protos::Response>* streamer) {
+                       return this->StreamedPushToUser(context,
+                         streamer);
+                  }));
     }
     ~WithStreamedUnaryMethod_PushToUser() override {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable regular version of this method
-    ::grpc::Status PushToUser(::grpc::ServerContext* context, const ::protos::Push* request, ::protos::Response* response) override {
+    ::grpc::Status PushToUser(::grpc::ServerContext* /*context*/, const ::protos::Push* /*request*/, ::protos::Response* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -630,17 +833,24 @@ class Pitaya final {
   template <class BaseClass>
   class WithStreamedUnaryMethod_SessionBindRemote : public BaseClass {
    private:
-    void BaseClassMustBeDerivedFromService(const Service *service) {}
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithStreamedUnaryMethod_SessionBindRemote() {
       ::grpc::Service::MarkMethodStreamed(2,
-        new ::grpc::internal::StreamedUnaryHandler< ::protos::BindMsg, ::protos::Response>(std::bind(&WithStreamedUnaryMethod_SessionBindRemote<BaseClass>::StreamedSessionBindRemote, this, std::placeholders::_1, std::placeholders::_2)));
+        new ::grpc::internal::StreamedUnaryHandler<
+          ::protos::BindMsg, ::protos::Response>(
+            [this](::grpc::ServerContext* context,
+                   ::grpc::ServerUnaryStreamer<
+                     ::protos::BindMsg, ::protos::Response>* streamer) {
+                       return this->StreamedSessionBindRemote(context,
+                         streamer);
+                  }));
     }
     ~WithStreamedUnaryMethod_SessionBindRemote() override {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable regular version of this method
-    ::grpc::Status SessionBindRemote(::grpc::ServerContext* context, const ::protos::BindMsg* request, ::protos::Response* response) override {
+    ::grpc::Status SessionBindRemote(::grpc::ServerContext* /*context*/, const ::protos::BindMsg* /*request*/, ::protos::Response* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -650,17 +860,24 @@ class Pitaya final {
   template <class BaseClass>
   class WithStreamedUnaryMethod_KickUser : public BaseClass {
    private:
-    void BaseClassMustBeDerivedFromService(const Service *service) {}
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithStreamedUnaryMethod_KickUser() {
       ::grpc::Service::MarkMethodStreamed(3,
-        new ::grpc::internal::StreamedUnaryHandler< ::protos::KickMsg, ::protos::KickAnswer>(std::bind(&WithStreamedUnaryMethod_KickUser<BaseClass>::StreamedKickUser, this, std::placeholders::_1, std::placeholders::_2)));
+        new ::grpc::internal::StreamedUnaryHandler<
+          ::protos::KickMsg, ::protos::KickAnswer>(
+            [this](::grpc::ServerContext* context,
+                   ::grpc::ServerUnaryStreamer<
+                     ::protos::KickMsg, ::protos::KickAnswer>* streamer) {
+                       return this->StreamedKickUser(context,
+                         streamer);
+                  }));
     }
     ~WithStreamedUnaryMethod_KickUser() override {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable regular version of this method
-    ::grpc::Status KickUser(::grpc::ServerContext* context, const ::protos::KickMsg* request, ::protos::KickAnswer* response) override {
+    ::grpc::Status KickUser(::grpc::ServerContext* /*context*/, const ::protos::KickMsg* /*request*/, ::protos::KickAnswer* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }

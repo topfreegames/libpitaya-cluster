@@ -5,88 +5,65 @@
 
 #include <algorithm>
 
-#include <google/protobuf/stubs/common.h>
-#include <google/protobuf/stubs/port.h>
 #include <google/protobuf/io/coded_stream.h>
-#include <google/protobuf/wire_format_lite_inl.h>
+#include <google/protobuf/extension_set.h>
+#include <google/protobuf/wire_format_lite.h>
 #include <google/protobuf/descriptor.h>
 #include <google/protobuf/generated_message_reflection.h>
 #include <google/protobuf/reflection_ops.h>
 #include <google/protobuf/wire_format.h>
-// This is a temporary google only hack
-#ifdef GOOGLE_PROTOBUF_ENFORCE_UNIQUENESS
-#include "third_party/protobuf/version.h"
-#endif
 // @@protoc_insertion_point(includes)
+#include <google/protobuf/port_def.inc>
 
+PROTOBUF_PRAGMA_INIT_SEG
 namespace protos {
 }  // namespace protos
-namespace protobuf_pitaya_2eproto {
-void InitDefaults() {
+static constexpr ::PROTOBUF_NAMESPACE_ID::Metadata* file_level_metadata_pitaya_2eproto = nullptr;
+static constexpr ::PROTOBUF_NAMESPACE_ID::EnumDescriptor const** file_level_enum_descriptors_pitaya_2eproto = nullptr;
+static constexpr ::PROTOBUF_NAMESPACE_ID::ServiceDescriptor const** file_level_service_descriptors_pitaya_2eproto = nullptr;
+const ::PROTOBUF_NAMESPACE_ID::uint32 TableStruct_pitaya_2eproto::offsets[1] = {};
+static constexpr ::PROTOBUF_NAMESPACE_ID::internal::MigrationSchema* schemas = nullptr;
+static constexpr ::PROTOBUF_NAMESPACE_ID::Message* const* file_default_instances = nullptr;
+
+const char descriptor_table_protodef_pitaya_2eproto[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) =
+  "\n\014pitaya.proto\022\006protos\032\rrequest.proto\032\016r"
+  "esponse.proto\032\npush.proto\032\nbind.proto\032\nk"
+  "ick.proto2\322\001\n\006Pitaya\022+\n\004Call\022\017.protos.Re"
+  "quest\032\020.protos.Response\"\000\022.\n\nPushToUser\022"
+  "\014.protos.Push\032\020.protos.Response\"\000\0228\n\021Ses"
+  "sionBindRemote\022\017.protos.BindMsg\032\020.protos"
+  ".Response\"\000\0221\n\010KickUser\022\017.protos.KickMsg"
+  "\032\022.protos.KickAnswer\"\000B\021\252\002\016NPitaya.Proto"
+  "sb\006proto3"
+  ;
+static const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable*const descriptor_table_pitaya_2eproto_deps[5] = {
+  &::descriptor_table_bind_2eproto,
+  &::descriptor_table_kick_2eproto,
+  &::descriptor_table_push_2eproto,
+  &::descriptor_table_request_2eproto,
+  &::descriptor_table_response_2eproto,
+};
+static ::PROTOBUF_NAMESPACE_ID::internal::once_flag descriptor_table_pitaya_2eproto_once;
+const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable descriptor_table_pitaya_2eproto = {
+  false, false, 329, descriptor_table_protodef_pitaya_2eproto, "pitaya.proto", 
+  &descriptor_table_pitaya_2eproto_once, descriptor_table_pitaya_2eproto_deps, 5, 0,
+  schemas, file_default_instances, TableStruct_pitaya_2eproto::offsets,
+  file_level_metadata_pitaya_2eproto, file_level_enum_descriptors_pitaya_2eproto, file_level_service_descriptors_pitaya_2eproto,
+};
+PROTOBUF_ATTRIBUTE_WEAK ::PROTOBUF_NAMESPACE_ID::Metadata
+descriptor_table_pitaya_2eproto_metadata_getter(int index) {
+  ::PROTOBUF_NAMESPACE_ID::internal::AssignDescriptors(&descriptor_table_pitaya_2eproto);
+  return descriptor_table_pitaya_2eproto.file_level_metadata[index];
 }
 
-const ::google::protobuf::uint32 TableStruct::offsets[1] = {};
-static const ::google::protobuf::internal::MigrationSchema* schemas = NULL;
-static const ::google::protobuf::Message* const* file_default_instances = NULL;
-
-void protobuf_AssignDescriptors() {
-  AddDescriptors();
-  AssignDescriptors(
-      "pitaya.proto", schemas, file_default_instances, TableStruct::offsets,
-      NULL, NULL, NULL);
-}
-
-void protobuf_AssignDescriptorsOnce() {
-  static ::google::protobuf::internal::once_flag once;
-  ::google::protobuf::internal::call_once(once, protobuf_AssignDescriptors);
-}
-
-void protobuf_RegisterTypes(const ::std::string&) GOOGLE_PROTOBUF_ATTRIBUTE_COLD;
-void protobuf_RegisterTypes(const ::std::string&) {
-  protobuf_AssignDescriptorsOnce();
-}
-
-void AddDescriptorsImpl() {
-  InitDefaults();
-  static const char descriptor[] GOOGLE_PROTOBUF_ATTRIBUTE_SECTION_VARIABLE(protodesc_cold) = {
-      "\n\014pitaya.proto\022\006protos\032\rrequest.proto\032\016r"
-      "esponse.proto\032\npush.proto\032\nbind.proto\032\nk"
-      "ick.proto2\322\001\n\006Pitaya\022+\n\004Call\022\017.protos.Re"
-      "quest\032\020.protos.Response\"\000\022.\n\nPushToUser\022"
-      "\014.protos.Push\032\020.protos.Response\"\000\0228\n\021Ses"
-      "sionBindRemote\022\017.protos.BindMsg\032\020.protos"
-      ".Response\"\000\0221\n\010KickUser\022\017.protos.KickMsg"
-      "\032\022.protos.KickAnswer\"\000b\006proto3"
-  };
-  ::google::protobuf::DescriptorPool::InternalAddGeneratedFile(
-      descriptor, 310);
-  ::google::protobuf::MessageFactory::InternalRegisterGeneratedFile(
-    "pitaya.proto", &protobuf_RegisterTypes);
-  ::protobuf_request_2eproto::AddDescriptors();
-  ::protobuf_response_2eproto::AddDescriptors();
-  ::protobuf_push_2eproto::AddDescriptors();
-  ::protobuf_bind_2eproto::AddDescriptors();
-  ::protobuf_kick_2eproto::AddDescriptors();
-}
-
-void AddDescriptors() {
-  static ::google::protobuf::internal::once_flag once;
-  ::google::protobuf::internal::call_once(once, AddDescriptorsImpl);
-}
-// Force AddDescriptors() to be called at dynamic initialization time.
-struct StaticDescriptorInitializer {
-  StaticDescriptorInitializer() {
-    AddDescriptors();
-  }
-} static_descriptor_initializer;
-}  // namespace protobuf_pitaya_2eproto
+// Force running AddDescriptors() at dynamic initialization time.
+PROTOBUF_ATTRIBUTE_INIT_PRIORITY static ::PROTOBUF_NAMESPACE_ID::internal::AddDescriptorsRunner dynamic_init_dummy_pitaya_2eproto(&descriptor_table_pitaya_2eproto);
 namespace protos {
 
 // @@protoc_insertion_point(namespace_scope)
 }  // namespace protos
-namespace google {
-namespace protobuf {
-}  // namespace protobuf
-}  // namespace google
+PROTOBUF_NAMESPACE_OPEN
+PROTOBUF_NAMESPACE_CLOSE
 
 // @@protoc_insertion_point(global_scope)
+#include <google/protobuf/port_undef.inc>
