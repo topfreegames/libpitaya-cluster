@@ -55,7 +55,7 @@ add_library(cpprestsdk::cpprest STATIC IMPORTED)
 set_target_properties(cpprestsdk::cpprest PROPERTIES
   INTERFACE_COMPILE_DEFINITIONS "CPPREST_EXCLUDE_WEBSOCKETS=1;CPPREST_FORCE_HTTP_CLIENT_ASIO;CPPREST_FORCE_HTTP_LISTENER_ASIO"
   INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include"
-  INTERFACE_LINK_LIBRARIES "-lpthread;\$<LINK_ONLY:cpprestsdk::cpprestsdk_zlib_internal>;cpprestsdk::cpprestsdk_boost_internal;cpprestsdk::cpprestsdk_openssl_internal;cpprestsdk::cpprestsdk_boost_internal;cpprestsdk::cpprestsdk_openssl_internal"
+  INTERFACE_LINK_LIBRARIES "-lpthread;cpprestsdk::cpprestsdk_boost_internal;cpprestsdk::cpprestsdk_openssl_internal;\$<LINK_ONLY:cpprestsdk::cpprestsdk_zlib_internal>;cpprestsdk::cpprestsdk_boost_internal;cpprestsdk::cpprestsdk_openssl_internal;cpprestsdk::cpprestsdk_boost_internal;cpprestsdk::cpprestsdk_openssl_internal"
 )
 
 # Create imported target cpprestsdk::cpprestsdk_boost_internal
@@ -72,6 +72,7 @@ set_target_properties(cpprestsdk::cpprestsdk_zlib_internal PROPERTIES
 add_library(cpprestsdk::cpprestsdk_openssl_internal INTERFACE IMPORTED)
 
 set_target_properties(cpprestsdk::cpprestsdk_openssl_internal PROPERTIES
+  INTERFACE_COMPILE_DEFINITIONS "CPPREST_NO_SSL_LEAK_SUPPRESS"
   INTERFACE_LINK_LIBRARIES "OpenSSL::SSL"
 )
 
