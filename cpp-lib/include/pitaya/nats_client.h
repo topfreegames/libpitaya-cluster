@@ -8,7 +8,7 @@
 
 #include <chrono>
 #include <memory>
-#include <nats/nats.h>
+#include <nats.h>
 #include <unordered_map>
 #include <vector>
 

@@ -39,7 +39,7 @@ add_subdirectory(deps/grpc EXCLUDE_FROM_ALL)
 add_subdirectory(deps/etcd-cpp-apiv3 EXCLUDE_FROM_ALL)
 
 set(NATS_BUILD_STREAMING OFF CACHE BOOL "")
-add_subdirectory(deps/cnats-1.8.0 EXCLUDE_FROM_ALL)
+add_subdirectory(deps/nats.c-2.4.0 EXCLUDE_FROM_ALL)
 
 option(BUILD_MACOSX_BUNDLE "Should build a bundle for Macosx" OFF)
 
@@ -157,7 +157,7 @@ if(BUILD_TESTING AND NOT BUILD_MACOSX_BUNDLE)
     #==============================
     # Enable tests
     #==============================
-    find_package(gtest REQUIRED)
+    find_package(GTest REQUIRED)
     find_package(Boost REQUIRED COMPONENTS system thread)
 
     add_executable(pitaya_cpp_tests

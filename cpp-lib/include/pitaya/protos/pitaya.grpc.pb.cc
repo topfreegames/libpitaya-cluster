@@ -11,9 +11,12 @@
 #include <grpcpp/impl/codegen/channel_interface.h>
 #include <grpcpp/impl/codegen/client_unary_call.h>
 #include <grpcpp/impl/codegen/client_callback.h>
-#include <grpcpp/impl/codegen/method_handler_impl.h>
+#include <grpcpp/impl/codegen/message_allocator.h>
+#include <grpcpp/impl/codegen/method_handler.h>
 #include <grpcpp/impl/codegen/rpc_service_method.h>
 #include <grpcpp/impl/codegen/server_callback.h>
+#include <grpcpp/impl/codegen/server_callback_handlers.h>
+#include <grpcpp/impl/codegen/server_context.h>
 #include <grpcpp/impl/codegen/service_type.h>
 #include <grpcpp/impl/codegen/sync_stream.h>
 namespace protos {
@@ -39,90 +42,138 @@ Pitaya::Stub::Stub(const std::shared_ptr< ::grpc::ChannelInterface>& channel)
   {}
 
 ::grpc::Status Pitaya::Stub::Call(::grpc::ClientContext* context, const ::protos::Request& request, ::protos::Response* response) {
-  return ::grpc::internal::BlockingUnaryCall(channel_.get(), rpcmethod_Call_, context, request, response);
+  return ::grpc::internal::BlockingUnaryCall< ::protos::Request, ::protos::Response, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_Call_, context, request, response);
 }
 
 void Pitaya::Stub::experimental_async::Call(::grpc::ClientContext* context, const ::protos::Request* request, ::protos::Response* response, std::function<void(::grpc::Status)> f) {
-  return ::grpc::internal::CallbackUnaryCall(stub_->channel_.get(), stub_->rpcmethod_Call_, context, request, response, std::move(f));
+  ::grpc::internal::CallbackUnaryCall< ::protos::Request, ::protos::Response, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_Call_, context, request, response, std::move(f));
 }
 
-::grpc::ClientAsyncResponseReader< ::protos::Response>* Pitaya::Stub::AsyncCallRaw(::grpc::ClientContext* context, const ::protos::Request& request, ::grpc::CompletionQueue* cq) {
-  return ::grpc::internal::ClientAsyncResponseReaderFactory< ::protos::Response>::Create(channel_.get(), cq, rpcmethod_Call_, context, request, true);
+void Pitaya::Stub::experimental_async::Call(::grpc::ClientContext* context, const ::protos::Request* request, ::protos::Response* response, ::grpc::experimental::ClientUnaryReactor* reactor) {
+  ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_Call_, context, request, response, reactor);
 }
 
 ::grpc::ClientAsyncResponseReader< ::protos::Response>* Pitaya::Stub::PrepareAsyncCallRaw(::grpc::ClientContext* context, const ::protos::Request& request, ::grpc::CompletionQueue* cq) {
-  return ::grpc::internal::ClientAsyncResponseReaderFactory< ::protos::Response>::Create(channel_.get(), cq, rpcmethod_Call_, context, request, false);
+  return ::grpc::internal::ClientAsyncResponseReaderHelper::Create< ::protos::Response, ::protos::Request, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), cq, rpcmethod_Call_, context, request);
+}
+
+::grpc::ClientAsyncResponseReader< ::protos::Response>* Pitaya::Stub::AsyncCallRaw(::grpc::ClientContext* context, const ::protos::Request& request, ::grpc::CompletionQueue* cq) {
+  auto* result =
+    this->PrepareAsyncCallRaw(context, request, cq);
+  result->StartCall();
+  return result;
 }
 
 ::grpc::Status Pitaya::Stub::PushToUser(::grpc::ClientContext* context, const ::protos::Push& request, ::protos::Response* response) {
-  return ::grpc::internal::BlockingUnaryCall(channel_.get(), rpcmethod_PushToUser_, context, request, response);
+  return ::grpc::internal::BlockingUnaryCall< ::protos::Push, ::protos::Response, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_PushToUser_, context, request, response);
 }
 
 void Pitaya::Stub::experimental_async::PushToUser(::grpc::ClientContext* context, const ::protos::Push* request, ::protos::Response* response, std::function<void(::grpc::Status)> f) {
-  return ::grpc::internal::CallbackUnaryCall(stub_->channel_.get(), stub_->rpcmethod_PushToUser_, context, request, response, std::move(f));
+  ::grpc::internal::CallbackUnaryCall< ::protos::Push, ::protos::Response, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_PushToUser_, context, request, response, std::move(f));
 }
 
-::grpc::ClientAsyncResponseReader< ::protos::Response>* Pitaya::Stub::AsyncPushToUserRaw(::grpc::ClientContext* context, const ::protos::Push& request, ::grpc::CompletionQueue* cq) {
-  return ::grpc::internal::ClientAsyncResponseReaderFactory< ::protos::Response>::Create(channel_.get(), cq, rpcmethod_PushToUser_, context, request, true);
+void Pitaya::Stub::experimental_async::PushToUser(::grpc::ClientContext* context, const ::protos::Push* request, ::protos::Response* response, ::grpc::experimental::ClientUnaryReactor* reactor) {
+  ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_PushToUser_, context, request, response, reactor);
 }
 
 ::grpc::ClientAsyncResponseReader< ::protos::Response>* Pitaya::Stub::PrepareAsyncPushToUserRaw(::grpc::ClientContext* context, const ::protos::Push& request, ::grpc::CompletionQueue* cq) {
-  return ::grpc::internal::ClientAsyncResponseReaderFactory< ::protos::Response>::Create(channel_.get(), cq, rpcmethod_PushToUser_, context, request, false);
+  return ::grpc::internal::ClientAsyncResponseReaderHelper::Create< ::protos::Response, ::protos::Push, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), cq, rpcmethod_PushToUser_, context, request);
+}
+
+::grpc::ClientAsyncResponseReader< ::protos::Response>* Pitaya::Stub::AsyncPushToUserRaw(::grpc::ClientContext* context, const ::protos::Push& request, ::grpc::CompletionQueue* cq) {
+  auto* result =
+    this->PrepareAsyncPushToUserRaw(context, request, cq);
+  result->StartCall();
+  return result;
 }
 
 ::grpc::Status Pitaya::Stub::SessionBindRemote(::grpc::ClientContext* context, const ::protos::BindMsg& request, ::protos::Response* response) {
-  return ::grpc::internal::BlockingUnaryCall(channel_.get(), rpcmethod_SessionBindRemote_, context, request, response);
+  return ::grpc::internal::BlockingUnaryCall< ::protos::BindMsg, ::protos::Response, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_SessionBindRemote_, context, request, response);
 }
 
 void Pitaya::Stub::experimental_async::SessionBindRemote(::grpc::ClientContext* context, const ::protos::BindMsg* request, ::protos::Response* response, std::function<void(::grpc::Status)> f) {
-  return ::grpc::internal::CallbackUnaryCall(stub_->channel_.get(), stub_->rpcmethod_SessionBindRemote_, context, request, response, std::move(f));
+  ::grpc::internal::CallbackUnaryCall< ::protos::BindMsg, ::protos::Response, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_SessionBindRemote_, context, request, response, std::move(f));
 }
 
-::grpc::ClientAsyncResponseReader< ::protos::Response>* Pitaya::Stub::AsyncSessionBindRemoteRaw(::grpc::ClientContext* context, const ::protos::BindMsg& request, ::grpc::CompletionQueue* cq) {
-  return ::grpc::internal::ClientAsyncResponseReaderFactory< ::protos::Response>::Create(channel_.get(), cq, rpcmethod_SessionBindRemote_, context, request, true);
+void Pitaya::Stub::experimental_async::SessionBindRemote(::grpc::ClientContext* context, const ::protos::BindMsg* request, ::protos::Response* response, ::grpc::experimental::ClientUnaryReactor* reactor) {
+  ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_SessionBindRemote_, context, request, response, reactor);
 }
 
 ::grpc::ClientAsyncResponseReader< ::protos::Response>* Pitaya::Stub::PrepareAsyncSessionBindRemoteRaw(::grpc::ClientContext* context, const ::protos::BindMsg& request, ::grpc::CompletionQueue* cq) {
-  return ::grpc::internal::ClientAsyncResponseReaderFactory< ::protos::Response>::Create(channel_.get(), cq, rpcmethod_SessionBindRemote_, context, request, false);
+  return ::grpc::internal::ClientAsyncResponseReaderHelper::Create< ::protos::Response, ::protos::BindMsg, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), cq, rpcmethod_SessionBindRemote_, context, request);
+}
+
+::grpc::ClientAsyncResponseReader< ::protos::Response>* Pitaya::Stub::AsyncSessionBindRemoteRaw(::grpc::ClientContext* context, const ::protos::BindMsg& request, ::grpc::CompletionQueue* cq) {
+  auto* result =
+    this->PrepareAsyncSessionBindRemoteRaw(context, request, cq);
+  result->StartCall();
+  return result;
 }
 
 ::grpc::Status Pitaya::Stub::KickUser(::grpc::ClientContext* context, const ::protos::KickMsg& request, ::protos::KickAnswer* response) {
-  return ::grpc::internal::BlockingUnaryCall(channel_.get(), rpcmethod_KickUser_, context, request, response);
+  return ::grpc::internal::BlockingUnaryCall< ::protos::KickMsg, ::protos::KickAnswer, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_KickUser_, context, request, response);
 }
 
 void Pitaya::Stub::experimental_async::KickUser(::grpc::ClientContext* context, const ::protos::KickMsg* request, ::protos::KickAnswer* response, std::function<void(::grpc::Status)> f) {
-  return ::grpc::internal::CallbackUnaryCall(stub_->channel_.get(), stub_->rpcmethod_KickUser_, context, request, response, std::move(f));
+  ::grpc::internal::CallbackUnaryCall< ::protos::KickMsg, ::protos::KickAnswer, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_KickUser_, context, request, response, std::move(f));
 }
 
-::grpc::ClientAsyncResponseReader< ::protos::KickAnswer>* Pitaya::Stub::AsyncKickUserRaw(::grpc::ClientContext* context, const ::protos::KickMsg& request, ::grpc::CompletionQueue* cq) {
-  return ::grpc::internal::ClientAsyncResponseReaderFactory< ::protos::KickAnswer>::Create(channel_.get(), cq, rpcmethod_KickUser_, context, request, true);
+void Pitaya::Stub::experimental_async::KickUser(::grpc::ClientContext* context, const ::protos::KickMsg* request, ::protos::KickAnswer* response, ::grpc::experimental::ClientUnaryReactor* reactor) {
+  ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_KickUser_, context, request, response, reactor);
 }
 
 ::grpc::ClientAsyncResponseReader< ::protos::KickAnswer>* Pitaya::Stub::PrepareAsyncKickUserRaw(::grpc::ClientContext* context, const ::protos::KickMsg& request, ::grpc::CompletionQueue* cq) {
-  return ::grpc::internal::ClientAsyncResponseReaderFactory< ::protos::KickAnswer>::Create(channel_.get(), cq, rpcmethod_KickUser_, context, request, false);
+  return ::grpc::internal::ClientAsyncResponseReaderHelper::Create< ::protos::KickAnswer, ::protos::KickMsg, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), cq, rpcmethod_KickUser_, context, request);
+}
+
+::grpc::ClientAsyncResponseReader< ::protos::KickAnswer>* Pitaya::Stub::AsyncKickUserRaw(::grpc::ClientContext* context, const ::protos::KickMsg& request, ::grpc::CompletionQueue* cq) {
+  auto* result =
+    this->PrepareAsyncKickUserRaw(context, request, cq);
+  result->StartCall();
+  return result;
 }
 
 Pitaya::Service::Service() {
   AddMethod(new ::grpc::internal::RpcServiceMethod(
       Pitaya_method_names[0],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
-      new ::grpc::internal::RpcMethodHandler< Pitaya::Service, ::protos::Request, ::protos::Response>(
-          std::mem_fn(&Pitaya::Service::Call), this)));
+      new ::grpc::internal::RpcMethodHandler< Pitaya::Service, ::protos::Request, ::protos::Response, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
+          [](Pitaya::Service* service,
+             ::grpc::ServerContext* ctx,
+             const ::protos::Request* req,
+             ::protos::Response* resp) {
+               return service->Call(ctx, req, resp);
+             }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
       Pitaya_method_names[1],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
-      new ::grpc::internal::RpcMethodHandler< Pitaya::Service, ::protos::Push, ::protos::Response>(
-          std::mem_fn(&Pitaya::Service::PushToUser), this)));
+      new ::grpc::internal::RpcMethodHandler< Pitaya::Service, ::protos::Push, ::protos::Response, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
+          [](Pitaya::Service* service,
+             ::grpc::ServerContext* ctx,
+             const ::protos::Push* req,
+             ::protos::Response* resp) {
+               return service->PushToUser(ctx, req, resp);
+             }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
       Pitaya_method_names[2],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
-      new ::grpc::internal::RpcMethodHandler< Pitaya::Service, ::protos::BindMsg, ::protos::Response>(
-          std::mem_fn(&Pitaya::Service::SessionBindRemote), this)));
+      new ::grpc::internal::RpcMethodHandler< Pitaya::Service, ::protos::BindMsg, ::protos::Response, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
+          [](Pitaya::Service* service,
+             ::grpc::ServerContext* ctx,
+             const ::protos::BindMsg* req,
+             ::protos::Response* resp) {
+               return service->SessionBindRemote(ctx, req, resp);
+             }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
       Pitaya_method_names[3],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
-      new ::grpc::internal::RpcMethodHandler< Pitaya::Service, ::protos::KickMsg, ::protos::KickAnswer>(
-          std::mem_fn(&Pitaya::Service::KickUser), this)));
+      new ::grpc::internal::RpcMethodHandler< Pitaya::Service, ::protos::KickMsg, ::protos::KickAnswer, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
+          [](Pitaya::Service* service,
+             ::grpc::ServerContext* ctx,
+             const ::protos::KickMsg* req,
+             ::protos::KickAnswer* resp) {
+               return service->KickUser(ctx, req, resp);
+             }, this)));
 }
 
 Pitaya::Service::~Service() {
