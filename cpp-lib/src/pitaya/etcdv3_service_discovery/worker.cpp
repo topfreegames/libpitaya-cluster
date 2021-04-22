@@ -121,7 +121,7 @@ Worker::StartThread()
             case JobInfo::SyncServers: {
                 _log->debug("Will synchronize servers");
 
-                ListResponse res = _etcdClient->List(_config.etcdPrefix);
+                ListResponse res = _etcdClient->List(_config.etcdPrefix + "servers/metagame/");
 
                 if (!res.ok) {
                     _log->warn("Error synchronizing servers: {}", res.errorMsg);
