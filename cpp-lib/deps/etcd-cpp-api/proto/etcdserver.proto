@@ -1,0 +1,27 @@
+syntax = "proto2";
+package etcdserverpb;
+
+message Request {
+	optional uint64 ID         =  1;
+	optional string Method     =  2;
+	optional string Path       =  3;
+	optional string Val        =  4;
+	optional bool   Dir        =  5;
+	optional string PrevValue  =  6;
+	optional uint64 PrevIndex  =  7;
+	optional bool   PrevExist  =  8;
+	optional int64  Expiration =  9;
+	optional bool   Wait       = 10;
+	optional uint64 Since      = 11;
+	optional bool   Recursive  = 12;
+	optional bool   Sorted     = 13;
+	optional bool   Quorum     = 14;
+	optional int64  Time       = 15;
+	optional bool   Stream     = 16;
+	optional bool   Refresh    = 17;
+}
+
+message Metadata {
+	optional uint64 NodeID    = 1;
+	optional uint64 ClusterID = 2;
+}

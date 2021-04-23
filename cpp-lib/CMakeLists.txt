@@ -36,7 +36,7 @@ if(UNIX AND NOT APPLE)
 endif()
 add_subdirectory(deps/grpc EXCLUDE_FROM_ALL)
 
-add_subdirectory(deps/etcd-cpp-apiv3 EXCLUDE_FROM_ALL)
+add_subdirectory(deps/etcd-cpp-api EXCLUDE_FROM_ALL)
 
 set(NATS_BUILD_STREAMING OFF CACHE BOOL "")
 add_subdirectory(deps/nats.c-2.4.0 EXCLUDE_FROM_ALL)

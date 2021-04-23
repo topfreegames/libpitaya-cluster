@@ -88,7 +88,7 @@ Cluster::InitializeWithNats(NatsConfig natsConfig,
     auto rpcServer = std::unique_ptr<RpcServer>(new NatsRpcServer(server, natsConfig, loggerName));
     auto rpcClient = std::unique_ptr<RpcClient>(new NatsRpcClient(natsConfig, loggerName));
     auto etcdClient = std::unique_ptr<EtcdClient>(new EtcdClientV3(
-        sdConfig.endpoints, sdConfig.etcdPrefix, sdConfig.logHeartbeat, loggerName));
+        sdConfig.endpoints, sdConfig.etcdPrefix + "servers/metagame/", sdConfig.logHeartbeat, loggerName));
     auto serviceDiscovery = std::shared_ptr<ServiceDiscovery>(
         new Etcdv3ServiceDiscovery(std::move(sdConfig), server, std::move(etcdClient), loggerName));
 
