@@ -1,0 +1,7 @@
+TODO:
+
+1) FIX BUGS AS LISTED HERE:
+	https://github.com/recolic/etcd-cpp-apiv3/commit/40e9c34aa56e7b605d7145160e243c143351bad2
+	https://github.com/yutongqing/etcd-cpp-apiv3/commit/1d4c68d9b4695b29591675bf29f6322c877a421a
+
+2) CHECK TESTS
