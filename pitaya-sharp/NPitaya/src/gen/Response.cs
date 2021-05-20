@@ -26,18 +26,23 @@ namespace NPitaya.Protos {
           string.Concat(
             "Cg5yZXNwb25zZS5wcm90bxIGcHJvdG9zGgtlcnJvci5wcm90byI2CghSZXNw",
             "b25zZRIMCgRkYXRhGAEgASgMEhwKBWVycm9yGAIgASgLMg0ucHJvdG9zLkVy",
-            "cm9yYgZwcm90bzM="));
+            "cm9yQjxaKWdpdGh1Yi5jb20vdG9wZnJlZWdhbWVzL3BpdGF5YS9wa2cvcHJv",
+            "dG9zqgIOTlBpdGF5YS5Qcm90b3NiBnByb3RvMw=="));
       descriptor = pbr::FileDescriptor.FromGeneratedCode(descriptorData,
           new pbr::FileDescriptor[] { global::NPitaya.Protos.ErrorReflection.Descriptor, },
-          new pbr::GeneratedClrTypeInfo(null, new pbr::GeneratedClrTypeInfo[] {
-            new pbr::GeneratedClrTypeInfo(typeof(global::NPitaya.Protos.Response), global::NPitaya.Protos.Response.Parser, new[]{ "Data", "Error" }, null, null, null)
+          new pbr::GeneratedClrTypeInfo(null, null, new pbr::GeneratedClrTypeInfo[] {
+            new pbr::GeneratedClrTypeInfo(typeof(global::NPitaya.Protos.Response), global::NPitaya.Protos.Response.Parser, new[]{ "Data", "Error" }, null, null, null, null)
           }));
     }
     #endregion
 
   }
   #region Messages
-  public sealed partial class Response : pb::IMessage<Response> {
+  public sealed partial class Response : pb::IMessage<Response>
+  #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+      , pb::IBufferMessage
+  #endif
+  {
     private static readonly pb::MessageParser<Response> _parser = new pb::MessageParser<Response>(() => new Response());
     private pb::UnknownFieldSet _unknownFields;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -130,6 +135,9 @@ namespace NPitaya.Protos {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public void WriteTo(pb::CodedOutputStream output) {
+    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+      output.WriteRawMessage(this);
+    #else
       if (Data.Length != 0) {
         output.WriteRawTag(10);
         output.WriteBytes(Data);
@@ -141,7 +149,25 @@ namespace NPitaya.Protos {
       if (_unknownFields != null) {
         _unknownFields.WriteTo(output);
       }
+    #endif
     }
+
+    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    void pb::IBufferMessage.InternalWriteTo(ref pb::WriteContext output) {
+      if (Data.Length != 0) {
+        output.WriteRawTag(10);
+        output.WriteBytes(Data);
+      }
+      if (error_ != null) {
+        output.WriteRawTag(18);
+        output.WriteMessage(Error);
+      }
+      if (_unknownFields != null) {
+        _unknownFields.WriteTo(ref output);
+      }
+    }
+    #endif
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public int CalculateSize() {
@@ -168,7 +194,7 @@ namespace NPitaya.Protos {
       }
       if (other.error_ != null) {
         if (error_ == null) {
-          error_ = new global::NPitaya.Protos.Error();
+          Error = new global::NPitaya.Protos.Error();
         }
         Error.MergeFrom(other.Error);
       }
@@ -177,6 +203,9 @@ namespace NPitaya.Protos {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public void MergeFrom(pb::CodedInputStream input) {
+    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+      input.ReadRawMessage(this);
+    #else
       uint tag;
       while ((tag = input.ReadTag()) != 0) {
         switch(tag) {
@@ -189,14 +218,40 @@ namespace NPitaya.Protos {
           }
           case 18: {
             if (error_ == null) {
-              error_ = new global::NPitaya.Protos.Error();
+              Error = new global::NPitaya.Protos.Error();
             }
-            input.ReadMessage(error_);
+            input.ReadMessage(Error);
+            break;
+          }
+        }
+      }
+    #endif
+    }
+
+    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    void pb::IBufferMessage.InternalMergeFrom(ref pb::ParseContext input) {
+      uint tag;
+      while ((tag = input.ReadTag()) != 0) {
+        switch(tag) {
+          default:
+            _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, ref input);
+            break;
+          case 10: {
+            Data = input.ReadBytes();
+            break;
+          }
+          case 18: {
+            if (error_ == null) {
+              Error = new global::NPitaya.Protos.Error();
+            }
+            input.ReadMessage(Error);
             break;
           }
         }
       }
     }
+    #endif
 
   }
 

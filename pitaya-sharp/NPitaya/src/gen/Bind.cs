@@ -25,18 +25,23 @@ namespace NPitaya.Protos {
       byte[] descriptorData = global::System.Convert.FromBase64String(
           string.Concat(
             "CgpiaW5kLnByb3RvEgZwcm90b3MiIwoHQmluZE1zZxILCgN1aWQYASABKAkS",
-            "CwoDZmlkGAIgASgJYgZwcm90bzM="));
+            "CwoDZmlkGAIgASgJQjxaKWdpdGh1Yi5jb20vdG9wZnJlZWdhbWVzL3BpdGF5",
+            "YS9wa2cvcHJvdG9zqgIOTlBpdGF5YS5Qcm90b3NiBnByb3RvMw=="));
       descriptor = pbr::FileDescriptor.FromGeneratedCode(descriptorData,
           new pbr::FileDescriptor[] { },
-          new pbr::GeneratedClrTypeInfo(null, new pbr::GeneratedClrTypeInfo[] {
-            new pbr::GeneratedClrTypeInfo(typeof(global::NPitaya.Protos.BindMsg), global::NPitaya.Protos.BindMsg.Parser, new[]{ "Uid", "Fid" }, null, null, null)
+          new pbr::GeneratedClrTypeInfo(null, null, new pbr::GeneratedClrTypeInfo[] {
+            new pbr::GeneratedClrTypeInfo(typeof(global::NPitaya.Protos.BindMsg), global::NPitaya.Protos.BindMsg.Parser, new[]{ "Uid", "Fid" }, null, null, null, null)
           }));
     }
     #endregion
 
   }
   #region Messages
-  public sealed partial class BindMsg : pb::IMessage<BindMsg> {
+  public sealed partial class BindMsg : pb::IMessage<BindMsg>
+  #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+      , pb::IBufferMessage
+  #endif
+  {
     private static readonly pb::MessageParser<BindMsg> _parser = new pb::MessageParser<BindMsg>(() => new BindMsg());
     private pb::UnknownFieldSet _unknownFields;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -129,6 +134,9 @@ namespace NPitaya.Protos {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public void WriteTo(pb::CodedOutputStream output) {
+    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+      output.WriteRawMessage(this);
+    #else
       if (Uid.Length != 0) {
         output.WriteRawTag(10);
         output.WriteString(Uid);
@@ -140,7 +148,25 @@ namespace NPitaya.Protos {
       if (_unknownFields != null) {
         _unknownFields.WriteTo(output);
       }
+    #endif
     }
+
+    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    void pb::IBufferMessage.InternalWriteTo(ref pb::WriteContext output) {
+      if (Uid.Length != 0) {
+        output.WriteRawTag(10);
+        output.WriteString(Uid);
+      }
+      if (Fid.Length != 0) {
+        output.WriteRawTag(18);
+        output.WriteString(Fid);
+      }
+      if (_unknownFields != null) {
+        _unknownFields.WriteTo(ref output);
+      }
+    }
+    #endif
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public int CalculateSize() {
@@ -173,6 +199,9 @@ namespace NPitaya.Protos {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public void MergeFrom(pb::CodedInputStream input) {
+    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+      input.ReadRawMessage(this);
+    #else
       uint tag;
       while ((tag = input.ReadTag()) != 0) {
         switch(tag) {
@@ -189,7 +218,30 @@ namespace NPitaya.Protos {
           }
         }
       }
+    #endif
     }
+
+    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    void pb::IBufferMessage.InternalMergeFrom(ref pb::ParseContext input) {
+      uint tag;
+      while ((tag = input.ReadTag()) != 0) {
+        switch(tag) {
+          default:
+            _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, ref input);
+            break;
+          case 10: {
+            Uid = input.ReadString();
+            break;
+          }
+          case 18: {
+            Fid = input.ReadString();
+            break;
+          }
+        }
+      }
+    }
+    #endif
 
   }
 
