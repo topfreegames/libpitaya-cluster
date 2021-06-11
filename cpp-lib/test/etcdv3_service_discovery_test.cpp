@@ -105,7 +105,7 @@ TEST_F(Etcdv3ServiceDiscoveryTest, NoneIsReturnedWhenThereAreNoServers)
     auto leaseGrantRes = NewSuccessfullLeaseGrantResponse(12931092301293);
     auto setRes = NewSuccessfullSetResponse();
 
-    EXPECT_CALL(*_mockEtcdClient, List(Eq(_config.etcdPrefix)));
+    EXPECT_CALL(*_mockEtcdClient, List(Eq(_config.etcdPrefix + "servers/metagame/")));
 
     {
         InSequence seq;
@@ -142,7 +142,7 @@ TEST_F(Etcdv3ServiceDiscoveryTest, WatchesForKeysAddedAndRemoved)
     LeaseRevokeResponse revokeRes;
     revokeRes.ok = true;
 
-    EXPECT_CALL(*_mockEtcdClient, List(Eq(_config.etcdPrefix))).WillRepeatedly(Return(listRes));
+    EXPECT_CALL(*_mockEtcdClient, List(Eq(_config.etcdPrefix + "servers/metagame/"))).WillRepeatedly(Return(listRes));
 
     {
         InSequence seq;
@@ -213,7 +213,7 @@ TEST_F(Etcdv3ServiceDiscoveryTest, SynchronizesServersEveryInterval)
     LeaseRevokeResponse revokeRes;
     revokeRes.ok = true;
 
-    EXPECT_CALL(*_mockEtcdClient, List(Eq(_config.etcdPrefix)))
+    EXPECT_CALL(*_mockEtcdClient, List(Eq(_config.etcdPrefix + "servers/metagame/")))
         .Times(2)
         .WillOnce(Return(firstListRes))
         .WillOnce(Return(secondListRes));
@@ -310,7 +310,7 @@ TEST_F(Etcdv3ServiceDiscoveryTest, ListenersCanBeAddedAndRemoved)
     LeaseRevokeResponse revokeRes;
     revokeRes.ok = true;
 
-    EXPECT_CALL(*_mockEtcdClient, List(Eq(_config.etcdPrefix)))
+    EXPECT_CALL(*_mockEtcdClient, List(Eq(_config.etcdPrefix + "servers/metagame/")))
         .Times(2)
         .WillOnce(Return(firstListRes))
         .WillOnce(Return(secondListRes));
@@ -403,7 +403,7 @@ TEST_F(Etcdv3ServiceDiscoveryTest, ServerIsIgnoredInSyncServersIfGetFromEtcdFail
     LeaseRevokeResponse revokeRes;
     revokeRes.ok = true;
 
-    EXPECT_CALL(*_mockEtcdClient, List(Eq(_config.etcdPrefix))).WillOnce(Return(firstListRes));
+    EXPECT_CALL(*_mockEtcdClient, List(Eq(_config.etcdPrefix + "servers/metagame/"))).WillOnce(Return(firstListRes));
 
     auto leaseGrantRes = NewSuccessfullLeaseGrantResponse(129310);
     auto setRes = NewSuccessfullSetResponse();
@@ -480,7 +480,7 @@ TEST_F(Etcdv3ServiceDiscoveryTest, ServerIsIgnoredInSyncServersIfTheServerTypeIs
     LeaseRevokeResponse revokeRes;
     revokeRes.ok = true;
     
-    EXPECT_CALL(*_mockEtcdClient, List(Eq(_config.etcdPrefix))).WillOnce(Return(listRes));
+    EXPECT_CALL(*_mockEtcdClient, List(Eq(_config.etcdPrefix + "servers/metagame/"))).WillOnce(Return(listRes));
     
     auto leaseGrantRes = NewSuccessfullLeaseGrantResponse(129310);
     auto setRes = NewSuccessfullSetResponse();
@@ -562,7 +562,7 @@ TEST_F(Etcdv3ServiceDiscoveryTest, ReconnectsIfLosesConnectionToEtcd)
     LeaseRevokeResponse revokeRes;
     revokeRes.ok = true;
     
-    EXPECT_CALL(*_mockEtcdClient, List(Eq(_config.etcdPrefix))).WillRepeatedly(Return(listRes));
+    EXPECT_CALL(*_mockEtcdClient, List(Eq(_config.etcdPrefix + "servers/metagame/"))).WillRepeatedly(Return(listRes));
     
     {
         InSequence seq;
@@ -637,7 +637,7 @@ TEST_F(Etcdv3ServiceDiscoveryTest, SyncIsStillCalledAfterReconnection)
     {
         // Synchronization will be called by the worker even after reconnection
         InSequence seq;
-        EXPECT_CALL(*_mockEtcdClient, List(Eq(_config.etcdPrefix)))
+        EXPECT_CALL(*_mockEtcdClient, List(Eq(_config.etcdPrefix + "servers/metagame/")))
         .WillOnce(Return(listRes)) // First time is called in the initial connection
         .WillOnce(Return(listRes)) // Second time is called after 1 second
         .WillOnce(Return(listRes)) // Third time is called right after reconnection

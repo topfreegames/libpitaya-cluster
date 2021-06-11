@@ -14,6 +14,7 @@ struct NatsConfig
     std::chrono::milliseconds connectionTimeout;
     std::chrono::milliseconds requestTimeout;
     std::chrono::milliseconds serverShutdownDeadline;
+    int reconnectWait;
     int serverMaxNumberOfRpcs;
     int maxReconnectionAttempts;
     int maxPendingMsgs;
@@ -39,7 +40,8 @@ struct NatsConfig
         , requestTimeout(0)
         , serverShutdownDeadline(2000)
         , serverMaxNumberOfRpcs(500)
-        , maxReconnectionAttempts(3)
+        , maxReconnectionAttempts(30)
+        , reconnectWait(2000)
         , maxPendingMsgs(100)
     {}
 };
