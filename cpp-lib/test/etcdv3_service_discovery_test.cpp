@@ -655,7 +655,6 @@ TEST_F(Etcdv3ServiceDiscoveryTest, SyncIsStillCalledAfterReconnection)
     }
     
     std::function<void(EtcdLeaseKeepAliveStatus)> onLeaseKeepAliveExit;
-    
     {
         InSequence seq;
         EXPECT_CALL(*_mockEtcdClient, LeaseKeepAlive(Eq(firstLeaseGrantRes.leaseId), _))
@@ -700,4 +699,71 @@ TEST_F(Etcdv3ServiceDiscoveryTest, SyncIsStillCalledAfterReconnection)
     onLeaseKeepAliveExit(EtcdLeaseKeepAliveStatus::Fail);
     
     std::this_thread::sleep_for(std::chrono::milliseconds(4100)); // Sleeping a little more than 4 seconds should call List five times
+}
+
+TEST_F(Etcdv3ServiceDiscoveryTest, FailsAfterMaxRetrieUsingExponentialBackoff)
+{
+    // lease response with failure
+    LeaseGrantResponse failedLeaseGrantRes;
+    failedLeaseGrantRes.ok = false;
+
+    // First lease grant will succeed but the second will fail.
+    auto firstLeaseGrantRes = NewSuccessfullLeaseGrantResponse(712381283);
+    auto setRes = NewSuccessfullSetResponse();
+
+    ListResponse listRes;
+    listRes.ok = true;
+
+    {
+        InSequence seq;
+        EXPECT_CALL(*_mockEtcdClient, List(Eq(_config.etcdPrefix + "servers/metagame/")))
+        .WillOnce(Return(listRes)); // First time is called in the initial connection
+    }
+
+    {
+        InSequence seq;
+        EXPECT_CALL(*_mockEtcdClient, LeaseGrant(Eq(_config.heartbeatTTLSec)))
+        .WillOnce(Return(firstLeaseGrantRes));
+        EXPECT_CALL(*_mockEtcdClient, Set(_, _, Eq(firstLeaseGrantRes.leaseId)))
+        .WillOnce(Return(setRes));
+    }
+
+    std::function<void(EtcdLeaseKeepAliveStatus)> onLeaseKeepAliveExit;
+    {
+        InSequence seq;
+        EXPECT_CALL(*_mockEtcdClient, LeaseKeepAlive(Eq(firstLeaseGrantRes.leaseId), _))
+        .WillOnce(SaveFunction<1>(&onLeaseKeepAliveExit));
+        EXPECT_CALL(*_mockEtcdClient, CancelWatch());
+        EXPECT_CALL(*_mockEtcdClient, StopLeaseKeepAlive());
+    }
+
+    {
+        // These are called after the disconnection
+        InSequence seq;
+        EXPECT_CALL(*_mockEtcdClient, StopLeaseKeepAlive());
+        // fails two times to grant lease
+        EXPECT_CALL(*_mockEtcdClient, LeaseGrant(Eq(_config.heartbeatTTLSec)))
+        .WillOnce(Return(failedLeaseGrantRes))
+        .WillOnce(Return(failedLeaseGrantRes));
+    }
+
+    _config.syncServersIntervalSec = std::chrono::seconds(1);
+    _config.retryDelayMilliseconds = 500; // set retry delay (in milliseconds)
+    _config.maxNumberOfRetries = 5;
+    auto serviceDiscovery = CreateServiceDiscovery();
+    ASSERT_NE(_mockEtcdClient->onWatch, nullptr);
+
+    onLeaseKeepAliveExit(EtcdLeaseKeepAliveStatus::Fail);
+    std::this_thread::sleep_for(std::chrono::milliseconds(1100)); // Sleeping 1 second should retry 2 times.
+
+    // after two retries, make it works.
+    auto secondLeaseGrantRes = NewSuccessfullLeaseGrantResponse(10101010);
+    {
+        EXPECT_CALL(*_mockEtcdClient, LeaseGrant(Eq(_config.heartbeatTTLSec)))
+        .WillOnce(Return(secondLeaseGrantRes));
+        EXPECT_CALL(*_mockEtcdClient, Set(_, _, Eq(secondLeaseGrantRes.leaseId)))
+        .WillOnce(Return(setRes));
+        EXPECT_CALL(*_mockEtcdClient, LeaseKeepAlive(Eq(secondLeaseGrantRes.leaseId), _))
+        .WillOnce(SaveFunction<1>(&onLeaseKeepAliveExit));
+    }
 }

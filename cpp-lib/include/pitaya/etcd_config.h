@@ -16,11 +16,13 @@ struct EtcdServiceDiscoveryConfig
     bool logServerSync;
     bool logServerDetails;
     std::chrono::seconds syncServersIntervalSec;
-    // TODO, FIXME(leo): Currently there is no exponential backoff for this parameter.
     int32_t maxNumberOfRetries;
     // List of server types to filter. This filter will be added on top
     // of the etcdPrefix.
     std::vector<std::string> serverTypeFilters;
+    // Delay used on the exponential backoff retry (given in
+    // milliseconds).
+    int32_t retryDelayMilliseconds;
 
     EtcdServiceDiscoveryConfig()
         : heartbeatTTLSec(std::chrono::seconds(60))
@@ -29,6 +31,7 @@ struct EtcdServiceDiscoveryConfig
         , logServerDetails(false)
         , syncServersIntervalSec(std::chrono::seconds(60))
         , maxNumberOfRetries(10)
+        , retryDelayMilliseconds(100)
     {}
 };
 

@@ -29,7 +29,8 @@ namespace PitayaCSharpExample
         logServerSync: true,
         logServerDetails: true,
         syncServersIntervalSec: 30,
-        maxNumberOfRetries: 0);
+        maxNumberOfRetries: 0,
+        retryDelayMilliseconds: 0);
 
       var sv = new Server(
           id: serverId,

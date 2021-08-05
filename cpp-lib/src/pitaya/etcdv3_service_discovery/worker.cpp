@@ -216,8 +216,13 @@ Worker::StartThread()
                 _syncServersTicker.Stop();
 
                 while (_numKeepAliveRetriesLeft > 0) {
+                    auto delay_milliseconds = _config.retryDelayMilliseconds << ((_config.maxNumberOfRetries - _numKeepAliveRetriesLeft) - 1);
+                    _log->info("delaying retry by {}ms", delay_milliseconds);
+                    std::this_thread::sleep_for(std::chrono::milliseconds(delay_milliseconds));
+
                     --_numKeepAliveRetriesLeft;
                     auto ok = Bootstrap();
+
                     if (ok) {
                         _log->info("Etcd reconnection successful");
                         // FIXME(leo): Do not reset the number of keep alive retries yet,
