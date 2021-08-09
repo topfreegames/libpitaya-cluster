@@ -143,6 +143,7 @@ CSDConfig::TryGetConfig(pitaya::EtcdServiceDiscoveryConfig& config)
     config.logServerDetails = logServerDetails;
     config.syncServersIntervalSec = std::chrono::seconds(syncServersIntervalSec);
     config.maxNumberOfRetries = maxNumberOfRetries;
+    config.retryDelayMilliseconds = retryDelayMilliseconds;
     return ParseServerTypeFilters(config.serverTypeFilters, this->serverTypeFilters);
 }
 

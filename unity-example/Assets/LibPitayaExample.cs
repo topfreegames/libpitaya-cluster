@@ -38,7 +38,8 @@ public class LibPitayaExample : MonoBehaviour {
 		    logServerSync: true,
 		    logServerDetails: false,
 		    syncServersIntervalSec: 60,
-		    maxNumberOfRetries: 10);
+		    maxNumberOfRetries: 10,
+		    retryDelayMilliseconds: 100);
 
         var grpcConfig = new GrpcConfig(
             host: "127.0.0.1",

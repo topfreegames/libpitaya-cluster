@@ -70,9 +70,10 @@ namespace NPitaya
         public int logServerDetails;
         public int syncServersIntervalSec;
         public int maxNumberOfRetries;
+        public int retryDelayMilliseconds;
 
         public SDConfig(string endpoints, string etcdPrefix, List<string> serverTypeFilters, int heartbeatTTLSec, bool logHeartbeat,
-            bool logServerSync, bool logServerDetails, int syncServersIntervalSec, int maxNumberOfRetries)
+            bool logServerSync, bool logServerDetails, int syncServersIntervalSec, int maxNumberOfRetries, int retryDelayMilliseconds)
         {
             this.endpoints = endpoints;
             this.etcdPrefix = etcdPrefix;
@@ -82,6 +83,7 @@ namespace NPitaya
             this.logServerDetails = Convert.ToInt32(logServerDetails);
             this.syncServersIntervalSec = syncServersIntervalSec;
             this.maxNumberOfRetries = maxNumberOfRetries;
+            this.retryDelayMilliseconds = retryDelayMilliseconds;
             try
             {
                 serverTypeFiltersStr = SimpleJson.SerializeObject(serverTypeFilters);
