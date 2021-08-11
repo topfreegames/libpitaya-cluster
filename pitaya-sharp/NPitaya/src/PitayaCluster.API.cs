@@ -329,6 +329,14 @@ namespace NPitaya
 
                     if (!ok) // error
                     {
+                        if (retError.code == "PIT-504") 
+                        {
+                            throw new PitayaTimeoutException($"Timeout on RPC call: ({retError.code}: {retError.msg})");
+                        }
+                        if (retError.code == "PIT-404") 
+                        {
+                            throw new PitayaRouteNotFoundException($"Route not found on RPC call: ({retError.code}: {retError.msg})");
+                        }
                         throw new PitayaException($"RPC call failed: ({retError.code}: {retError.msg})");
                     }
 

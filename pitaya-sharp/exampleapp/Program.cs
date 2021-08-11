@@ -124,6 +124,14 @@ namespace PitayaCSharpExample
             Console.WriteLine($"Code: {res.Code}");
             Console.WriteLine($"Msg: {res.Msg}");
         }
+        catch (PitayaTimeoutException e)
+        {
+            Logger.Error("Timeout when sending RPC Call: {0}", e.Message);
+        }
+        catch (PitayaRouteNotFoundException e)
+        {
+            Logger.Error("Route not found when sending RPC Call: {0}", e.Message);
+        }
         catch (PitayaException e)
         {
             Logger.Error("Error sending RPC Call: {0}", e.Message);

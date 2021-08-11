@@ -32,7 +32,7 @@ clean-mac-debug:
 clean-all: clean-mac-debug clean-mac-release clean-mac-unity clean-xcode clean-linux-release
 
 generate-xcode:
-	@conan install . -if _builds/xcode
+	@conan install -if _builds/xcode . --build=missing
 	@cmake -H. -B_builds/xcode -GXcode -DBUILD_TESTING=ON -DBUILD_SHARED_LIBS=OFF
 
 build-linux-release:

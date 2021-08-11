@@ -6,7 +6,7 @@ A library that allows you to to create Pitaya servers in C++.
 With xcode and xcode-select properly installed (`xcode-select --install`) run:
 
 ```
-git submodules update --init --recursive
+git submodule update --init --recursive
 brew install cmake
 brew install ninja
 pip3 install conan

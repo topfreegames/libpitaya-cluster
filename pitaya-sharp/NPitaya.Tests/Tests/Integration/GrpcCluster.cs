@@ -27,7 +27,8 @@ namespace NPitayaTest.Tests.Integration
                 logServerSync: false,
                 logServerDetails: false,
                 syncServersIntervalSec: 10,
-                maxNumberOfRetries: 0
+                maxNumberOfRetries: 0,
+                retryDelayMilliseconds: 0
             );
 
             var server = new Server(
@@ -69,7 +70,8 @@ namespace NPitayaTest.Tests.Integration
                 logServerSync: false,
                 logServerDetails: false,
                 syncServersIntervalSec: 10,
-                maxNumberOfRetries: 0
+                maxNumberOfRetries: 0,
+                retryDelayMilliseconds: 0
             );
 
             var server = new Server(

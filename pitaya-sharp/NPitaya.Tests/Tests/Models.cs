@@ -20,6 +20,11 @@ namespace NPitayaTest.Tests
             }
             return res && Arg3.Equals(otherT.Arg3);
         }
+
+        public override int GetHashCode()
+        {
+            return base.GetHashCode();
+        }
     }
 
     [DataContract]
@@ -33,6 +38,11 @@ namespace NPitayaTest.Tests
             if (other == null || other.GetType() != typeof(TestClass2)) return false;
             var otherT = (TestClass2) other;
             return (Arg3.Equals(otherT.Arg3) && Arg4 == otherT.Arg4);
+        }
+
+        public override int GetHashCode()
+        {
+            return System.HashCode.Combine(Arg3, Arg4);
         }
     }
 }
