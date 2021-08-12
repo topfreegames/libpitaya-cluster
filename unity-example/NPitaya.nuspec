@@ -2,13 +2,12 @@
 <package>
   <metadata>
     <id>NPitaya</id>
-    <version>0.11.2-alpha.1</version>
-    <authors>leonardohahn,felipejfc</authors>
-    <owners>TFG</owners>
+    <version>0.12.0</version>
+    <authors>TFG Co</authors>
+    <owners>TFG Co</owners>
     <projectUrl>https://github.com/topfreegames/libpitaya-cluster</projectUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>C# binding to the pitaya-cpp library</description>
-    <releaseNotes>Fix non-stop reconnections with etcd</releaseNotes>
     <copyright>Copyright TFG co</copyright>
     <tags>pitaya server grpc nats</tags>
     <dependencies>
