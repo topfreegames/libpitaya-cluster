@@ -51,6 +51,7 @@ namespace ExampleORM
                 Environment.Exit(1);
             });
 
+            PitayaCluster.RegisterHandler(new UserHandler());
             PitayaCluster.SetSerializer(new JSONSerializer()); // Using json serializer for easier interop with pitaya-cli
 
             try

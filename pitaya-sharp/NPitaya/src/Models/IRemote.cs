@@ -3,7 +3,7 @@ using NPitaya;
 
 namespace NPitaya.Models
 {
-    public interface IRemote
+    public interface IBaseRemote
     {
         string GetName();
         Dictionary<string, RemoteMethod> GetRemotesMap();
