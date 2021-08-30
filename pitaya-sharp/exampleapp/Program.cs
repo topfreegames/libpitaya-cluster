@@ -110,6 +110,11 @@ namespace PitayaCSharpExample
 
       Logger.Info("pitaya lib initialized successfully :)");
 
+      var tr = new TestRemote();
+      PitayaCluster.RegisterRemote(tr);
+      var th = new TestHandler();
+      PitayaCluster.RegisterHandler(th);
+
       Thread.Sleep(1000);
 
       TrySendRpc();

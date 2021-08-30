@@ -5,11 +5,11 @@ namespace NPitaya.Models
 {
     public class RemoteMethod
     {
-        public readonly IRemote Obj;
+        public readonly IBaseRemote Obj;
         internal MethodBase Method { get; }
         internal Type ReturnType { get; }
         internal Type ArgType { get; }
-        public RemoteMethod(IRemote obj, MethodBase method, Type returnType, Type argType){
+        public RemoteMethod(IBaseRemote obj, MethodBase method, Type returnType, Type argType){
             Obj = obj;
             Method = method;
             ReturnType = returnType;

@@ -87,25 +87,8 @@ namespace NPitaya
             ListenToIncomingRPCs();
         }
 
-        private static List<Type> GetAllInheriting(Type type)
-        {
-            return AppDomain.CurrentDomain.GetAssemblies().SelectMany(x => x.GetTypes())
-                .Where(x => type.IsAssignableFrom(x) && !x.IsInterface && !x.IsAbstract && x.FullName != type.FullName)
-                .Select(x => x).ToList();
-        }
-
         private static void ListenToIncomingRPCs()
         {
-            var handlers = GetAllInheriting(typeof(BaseHandler));
-            foreach (var handler in handlers){
-                RegisterHandler((BaseHandler)Activator.CreateInstance(handler));
-            }
-
-            var remotes = GetAllInheriting(typeof(BaseRemote));
-            foreach (var remote in remotes){
-                RegisterRemote((BaseRemote)Activator.CreateInstance(remote));
-            }
-
             for (int i = 0; i < ProcessorsCount; i++)
             {
                 var threadId = i + 1;
@@ -152,13 +135,18 @@ namespace NPitaya
             ListenToIncomingRPCs();
         }
 
-        private static void RegisterRemote(BaseRemote remote)
+        public static void RegisterRemote(BaseRemote remote)
         {
             string className = DefaultRemoteNameFunc(remote.GetName());
             RegisterRemote(remote, className, DefaultRemoteNameFunc);
         }
 
-        private static void RegisterRemote(BaseRemote remote, string name, RemoteNameFunc remoteNameFunc) // TODO remote function name func
+        public static void RegisterRemote(BaseRemote remote, string name)
+        {
+            RegisterRemote(remote, name, DefaultRemoteNameFunc);
+        }
+
+        public static void RegisterRemote(BaseRemote remote, string name, RemoteNameFunc remoteNameFunc) // TODO remote function name func
         {
             Dictionary<string, RemoteMethod> m = remote.GetRemotesMap();
             foreach (KeyValuePair<string, RemoteMethod> kvp in m)
@@ -175,13 +163,17 @@ namespace NPitaya
             }
         }
 
-        private static void RegisterHandler(BaseHandler handler)
+        public static void RegisterHandler(BaseHandler handler)
         {
             string className = DefaultRemoteNameFunc(handler.GetName());
             RegisterHandler(handler, className, DefaultRemoteNameFunc);
         }
 
-        // TODO create method to override defaultRemoteNameFunc
+        public static void RegisterHandler(BaseHandler handler, string name)
+        {
+            RegisterHandler(handler, name, DefaultRemoteNameFunc);
+        }
+
         public static void RegisterHandler(BaseHandler handler, string name, RemoteNameFunc remoteNameFunc)
         {
             Dictionary<string, RemoteMethod> m = handler.GetRemotesMap();
@@ -329,11 +321,11 @@ namespace NPitaya
 
                     if (!ok) // error
                     {
-                        if (retError.code == "PIT-504") 
+                        if (retError.code == "PIT-504")
                         {
                             throw new PitayaTimeoutException($"Timeout on RPC call: ({retError.code}: {retError.msg})");
                         }
-                        if (retError.code == "PIT-404") 
+                        if (retError.code == "PIT-404")
                         {
                             throw new PitayaRouteNotFoundException($"Route not found on RPC call: ({retError.code}: {retError.msg})");
                         }
