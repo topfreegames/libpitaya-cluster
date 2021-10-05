@@ -283,7 +283,8 @@ extern "C"
                                   milliseconds(nc->serverShutdownDeadlineMs),
                                   nc->serverMaxNumberOfRpcs,
                                   nc->maxReconnectionAttempts,
-                                  nc->maxPendingMsgs);
+                                  nc->maxPendingMsgs,
+                                  nc->reconnectBufSize);
         Server server = CServerToServer(sv);
 
         EtcdServiceDiscoveryConfig serviceDiscoveryConfig;
