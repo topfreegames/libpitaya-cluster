@@ -18,6 +18,7 @@ struct NatsConfig
     int serverMaxNumberOfRpcs;
     int maxReconnectionAttempts;
     int maxPendingMsgs;
+    int reconnectBufSize;
 
     NatsConfig(const std::string& addr,
                std::chrono::milliseconds requestTimeout,
@@ -25,7 +26,8 @@ struct NatsConfig
                std::chrono::milliseconds serverShutdownDeadline,
                int serverMaxNumberOfRpcs,
                int maxReconnectionAttempts,
-               int maxPendingMsgs)
+               int maxPendingMsgs,
+               int reconnectBufSize)
         : natsAddr(addr)
         , connectionTimeout(connectionTimeout)
         , requestTimeout(requestTimeout)
@@ -33,6 +35,7 @@ struct NatsConfig
         , serverMaxNumberOfRpcs(serverMaxNumberOfRpcs)
         , maxReconnectionAttempts(maxReconnectionAttempts)
         , maxPendingMsgs(maxPendingMsgs)
+        , reconnectBufSize(reconnectBufSize)
     {}
 
     NatsConfig()
@@ -43,6 +46,7 @@ struct NatsConfig
         , maxReconnectionAttempts(30)
         , reconnectWait(2000)
         , maxPendingMsgs(100)
+        , reconnectBufSize(4*1024*1024) // 4mb
     {}
 };
 

@@ -19,7 +19,8 @@ namespace NPitayaTest.Tests.Integration
                 serverShutdownDeadlineMs: 10 * 1000,
                 serverMaxNumberOfRpcs: int.MaxValue,
                 maxConnectionRetries: 3,
-                maxPendingMessages: 100);
+                maxPendingMessages: 100,
+                reconnectBufSize: 4 * 1024 * 1024);
 
             var sdCfg = new SDConfig(
                 endpoints: "127.0.0.1:123123123",
@@ -63,7 +64,8 @@ namespace NPitayaTest.Tests.Integration
                 serverShutdownDeadlineMs: 10 * 1000,
                 serverMaxNumberOfRpcs: int.MaxValue,
                 maxConnectionRetries: 3,
-                maxPendingMessages: 100);
+                maxPendingMessages: 100,
+                reconnectBufSize: 4 * 1024 * 1024);
 
             var sdCfg = new SDConfig(
                 endpoints: "http://127.0.0.1:2379",

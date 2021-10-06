@@ -46,7 +46,8 @@ namespace PitayaCSharpExample
           serverShutdownDeadlineMs: 3,
           serverMaxNumberOfRpcs: 100,
           maxConnectionRetries: 3,
-          maxPendingMessages: 1000);
+          maxPendingMessages: 1000,
+          reconnectBufSize: 4 * 1024 * 1024);
 
       var grpcConfig = new GrpcConfig(
         host: "127.0.0.1",

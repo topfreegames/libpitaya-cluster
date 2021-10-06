@@ -63,7 +63,8 @@ public class LibPitayaExample : MonoBehaviour {
 		    serverShutdownDeadlineMs: 4000,
 		    serverMaxNumberOfRpcs: 1000,
 		    maxConnectionRetries: 10,
-		    maxPendingMessages: 100);
+		    maxPendingMessages: 100,
+          	reconnectBufSize: 4 * 1024 * 1024);
 
 	    Debug.Log("Adding signal handler");
 	    Debug.Log("Adding signal handler DONE");

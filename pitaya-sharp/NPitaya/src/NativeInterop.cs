@@ -191,6 +191,7 @@ namespace NPitaya
         public int serverMaxNumberOfRpcs;
         public int maxConnectionRetries;
         public int maxPendingMessages;
+        public int reconnectBufSize;
 
         public NatsConfig(string endpoint,
                           int connectionTimeoutMs,
@@ -198,7 +199,8 @@ namespace NPitaya
                           int serverShutdownDeadlineMs,
                           int serverMaxNumberOfRpcs,
                           int maxConnectionRetries,
-                          int maxPendingMessages)
+                          int maxPendingMessages,
+                          int reconnectBufSize)
         {
             this.endpoint = endpoint;
             this.connectionTimeoutMs = connectionTimeoutMs;
@@ -207,6 +209,7 @@ namespace NPitaya
             this.serverMaxNumberOfRpcs = serverMaxNumberOfRpcs;
             this.maxConnectionRetries = maxConnectionRetries;
             this.maxPendingMessages = maxPendingMessages;
+            this.reconnectBufSize = reconnectBufSize;
         }
     }
 }
