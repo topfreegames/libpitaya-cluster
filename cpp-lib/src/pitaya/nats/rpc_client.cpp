@@ -53,18 +53,20 @@ NatsRpcClient::Call(const pitaya::Server& target, const protos::Request& req)
     req.SerializeToArray(buffer.data(), buffer.size());
 
     std::shared_ptr<NatsMsg> reply;
-    NatsStatus status = _natsClient->Request(&reply, topic, buffer, _requestTimeout);
+    natsStatus status = _natsClient->Request(&reply, topic, buffer, _requestTimeout);
 
     protos::Response res;
 
-    if (status != NatsStatus::Ok) {
+    if (status != NATS_OK) {
         auto err = new protos::Error();
-        if (status == NatsStatus::Timeout) {
+        if (status == NATS_TIMEOUT) {
             err->set_code(constants::kCodeTimeout);
             err->set_msg("nats timeout");
         } else {
             err->set_code(constants::kCodeInternalError);
-            err->set_msg("nats error");
+            std::string err_str("nats error - ");
+            err_str.append(natsStatus_GetText(status));
+            err->set_msg(err_str);
         }
         res.set_allocated_error(err);
     } else {
@@ -97,15 +99,17 @@ NatsRpcClient::SendKickToUser(const std::string& serverId,
     kick.SerializeToArray(buffer.data(), buffer.size());
 
     std::shared_ptr<NatsMsg> reply;
-    NatsStatus status = _natsClient->Request(&reply, topic, buffer, _requestTimeout);
+    natsStatus status = _natsClient->Request(&reply, topic, buffer, _requestTimeout);
 
     optional<PitayaError> error;
 
-    if (status != NatsStatus::Ok) {
-        if (status == NatsStatus::Timeout) {
+    if (status != NATS_OK) {
+        if (status == NATS_TIMEOUT) {
             error = PitayaError(constants::kCodeTimeout, "nats timeout");
         } else {
-            error = PitayaError(constants::kCodeInternalError, "nats error");
+            std::string err_str("nats error - ");
+            err_str.append(natsStatus_GetText(status));
+            error = PitayaError(constants::kCodeInternalError, err_str);
         }
     } else {
         error = boost::none;
@@ -137,15 +141,17 @@ NatsRpcClient::SendPushToUser(const std::string& serverId,
     push.SerializeToArray(buffer.data(), buffer.size());
 
     std::shared_ptr<NatsMsg> reply;
-    NatsStatus status = _natsClient->Request(&reply, topic, buffer, _requestTimeout);
+    natsStatus status = _natsClient->Request(&reply, topic, buffer, _requestTimeout);
 
     optional<PitayaError> error;
 
-    if (status != NatsStatus::Ok) {
-        if (status == NatsStatus::Timeout) {
+    if (status != NATS_OK) {
+        if (status == NATS_TIMEOUT) {
             error = PitayaError(constants::kCodeTimeout, "nats timeout");
         } else {
-            error = PitayaError(constants::kCodeInternalError, "nats error");
+            std::string err_str("nats error - ");
+            err_str.append(natsStatus_GetText(status));
+            error = PitayaError(constants::kCodeInternalError, err_str);
         }
     } else {
         error = boost::none;

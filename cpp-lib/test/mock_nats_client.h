@@ -9,17 +9,17 @@ class MockNatsClient : public pitaya::NatsClient
 {
 public:
     MOCK_METHOD4(Request,
-                 pitaya::NatsStatus(std::shared_ptr<pitaya::NatsMsg>* natsMsg,
+                 natsStatus(std::shared_ptr<pitaya::NatsMsg>* natsMsg,
                                     const std::string& topic,
                                     const std::vector<uint8_t>& data,
                                     std::chrono::milliseconds timeout));
 
     MOCK_METHOD2(
         Subscribe,
-        pitaya::NatsStatus(const std::string& topic,
+        natsStatus(const std::string& topic,
                            std::function<void(std::shared_ptr<pitaya::NatsMsg>)> onMessage));
 
-    MOCK_METHOD2(Publish, pitaya::NatsStatus(const char* reply, const std::vector<uint8_t>& buf));
+    MOCK_METHOD2(Publish, natsStatus(const char* reply, const std::vector<uint8_t>& buf));
 };
 
 class MockNatsMsg : public pitaya::NatsMsg

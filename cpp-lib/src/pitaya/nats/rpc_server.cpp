@@ -62,8 +62,8 @@ struct NatsRpcServer::CallData : public pitaya::Rpc
                 std::vector<uint8_t> buf(res.ByteSizeLong());
                 res.SerializeToArray(buf.data(), buf.size());
 
-                NatsStatus status = natsClient->Publish(msg->GetReply(), std::move(buf));
-                if (status != NatsStatus::Ok) {
+                natsStatus status = natsClient->Publish(msg->GetReply(), std::move(buf));
+                if (status != NATS_OK) {
                     log->error("Failed to publish RPC response");
                 }
 
@@ -113,10 +113,10 @@ NatsRpcServer::Start(RpcHandlerFunc handler)
     _handlerFunc = handler;
 
     auto topic = utils::GetTopicForServer(_server.Id(), _server.Type());
-    NatsStatus status =
+    natsStatus status =
         _natsClient->Subscribe(topic, std::bind(&NatsRpcServer::OnNewMessage, this, _1));
 
-    if (status != NatsStatus::Ok) {
+    if (status != NATS_OK) {
         throw PitayaException(
             fmt::format("Failed to create a new subscription at topic {}", topic));
     }
@@ -208,8 +208,8 @@ NatsRpcServer::OnNewMessage(std::shared_ptr<NatsMsg> msg)
         std::vector<uint8_t> buf(res.ByteSizeLong());
         res.SerializeToArray(buf.data(), buf.size());
 
-        NatsStatus status = _natsClient->Publish(msg->GetReply(), std::move(buf));
-        if (status != NatsStatus::Ok) {
+        natsStatus status = _natsClient->Publish(msg->GetReply(), std::move(buf));
+        if (status != NATS_OK) {
             _log->error("Failed to publish RPC response");
         }
     }
@@ -220,8 +220,8 @@ NatsRpcServer::OnRpcFinished(const char* reply,
                              std::vector<uint8_t> responseBuf,
                              CallData* callData)
 {
-    NatsStatus status = _natsClient->Publish(reply, std::move(responseBuf));
-    if (status != NatsStatus::Ok) {
+    natsStatus status = _natsClient->Publish(reply, std::move(responseBuf));
+    if (status != NATS_OK) {
         _log->error("Failed to publish RPC response");
     }
 
