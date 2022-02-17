@@ -44,7 +44,7 @@ TEST_F(NatsRpcServerTest, CanBeStartedAndStopped)
     auto mockClient = new MockNatsClient();
 
     EXPECT_CALL(*mockClient, Subscribe(_, _))
-        .WillOnce(Return(NatsStatus::Ok)); // mock of valid pointer
+        .WillOnce(Return(NATS_OK)); // mock of valid pointer
 
     auto server = CreateServer(mockClient);
     bool called = false;
@@ -62,7 +62,7 @@ TEST_F(NatsRpcServerTest, StartThrowsExceptionIfItFails)
     auto mockClient = new MockNatsClient();
 
     EXPECT_CALL(*mockClient, Subscribe(_, _))
-        .WillOnce(Return(NatsStatus::SubscriptionErr)); // mock of valid pointer
+        .WillOnce(Return(NATS_INVALID_SUBSCRIPTION)); // mock of valid pointer
 
     auto server = CreateServer(mockClient);
     EXPECT_THROW(
@@ -111,13 +111,13 @@ TEST_F(NatsRpcServerTest, CanHandleRpcs)
     {
         EXPECT_CALL(*mockClient, Subscribe(_, _))
             .WillOnce(DoAll(ExecuteCallback<1>(std::shared_ptr<NatsMsg>(mockNatsMsg)),
-                            Return(NatsStatus::Ok)));
+                            Return(NATS_OK)));
 
         std::vector<uint8_t> serverResponseBuf(serverResponse.ByteSizeLong());
         serverResponse.SerializeToArray(serverResponseBuf.data(), serverResponseBuf.size());
 
         EXPECT_CALL(*mockClient, Publish("my.reply.server", serverResponseBuf))
-            .WillOnce(Return(NatsStatus::Ok));
+            .WillOnce(Return(NATS_OK));
     }
 
     auto server = CreateServer(mockClient);
@@ -172,13 +172,13 @@ TEST_F(NatsRpcServerTest, HasGracefulShutdown)
     {
         EXPECT_CALL(*mockClient, Subscribe(_, _))
             .WillOnce(DoAll(ExecuteCallback<1>(std::shared_ptr<NatsMsg>(mockNatsMsg)),
-                            Return(NatsStatus::Ok)));
+                            Return(NATS_OK)));
 
         std::vector<uint8_t> serverResponseBuf(serverResponse.ByteSizeLong());
         serverResponse.SerializeToArray(serverResponseBuf.data(), serverResponseBuf.size());
 
         EXPECT_CALL(*mockClient, Publish("my.reply.server", serverResponseBuf))
-            .WillOnce(Return(NatsStatus::Ok));
+            .WillOnce(Return(NATS_OK));
     }
 
     auto server = CreateServer(mockClient);

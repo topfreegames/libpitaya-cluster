@@ -38,7 +38,7 @@ TEST_F(NatsRpcClientTest, CanSendRpcs)
     auto retMsg = std::shared_ptr<NatsMsg>(mockNatsMsg);
 
     EXPECT_CALL(*_mockNatsClient, Request(_, _, _, _))
-        .WillOnce(DoAll(SetArgPointee<0>(retMsg), Return(NatsStatus::Ok)));
+        .WillOnce(DoAll(SetArgPointee<0>(retMsg), Return(NATS_OK)));
 
     // A success response will be returned
     protos::Response natsResData;
@@ -67,7 +67,7 @@ TEST_F(NatsRpcClientTest, RpcsCanReturnError)
     auto retMsg = std::shared_ptr<NatsMsg>(mockNatsMsg);
 
     EXPECT_CALL(*_mockNatsClient, Request(_, _, _, _))
-        .WillOnce(DoAll(SetArgPointee<0>(retMsg), Return(NatsStatus::Ok)));
+        .WillOnce(DoAll(SetArgPointee<0>(retMsg), Return(NATS_OK)));
 
     auto error = new protos::Error();
     error->set_code("my-random-error-code");
@@ -101,7 +101,7 @@ TEST_F(NatsRpcClientTest, RpcsCanFail)
     auto retMsg = std::shared_ptr<NatsMsg>(mockNatsMsg);
 
     EXPECT_CALL(*_mockNatsClient, Request(_, _, _, _))
-        .WillOnce(DoAll(SetArgPointee<0>(retMsg), Return(NatsStatus::UnknownErr)));
+        .WillOnce(DoAll(SetArgPointee<0>(retMsg), Return(NATS_ERR)));
 
     auto target = pitaya::Server(pitaya::Server::Kind::Backend, "my-type", "my-id");
     protos::Request req;
@@ -109,14 +109,14 @@ TEST_F(NatsRpcClientTest, RpcsCanFail)
 
     ASSERT_TRUE(rpcRes.has_error());
     EXPECT_EQ(rpcRes.error().code(), constants::kCodeInternalError);
-    EXPECT_EQ(rpcRes.error().msg(), "nats error");
+    EXPECT_EQ(rpcRes.error().msg(), "nats error - Error");
 }
 
 TEST_F(NatsRpcClientTest, CanSendKicks)
 {
     using namespace pitaya;
 
-    EXPECT_CALL(*_mockNatsClient, Request(_, _, _, _)).WillOnce(Return(NatsStatus::Ok));
+    EXPECT_CALL(*_mockNatsClient, Request(_, _, _, _)).WillOnce(Return(NATS_OK));
 
     auto target = pitaya::Server(pitaya::Server::Kind::Backend, "my-type", "my-id");
 
@@ -131,7 +131,7 @@ TEST_F(NatsRpcClientTest, KicksCanFail)
 {
     using namespace pitaya;
 
-    EXPECT_CALL(*_mockNatsClient, Request(_, _, _, _)).WillOnce(Return(NatsStatus::UnknownErr));
+    EXPECT_CALL(*_mockNatsClient, Request(_, _, _, _)).WillOnce(Return(NATS_ERR));
 
     auto target = pitaya::Server(pitaya::Server::Kind::Backend, "my-type", "my-id");
 
@@ -141,14 +141,14 @@ TEST_F(NatsRpcClientTest, KicksCanFail)
     auto error = _rpcClient->SendKickToUser(target.Id(), target.Type(), kick);
     ASSERT_TRUE(error);
     ASSERT_EQ(error->code, constants::kCodeInternalError);
-    ASSERT_EQ(error->msg, "nats error");
+    ASSERT_EQ(error->msg, "nats error - Error");
 }
 
 TEST_F(NatsRpcClientTest, KicksCanFailWithTimeout)
 {
     using namespace pitaya;
 
-    EXPECT_CALL(*_mockNatsClient, Request(_, _, _, _)).WillOnce(Return(NatsStatus::Timeout));
+    EXPECT_CALL(*_mockNatsClient, Request(_, _, _, _)).WillOnce(Return(NATS_TIMEOUT));
 
     auto target = pitaya::Server(pitaya::Server::Kind::Backend, "my-type", "my-id");
 
@@ -174,7 +174,7 @@ TEST_F(NatsRpcClientTest, CanSendUserPushes)
     push.SerializeToArray(pushData.data(), pushData.size());
 
     EXPECT_CALL(*_mockNatsClient, Request(_, _, pushData, _config.requestTimeout))
-        .WillOnce(Return(NatsStatus::Ok));
+        .WillOnce(Return(NATS_OK));
 
     auto target = pitaya::Server(pitaya::Server::Kind::Frontend, "my-type", "my-id");
 
@@ -195,12 +195,12 @@ TEST_F(NatsRpcClientTest, UserPushesCanFail)
     push.SerializeToArray(pushData.data(), pushData.size());
 
     EXPECT_CALL(*_mockNatsClient, Request(_, _, pushData, _config.requestTimeout))
-        .WillOnce(Return(NatsStatus::UnknownErr));
+        .WillOnce(Return(NATS_ERR));
 
     auto target = pitaya::Server(pitaya::Server::Kind::Backend, "my-type", "my-id");
 
     auto error = _rpcClient->SendPushToUser(target.Id(), target.Type(), push);
     ASSERT_TRUE(error);
     EXPECT_EQ(error->code, constants::kCodeInternalError);
-    EXPECT_EQ(error->msg, "nats error");
+    EXPECT_EQ(error->msg, "nats error - Error");
 }

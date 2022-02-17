@@ -46,7 +46,7 @@ build-mac-release:
 	@cmake --build _builds/mac
 
 build-mac-debug:
-	@conan install . -if _builds/mac-debug
+	@conan install . -if _builds/mac-debug --build=missing
 	@cmake -H. -B_builds/mac-debug -GNinja -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTING=ON -DBUILD_SHARED_LIBS=OFF
 	@cmake --build _builds/mac-debug
 

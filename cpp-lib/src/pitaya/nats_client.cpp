@@ -119,7 +119,7 @@ NatsClientImpl::~NatsClientImpl()
     natsOptions_Destroy(_opts);
 }
 
-NatsStatus
+natsStatus
 NatsClientImpl::Request(std::shared_ptr<NatsMsg>* msg,
                         const std::string& topic,
                         const std::vector<uint8_t>& data,
@@ -131,17 +131,17 @@ NatsClientImpl::Request(std::shared_ptr<NatsMsg>* msg,
 
     if (status == NATS_OK) {
         *msg = std::shared_ptr<NatsMsg>(new NatsMsgImpl(reply));
-        return NatsStatus::Ok;
+        return status;
     }
 
     if (status == NATS_TIMEOUT) {
-        return NatsStatus::Timeout;
+        return status;
     } else {
-        return NatsStatus::UnknownErr;
+        return status;
     }
 }
 
-NatsStatus
+natsStatus
 NatsClientImpl::Subscribe(const std::string& topic,
                           std::function<void(std::shared_ptr<NatsMsg>)> onMessage)
 {
@@ -150,25 +150,25 @@ NatsClientImpl::Subscribe(const std::string& topic,
     natsStatus status = natsConnection_Subscribe(&_sub, _conn, topic.c_str(), HandleMsg, this);
     if (status != NATS_OK) {
         _log->error("Failed to subscribe");
-        return NatsStatus::SubscriptionErr;
+        return status;
     }
-    return NatsStatus::Ok;
+    return status;
 }
 
-NatsStatus
+natsStatus
 NatsClientImpl::Publish(const char* reply, const std::vector<uint8_t>& buf)
 {
     natsStatus status = natsConnection_Publish(_conn, reply, buf.data(), buf.size());
 
     if (status != NATS_OK) {
         if (status == NATS_TIMEOUT) {
-            return NatsStatus::Timeout;
+            return status;
         } else {
-            return NatsStatus::UnknownErr;
+            return status;
         }
     }
 
-    return NatsStatus::Ok;
+    return status;
 }
 
 void

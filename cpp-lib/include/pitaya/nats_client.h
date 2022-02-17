@@ -56,15 +56,15 @@ class NatsClient
 public:
     virtual ~NatsClient() = default;
 
-    virtual NatsStatus Request(std::shared_ptr<NatsMsg>* natsMsg,
+    virtual natsStatus Request(std::shared_ptr<NatsMsg>* natsMsg,
                                const std::string& topic,
                                const std::vector<uint8_t>& data,
                                std::chrono::milliseconds timeout) = 0;
 
-    virtual NatsStatus Subscribe(const std::string& topic,
+    virtual natsStatus Subscribe(const std::string& topic,
                                  std::function<void(std::shared_ptr<NatsMsg>)> onMessage) = 0;
 
-    virtual NatsStatus Publish(const char* reply, const std::vector<uint8_t>& buf) = 0;
+    virtual natsStatus Publish(const char* reply, const std::vector<uint8_t>& buf) = 0;
 };
 
 class NatsClientImpl : public NatsClient
@@ -73,15 +73,15 @@ public:
     NatsClientImpl(NatsApiType apiType, const NatsConfig& opts, const char* loggerName = nullptr);
     ~NatsClientImpl();
 
-    NatsStatus Request(std::shared_ptr<NatsMsg>* natsMsg,
+    natsStatus Request(std::shared_ptr<NatsMsg>* natsMsg,
                        const std::string& topic,
                        const std::vector<uint8_t>& data,
                        std::chrono::milliseconds timeout) override;
 
-    NatsStatus Subscribe(const std::string& topic,
+    natsStatus Subscribe(const std::string& topic,
                          std::function<void(std::shared_ptr<NatsMsg>)> onMessage) override;
 
-    NatsStatus Publish(const char* reply, const std::vector<uint8_t>& buf) override;
+    natsStatus Publish(const char* reply, const std::vector<uint8_t>& buf) override;
 
 private:
     static void DisconnectedCb(natsConnection* nc, void* user);
