@@ -30,26 +30,26 @@ static const char* Pitaya_method_names[] = {
 
 std::unique_ptr< Pitaya::Stub> Pitaya::NewStub(const std::shared_ptr< ::grpc::ChannelInterface>& channel, const ::grpc::StubOptions& options) {
   (void)options;
-  std::unique_ptr< Pitaya::Stub> stub(new Pitaya::Stub(channel));
+  std::unique_ptr< Pitaya::Stub> stub(new Pitaya::Stub(channel, options));
   return stub;
 }
 
-Pitaya::Stub::Stub(const std::shared_ptr< ::grpc::ChannelInterface>& channel)
-  : channel_(channel), rpcmethod_Call_(Pitaya_method_names[0], ::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_PushToUser_(Pitaya_method_names[1], ::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_SessionBindRemote_(Pitaya_method_names[2], ::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_KickUser_(Pitaya_method_names[3], ::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+Pitaya::Stub::Stub(const std::shared_ptr< ::grpc::ChannelInterface>& channel, const ::grpc::StubOptions& options)
+  : channel_(channel), rpcmethod_Call_(Pitaya_method_names[0], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_PushToUser_(Pitaya_method_names[1], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_SessionBindRemote_(Pitaya_method_names[2], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_KickUser_(Pitaya_method_names[3], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
   {}
 
 ::grpc::Status Pitaya::Stub::Call(::grpc::ClientContext* context, const ::protos::Request& request, ::protos::Response* response) {
   return ::grpc::internal::BlockingUnaryCall< ::protos::Request, ::protos::Response, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_Call_, context, request, response);
 }
 
-void Pitaya::Stub::experimental_async::Call(::grpc::ClientContext* context, const ::protos::Request* request, ::protos::Response* response, std::function<void(::grpc::Status)> f) {
+void Pitaya::Stub::async::Call(::grpc::ClientContext* context, const ::protos::Request* request, ::protos::Response* response, std::function<void(::grpc::Status)> f) {
   ::grpc::internal::CallbackUnaryCall< ::protos::Request, ::protos::Response, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_Call_, context, request, response, std::move(f));
 }
 
-void Pitaya::Stub::experimental_async::Call(::grpc::ClientContext* context, const ::protos::Request* request, ::protos::Response* response, ::grpc::experimental::ClientUnaryReactor* reactor) {
+void Pitaya::Stub::async::Call(::grpc::ClientContext* context, const ::protos::Request* request, ::protos::Response* response, ::grpc::ClientUnaryReactor* reactor) {
   ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_Call_, context, request, response, reactor);
 }
 
@@ -68,11 +68,11 @@ void Pitaya::Stub::experimental_async::Call(::grpc::ClientContext* context, cons
   return ::grpc::internal::BlockingUnaryCall< ::protos::Push, ::protos::Response, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_PushToUser_, context, request, response);
 }
 
-void Pitaya::Stub::experimental_async::PushToUser(::grpc::ClientContext* context, const ::protos::Push* request, ::protos::Response* response, std::function<void(::grpc::Status)> f) {
+void Pitaya::Stub::async::PushToUser(::grpc::ClientContext* context, const ::protos::Push* request, ::protos::Response* response, std::function<void(::grpc::Status)> f) {
   ::grpc::internal::CallbackUnaryCall< ::protos::Push, ::protos::Response, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_PushToUser_, context, request, response, std::move(f));
 }
 
-void Pitaya::Stub::experimental_async::PushToUser(::grpc::ClientContext* context, const ::protos::Push* request, ::protos::Response* response, ::grpc::experimental::ClientUnaryReactor* reactor) {
+void Pitaya::Stub::async::PushToUser(::grpc::ClientContext* context, const ::protos::Push* request, ::protos::Response* response, ::grpc::ClientUnaryReactor* reactor) {
   ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_PushToUser_, context, request, response, reactor);
 }
 
@@ -91,11 +91,11 @@ void Pitaya::Stub::experimental_async::PushToUser(::grpc::ClientContext* context
   return ::grpc::internal::BlockingUnaryCall< ::protos::BindMsg, ::protos::Response, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_SessionBindRemote_, context, request, response);
 }
 
-void Pitaya::Stub::experimental_async::SessionBindRemote(::grpc::ClientContext* context, const ::protos::BindMsg* request, ::protos::Response* response, std::function<void(::grpc::Status)> f) {
+void Pitaya::Stub::async::SessionBindRemote(::grpc::ClientContext* context, const ::protos::BindMsg* request, ::protos::Response* response, std::function<void(::grpc::Status)> f) {
   ::grpc::internal::CallbackUnaryCall< ::protos::BindMsg, ::protos::Response, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_SessionBindRemote_, context, request, response, std::move(f));
 }
 
-void Pitaya::Stub::experimental_async::SessionBindRemote(::grpc::ClientContext* context, const ::protos::BindMsg* request, ::protos::Response* response, ::grpc::experimental::ClientUnaryReactor* reactor) {
+void Pitaya::Stub::async::SessionBindRemote(::grpc::ClientContext* context, const ::protos::BindMsg* request, ::protos::Response* response, ::grpc::ClientUnaryReactor* reactor) {
   ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_SessionBindRemote_, context, request, response, reactor);
 }
 
@@ -114,11 +114,11 @@ void Pitaya::Stub::experimental_async::SessionBindRemote(::grpc::ClientContext* 
   return ::grpc::internal::BlockingUnaryCall< ::protos::KickMsg, ::protos::KickAnswer, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_KickUser_, context, request, response);
 }
 
-void Pitaya::Stub::experimental_async::KickUser(::grpc::ClientContext* context, const ::protos::KickMsg* request, ::protos::KickAnswer* response, std::function<void(::grpc::Status)> f) {
+void Pitaya::Stub::async::KickUser(::grpc::ClientContext* context, const ::protos::KickMsg* request, ::protos::KickAnswer* response, std::function<void(::grpc::Status)> f) {
   ::grpc::internal::CallbackUnaryCall< ::protos::KickMsg, ::protos::KickAnswer, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_KickUser_, context, request, response, std::move(f));
 }
 
-void Pitaya::Stub::experimental_async::KickUser(::grpc::ClientContext* context, const ::protos::KickMsg* request, ::protos::KickAnswer* response, ::grpc::experimental::ClientUnaryReactor* reactor) {
+void Pitaya::Stub::async::KickUser(::grpc::ClientContext* context, const ::protos::KickMsg* request, ::protos::KickAnswer* response, ::grpc::ClientUnaryReactor* reactor) {
   ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_KickUser_, context, request, response, reactor);
 }
 

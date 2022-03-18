@@ -81,7 +81,7 @@ else()
     set(CMAKE_FIND_LIBRARY_SUFFIXES ".a" ".lib" ".dylib" ".so" ".dll")
 endif()
 
-find_package(cpprestsdk REQUIRED)
+#find_package(cpprestsdk REQUIRED)
 find_package(Boost REQUIRED)
 
 add_library(${PROJECT_NAME}
@@ -96,12 +96,13 @@ target_include_directories(${PROJECT_NAME} PUBLIC "../include")
 
 target_link_libraries(${PROJECT_NAME}
   PUBLIC
-    cpprestsdk::cpprest
-    grpc++_unsecure
+    CONAN_PKG::protobuf
+    CONAN_PKG::grpc
+    CONAN_PKG::cpprestsdk
   PRIVATE
     #Boost::thread
     #Boost::system
-    libprotobuf)
+    CONAN_PKG::protobuf)
 
 install(TARGETS ${PROJECT_NAME} DESTINATION lib)
 

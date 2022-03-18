@@ -18,10 +18,9 @@
 PROTOBUF_PRAGMA_INIT_SEG
 namespace protos {
 }  // namespace protos
-static constexpr ::PROTOBUF_NAMESPACE_ID::Metadata* file_level_metadata_pitaya_2eproto = nullptr;
 static constexpr ::PROTOBUF_NAMESPACE_ID::EnumDescriptor const** file_level_enum_descriptors_pitaya_2eproto = nullptr;
 static constexpr ::PROTOBUF_NAMESPACE_ID::ServiceDescriptor const** file_level_service_descriptors_pitaya_2eproto = nullptr;
-const ::PROTOBUF_NAMESPACE_ID::uint32 TableStruct_pitaya_2eproto::offsets[1] = {};
+const uint32_t TableStruct_pitaya_2eproto::offsets[1] = {};
 static constexpr ::PROTOBUF_NAMESPACE_ID::internal::MigrationSchema* schemas = nullptr;
 static constexpr ::PROTOBUF_NAMESPACE_ID::Message* const* file_default_instances = nullptr;
 
@@ -33,8 +32,9 @@ const char descriptor_table_protodef_pitaya_2eproto[] PROTOBUF_SECTION_VARIABLE(
   "\014.protos.Push\032\020.protos.Response\"\000\0228\n\021Ses"
   "sionBindRemote\022\017.protos.BindMsg\032\020.protos"
   ".Response\"\000\0221\n\010KickUser\022\017.protos.KickMsg"
-  "\032\022.protos.KickAnswer\"\000B\021\252\002\016NPitaya.Proto"
-  "sb\006proto3"
+  "\032\022.protos.KickAnswer\"\000B<Z)github.com/top"
+  "freegames/pitaya/pkg/protos\252\002\016NPitaya.Pr"
+  "otosb\006proto3"
   ;
 static const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable*const descriptor_table_pitaya_2eproto_deps[5] = {
   &::descriptor_table_bind_2eproto,
@@ -45,15 +45,13 @@ static const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable*const descriptor
 };
 static ::PROTOBUF_NAMESPACE_ID::internal::once_flag descriptor_table_pitaya_2eproto_once;
 const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable descriptor_table_pitaya_2eproto = {
-  false, false, 329, descriptor_table_protodef_pitaya_2eproto, "pitaya.proto", 
+  false, false, 372, descriptor_table_protodef_pitaya_2eproto, "pitaya.proto", 
   &descriptor_table_pitaya_2eproto_once, descriptor_table_pitaya_2eproto_deps, 5, 0,
   schemas, file_default_instances, TableStruct_pitaya_2eproto::offsets,
-  file_level_metadata_pitaya_2eproto, file_level_enum_descriptors_pitaya_2eproto, file_level_service_descriptors_pitaya_2eproto,
+  nullptr, file_level_enum_descriptors_pitaya_2eproto, file_level_service_descriptors_pitaya_2eproto,
 };
-PROTOBUF_ATTRIBUTE_WEAK ::PROTOBUF_NAMESPACE_ID::Metadata
-descriptor_table_pitaya_2eproto_metadata_getter(int index) {
-  ::PROTOBUF_NAMESPACE_ID::internal::AssignDescriptors(&descriptor_table_pitaya_2eproto);
-  return descriptor_table_pitaya_2eproto.file_level_metadata[index];
+PROTOBUF_ATTRIBUTE_WEAK const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable* descriptor_table_pitaya_2eproto_getter() {
+  return &descriptor_table_pitaya_2eproto;
 }
 
 // Force running AddDescriptors() at dynamic initialization time.

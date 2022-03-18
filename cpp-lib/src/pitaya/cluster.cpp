@@ -142,7 +142,7 @@ Cluster::RemoveServiceDiscoveryListener(service_discovery::Listener* listener)
     _sd->RemoveListener(listener);
 }
 
-optional<PitayaError>
+boost::optional<PitayaError>
 Cluster::RPC(const string& route, protos::Request& req, protos::Response& ret)
 {
     try {
@@ -159,7 +159,7 @@ Cluster::RPC(const string& route, protos::Request& req, protos::Response& ret)
     }
 }
 
-optional<PitayaError>
+boost::optional<PitayaError>
 Cluster::SendPushToUser(const string& serverId, const string& serverType, protos::Push& push)
 {
     _log->debug("Sending push to user {} on server {}", push.uid(), serverId);
@@ -174,7 +174,7 @@ Cluster::SendPushToUser(const string& serverId, const string& serverType, protos
     return boost::none;
 }
 
-optional<PitayaError>
+boost::optional<PitayaError>
 Cluster::SendKickToUser(const string& serverId, const string& serverType, protos::KickMsg& kick)
 {
     _log->debug("Sending kick to user {} on server {}", kick.userid(), serverId);
@@ -187,7 +187,7 @@ Cluster::SendKickToUser(const string& serverId, const string& serverType, protos
     return error;
 }
 
-optional<PitayaError>
+boost::optional<PitayaError>
 Cluster::RPC(const string& serverId,
              const string& route,
              protos::Request& req,
@@ -242,7 +242,7 @@ Cluster::OnIncomingRpc(const protos::Request& req, Rpc* rpc)
     }
 }
 
-optional<Cluster::RpcData>
+boost::optional<Cluster::RpcData>
 Cluster::WaitForRpc()
 {
     // TODO: there are probably too many locks being used here.
