@@ -11,7 +11,6 @@ if(UNIX AND NOT APPLE)
   set(CMAKE_C_FLAGS "-fPIC")
 elseif(APPLE)
   set(CMAKE_FIND_LIBRARY_SUFFIXES ".a" ".lib" ".dylib" ".so" ".dll")
-  #list(APPEND PLATFORM_LIBS "-framework Security")
 else()
   set(CMAKE_FIND_LIBRARY_SUFFIXES ".a" ".lib" ".dylib" ".so" ".dll")
 endif()
@@ -26,8 +25,6 @@ if(EXISTS ${CMAKE_BINARY_DIR}/conan_paths.cmake)
 endif()
 
 find_package(Boost REQUIRED)
-#find_package(cpprestsdk REQUIRED)
-#find_package(grpc REQUIRED)
 
 # Build dependencies as static libraries
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "")
@@ -36,7 +33,6 @@ set(gRPC_BUILD_CSHARP_EXT OFF CACHE BOOL "")
 if(UNIX AND NOT APPLE)
     set(gRPC_ZLIB_PROVIDER "package")
 endif()
-#add_subdirectory(deps/grpc EXCLUDE_FROM_ALL)
 
 add_subdirectory(deps/etcd-cpp-api EXCLUDE_FROM_ALL)
 
