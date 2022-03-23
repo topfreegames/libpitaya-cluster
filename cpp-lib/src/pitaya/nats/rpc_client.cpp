@@ -61,7 +61,7 @@ NatsRpcClient::Call(const pitaya::Server& target, const protos::Request& req)
         auto err = new protos::Error();
         if (status == NATS_TIMEOUT) {
             err->set_code(constants::kCodeTimeout);
-            err->set_msg("nats timeout");
+            err->set_msg("nats timeout - sending request");
         } else {
             err->set_code(constants::kCodeInternalError);
             std::string err_str("nats error - ");
@@ -105,7 +105,7 @@ NatsRpcClient::SendKickToUser(const std::string& serverId,
 
     if (status != NATS_OK) {
         if (status == NATS_TIMEOUT) {
-            error = PitayaError(constants::kCodeTimeout, "nats timeout");
+            error = PitayaError(constants::kCodeTimeout, "nats timeout - sending kick to user");
         } else {
             std::string err_str("nats error - ");
             err_str.append(natsStatus_GetText(status));
@@ -147,7 +147,7 @@ NatsRpcClient::SendPushToUser(const std::string& serverId,
 
     if (status != NATS_OK) {
         if (status == NATS_TIMEOUT) {
-            error = PitayaError(constants::kCodeTimeout, "nats timeout");
+            error = PitayaError(constants::kCodeTimeout, "nats timeout - sending push to user");
         } else {
             std::string err_str("nats error - ");
             err_str.append(natsStatus_GetText(status));
