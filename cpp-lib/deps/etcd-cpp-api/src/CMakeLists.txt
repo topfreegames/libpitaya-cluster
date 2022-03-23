@@ -81,7 +81,6 @@ else()
     set(CMAKE_FIND_LIBRARY_SUFFIXES ".a" ".lib" ".dylib" ".so" ".dll")
 endif()
 
-#find_package(cpprestsdk REQUIRED)
 find_package(Boost REQUIRED)
 
 add_library(${PROJECT_NAME}
