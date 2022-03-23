@@ -208,9 +208,10 @@ Cluster::RPC(const string& serverId,
     string metadataStr = metadata.serialize();
     req.set_metadata(metadataStr);
 
+    pitaya::Server server = sv.value();
     ret = _rpcClient->Call(sv.value(), req);
     if (ret.has_error()) {
-        _log->error("Received error calling client rpc: {}", ret.error().msg());
+        _log->error("Received error calling client rpc for server id->{} hostname->{} on route->{} : {}",serverId, server.Hostname(), route, ret.error().msg());
         return PitayaError(ret.error().code(), ret.error().msg());
     } else {
         _log->info("RPC to server {} succeeded", serverId);

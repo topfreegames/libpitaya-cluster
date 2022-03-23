@@ -112,6 +112,25 @@ TEST_F(NatsRpcClientTest, RpcsCanFail)
     EXPECT_EQ(rpcRes.error().msg(), "nats error - Error");
 }
 
+TEST_F(NatsRpcClientTest, RpcsCanTimeout)
+{
+    using namespace pitaya;
+
+    auto mockNatsMsg = new MockNatsMsg();
+    auto retMsg = std::shared_ptr<NatsMsg>(mockNatsMsg);
+
+    EXPECT_CALL(*_mockNatsClient, Request(_, _, _, _))
+        .WillOnce(DoAll(SetArgPointee<0>(retMsg), Return(NATS_TIMEOUT)));
+
+    auto target = pitaya::Server(pitaya::Server::Kind::Backend, "my-type", "my-id");
+    protos::Request req;
+    auto rpcRes = _rpcClient->Call(target, req);
+
+    ASSERT_TRUE(rpcRes.has_error());
+    EXPECT_EQ(rpcRes.error().code(), constants::kCodeTimeout);
+    EXPECT_EQ(rpcRes.error().msg(), "nats timeout - sending request");
+}
+
 TEST_F(NatsRpcClientTest, CanSendKicks)
 {
     using namespace pitaya;
@@ -158,7 +177,30 @@ TEST_F(NatsRpcClientTest, KicksCanFailWithTimeout)
     auto error = _rpcClient->SendKickToUser(target.Id(), target.Type(), kick);
     ASSERT_TRUE(error);
     ASSERT_EQ(error->code, constants::kCodeTimeout);
-    ASSERT_EQ(error->msg, "nats timeout");
+    ASSERT_EQ(error->msg, "nats timeout - sending kick to user");
+}
+
+TEST_F(NatsRpcClientTest, PushesCanFailWithTimeout)
+{
+    using namespace pitaya;
+
+    protos::Push push;
+    push.set_uid("user-id");
+    push.set_route("my.push.route");
+    push.set_data("Push data");
+
+    std::vector<uint8_t> pushData(push.ByteSizeLong());
+    push.SerializeToArray(pushData.data(), pushData.size());
+
+    EXPECT_CALL(*_mockNatsClient, Request(_, _, pushData, _config.requestTimeout))
+        .WillOnce(Return(NATS_TIMEOUT));
+
+    auto target = pitaya::Server(pitaya::Server::Kind::Frontend, "my-type", "my-id");
+
+    auto error = _rpcClient->SendPushToUser(target.Id(), target.Type(), push);
+    ASSERT_TRUE(error);
+    ASSERT_EQ(error->code, constants::kCodeTimeout);
+    ASSERT_EQ(error->msg, "nats timeout - sending push to user");
 }
 
 TEST_F(NatsRpcClientTest, CanSendUserPushes)
