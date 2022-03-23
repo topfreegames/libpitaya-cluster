@@ -492,7 +492,7 @@ extern "C"
 
     CRpc* tfg_pitc_WaitForRpc()
     {
-        optional<Cluster::RpcData> rpcData = Cluster::Instance().WaitForRpc();
+        boost::optional<Cluster::RpcData> rpcData = Cluster::Instance().WaitForRpc();
 
         if (!rpcData) {
             // There are no RPCs left

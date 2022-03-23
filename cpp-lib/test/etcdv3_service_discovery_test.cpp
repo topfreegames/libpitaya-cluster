@@ -698,7 +698,7 @@ TEST_F(Etcdv3ServiceDiscoveryTest, SyncIsStillCalledAfterReconnection)
     
     onLeaseKeepAliveExit(EtcdLeaseKeepAliveStatus::Fail);
     
-    std::this_thread::sleep_for(std::chrono::milliseconds(4100)); // Sleeping a little more than 4 seconds should call List five times
+    std::this_thread::sleep_for(std::chrono::milliseconds(4500)); // Sleeping a little more than 4 seconds should call List five times
 }
 
 TEST_F(Etcdv3ServiceDiscoveryTest, FailsAfterMaxRetrieUsingExponentialBackoff)
@@ -748,7 +748,7 @@ TEST_F(Etcdv3ServiceDiscoveryTest, FailsAfterMaxRetrieUsingExponentialBackoff)
     }
 
     _config.syncServersIntervalSec = std::chrono::seconds(1);
-    _config.retryDelayMilliseconds = 500; // set retry delay (in milliseconds)
+    _config.retryDelayMilliseconds = 300; // set retry delay (in milliseconds)
     _config.maxNumberOfRetries = 5;
     auto serviceDiscovery = CreateServiceDiscovery();
     ASSERT_NE(_mockEtcdClient->onWatch, nullptr);

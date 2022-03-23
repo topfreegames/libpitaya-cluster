@@ -216,7 +216,7 @@ Worker::StartThread()
                 _syncServersTicker.Stop();
 
                 while (_numKeepAliveRetriesLeft > 0) {
-                    auto delay_milliseconds = _config.retryDelayMilliseconds << ((_config.maxNumberOfRetries - _numKeepAliveRetriesLeft) - 1);
+                    auto delay_milliseconds = _config.retryDelayMilliseconds << (_config.maxNumberOfRetries - _numKeepAliveRetriesLeft);
                     _log->info("delaying retry by {}ms", delay_milliseconds);
                     std::this_thread::sleep_for(std::chrono::milliseconds(delay_milliseconds));
 

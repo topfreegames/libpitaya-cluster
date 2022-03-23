@@ -28,11 +28,12 @@ namespace NPitaya.Protos {
             "dGUYAiABKAkSDAoEZGF0YRgDIAEoDBINCgVyZXBseRgEIAEoCRIdCgR0eXBl",
             "GAUgASgOMg8ucHJvdG9zLk1zZ1R5cGUqRgoHTXNnVHlwZRIOCgpNc2dSZXF1",
             "ZXN0EAASDQoJTXNnTm90aWZ5EAESDwoLTXNnUmVzcG9uc2UQAhILCgdNc2dQ",
-            "dXNoEANiBnByb3RvMw=="));
+            "dXNoEANCPFopZ2l0aHViLmNvbS90b3BmcmVlZ2FtZXMvcGl0YXlhL3BrZy9w",
+            "cm90b3OqAg5OUGl0YXlhLlByb3Rvc2IGcHJvdG8z"));
       descriptor = pbr::FileDescriptor.FromGeneratedCode(descriptorData,
           new pbr::FileDescriptor[] { },
-          new pbr::GeneratedClrTypeInfo(new[] {typeof(global::NPitaya.Protos.MsgType), }, new pbr::GeneratedClrTypeInfo[] {
-            new pbr::GeneratedClrTypeInfo(typeof(global::NPitaya.Protos.Msg), global::NPitaya.Protos.Msg.Parser, new[]{ "Id", "Route", "Data", "Reply", "Type" }, null, null, null)
+          new pbr::GeneratedClrTypeInfo(new[] {typeof(global::NPitaya.Protos.MsgType), }, null, new pbr::GeneratedClrTypeInfo[] {
+            new pbr::GeneratedClrTypeInfo(typeof(global::NPitaya.Protos.Msg), global::NPitaya.Protos.Msg.Parser, new[]{ "Id", "Route", "Data", "Reply", "Type" }, null, null, null, null)
           }));
     }
     #endregion
@@ -49,23 +50,31 @@ namespace NPitaya.Protos {
   #endregion
 
   #region Messages
-  public sealed partial class Msg : pb::IMessage<Msg> {
+  public sealed partial class Msg : pb::IMessage<Msg>
+  #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+      , pb::IBufferMessage
+  #endif
+  {
     private static readonly pb::MessageParser<Msg> _parser = new pb::MessageParser<Msg>(() => new Msg());
     private pb::UnknownFieldSet _unknownFields;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pb::MessageParser<Msg> Parser { get { return _parser; } }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
       get { return global::NPitaya.Protos.MsgReflection.Descriptor.MessageTypes[0]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     pbr::MessageDescriptor pb::IMessage.Descriptor {
       get { return Descriptor; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public Msg() {
       OnConstruction();
     }
@@ -73,6 +82,7 @@ namespace NPitaya.Protos {
     partial void OnConstruction();
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public Msg(Msg other) : this() {
       id_ = other.id_;
       route_ = other.route_;
@@ -83,6 +93,7 @@ namespace NPitaya.Protos {
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public Msg Clone() {
       return new Msg(this);
     }
@@ -91,6 +102,7 @@ namespace NPitaya.Protos {
     public const int IdFieldNumber = 1;
     private ulong id_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public ulong Id {
       get { return id_; }
       set {
@@ -102,6 +114,7 @@ namespace NPitaya.Protos {
     public const int RouteFieldNumber = 2;
     private string route_ = "";
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public string Route {
       get { return route_; }
       set {
@@ -113,6 +126,7 @@ namespace NPitaya.Protos {
     public const int DataFieldNumber = 3;
     private pb::ByteString data_ = pb::ByteString.Empty;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public pb::ByteString Data {
       get { return data_; }
       set {
@@ -124,6 +138,7 @@ namespace NPitaya.Protos {
     public const int ReplyFieldNumber = 4;
     private string reply_ = "";
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public string Reply {
       get { return reply_; }
       set {
@@ -133,8 +148,9 @@ namespace NPitaya.Protos {
 
     /// <summary>Field number for the "type" field.</summary>
     public const int TypeFieldNumber = 5;
-    private global::NPitaya.Protos.MsgType type_ = 0;
+    private global::NPitaya.Protos.MsgType type_ = global::NPitaya.Protos.MsgType.MsgRequest;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public global::NPitaya.Protos.MsgType Type {
       get { return type_; }
       set {
@@ -143,11 +159,13 @@ namespace NPitaya.Protos {
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public override bool Equals(object other) {
       return Equals(other as Msg);
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public bool Equals(Msg other) {
       if (ReferenceEquals(other, null)) {
         return false;
@@ -164,13 +182,14 @@ namespace NPitaya.Protos {
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public override int GetHashCode() {
       int hash = 1;
       if (Id != 0UL) hash ^= Id.GetHashCode();
       if (Route.Length != 0) hash ^= Route.GetHashCode();
       if (Data.Length != 0) hash ^= Data.GetHashCode();
       if (Reply.Length != 0) hash ^= Reply.GetHashCode();
-      if (Type != 0) hash ^= Type.GetHashCode();
+      if (Type != global::NPitaya.Protos.MsgType.MsgRequest) hash ^= Type.GetHashCode();
       if (_unknownFields != null) {
         hash ^= _unknownFields.GetHashCode();
       }
@@ -178,12 +197,17 @@ namespace NPitaya.Protos {
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public override string ToString() {
       return pb::JsonFormatter.ToDiagnosticString(this);
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public void WriteTo(pb::CodedOutputStream output) {
+    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+      output.WriteRawMessage(this);
+    #else
       if (Id != 0UL) {
         output.WriteRawTag(8);
         output.WriteUInt64(Id);
@@ -200,16 +224,48 @@ namespace NPitaya.Protos {
         output.WriteRawTag(34);
         output.WriteString(Reply);
       }
-      if (Type != 0) {
+      if (Type != global::NPitaya.Protos.MsgType.MsgRequest) {
         output.WriteRawTag(40);
         output.WriteEnum((int) Type);
       }
       if (_unknownFields != null) {
         _unknownFields.WriteTo(output);
       }
+    #endif
     }
 
+    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    void pb::IBufferMessage.InternalWriteTo(ref pb::WriteContext output) {
+      if (Id != 0UL) {
+        output.WriteRawTag(8);
+        output.WriteUInt64(Id);
+      }
+      if (Route.Length != 0) {
+        output.WriteRawTag(18);
+        output.WriteString(Route);
+      }
+      if (Data.Length != 0) {
+        output.WriteRawTag(26);
+        output.WriteBytes(Data);
+      }
+      if (Reply.Length != 0) {
+        output.WriteRawTag(34);
+        output.WriteString(Reply);
+      }
+      if (Type != global::NPitaya.Protos.MsgType.MsgRequest) {
+        output.WriteRawTag(40);
+        output.WriteEnum((int) Type);
+      }
+      if (_unknownFields != null) {
+        _unknownFields.WriteTo(ref output);
+      }
+    }
+    #endif
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public int CalculateSize() {
       int size = 0;
       if (Id != 0UL) {
@@ -224,7 +280,7 @@ namespace NPitaya.Protos {
       if (Reply.Length != 0) {
         size += 1 + pb::CodedOutputStream.ComputeStringSize(Reply);
       }
-      if (Type != 0) {
+      if (Type != global::NPitaya.Protos.MsgType.MsgRequest) {
         size += 1 + pb::CodedOutputStream.ComputeEnumSize((int) Type);
       }
       if (_unknownFields != null) {
@@ -234,6 +290,7 @@ namespace NPitaya.Protos {
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public void MergeFrom(Msg other) {
       if (other == null) {
         return;
@@ -250,14 +307,18 @@ namespace NPitaya.Protos {
       if (other.Reply.Length != 0) {
         Reply = other.Reply;
       }
-      if (other.Type != 0) {
+      if (other.Type != global::NPitaya.Protos.MsgType.MsgRequest) {
         Type = other.Type;
       }
       _unknownFields = pb::UnknownFieldSet.MergeFrom(_unknownFields, other._unknownFields);
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public void MergeFrom(pb::CodedInputStream input) {
+    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+      input.ReadRawMessage(this);
+    #else
       uint tag;
       while ((tag = input.ReadTag()) != 0) {
         switch(tag) {
@@ -281,12 +342,48 @@ namespace NPitaya.Protos {
             break;
           }
           case 40: {
-            type_ = (global::NPitaya.Protos.MsgType) input.ReadEnum();
+            Type = (global::NPitaya.Protos.MsgType) input.ReadEnum();
+            break;
+          }
+        }
+      }
+    #endif
+    }
+
+    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    void pb::IBufferMessage.InternalMergeFrom(ref pb::ParseContext input) {
+      uint tag;
+      while ((tag = input.ReadTag()) != 0) {
+        switch(tag) {
+          default:
+            _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, ref input);
+            break;
+          case 8: {
+            Id = input.ReadUInt64();
+            break;
+          }
+          case 18: {
+            Route = input.ReadString();
+            break;
+          }
+          case 26: {
+            Data = input.ReadBytes();
+            break;
+          }
+          case 34: {
+            Reply = input.ReadString();
+            break;
+          }
+          case 40: {
+            Type = (global::NPitaya.Protos.MsgType) input.ReadEnum();
             break;
           }
         }
       }
     }
+    #endif
 
   }
 
