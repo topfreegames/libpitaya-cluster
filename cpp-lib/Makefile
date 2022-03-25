@@ -37,7 +37,7 @@ generate-xcode:
 
 build-linux-release:
 	@conan install -if _builds/linux . --build=missing -s cppstd=gnu17
-	@cmake -H. -B_builds/linux -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF -DBUILD_SHARED_LIBS=OFF -GNinja -DCMAKE_C_COMPILER="/usr/local/bin/clang" -DCMAKE_CXX_COMPILER="/usr/local/bin/clang++"
+	@cmake -H. -B_builds/linux -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF -DBUILD_SHARED_LIBS=OFF -GNinja
 	@cmake --build _builds/linux
 
 build-mac-release:
