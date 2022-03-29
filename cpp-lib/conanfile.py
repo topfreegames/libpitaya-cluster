@@ -14,7 +14,7 @@ class PitayaCpp(ConanFile):
     version = get_version()
     url = 'https://github.com/topfreegames.com/libpitaya-cluster'
     description = 'C++ library that allows the creation of Pitaya servers.'
-    settings = 'os', 'compiler', 'build_type', 'arch'
+    settings = 'cppstd', 'os', 'compiler', 'build_type', 'arch'
     options = {
         'macosx_bundle': [False, True],
     }
@@ -25,7 +25,7 @@ class PitayaCpp(ConanFile):
         'zlib/1.2.11',
         'openssl/1.1.1m',
         'boost/1.78.0',
-        'protobuf/3.15.5',
+        'protobuf/3.19.2',
     )
     build_requires = (
         'gtest/1.8.1'
@@ -67,6 +67,4 @@ class PitayaCpp(ConanFile):
     def package_info(self):
         self.cpp_info.libs = ['pitaya_cpp']
         self.cpp_info.libdirs = ['lib/PitayaCpp']
-        self.cpp_info.cxxflags = ['-std=c++11']
-
-
+        self.cpp_info.cxxflags = ['-std=c++17']

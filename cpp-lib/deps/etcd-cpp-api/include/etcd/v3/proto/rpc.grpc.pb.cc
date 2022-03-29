@@ -31,27 +31,27 @@ static const char* KV_method_names[] = {
 
 std::unique_ptr< KV::Stub> KV::NewStub(const std::shared_ptr< ::grpc::ChannelInterface>& channel, const ::grpc::StubOptions& options) {
   (void)options;
-  std::unique_ptr< KV::Stub> stub(new KV::Stub(channel));
+  std::unique_ptr< KV::Stub> stub(new KV::Stub(channel, options));
   return stub;
 }
 
-KV::Stub::Stub(const std::shared_ptr< ::grpc::ChannelInterface>& channel)
-  : channel_(channel), rpcmethod_Range_(KV_method_names[0], ::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_Put_(KV_method_names[1], ::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_DeleteRange_(KV_method_names[2], ::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_Txn_(KV_method_names[3], ::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_Compact_(KV_method_names[4], ::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+KV::Stub::Stub(const std::shared_ptr< ::grpc::ChannelInterface>& channel, const ::grpc::StubOptions& options)
+  : channel_(channel), rpcmethod_Range_(KV_method_names[0], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_Put_(KV_method_names[1], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_DeleteRange_(KV_method_names[2], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_Txn_(KV_method_names[3], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_Compact_(KV_method_names[4], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
   {}
 
 ::grpc::Status KV::Stub::Range(::grpc::ClientContext* context, const ::etcdserverpb::RangeRequest& request, ::etcdserverpb::RangeResponse* response) {
   return ::grpc::internal::BlockingUnaryCall< ::etcdserverpb::RangeRequest, ::etcdserverpb::RangeResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_Range_, context, request, response);
 }
 
-void KV::Stub::experimental_async::Range(::grpc::ClientContext* context, const ::etcdserverpb::RangeRequest* request, ::etcdserverpb::RangeResponse* response, std::function<void(::grpc::Status)> f) {
+void KV::Stub::async::Range(::grpc::ClientContext* context, const ::etcdserverpb::RangeRequest* request, ::etcdserverpb::RangeResponse* response, std::function<void(::grpc::Status)> f) {
   ::grpc::internal::CallbackUnaryCall< ::etcdserverpb::RangeRequest, ::etcdserverpb::RangeResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_Range_, context, request, response, std::move(f));
 }
 
-void KV::Stub::experimental_async::Range(::grpc::ClientContext* context, const ::etcdserverpb::RangeRequest* request, ::etcdserverpb::RangeResponse* response, ::grpc::experimental::ClientUnaryReactor* reactor) {
+void KV::Stub::async::Range(::grpc::ClientContext* context, const ::etcdserverpb::RangeRequest* request, ::etcdserverpb::RangeResponse* response, ::grpc::ClientUnaryReactor* reactor) {
   ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_Range_, context, request, response, reactor);
 }
 
@@ -70,11 +70,11 @@ void KV::Stub::experimental_async::Range(::grpc::ClientContext* context, const :
   return ::grpc::internal::BlockingUnaryCall< ::etcdserverpb::PutRequest, ::etcdserverpb::PutResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_Put_, context, request, response);
 }
 
-void KV::Stub::experimental_async::Put(::grpc::ClientContext* context, const ::etcdserverpb::PutRequest* request, ::etcdserverpb::PutResponse* response, std::function<void(::grpc::Status)> f) {
+void KV::Stub::async::Put(::grpc::ClientContext* context, const ::etcdserverpb::PutRequest* request, ::etcdserverpb::PutResponse* response, std::function<void(::grpc::Status)> f) {
   ::grpc::internal::CallbackUnaryCall< ::etcdserverpb::PutRequest, ::etcdserverpb::PutResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_Put_, context, request, response, std::move(f));
 }
 
-void KV::Stub::experimental_async::Put(::grpc::ClientContext* context, const ::etcdserverpb::PutRequest* request, ::etcdserverpb::PutResponse* response, ::grpc::experimental::ClientUnaryReactor* reactor) {
+void KV::Stub::async::Put(::grpc::ClientContext* context, const ::etcdserverpb::PutRequest* request, ::etcdserverpb::PutResponse* response, ::grpc::ClientUnaryReactor* reactor) {
   ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_Put_, context, request, response, reactor);
 }
 
@@ -93,11 +93,11 @@ void KV::Stub::experimental_async::Put(::grpc::ClientContext* context, const ::e
   return ::grpc::internal::BlockingUnaryCall< ::etcdserverpb::DeleteRangeRequest, ::etcdserverpb::DeleteRangeResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_DeleteRange_, context, request, response);
 }
 
-void KV::Stub::experimental_async::DeleteRange(::grpc::ClientContext* context, const ::etcdserverpb::DeleteRangeRequest* request, ::etcdserverpb::DeleteRangeResponse* response, std::function<void(::grpc::Status)> f) {
+void KV::Stub::async::DeleteRange(::grpc::ClientContext* context, const ::etcdserverpb::DeleteRangeRequest* request, ::etcdserverpb::DeleteRangeResponse* response, std::function<void(::grpc::Status)> f) {
   ::grpc::internal::CallbackUnaryCall< ::etcdserverpb::DeleteRangeRequest, ::etcdserverpb::DeleteRangeResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_DeleteRange_, context, request, response, std::move(f));
 }
 
-void KV::Stub::experimental_async::DeleteRange(::grpc::ClientContext* context, const ::etcdserverpb::DeleteRangeRequest* request, ::etcdserverpb::DeleteRangeResponse* response, ::grpc::experimental::ClientUnaryReactor* reactor) {
+void KV::Stub::async::DeleteRange(::grpc::ClientContext* context, const ::etcdserverpb::DeleteRangeRequest* request, ::etcdserverpb::DeleteRangeResponse* response, ::grpc::ClientUnaryReactor* reactor) {
   ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_DeleteRange_, context, request, response, reactor);
 }
 
@@ -116,11 +116,11 @@ void KV::Stub::experimental_async::DeleteRange(::grpc::ClientContext* context, c
   return ::grpc::internal::BlockingUnaryCall< ::etcdserverpb::TxnRequest, ::etcdserverpb::TxnResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_Txn_, context, request, response);
 }
 
-void KV::Stub::experimental_async::Txn(::grpc::ClientContext* context, const ::etcdserverpb::TxnRequest* request, ::etcdserverpb::TxnResponse* response, std::function<void(::grpc::Status)> f) {
+void KV::Stub::async::Txn(::grpc::ClientContext* context, const ::etcdserverpb::TxnRequest* request, ::etcdserverpb::TxnResponse* response, std::function<void(::grpc::Status)> f) {
   ::grpc::internal::CallbackUnaryCall< ::etcdserverpb::TxnRequest, ::etcdserverpb::TxnResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_Txn_, context, request, response, std::move(f));
 }
 
-void KV::Stub::experimental_async::Txn(::grpc::ClientContext* context, const ::etcdserverpb::TxnRequest* request, ::etcdserverpb::TxnResponse* response, ::grpc::experimental::ClientUnaryReactor* reactor) {
+void KV::Stub::async::Txn(::grpc::ClientContext* context, const ::etcdserverpb::TxnRequest* request, ::etcdserverpb::TxnResponse* response, ::grpc::ClientUnaryReactor* reactor) {
   ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_Txn_, context, request, response, reactor);
 }
 
@@ -139,11 +139,11 @@ void KV::Stub::experimental_async::Txn(::grpc::ClientContext* context, const ::e
   return ::grpc::internal::BlockingUnaryCall< ::etcdserverpb::CompactionRequest, ::etcdserverpb::CompactionResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_Compact_, context, request, response);
 }
 
-void KV::Stub::experimental_async::Compact(::grpc::ClientContext* context, const ::etcdserverpb::CompactionRequest* request, ::etcdserverpb::CompactionResponse* response, std::function<void(::grpc::Status)> f) {
+void KV::Stub::async::Compact(::grpc::ClientContext* context, const ::etcdserverpb::CompactionRequest* request, ::etcdserverpb::CompactionResponse* response, std::function<void(::grpc::Status)> f) {
   ::grpc::internal::CallbackUnaryCall< ::etcdserverpb::CompactionRequest, ::etcdserverpb::CompactionResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_Compact_, context, request, response, std::move(f));
 }
 
-void KV::Stub::experimental_async::Compact(::grpc::ClientContext* context, const ::etcdserverpb::CompactionRequest* request, ::etcdserverpb::CompactionResponse* response, ::grpc::experimental::ClientUnaryReactor* reactor) {
+void KV::Stub::async::Compact(::grpc::ClientContext* context, const ::etcdserverpb::CompactionRequest* request, ::etcdserverpb::CompactionResponse* response, ::grpc::ClientUnaryReactor* reactor) {
   ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_Compact_, context, request, response, reactor);
 }
 
@@ -256,19 +256,19 @@ static const char* Watch_method_names[] = {
 
 std::unique_ptr< Watch::Stub> Watch::NewStub(const std::shared_ptr< ::grpc::ChannelInterface>& channel, const ::grpc::StubOptions& options) {
   (void)options;
-  std::unique_ptr< Watch::Stub> stub(new Watch::Stub(channel));
+  std::unique_ptr< Watch::Stub> stub(new Watch::Stub(channel, options));
   return stub;
 }
 
-Watch::Stub::Stub(const std::shared_ptr< ::grpc::ChannelInterface>& channel)
-  : channel_(channel), rpcmethod_Watch_(Watch_method_names[0], ::grpc::internal::RpcMethod::BIDI_STREAMING, channel)
+Watch::Stub::Stub(const std::shared_ptr< ::grpc::ChannelInterface>& channel, const ::grpc::StubOptions& options)
+  : channel_(channel), rpcmethod_Watch_(Watch_method_names[0], options.suffix_for_stats(),::grpc::internal::RpcMethod::BIDI_STREAMING, channel)
   {}
 
 ::grpc::ClientReaderWriter< ::etcdserverpb::WatchRequest, ::etcdserverpb::WatchResponse>* Watch::Stub::WatchRaw(::grpc::ClientContext* context) {
   return ::grpc::internal::ClientReaderWriterFactory< ::etcdserverpb::WatchRequest, ::etcdserverpb::WatchResponse>::Create(channel_.get(), rpcmethod_Watch_, context);
 }
 
-void Watch::Stub::experimental_async::Watch(::grpc::ClientContext* context, ::grpc::experimental::ClientBidiReactor< ::etcdserverpb::WatchRequest,::etcdserverpb::WatchResponse>* reactor) {
+void Watch::Stub::async::Watch(::grpc::ClientContext* context, ::grpc::ClientBidiReactor< ::etcdserverpb::WatchRequest,::etcdserverpb::WatchResponse>* reactor) {
   ::grpc::internal::ClientCallbackReaderWriterFactory< ::etcdserverpb::WatchRequest,::etcdserverpb::WatchResponse>::Create(stub_->channel_.get(), stub_->rpcmethod_Watch_, context, reactor);
 }
 
@@ -313,27 +313,27 @@ static const char* Lease_method_names[] = {
 
 std::unique_ptr< Lease::Stub> Lease::NewStub(const std::shared_ptr< ::grpc::ChannelInterface>& channel, const ::grpc::StubOptions& options) {
   (void)options;
-  std::unique_ptr< Lease::Stub> stub(new Lease::Stub(channel));
+  std::unique_ptr< Lease::Stub> stub(new Lease::Stub(channel, options));
   return stub;
 }
 
-Lease::Stub::Stub(const std::shared_ptr< ::grpc::ChannelInterface>& channel)
-  : channel_(channel), rpcmethod_LeaseGrant_(Lease_method_names[0], ::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_LeaseRevoke_(Lease_method_names[1], ::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_LeaseKeepAlive_(Lease_method_names[2], ::grpc::internal::RpcMethod::BIDI_STREAMING, channel)
-  , rpcmethod_LeaseTimeToLive_(Lease_method_names[3], ::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_LeaseLeases_(Lease_method_names[4], ::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+Lease::Stub::Stub(const std::shared_ptr< ::grpc::ChannelInterface>& channel, const ::grpc::StubOptions& options)
+  : channel_(channel), rpcmethod_LeaseGrant_(Lease_method_names[0], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_LeaseRevoke_(Lease_method_names[1], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_LeaseKeepAlive_(Lease_method_names[2], options.suffix_for_stats(),::grpc::internal::RpcMethod::BIDI_STREAMING, channel)
+  , rpcmethod_LeaseTimeToLive_(Lease_method_names[3], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_LeaseLeases_(Lease_method_names[4], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
   {}
 
 ::grpc::Status Lease::Stub::LeaseGrant(::grpc::ClientContext* context, const ::etcdserverpb::LeaseGrantRequest& request, ::etcdserverpb::LeaseGrantResponse* response) {
   return ::grpc::internal::BlockingUnaryCall< ::etcdserverpb::LeaseGrantRequest, ::etcdserverpb::LeaseGrantResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_LeaseGrant_, context, request, response);
 }
 
-void Lease::Stub::experimental_async::LeaseGrant(::grpc::ClientContext* context, const ::etcdserverpb::LeaseGrantRequest* request, ::etcdserverpb::LeaseGrantResponse* response, std::function<void(::grpc::Status)> f) {
+void Lease::Stub::async::LeaseGrant(::grpc::ClientContext* context, const ::etcdserverpb::LeaseGrantRequest* request, ::etcdserverpb::LeaseGrantResponse* response, std::function<void(::grpc::Status)> f) {
   ::grpc::internal::CallbackUnaryCall< ::etcdserverpb::LeaseGrantRequest, ::etcdserverpb::LeaseGrantResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_LeaseGrant_, context, request, response, std::move(f));
 }
 
-void Lease::Stub::experimental_async::LeaseGrant(::grpc::ClientContext* context, const ::etcdserverpb::LeaseGrantRequest* request, ::etcdserverpb::LeaseGrantResponse* response, ::grpc::experimental::ClientUnaryReactor* reactor) {
+void Lease::Stub::async::LeaseGrant(::grpc::ClientContext* context, const ::etcdserverpb::LeaseGrantRequest* request, ::etcdserverpb::LeaseGrantResponse* response, ::grpc::ClientUnaryReactor* reactor) {
   ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_LeaseGrant_, context, request, response, reactor);
 }
 
@@ -352,11 +352,11 @@ void Lease::Stub::experimental_async::LeaseGrant(::grpc::ClientContext* context,
   return ::grpc::internal::BlockingUnaryCall< ::etcdserverpb::LeaseRevokeRequest, ::etcdserverpb::LeaseRevokeResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_LeaseRevoke_, context, request, response);
 }
 
-void Lease::Stub::experimental_async::LeaseRevoke(::grpc::ClientContext* context, const ::etcdserverpb::LeaseRevokeRequest* request, ::etcdserverpb::LeaseRevokeResponse* response, std::function<void(::grpc::Status)> f) {
+void Lease::Stub::async::LeaseRevoke(::grpc::ClientContext* context, const ::etcdserverpb::LeaseRevokeRequest* request, ::etcdserverpb::LeaseRevokeResponse* response, std::function<void(::grpc::Status)> f) {
   ::grpc::internal::CallbackUnaryCall< ::etcdserverpb::LeaseRevokeRequest, ::etcdserverpb::LeaseRevokeResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_LeaseRevoke_, context, request, response, std::move(f));
 }
 
-void Lease::Stub::experimental_async::LeaseRevoke(::grpc::ClientContext* context, const ::etcdserverpb::LeaseRevokeRequest* request, ::etcdserverpb::LeaseRevokeResponse* response, ::grpc::experimental::ClientUnaryReactor* reactor) {
+void Lease::Stub::async::LeaseRevoke(::grpc::ClientContext* context, const ::etcdserverpb::LeaseRevokeRequest* request, ::etcdserverpb::LeaseRevokeResponse* response, ::grpc::ClientUnaryReactor* reactor) {
   ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_LeaseRevoke_, context, request, response, reactor);
 }
 
@@ -375,7 +375,7 @@ void Lease::Stub::experimental_async::LeaseRevoke(::grpc::ClientContext* context
   return ::grpc::internal::ClientReaderWriterFactory< ::etcdserverpb::LeaseKeepAliveRequest, ::etcdserverpb::LeaseKeepAliveResponse>::Create(channel_.get(), rpcmethod_LeaseKeepAlive_, context);
 }
 
-void Lease::Stub::experimental_async::LeaseKeepAlive(::grpc::ClientContext* context, ::grpc::experimental::ClientBidiReactor< ::etcdserverpb::LeaseKeepAliveRequest,::etcdserverpb::LeaseKeepAliveResponse>* reactor) {
+void Lease::Stub::async::LeaseKeepAlive(::grpc::ClientContext* context, ::grpc::ClientBidiReactor< ::etcdserverpb::LeaseKeepAliveRequest,::etcdserverpb::LeaseKeepAliveResponse>* reactor) {
   ::grpc::internal::ClientCallbackReaderWriterFactory< ::etcdserverpb::LeaseKeepAliveRequest,::etcdserverpb::LeaseKeepAliveResponse>::Create(stub_->channel_.get(), stub_->rpcmethod_LeaseKeepAlive_, context, reactor);
 }
 
@@ -391,11 +391,11 @@ void Lease::Stub::experimental_async::LeaseKeepAlive(::grpc::ClientContext* cont
   return ::grpc::internal::BlockingUnaryCall< ::etcdserverpb::LeaseTimeToLiveRequest, ::etcdserverpb::LeaseTimeToLiveResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_LeaseTimeToLive_, context, request, response);
 }
 
-void Lease::Stub::experimental_async::LeaseTimeToLive(::grpc::ClientContext* context, const ::etcdserverpb::LeaseTimeToLiveRequest* request, ::etcdserverpb::LeaseTimeToLiveResponse* response, std::function<void(::grpc::Status)> f) {
+void Lease::Stub::async::LeaseTimeToLive(::grpc::ClientContext* context, const ::etcdserverpb::LeaseTimeToLiveRequest* request, ::etcdserverpb::LeaseTimeToLiveResponse* response, std::function<void(::grpc::Status)> f) {
   ::grpc::internal::CallbackUnaryCall< ::etcdserverpb::LeaseTimeToLiveRequest, ::etcdserverpb::LeaseTimeToLiveResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_LeaseTimeToLive_, context, request, response, std::move(f));
 }
 
-void Lease::Stub::experimental_async::LeaseTimeToLive(::grpc::ClientContext* context, const ::etcdserverpb::LeaseTimeToLiveRequest* request, ::etcdserverpb::LeaseTimeToLiveResponse* response, ::grpc::experimental::ClientUnaryReactor* reactor) {
+void Lease::Stub::async::LeaseTimeToLive(::grpc::ClientContext* context, const ::etcdserverpb::LeaseTimeToLiveRequest* request, ::etcdserverpb::LeaseTimeToLiveResponse* response, ::grpc::ClientUnaryReactor* reactor) {
   ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_LeaseTimeToLive_, context, request, response, reactor);
 }
 
@@ -414,11 +414,11 @@ void Lease::Stub::experimental_async::LeaseTimeToLive(::grpc::ClientContext* con
   return ::grpc::internal::BlockingUnaryCall< ::etcdserverpb::LeaseLeasesRequest, ::etcdserverpb::LeaseLeasesResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_LeaseLeases_, context, request, response);
 }
 
-void Lease::Stub::experimental_async::LeaseLeases(::grpc::ClientContext* context, const ::etcdserverpb::LeaseLeasesRequest* request, ::etcdserverpb::LeaseLeasesResponse* response, std::function<void(::grpc::Status)> f) {
+void Lease::Stub::async::LeaseLeases(::grpc::ClientContext* context, const ::etcdserverpb::LeaseLeasesRequest* request, ::etcdserverpb::LeaseLeasesResponse* response, std::function<void(::grpc::Status)> f) {
   ::grpc::internal::CallbackUnaryCall< ::etcdserverpb::LeaseLeasesRequest, ::etcdserverpb::LeaseLeasesResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_LeaseLeases_, context, request, response, std::move(f));
 }
 
-void Lease::Stub::experimental_async::LeaseLeases(::grpc::ClientContext* context, const ::etcdserverpb::LeaseLeasesRequest* request, ::etcdserverpb::LeaseLeasesResponse* response, ::grpc::experimental::ClientUnaryReactor* reactor) {
+void Lease::Stub::async::LeaseLeases(::grpc::ClientContext* context, const ::etcdserverpb::LeaseLeasesRequest* request, ::etcdserverpb::LeaseLeasesResponse* response, ::grpc::ClientUnaryReactor* reactor) {
   ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_LeaseLeases_, context, request, response, reactor);
 }
 
@@ -533,26 +533,26 @@ static const char* Cluster_method_names[] = {
 
 std::unique_ptr< Cluster::Stub> Cluster::NewStub(const std::shared_ptr< ::grpc::ChannelInterface>& channel, const ::grpc::StubOptions& options) {
   (void)options;
-  std::unique_ptr< Cluster::Stub> stub(new Cluster::Stub(channel));
+  std::unique_ptr< Cluster::Stub> stub(new Cluster::Stub(channel, options));
   return stub;
 }
 
-Cluster::Stub::Stub(const std::shared_ptr< ::grpc::ChannelInterface>& channel)
-  : channel_(channel), rpcmethod_MemberAdd_(Cluster_method_names[0], ::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_MemberRemove_(Cluster_method_names[1], ::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_MemberUpdate_(Cluster_method_names[2], ::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_MemberList_(Cluster_method_names[3], ::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+Cluster::Stub::Stub(const std::shared_ptr< ::grpc::ChannelInterface>& channel, const ::grpc::StubOptions& options)
+  : channel_(channel), rpcmethod_MemberAdd_(Cluster_method_names[0], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_MemberRemove_(Cluster_method_names[1], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_MemberUpdate_(Cluster_method_names[2], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_MemberList_(Cluster_method_names[3], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
   {}
 
 ::grpc::Status Cluster::Stub::MemberAdd(::grpc::ClientContext* context, const ::etcdserverpb::MemberAddRequest& request, ::etcdserverpb::MemberAddResponse* response) {
   return ::grpc::internal::BlockingUnaryCall< ::etcdserverpb::MemberAddRequest, ::etcdserverpb::MemberAddResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_MemberAdd_, context, request, response);
 }
 
-void Cluster::Stub::experimental_async::MemberAdd(::grpc::ClientContext* context, const ::etcdserverpb::MemberAddRequest* request, ::etcdserverpb::MemberAddResponse* response, std::function<void(::grpc::Status)> f) {
+void Cluster::Stub::async::MemberAdd(::grpc::ClientContext* context, const ::etcdserverpb::MemberAddRequest* request, ::etcdserverpb::MemberAddResponse* response, std::function<void(::grpc::Status)> f) {
   ::grpc::internal::CallbackUnaryCall< ::etcdserverpb::MemberAddRequest, ::etcdserverpb::MemberAddResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_MemberAdd_, context, request, response, std::move(f));
 }
 
-void Cluster::Stub::experimental_async::MemberAdd(::grpc::ClientContext* context, const ::etcdserverpb::MemberAddRequest* request, ::etcdserverpb::MemberAddResponse* response, ::grpc::experimental::ClientUnaryReactor* reactor) {
+void Cluster::Stub::async::MemberAdd(::grpc::ClientContext* context, const ::etcdserverpb::MemberAddRequest* request, ::etcdserverpb::MemberAddResponse* response, ::grpc::ClientUnaryReactor* reactor) {
   ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_MemberAdd_, context, request, response, reactor);
 }
 
@@ -571,11 +571,11 @@ void Cluster::Stub::experimental_async::MemberAdd(::grpc::ClientContext* context
   return ::grpc::internal::BlockingUnaryCall< ::etcdserverpb::MemberRemoveRequest, ::etcdserverpb::MemberRemoveResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_MemberRemove_, context, request, response);
 }
 
-void Cluster::Stub::experimental_async::MemberRemove(::grpc::ClientContext* context, const ::etcdserverpb::MemberRemoveRequest* request, ::etcdserverpb::MemberRemoveResponse* response, std::function<void(::grpc::Status)> f) {
+void Cluster::Stub::async::MemberRemove(::grpc::ClientContext* context, const ::etcdserverpb::MemberRemoveRequest* request, ::etcdserverpb::MemberRemoveResponse* response, std::function<void(::grpc::Status)> f) {
   ::grpc::internal::CallbackUnaryCall< ::etcdserverpb::MemberRemoveRequest, ::etcdserverpb::MemberRemoveResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_MemberRemove_, context, request, response, std::move(f));
 }
 
-void Cluster::Stub::experimental_async::MemberRemove(::grpc::ClientContext* context, const ::etcdserverpb::MemberRemoveRequest* request, ::etcdserverpb::MemberRemoveResponse* response, ::grpc::experimental::ClientUnaryReactor* reactor) {
+void Cluster::Stub::async::MemberRemove(::grpc::ClientContext* context, const ::etcdserverpb::MemberRemoveRequest* request, ::etcdserverpb::MemberRemoveResponse* response, ::grpc::ClientUnaryReactor* reactor) {
   ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_MemberRemove_, context, request, response, reactor);
 }
 
@@ -594,11 +594,11 @@ void Cluster::Stub::experimental_async::MemberRemove(::grpc::ClientContext* cont
   return ::grpc::internal::BlockingUnaryCall< ::etcdserverpb::MemberUpdateRequest, ::etcdserverpb::MemberUpdateResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_MemberUpdate_, context, request, response);
 }
 
-void Cluster::Stub::experimental_async::MemberUpdate(::grpc::ClientContext* context, const ::etcdserverpb::MemberUpdateRequest* request, ::etcdserverpb::MemberUpdateResponse* response, std::function<void(::grpc::Status)> f) {
+void Cluster::Stub::async::MemberUpdate(::grpc::ClientContext* context, const ::etcdserverpb::MemberUpdateRequest* request, ::etcdserverpb::MemberUpdateResponse* response, std::function<void(::grpc::Status)> f) {
   ::grpc::internal::CallbackUnaryCall< ::etcdserverpb::MemberUpdateRequest, ::etcdserverpb::MemberUpdateResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_MemberUpdate_, context, request, response, std::move(f));
 }
 
-void Cluster::Stub::experimental_async::MemberUpdate(::grpc::ClientContext* context, const ::etcdserverpb::MemberUpdateRequest* request, ::etcdserverpb::MemberUpdateResponse* response, ::grpc::experimental::ClientUnaryReactor* reactor) {
+void Cluster::Stub::async::MemberUpdate(::grpc::ClientContext* context, const ::etcdserverpb::MemberUpdateRequest* request, ::etcdserverpb::MemberUpdateResponse* response, ::grpc::ClientUnaryReactor* reactor) {
   ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_MemberUpdate_, context, request, response, reactor);
 }
 
@@ -617,11 +617,11 @@ void Cluster::Stub::experimental_async::MemberUpdate(::grpc::ClientContext* cont
   return ::grpc::internal::BlockingUnaryCall< ::etcdserverpb::MemberListRequest, ::etcdserverpb::MemberListResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_MemberList_, context, request, response);
 }
 
-void Cluster::Stub::experimental_async::MemberList(::grpc::ClientContext* context, const ::etcdserverpb::MemberListRequest* request, ::etcdserverpb::MemberListResponse* response, std::function<void(::grpc::Status)> f) {
+void Cluster::Stub::async::MemberList(::grpc::ClientContext* context, const ::etcdserverpb::MemberListRequest* request, ::etcdserverpb::MemberListResponse* response, std::function<void(::grpc::Status)> f) {
   ::grpc::internal::CallbackUnaryCall< ::etcdserverpb::MemberListRequest, ::etcdserverpb::MemberListResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_MemberList_, context, request, response, std::move(f));
 }
 
-void Cluster::Stub::experimental_async::MemberList(::grpc::ClientContext* context, const ::etcdserverpb::MemberListRequest* request, ::etcdserverpb::MemberListResponse* response, ::grpc::experimental::ClientUnaryReactor* reactor) {
+void Cluster::Stub::async::MemberList(::grpc::ClientContext* context, const ::etcdserverpb::MemberListRequest* request, ::etcdserverpb::MemberListResponse* response, ::grpc::ClientUnaryReactor* reactor) {
   ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_MemberList_, context, request, response, reactor);
 }
 
@@ -723,29 +723,29 @@ static const char* Maintenance_method_names[] = {
 
 std::unique_ptr< Maintenance::Stub> Maintenance::NewStub(const std::shared_ptr< ::grpc::ChannelInterface>& channel, const ::grpc::StubOptions& options) {
   (void)options;
-  std::unique_ptr< Maintenance::Stub> stub(new Maintenance::Stub(channel));
+  std::unique_ptr< Maintenance::Stub> stub(new Maintenance::Stub(channel, options));
   return stub;
 }
 
-Maintenance::Stub::Stub(const std::shared_ptr< ::grpc::ChannelInterface>& channel)
-  : channel_(channel), rpcmethod_Alarm_(Maintenance_method_names[0], ::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_Status_(Maintenance_method_names[1], ::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_Defragment_(Maintenance_method_names[2], ::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_Hash_(Maintenance_method_names[3], ::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_HashKV_(Maintenance_method_names[4], ::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_Snapshot_(Maintenance_method_names[5], ::grpc::internal::RpcMethod::SERVER_STREAMING, channel)
-  , rpcmethod_MoveLeader_(Maintenance_method_names[6], ::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+Maintenance::Stub::Stub(const std::shared_ptr< ::grpc::ChannelInterface>& channel, const ::grpc::StubOptions& options)
+  : channel_(channel), rpcmethod_Alarm_(Maintenance_method_names[0], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_Status_(Maintenance_method_names[1], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_Defragment_(Maintenance_method_names[2], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_Hash_(Maintenance_method_names[3], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_HashKV_(Maintenance_method_names[4], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_Snapshot_(Maintenance_method_names[5], options.suffix_for_stats(),::grpc::internal::RpcMethod::SERVER_STREAMING, channel)
+  , rpcmethod_MoveLeader_(Maintenance_method_names[6], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
   {}
 
 ::grpc::Status Maintenance::Stub::Alarm(::grpc::ClientContext* context, const ::etcdserverpb::AlarmRequest& request, ::etcdserverpb::AlarmResponse* response) {
   return ::grpc::internal::BlockingUnaryCall< ::etcdserverpb::AlarmRequest, ::etcdserverpb::AlarmResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_Alarm_, context, request, response);
 }
 
-void Maintenance::Stub::experimental_async::Alarm(::grpc::ClientContext* context, const ::etcdserverpb::AlarmRequest* request, ::etcdserverpb::AlarmResponse* response, std::function<void(::grpc::Status)> f) {
+void Maintenance::Stub::async::Alarm(::grpc::ClientContext* context, const ::etcdserverpb::AlarmRequest* request, ::etcdserverpb::AlarmResponse* response, std::function<void(::grpc::Status)> f) {
   ::grpc::internal::CallbackUnaryCall< ::etcdserverpb::AlarmRequest, ::etcdserverpb::AlarmResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_Alarm_, context, request, response, std::move(f));
 }
 
-void Maintenance::Stub::experimental_async::Alarm(::grpc::ClientContext* context, const ::etcdserverpb::AlarmRequest* request, ::etcdserverpb::AlarmResponse* response, ::grpc::experimental::ClientUnaryReactor* reactor) {
+void Maintenance::Stub::async::Alarm(::grpc::ClientContext* context, const ::etcdserverpb::AlarmRequest* request, ::etcdserverpb::AlarmResponse* response, ::grpc::ClientUnaryReactor* reactor) {
   ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_Alarm_, context, request, response, reactor);
 }
 
@@ -764,11 +764,11 @@ void Maintenance::Stub::experimental_async::Alarm(::grpc::ClientContext* context
   return ::grpc::internal::BlockingUnaryCall< ::etcdserverpb::StatusRequest, ::etcdserverpb::StatusResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_Status_, context, request, response);
 }
 
-void Maintenance::Stub::experimental_async::Status(::grpc::ClientContext* context, const ::etcdserverpb::StatusRequest* request, ::etcdserverpb::StatusResponse* response, std::function<void(::grpc::Status)> f) {
+void Maintenance::Stub::async::Status(::grpc::ClientContext* context, const ::etcdserverpb::StatusRequest* request, ::etcdserverpb::StatusResponse* response, std::function<void(::grpc::Status)> f) {
   ::grpc::internal::CallbackUnaryCall< ::etcdserverpb::StatusRequest, ::etcdserverpb::StatusResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_Status_, context, request, response, std::move(f));
 }
 
-void Maintenance::Stub::experimental_async::Status(::grpc::ClientContext* context, const ::etcdserverpb::StatusRequest* request, ::etcdserverpb::StatusResponse* response, ::grpc::experimental::ClientUnaryReactor* reactor) {
+void Maintenance::Stub::async::Status(::grpc::ClientContext* context, const ::etcdserverpb::StatusRequest* request, ::etcdserverpb::StatusResponse* response, ::grpc::ClientUnaryReactor* reactor) {
   ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_Status_, context, request, response, reactor);
 }
 
@@ -787,11 +787,11 @@ void Maintenance::Stub::experimental_async::Status(::grpc::ClientContext* contex
   return ::grpc::internal::BlockingUnaryCall< ::etcdserverpb::DefragmentRequest, ::etcdserverpb::DefragmentResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_Defragment_, context, request, response);
 }
 
-void Maintenance::Stub::experimental_async::Defragment(::grpc::ClientContext* context, const ::etcdserverpb::DefragmentRequest* request, ::etcdserverpb::DefragmentResponse* response, std::function<void(::grpc::Status)> f) {
+void Maintenance::Stub::async::Defragment(::grpc::ClientContext* context, const ::etcdserverpb::DefragmentRequest* request, ::etcdserverpb::DefragmentResponse* response, std::function<void(::grpc::Status)> f) {
   ::grpc::internal::CallbackUnaryCall< ::etcdserverpb::DefragmentRequest, ::etcdserverpb::DefragmentResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_Defragment_, context, request, response, std::move(f));
 }
 
-void Maintenance::Stub::experimental_async::Defragment(::grpc::ClientContext* context, const ::etcdserverpb::DefragmentRequest* request, ::etcdserverpb::DefragmentResponse* response, ::grpc::experimental::ClientUnaryReactor* reactor) {
+void Maintenance::Stub::async::Defragment(::grpc::ClientContext* context, const ::etcdserverpb::DefragmentRequest* request, ::etcdserverpb::DefragmentResponse* response, ::grpc::ClientUnaryReactor* reactor) {
   ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_Defragment_, context, request, response, reactor);
 }
 
@@ -810,11 +810,11 @@ void Maintenance::Stub::experimental_async::Defragment(::grpc::ClientContext* co
   return ::grpc::internal::BlockingUnaryCall< ::etcdserverpb::HashRequest, ::etcdserverpb::HashResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_Hash_, context, request, response);
 }
 
-void Maintenance::Stub::experimental_async::Hash(::grpc::ClientContext* context, const ::etcdserverpb::HashRequest* request, ::etcdserverpb::HashResponse* response, std::function<void(::grpc::Status)> f) {
+void Maintenance::Stub::async::Hash(::grpc::ClientContext* context, const ::etcdserverpb::HashRequest* request, ::etcdserverpb::HashResponse* response, std::function<void(::grpc::Status)> f) {
   ::grpc::internal::CallbackUnaryCall< ::etcdserverpb::HashRequest, ::etcdserverpb::HashResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_Hash_, context, request, response, std::move(f));
 }
 
-void Maintenance::Stub::experimental_async::Hash(::grpc::ClientContext* context, const ::etcdserverpb::HashRequest* request, ::etcdserverpb::HashResponse* response, ::grpc::experimental::ClientUnaryReactor* reactor) {
+void Maintenance::Stub::async::Hash(::grpc::ClientContext* context, const ::etcdserverpb::HashRequest* request, ::etcdserverpb::HashResponse* response, ::grpc::ClientUnaryReactor* reactor) {
   ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_Hash_, context, request, response, reactor);
 }
 
@@ -833,11 +833,11 @@ void Maintenance::Stub::experimental_async::Hash(::grpc::ClientContext* context,
   return ::grpc::internal::BlockingUnaryCall< ::etcdserverpb::HashKVRequest, ::etcdserverpb::HashKVResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_HashKV_, context, request, response);
 }
 
-void Maintenance::Stub::experimental_async::HashKV(::grpc::ClientContext* context, const ::etcdserverpb::HashKVRequest* request, ::etcdserverpb::HashKVResponse* response, std::function<void(::grpc::Status)> f) {
+void Maintenance::Stub::async::HashKV(::grpc::ClientContext* context, const ::etcdserverpb::HashKVRequest* request, ::etcdserverpb::HashKVResponse* response, std::function<void(::grpc::Status)> f) {
   ::grpc::internal::CallbackUnaryCall< ::etcdserverpb::HashKVRequest, ::etcdserverpb::HashKVResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_HashKV_, context, request, response, std::move(f));
 }
 
-void Maintenance::Stub::experimental_async::HashKV(::grpc::ClientContext* context, const ::etcdserverpb::HashKVRequest* request, ::etcdserverpb::HashKVResponse* response, ::grpc::experimental::ClientUnaryReactor* reactor) {
+void Maintenance::Stub::async::HashKV(::grpc::ClientContext* context, const ::etcdserverpb::HashKVRequest* request, ::etcdserverpb::HashKVResponse* response, ::grpc::ClientUnaryReactor* reactor) {
   ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_HashKV_, context, request, response, reactor);
 }
 
@@ -856,7 +856,7 @@ void Maintenance::Stub::experimental_async::HashKV(::grpc::ClientContext* contex
   return ::grpc::internal::ClientReaderFactory< ::etcdserverpb::SnapshotResponse>::Create(channel_.get(), rpcmethod_Snapshot_, context, request);
 }
 
-void Maintenance::Stub::experimental_async::Snapshot(::grpc::ClientContext* context, ::etcdserverpb::SnapshotRequest* request, ::grpc::experimental::ClientReadReactor< ::etcdserverpb::SnapshotResponse>* reactor) {
+void Maintenance::Stub::async::Snapshot(::grpc::ClientContext* context, const ::etcdserverpb::SnapshotRequest* request, ::grpc::ClientReadReactor< ::etcdserverpb::SnapshotResponse>* reactor) {
   ::grpc::internal::ClientCallbackReaderFactory< ::etcdserverpb::SnapshotResponse>::Create(stub_->channel_.get(), stub_->rpcmethod_Snapshot_, context, request, reactor);
 }
 
@@ -872,11 +872,11 @@ void Maintenance::Stub::experimental_async::Snapshot(::grpc::ClientContext* cont
   return ::grpc::internal::BlockingUnaryCall< ::etcdserverpb::MoveLeaderRequest, ::etcdserverpb::MoveLeaderResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_MoveLeader_, context, request, response);
 }
 
-void Maintenance::Stub::experimental_async::MoveLeader(::grpc::ClientContext* context, const ::etcdserverpb::MoveLeaderRequest* request, ::etcdserverpb::MoveLeaderResponse* response, std::function<void(::grpc::Status)> f) {
+void Maintenance::Stub::async::MoveLeader(::grpc::ClientContext* context, const ::etcdserverpb::MoveLeaderRequest* request, ::etcdserverpb::MoveLeaderResponse* response, std::function<void(::grpc::Status)> f) {
   ::grpc::internal::CallbackUnaryCall< ::etcdserverpb::MoveLeaderRequest, ::etcdserverpb::MoveLeaderResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_MoveLeader_, context, request, response, std::move(f));
 }
 
-void Maintenance::Stub::experimental_async::MoveLeader(::grpc::ClientContext* context, const ::etcdserverpb::MoveLeaderRequest* request, ::etcdserverpb::MoveLeaderResponse* response, ::grpc::experimental::ClientUnaryReactor* reactor) {
+void Maintenance::Stub::async::MoveLeader(::grpc::ClientContext* context, const ::etcdserverpb::MoveLeaderRequest* request, ::etcdserverpb::MoveLeaderResponse* response, ::grpc::ClientUnaryReactor* reactor) {
   ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_MoveLeader_, context, request, response, reactor);
 }
 
@@ -1038,38 +1038,38 @@ static const char* Auth_method_names[] = {
 
 std::unique_ptr< Auth::Stub> Auth::NewStub(const std::shared_ptr< ::grpc::ChannelInterface>& channel, const ::grpc::StubOptions& options) {
   (void)options;
-  std::unique_ptr< Auth::Stub> stub(new Auth::Stub(channel));
+  std::unique_ptr< Auth::Stub> stub(new Auth::Stub(channel, options));
   return stub;
 }
 
-Auth::Stub::Stub(const std::shared_ptr< ::grpc::ChannelInterface>& channel)
-  : channel_(channel), rpcmethod_AuthEnable_(Auth_method_names[0], ::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_AuthDisable_(Auth_method_names[1], ::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_Authenticate_(Auth_method_names[2], ::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_UserAdd_(Auth_method_names[3], ::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_UserGet_(Auth_method_names[4], ::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_UserList_(Auth_method_names[5], ::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_UserDelete_(Auth_method_names[6], ::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_UserChangePassword_(Auth_method_names[7], ::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_UserGrantRole_(Auth_method_names[8], ::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_UserRevokeRole_(Auth_method_names[9], ::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_RoleAdd_(Auth_method_names[10], ::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_RoleGet_(Auth_method_names[11], ::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_RoleList_(Auth_method_names[12], ::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_RoleDelete_(Auth_method_names[13], ::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_RoleGrantPermission_(Auth_method_names[14], ::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_RoleRevokePermission_(Auth_method_names[15], ::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+Auth::Stub::Stub(const std::shared_ptr< ::grpc::ChannelInterface>& channel, const ::grpc::StubOptions& options)
+  : channel_(channel), rpcmethod_AuthEnable_(Auth_method_names[0], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_AuthDisable_(Auth_method_names[1], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_Authenticate_(Auth_method_names[2], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_UserAdd_(Auth_method_names[3], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_UserGet_(Auth_method_names[4], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_UserList_(Auth_method_names[5], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_UserDelete_(Auth_method_names[6], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_UserChangePassword_(Auth_method_names[7], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_UserGrantRole_(Auth_method_names[8], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_UserRevokeRole_(Auth_method_names[9], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_RoleAdd_(Auth_method_names[10], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_RoleGet_(Auth_method_names[11], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_RoleList_(Auth_method_names[12], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_RoleDelete_(Auth_method_names[13], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_RoleGrantPermission_(Auth_method_names[14], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_RoleRevokePermission_(Auth_method_names[15], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
   {}
 
 ::grpc::Status Auth::Stub::AuthEnable(::grpc::ClientContext* context, const ::etcdserverpb::AuthEnableRequest& request, ::etcdserverpb::AuthEnableResponse* response) {
   return ::grpc::internal::BlockingUnaryCall< ::etcdserverpb::AuthEnableRequest, ::etcdserverpb::AuthEnableResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_AuthEnable_, context, request, response);
 }
 
-void Auth::Stub::experimental_async::AuthEnable(::grpc::ClientContext* context, const ::etcdserverpb::AuthEnableRequest* request, ::etcdserverpb::AuthEnableResponse* response, std::function<void(::grpc::Status)> f) {
+void Auth::Stub::async::AuthEnable(::grpc::ClientContext* context, const ::etcdserverpb::AuthEnableRequest* request, ::etcdserverpb::AuthEnableResponse* response, std::function<void(::grpc::Status)> f) {
   ::grpc::internal::CallbackUnaryCall< ::etcdserverpb::AuthEnableRequest, ::etcdserverpb::AuthEnableResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_AuthEnable_, context, request, response, std::move(f));
 }
 
-void Auth::Stub::experimental_async::AuthEnable(::grpc::ClientContext* context, const ::etcdserverpb::AuthEnableRequest* request, ::etcdserverpb::AuthEnableResponse* response, ::grpc::experimental::ClientUnaryReactor* reactor) {
+void Auth::Stub::async::AuthEnable(::grpc::ClientContext* context, const ::etcdserverpb::AuthEnableRequest* request, ::etcdserverpb::AuthEnableResponse* response, ::grpc::ClientUnaryReactor* reactor) {
   ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_AuthEnable_, context, request, response, reactor);
 }
 
@@ -1088,11 +1088,11 @@ void Auth::Stub::experimental_async::AuthEnable(::grpc::ClientContext* context, 
   return ::grpc::internal::BlockingUnaryCall< ::etcdserverpb::AuthDisableRequest, ::etcdserverpb::AuthDisableResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_AuthDisable_, context, request, response);
 }
 
-void Auth::Stub::experimental_async::AuthDisable(::grpc::ClientContext* context, const ::etcdserverpb::AuthDisableRequest* request, ::etcdserverpb::AuthDisableResponse* response, std::function<void(::grpc::Status)> f) {
+void Auth::Stub::async::AuthDisable(::grpc::ClientContext* context, const ::etcdserverpb::AuthDisableRequest* request, ::etcdserverpb::AuthDisableResponse* response, std::function<void(::grpc::Status)> f) {
   ::grpc::internal::CallbackUnaryCall< ::etcdserverpb::AuthDisableRequest, ::etcdserverpb::AuthDisableResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_AuthDisable_, context, request, response, std::move(f));
 }
 
-void Auth::Stub::experimental_async::AuthDisable(::grpc::ClientContext* context, const ::etcdserverpb::AuthDisableRequest* request, ::etcdserverpb::AuthDisableResponse* response, ::grpc::experimental::ClientUnaryReactor* reactor) {
+void Auth::Stub::async::AuthDisable(::grpc::ClientContext* context, const ::etcdserverpb::AuthDisableRequest* request, ::etcdserverpb::AuthDisableResponse* response, ::grpc::ClientUnaryReactor* reactor) {
   ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_AuthDisable_, context, request, response, reactor);
 }
 
@@ -1111,11 +1111,11 @@ void Auth::Stub::experimental_async::AuthDisable(::grpc::ClientContext* context,
   return ::grpc::internal::BlockingUnaryCall< ::etcdserverpb::AuthenticateRequest, ::etcdserverpb::AuthenticateResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_Authenticate_, context, request, response);
 }
 
-void Auth::Stub::experimental_async::Authenticate(::grpc::ClientContext* context, const ::etcdserverpb::AuthenticateRequest* request, ::etcdserverpb::AuthenticateResponse* response, std::function<void(::grpc::Status)> f) {
+void Auth::Stub::async::Authenticate(::grpc::ClientContext* context, const ::etcdserverpb::AuthenticateRequest* request, ::etcdserverpb::AuthenticateResponse* response, std::function<void(::grpc::Status)> f) {
   ::grpc::internal::CallbackUnaryCall< ::etcdserverpb::AuthenticateRequest, ::etcdserverpb::AuthenticateResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_Authenticate_, context, request, response, std::move(f));
 }
 
-void Auth::Stub::experimental_async::Authenticate(::grpc::ClientContext* context, const ::etcdserverpb::AuthenticateRequest* request, ::etcdserverpb::AuthenticateResponse* response, ::grpc::experimental::ClientUnaryReactor* reactor) {
+void Auth::Stub::async::Authenticate(::grpc::ClientContext* context, const ::etcdserverpb::AuthenticateRequest* request, ::etcdserverpb::AuthenticateResponse* response, ::grpc::ClientUnaryReactor* reactor) {
   ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_Authenticate_, context, request, response, reactor);
 }
 
@@ -1134,11 +1134,11 @@ void Auth::Stub::experimental_async::Authenticate(::grpc::ClientContext* context
   return ::grpc::internal::BlockingUnaryCall< ::etcdserverpb::AuthUserAddRequest, ::etcdserverpb::AuthUserAddResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_UserAdd_, context, request, response);
 }
 
-void Auth::Stub::experimental_async::UserAdd(::grpc::ClientContext* context, const ::etcdserverpb::AuthUserAddRequest* request, ::etcdserverpb::AuthUserAddResponse* response, std::function<void(::grpc::Status)> f) {
+void Auth::Stub::async::UserAdd(::grpc::ClientContext* context, const ::etcdserverpb::AuthUserAddRequest* request, ::etcdserverpb::AuthUserAddResponse* response, std::function<void(::grpc::Status)> f) {
   ::grpc::internal::CallbackUnaryCall< ::etcdserverpb::AuthUserAddRequest, ::etcdserverpb::AuthUserAddResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_UserAdd_, context, request, response, std::move(f));
 }
 
-void Auth::Stub::experimental_async::UserAdd(::grpc::ClientContext* context, const ::etcdserverpb::AuthUserAddRequest* request, ::etcdserverpb::AuthUserAddResponse* response, ::grpc::experimental::ClientUnaryReactor* reactor) {
+void Auth::Stub::async::UserAdd(::grpc::ClientContext* context, const ::etcdserverpb::AuthUserAddRequest* request, ::etcdserverpb::AuthUserAddResponse* response, ::grpc::ClientUnaryReactor* reactor) {
   ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_UserAdd_, context, request, response, reactor);
 }
 
@@ -1157,11 +1157,11 @@ void Auth::Stub::experimental_async::UserAdd(::grpc::ClientContext* context, con
   return ::grpc::internal::BlockingUnaryCall< ::etcdserverpb::AuthUserGetRequest, ::etcdserverpb::AuthUserGetResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_UserGet_, context, request, response);
 }
 
-void Auth::Stub::experimental_async::UserGet(::grpc::ClientContext* context, const ::etcdserverpb::AuthUserGetRequest* request, ::etcdserverpb::AuthUserGetResponse* response, std::function<void(::grpc::Status)> f) {
+void Auth::Stub::async::UserGet(::grpc::ClientContext* context, const ::etcdserverpb::AuthUserGetRequest* request, ::etcdserverpb::AuthUserGetResponse* response, std::function<void(::grpc::Status)> f) {
   ::grpc::internal::CallbackUnaryCall< ::etcdserverpb::AuthUserGetRequest, ::etcdserverpb::AuthUserGetResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_UserGet_, context, request, response, std::move(f));
 }
 
-void Auth::Stub::experimental_async::UserGet(::grpc::ClientContext* context, const ::etcdserverpb::AuthUserGetRequest* request, ::etcdserverpb::AuthUserGetResponse* response, ::grpc::experimental::ClientUnaryReactor* reactor) {
+void Auth::Stub::async::UserGet(::grpc::ClientContext* context, const ::etcdserverpb::AuthUserGetRequest* request, ::etcdserverpb::AuthUserGetResponse* response, ::grpc::ClientUnaryReactor* reactor) {
   ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_UserGet_, context, request, response, reactor);
 }
 
@@ -1180,11 +1180,11 @@ void Auth::Stub::experimental_async::UserGet(::grpc::ClientContext* context, con
   return ::grpc::internal::BlockingUnaryCall< ::etcdserverpb::AuthUserListRequest, ::etcdserverpb::AuthUserListResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_UserList_, context, request, response);
 }
 
-void Auth::Stub::experimental_async::UserList(::grpc::ClientContext* context, const ::etcdserverpb::AuthUserListRequest* request, ::etcdserverpb::AuthUserListResponse* response, std::function<void(::grpc::Status)> f) {
+void Auth::Stub::async::UserList(::grpc::ClientContext* context, const ::etcdserverpb::AuthUserListRequest* request, ::etcdserverpb::AuthUserListResponse* response, std::function<void(::grpc::Status)> f) {
   ::grpc::internal::CallbackUnaryCall< ::etcdserverpb::AuthUserListRequest, ::etcdserverpb::AuthUserListResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_UserList_, context, request, response, std::move(f));
 }
 
-void Auth::Stub::experimental_async::UserList(::grpc::ClientContext* context, const ::etcdserverpb::AuthUserListRequest* request, ::etcdserverpb::AuthUserListResponse* response, ::grpc::experimental::ClientUnaryReactor* reactor) {
+void Auth::Stub::async::UserList(::grpc::ClientContext* context, const ::etcdserverpb::AuthUserListRequest* request, ::etcdserverpb::AuthUserListResponse* response, ::grpc::ClientUnaryReactor* reactor) {
   ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_UserList_, context, request, response, reactor);
 }
 
@@ -1203,11 +1203,11 @@ void Auth::Stub::experimental_async::UserList(::grpc::ClientContext* context, co
   return ::grpc::internal::BlockingUnaryCall< ::etcdserverpb::AuthUserDeleteRequest, ::etcdserverpb::AuthUserDeleteResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_UserDelete_, context, request, response);
 }
 
-void Auth::Stub::experimental_async::UserDelete(::grpc::ClientContext* context, const ::etcdserverpb::AuthUserDeleteRequest* request, ::etcdserverpb::AuthUserDeleteResponse* response, std::function<void(::grpc::Status)> f) {
+void Auth::Stub::async::UserDelete(::grpc::ClientContext* context, const ::etcdserverpb::AuthUserDeleteRequest* request, ::etcdserverpb::AuthUserDeleteResponse* response, std::function<void(::grpc::Status)> f) {
   ::grpc::internal::CallbackUnaryCall< ::etcdserverpb::AuthUserDeleteRequest, ::etcdserverpb::AuthUserDeleteResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_UserDelete_, context, request, response, std::move(f));
 }
 
-void Auth::Stub::experimental_async::UserDelete(::grpc::ClientContext* context, const ::etcdserverpb::AuthUserDeleteRequest* request, ::etcdserverpb::AuthUserDeleteResponse* response, ::grpc::experimental::ClientUnaryReactor* reactor) {
+void Auth::Stub::async::UserDelete(::grpc::ClientContext* context, const ::etcdserverpb::AuthUserDeleteRequest* request, ::etcdserverpb::AuthUserDeleteResponse* response, ::grpc::ClientUnaryReactor* reactor) {
   ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_UserDelete_, context, request, response, reactor);
 }
 
@@ -1226,11 +1226,11 @@ void Auth::Stub::experimental_async::UserDelete(::grpc::ClientContext* context, 
   return ::grpc::internal::BlockingUnaryCall< ::etcdserverpb::AuthUserChangePasswordRequest, ::etcdserverpb::AuthUserChangePasswordResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_UserChangePassword_, context, request, response);
 }
 
-void Auth::Stub::experimental_async::UserChangePassword(::grpc::ClientContext* context, const ::etcdserverpb::AuthUserChangePasswordRequest* request, ::etcdserverpb::AuthUserChangePasswordResponse* response, std::function<void(::grpc::Status)> f) {
+void Auth::Stub::async::UserChangePassword(::grpc::ClientContext* context, const ::etcdserverpb::AuthUserChangePasswordRequest* request, ::etcdserverpb::AuthUserChangePasswordResponse* response, std::function<void(::grpc::Status)> f) {
   ::grpc::internal::CallbackUnaryCall< ::etcdserverpb::AuthUserChangePasswordRequest, ::etcdserverpb::AuthUserChangePasswordResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_UserChangePassword_, context, request, response, std::move(f));
 }
 
-void Auth::Stub::experimental_async::UserChangePassword(::grpc::ClientContext* context, const ::etcdserverpb::AuthUserChangePasswordRequest* request, ::etcdserverpb::AuthUserChangePasswordResponse* response, ::grpc::experimental::ClientUnaryReactor* reactor) {
+void Auth::Stub::async::UserChangePassword(::grpc::ClientContext* context, const ::etcdserverpb::AuthUserChangePasswordRequest* request, ::etcdserverpb::AuthUserChangePasswordResponse* response, ::grpc::ClientUnaryReactor* reactor) {
   ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_UserChangePassword_, context, request, response, reactor);
 }
 
@@ -1249,11 +1249,11 @@ void Auth::Stub::experimental_async::UserChangePassword(::grpc::ClientContext* c
   return ::grpc::internal::BlockingUnaryCall< ::etcdserverpb::AuthUserGrantRoleRequest, ::etcdserverpb::AuthUserGrantRoleResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_UserGrantRole_, context, request, response);
 }
 
-void Auth::Stub::experimental_async::UserGrantRole(::grpc::ClientContext* context, const ::etcdserverpb::AuthUserGrantRoleRequest* request, ::etcdserverpb::AuthUserGrantRoleResponse* response, std::function<void(::grpc::Status)> f) {
+void Auth::Stub::async::UserGrantRole(::grpc::ClientContext* context, const ::etcdserverpb::AuthUserGrantRoleRequest* request, ::etcdserverpb::AuthUserGrantRoleResponse* response, std::function<void(::grpc::Status)> f) {
   ::grpc::internal::CallbackUnaryCall< ::etcdserverpb::AuthUserGrantRoleRequest, ::etcdserverpb::AuthUserGrantRoleResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_UserGrantRole_, context, request, response, std::move(f));
 }
 
-void Auth::Stub::experimental_async::UserGrantRole(::grpc::ClientContext* context, const ::etcdserverpb::AuthUserGrantRoleRequest* request, ::etcdserverpb::AuthUserGrantRoleResponse* response, ::grpc::experimental::ClientUnaryReactor* reactor) {
+void Auth::Stub::async::UserGrantRole(::grpc::ClientContext* context, const ::etcdserverpb::AuthUserGrantRoleRequest* request, ::etcdserverpb::AuthUserGrantRoleResponse* response, ::grpc::ClientUnaryReactor* reactor) {
   ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_UserGrantRole_, context, request, response, reactor);
 }
 
@@ -1272,11 +1272,11 @@ void Auth::Stub::experimental_async::UserGrantRole(::grpc::ClientContext* contex
   return ::grpc::internal::BlockingUnaryCall< ::etcdserverpb::AuthUserRevokeRoleRequest, ::etcdserverpb::AuthUserRevokeRoleResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_UserRevokeRole_, context, request, response);
 }
 
-void Auth::Stub::experimental_async::UserRevokeRole(::grpc::ClientContext* context, const ::etcdserverpb::AuthUserRevokeRoleRequest* request, ::etcdserverpb::AuthUserRevokeRoleResponse* response, std::function<void(::grpc::Status)> f) {
+void Auth::Stub::async::UserRevokeRole(::grpc::ClientContext* context, const ::etcdserverpb::AuthUserRevokeRoleRequest* request, ::etcdserverpb::AuthUserRevokeRoleResponse* response, std::function<void(::grpc::Status)> f) {
   ::grpc::internal::CallbackUnaryCall< ::etcdserverpb::AuthUserRevokeRoleRequest, ::etcdserverpb::AuthUserRevokeRoleResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_UserRevokeRole_, context, request, response, std::move(f));
 }
 
-void Auth::Stub::experimental_async::UserRevokeRole(::grpc::ClientContext* context, const ::etcdserverpb::AuthUserRevokeRoleRequest* request, ::etcdserverpb::AuthUserRevokeRoleResponse* response, ::grpc::experimental::ClientUnaryReactor* reactor) {
+void Auth::Stub::async::UserRevokeRole(::grpc::ClientContext* context, const ::etcdserverpb::AuthUserRevokeRoleRequest* request, ::etcdserverpb::AuthUserRevokeRoleResponse* response, ::grpc::ClientUnaryReactor* reactor) {
   ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_UserRevokeRole_, context, request, response, reactor);
 }
 
@@ -1295,11 +1295,11 @@ void Auth::Stub::experimental_async::UserRevokeRole(::grpc::ClientContext* conte
   return ::grpc::internal::BlockingUnaryCall< ::etcdserverpb::AuthRoleAddRequest, ::etcdserverpb::AuthRoleAddResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_RoleAdd_, context, request, response);
 }
 
-void Auth::Stub::experimental_async::RoleAdd(::grpc::ClientContext* context, const ::etcdserverpb::AuthRoleAddRequest* request, ::etcdserverpb::AuthRoleAddResponse* response, std::function<void(::grpc::Status)> f) {
+void Auth::Stub::async::RoleAdd(::grpc::ClientContext* context, const ::etcdserverpb::AuthRoleAddRequest* request, ::etcdserverpb::AuthRoleAddResponse* response, std::function<void(::grpc::Status)> f) {
   ::grpc::internal::CallbackUnaryCall< ::etcdserverpb::AuthRoleAddRequest, ::etcdserverpb::AuthRoleAddResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_RoleAdd_, context, request, response, std::move(f));
 }
 
-void Auth::Stub::experimental_async::RoleAdd(::grpc::ClientContext* context, const ::etcdserverpb::AuthRoleAddRequest* request, ::etcdserverpb::AuthRoleAddResponse* response, ::grpc::experimental::ClientUnaryReactor* reactor) {
+void Auth::Stub::async::RoleAdd(::grpc::ClientContext* context, const ::etcdserverpb::AuthRoleAddRequest* request, ::etcdserverpb::AuthRoleAddResponse* response, ::grpc::ClientUnaryReactor* reactor) {
   ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_RoleAdd_, context, request, response, reactor);
 }
 
@@ -1318,11 +1318,11 @@ void Auth::Stub::experimental_async::RoleAdd(::grpc::ClientContext* context, con
   return ::grpc::internal::BlockingUnaryCall< ::etcdserverpb::AuthRoleGetRequest, ::etcdserverpb::AuthRoleGetResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_RoleGet_, context, request, response);
 }
 
-void Auth::Stub::experimental_async::RoleGet(::grpc::ClientContext* context, const ::etcdserverpb::AuthRoleGetRequest* request, ::etcdserverpb::AuthRoleGetResponse* response, std::function<void(::grpc::Status)> f) {
+void Auth::Stub::async::RoleGet(::grpc::ClientContext* context, const ::etcdserverpb::AuthRoleGetRequest* request, ::etcdserverpb::AuthRoleGetResponse* response, std::function<void(::grpc::Status)> f) {
   ::grpc::internal::CallbackUnaryCall< ::etcdserverpb::AuthRoleGetRequest, ::etcdserverpb::AuthRoleGetResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_RoleGet_, context, request, response, std::move(f));
 }
 
-void Auth::Stub::experimental_async::RoleGet(::grpc::ClientContext* context, const ::etcdserverpb::AuthRoleGetRequest* request, ::etcdserverpb::AuthRoleGetResponse* response, ::grpc::experimental::ClientUnaryReactor* reactor) {
+void Auth::Stub::async::RoleGet(::grpc::ClientContext* context, const ::etcdserverpb::AuthRoleGetRequest* request, ::etcdserverpb::AuthRoleGetResponse* response, ::grpc::ClientUnaryReactor* reactor) {
   ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_RoleGet_, context, request, response, reactor);
 }
 
@@ -1341,11 +1341,11 @@ void Auth::Stub::experimental_async::RoleGet(::grpc::ClientContext* context, con
   return ::grpc::internal::BlockingUnaryCall< ::etcdserverpb::AuthRoleListRequest, ::etcdserverpb::AuthRoleListResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_RoleList_, context, request, response);
 }
 
-void Auth::Stub::experimental_async::RoleList(::grpc::ClientContext* context, const ::etcdserverpb::AuthRoleListRequest* request, ::etcdserverpb::AuthRoleListResponse* response, std::function<void(::grpc::Status)> f) {
+void Auth::Stub::async::RoleList(::grpc::ClientContext* context, const ::etcdserverpb::AuthRoleListRequest* request, ::etcdserverpb::AuthRoleListResponse* response, std::function<void(::grpc::Status)> f) {
   ::grpc::internal::CallbackUnaryCall< ::etcdserverpb::AuthRoleListRequest, ::etcdserverpb::AuthRoleListResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_RoleList_, context, request, response, std::move(f));
 }
 
-void Auth::Stub::experimental_async::RoleList(::grpc::ClientContext* context, const ::etcdserverpb::AuthRoleListRequest* request, ::etcdserverpb::AuthRoleListResponse* response, ::grpc::experimental::ClientUnaryReactor* reactor) {
+void Auth::Stub::async::RoleList(::grpc::ClientContext* context, const ::etcdserverpb::AuthRoleListRequest* request, ::etcdserverpb::AuthRoleListResponse* response, ::grpc::ClientUnaryReactor* reactor) {
   ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_RoleList_, context, request, response, reactor);
 }
 
@@ -1364,11 +1364,11 @@ void Auth::Stub::experimental_async::RoleList(::grpc::ClientContext* context, co
   return ::grpc::internal::BlockingUnaryCall< ::etcdserverpb::AuthRoleDeleteRequest, ::etcdserverpb::AuthRoleDeleteResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_RoleDelete_, context, request, response);
 }
 
-void Auth::Stub::experimental_async::RoleDelete(::grpc::ClientContext* context, const ::etcdserverpb::AuthRoleDeleteRequest* request, ::etcdserverpb::AuthRoleDeleteResponse* response, std::function<void(::grpc::Status)> f) {
+void Auth::Stub::async::RoleDelete(::grpc::ClientContext* context, const ::etcdserverpb::AuthRoleDeleteRequest* request, ::etcdserverpb::AuthRoleDeleteResponse* response, std::function<void(::grpc::Status)> f) {
   ::grpc::internal::CallbackUnaryCall< ::etcdserverpb::AuthRoleDeleteRequest, ::etcdserverpb::AuthRoleDeleteResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_RoleDelete_, context, request, response, std::move(f));
 }
 
-void Auth::Stub::experimental_async::RoleDelete(::grpc::ClientContext* context, const ::etcdserverpb::AuthRoleDeleteRequest* request, ::etcdserverpb::AuthRoleDeleteResponse* response, ::grpc::experimental::ClientUnaryReactor* reactor) {
+void Auth::Stub::async::RoleDelete(::grpc::ClientContext* context, const ::etcdserverpb::AuthRoleDeleteRequest* request, ::etcdserverpb::AuthRoleDeleteResponse* response, ::grpc::ClientUnaryReactor* reactor) {
   ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_RoleDelete_, context, request, response, reactor);
 }
 
@@ -1387,11 +1387,11 @@ void Auth::Stub::experimental_async::RoleDelete(::grpc::ClientContext* context, 
   return ::grpc::internal::BlockingUnaryCall< ::etcdserverpb::AuthRoleGrantPermissionRequest, ::etcdserverpb::AuthRoleGrantPermissionResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_RoleGrantPermission_, context, request, response);
 }
 
-void Auth::Stub::experimental_async::RoleGrantPermission(::grpc::ClientContext* context, const ::etcdserverpb::AuthRoleGrantPermissionRequest* request, ::etcdserverpb::AuthRoleGrantPermissionResponse* response, std::function<void(::grpc::Status)> f) {
+void Auth::Stub::async::RoleGrantPermission(::grpc::ClientContext* context, const ::etcdserverpb::AuthRoleGrantPermissionRequest* request, ::etcdserverpb::AuthRoleGrantPermissionResponse* response, std::function<void(::grpc::Status)> f) {
   ::grpc::internal::CallbackUnaryCall< ::etcdserverpb::AuthRoleGrantPermissionRequest, ::etcdserverpb::AuthRoleGrantPermissionResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_RoleGrantPermission_, context, request, response, std::move(f));
 }
 
-void Auth::Stub::experimental_async::RoleGrantPermission(::grpc::ClientContext* context, const ::etcdserverpb::AuthRoleGrantPermissionRequest* request, ::etcdserverpb::AuthRoleGrantPermissionResponse* response, ::grpc::experimental::ClientUnaryReactor* reactor) {
+void Auth::Stub::async::RoleGrantPermission(::grpc::ClientContext* context, const ::etcdserverpb::AuthRoleGrantPermissionRequest* request, ::etcdserverpb::AuthRoleGrantPermissionResponse* response, ::grpc::ClientUnaryReactor* reactor) {
   ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_RoleGrantPermission_, context, request, response, reactor);
 }
 
@@ -1410,11 +1410,11 @@ void Auth::Stub::experimental_async::RoleGrantPermission(::grpc::ClientContext* 
   return ::grpc::internal::BlockingUnaryCall< ::etcdserverpb::AuthRoleRevokePermissionRequest, ::etcdserverpb::AuthRoleRevokePermissionResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_RoleRevokePermission_, context, request, response);
 }
 
-void Auth::Stub::experimental_async::RoleRevokePermission(::grpc::ClientContext* context, const ::etcdserverpb::AuthRoleRevokePermissionRequest* request, ::etcdserverpb::AuthRoleRevokePermissionResponse* response, std::function<void(::grpc::Status)> f) {
+void Auth::Stub::async::RoleRevokePermission(::grpc::ClientContext* context, const ::etcdserverpb::AuthRoleRevokePermissionRequest* request, ::etcdserverpb::AuthRoleRevokePermissionResponse* response, std::function<void(::grpc::Status)> f) {
   ::grpc::internal::CallbackUnaryCall< ::etcdserverpb::AuthRoleRevokePermissionRequest, ::etcdserverpb::AuthRoleRevokePermissionResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_RoleRevokePermission_, context, request, response, std::move(f));
 }
 
-void Auth::Stub::experimental_async::RoleRevokePermission(::grpc::ClientContext* context, const ::etcdserverpb::AuthRoleRevokePermissionRequest* request, ::etcdserverpb::AuthRoleRevokePermissionResponse* response, ::grpc::experimental::ClientUnaryReactor* reactor) {
+void Auth::Stub::async::RoleRevokePermission(::grpc::ClientContext* context, const ::etcdserverpb::AuthRoleRevokePermissionRequest* request, ::etcdserverpb::AuthRoleRevokePermissionResponse* response, ::grpc::ClientUnaryReactor* reactor) {
   ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_RoleRevokePermission_, context, request, response, reactor);
 }
 

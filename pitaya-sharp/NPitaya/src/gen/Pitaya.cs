@@ -30,10 +30,12 @@ namespace NPitaya.Protos {
             "UmVzcG9uc2UiABIuCgpQdXNoVG9Vc2VyEgwucHJvdG9zLlB1c2gaEC5wcm90",
             "b3MuUmVzcG9uc2UiABI4ChFTZXNzaW9uQmluZFJlbW90ZRIPLnByb3Rvcy5C",
             "aW5kTXNnGhAucHJvdG9zLlJlc3BvbnNlIgASMQoIS2lja1VzZXISDy5wcm90",
-            "b3MuS2lja01zZxoSLnByb3Rvcy5LaWNrQW5zd2VyIgBiBnByb3RvMw=="));
+            "b3MuS2lja01zZxoSLnByb3Rvcy5LaWNrQW5zd2VyIgBCPFopZ2l0aHViLmNv",
+            "bS90b3BmcmVlZ2FtZXMvcGl0YXlhL3BrZy9wcm90b3OqAg5OUGl0YXlhLlBy",
+            "b3Rvc2IGcHJvdG8z"));
       descriptor = pbr::FileDescriptor.FromGeneratedCode(descriptorData,
           new pbr::FileDescriptor[] { global::NPitaya.Protos.RequestReflection.Descriptor, global::NPitaya.Protos.ResponseReflection.Descriptor, global::NPitaya.Protos.PushReflection.Descriptor, global::NPitaya.Protos.BindReflection.Descriptor, global::NPitaya.Protos.KickReflection.Descriptor, },
-          new pbr::GeneratedClrTypeInfo(null, null));
+          new pbr::GeneratedClrTypeInfo(null, null, null));
     }
     #endregion
 

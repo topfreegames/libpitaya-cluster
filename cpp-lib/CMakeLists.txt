@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.7)
+cmake_minimum_required(VERSION 3.13)
 
 project(PitayaCpp)
 
@@ -36,10 +36,10 @@ if(UNIX AND NOT APPLE)
     set(gRPC_ZLIB_PROVIDER "package")
 endif()
 add_subdirectory(deps/grpc EXCLUDE_FROM_ALL)
-
 add_subdirectory(deps/etcd-cpp-api EXCLUDE_FROM_ALL)
 
 set(NATS_BUILD_STREAMING OFF CACHE BOOL "")
+#set(NATS_BUILD_TLS_USE_OPENSSL_1_1_API ON CACHE BOOL "" FORCE)
 add_subdirectory(deps/nats.c-3.3.0 EXCLUDE_FROM_ALL)
 
 option(BUILD_MACOSX_BUNDLE "Should build a bundle for Macosx" OFF)
@@ -124,7 +124,7 @@ endif()
 
 set_target_properties(pitaya_cpp
   PROPERTIES
-    CXX_STANDARD 11
+    CXX_STANDARD 17
     POSITION_INDEPENDENT_CODE ON)
 
 target_include_directories(pitaya_cpp
@@ -132,6 +132,8 @@ target_include_directories(pitaya_cpp
     $<BUILD_INTERFACE:
       ${CMAKE_SOURCE_DIR}/include
       ${CMAKE_SOURCE_DIR}/deps/spdlog/include>
+      ${PROTOBUF_INCLUDE_DIRS}
+      ${CMAKE_CURRENT_BINARY_DIR}
     $<INSTALL_INTERFACE:include>
   PRIVATE
     src)
@@ -153,7 +155,7 @@ if(BUILD_TESTING AND NOT BUILD_MACOSX_BUNDLE)
 
     target_link_libraries(main PRIVATE pitaya_cpp)
 
-    set_target_properties(main PROPERTIES CXX_STANDARD 11)
+    set_target_properties(main PROPERTIES CXX_STANDARD 17)
 
     #==============================
     # Enable tests
