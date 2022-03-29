@@ -15,7 +15,7 @@ require (
 	github.com/gogo/protobuf v1.1.1
 	github.com/golang/protobuf v1.1.0
 	github.com/google/uuid v0.0.0-20161128191214-064e2069ce9c
-	github.com/gorilla/websocket v1.2.0
+	github.com/gorilla/websocket v1.4.1
 	github.com/hashicorp/hcl v0.0.0-20180404174102-ef8a98b0bbce
 	github.com/leodido/go-urn v1.1.0 // indirect
 	github.com/magiconair/properties v1.8.0
