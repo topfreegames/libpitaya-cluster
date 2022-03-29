@@ -23,7 +23,7 @@ class PitayaCpp(ConanFile):
     }
     requires = (
         'zlib/1.2.11',
-        'openssl/1.1.1m',
+        'openssl/3.0.2',
         'boost/1.78.0',
         'protobuf/3.19.2',
     )

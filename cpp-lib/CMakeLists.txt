@@ -39,7 +39,7 @@ add_subdirectory(deps/grpc EXCLUDE_FROM_ALL)
 add_subdirectory(deps/etcd-cpp-api EXCLUDE_FROM_ALL)
 
 set(NATS_BUILD_STREAMING OFF CACHE BOOL "")
-#set(NATS_BUILD_TLS_USE_OPENSSL_1_1_API ON CACHE BOOL "" FORCE)
+set(NATS_BUILD_TLS_USE_OPENSSL_1_1_API ON CACHE BOOL "" FORCE)
 add_subdirectory(deps/nats.c-3.3.0 EXCLUDE_FROM_ALL)
 
 option(BUILD_MACOSX_BUNDLE "Should build a bundle for Macosx" OFF)
