@@ -8,6 +8,7 @@ if(UNIX AND NOT APPLE)
   # FIXME: this is an ugly solution, avoid setting global variables
   # by adding properties to the targets.
   set(CMAKE_CXX_FLAGS "-fPIC")
+  set(CMAKE_C_FLAGS "-fPIC")
   set(CMAKE_PREFIX_PATH "${CMAKE_SOURCE_DIR}/cpprestsdk_install/linux")
 elseif(APPLE)
   set(CMAKE_FIND_LIBRARY_SUFFIXES ".a" ".lib" ".dylib" ".so" ".dll")
@@ -39,7 +40,7 @@ add_subdirectory(deps/grpc EXCLUDE_FROM_ALL)
 add_subdirectory(deps/etcd-cpp-api EXCLUDE_FROM_ALL)
 
 set(NATS_BUILD_STREAMING OFF CACHE BOOL "")
-add_subdirectory(deps/nats.c-2.5.0 EXCLUDE_FROM_ALL)
+add_subdirectory(deps/nats.c-3.3.0 EXCLUDE_FROM_ALL)
 
 option(BUILD_MACOSX_BUNDLE "Should build a bundle for Macosx" OFF)
 
