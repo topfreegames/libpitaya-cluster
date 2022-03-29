@@ -1,6 +1,0 @@
-[requires]
-cpprestsdk/2.10.18
-
-[generators]
-CMakeDeps
-CMakeToolchain

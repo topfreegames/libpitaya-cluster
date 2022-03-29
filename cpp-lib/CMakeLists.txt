@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.13)
+cmake_minimum_required(VERSION 3.7)
 
 project(PitayaCpp)
 
@@ -12,7 +12,6 @@ if(UNIX AND NOT APPLE)
   set(CMAKE_PREFIX_PATH "${CMAKE_SOURCE_DIR}/cpprestsdk_install/linux")
 elseif(APPLE)
   set(CMAKE_FIND_LIBRARY_SUFFIXES ".a" ".lib" ".dylib" ".so" ".dll")
-  set(CMAKE_PREFIX_PATH "${CMAKE_SOURCE_DIR}/cpprestsdk_install/mac")
 else()
   set(CMAKE_FIND_LIBRARY_SUFFIXES ".a" ".lib" ".dylib" ".so" ".dll")
 endif()
@@ -35,6 +34,8 @@ set(gRPC_BUILD_CSHARP_EXT OFF CACHE BOOL "")
 if(UNIX AND NOT APPLE)
     set(gRPC_ZLIB_PROVIDER "package")
 endif()
+
+set(ABSL_PROPAGATE_CXX_STD ON CACHE BOOL "")
 add_subdirectory(deps/grpc EXCLUDE_FROM_ALL)
 add_subdirectory(deps/etcd-cpp-api EXCLUDE_FROM_ALL)
 
@@ -47,7 +48,7 @@ option(BUILD_MACOSX_BUNDLE "Should build a bundle for Macosx" OFF)
 if(BUILD_MACOSX_BUNDLE)
     message(STATUS "Setting library to MODULE")
     set(LIB_TYPE MODULE)
-elseif(BUILD_TESTING)
+elseif(BUILD_TESTS)
     set(LIB_TYPE STATIC)
 else()
     set(LIB_TYPE SHARED)
@@ -147,7 +148,7 @@ target_link_libraries(pitaya_cpp
     libprotobuf)
 
 include(CTest)
-if(BUILD_TESTING AND NOT BUILD_MACOSX_BUNDLE)
+if(BUILD_TESTS AND NOT BUILD_MACOSX_BUNDLE)
     # ===============================
     # Add example
     # ===============================
@@ -182,7 +183,7 @@ if(BUILD_TESTING AND NOT BUILD_MACOSX_BUNDLE)
         test/c_wrapper_test.cpp
         test/main_test.cpp)
 
-    message(WARNING "Adding profiling data into the library and the tests executable, do not ship this library to production (compile with -DBUILD_TESTING=OFF)")
+    message(WARNING "Adding profiling data into the library and the tests executable, do not ship this library to production (compile with -DBUILD_TESTS=OFF)")
 
     target_compile_options(pitaya_cpp
       PRIVATE -fprofile-instr-generate -fcoverage-mapping -O0)
@@ -193,7 +194,7 @@ if(BUILD_TESTING AND NOT BUILD_MACOSX_BUNDLE)
     target_include_directories(pitaya_cpp_tests PUBLIC src)
 
     set_target_properties(pitaya_cpp_tests PROPERTIES
-        CXX_STANDARD 14
+        CXX_STANDARD 17
         OUTPUT_NAME tests)
 
     target_link_libraries(pitaya_cpp_tests
