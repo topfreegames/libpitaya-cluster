@@ -33,31 +33,31 @@ clean-all: clean-mac-debug clean-mac-release clean-mac-unity clean-xcode clean-l
 
 generate-xcode:
 	@conan install -if _builds/xcode . --build=missing -s cppstd=gnu17
-	@cmake -H. -B_builds/xcode -GXcode -DBUILD_TESTING=ON -DBUILD_SHARED_LIBS=OFF
+	@cmake -H. -B_builds/xcode -GXcode -DBUILD_TESTS=ON -DBUILD_SHARED_LIBS=OFF
 
 build-linux-release:
 	@conan install -if _builds/linux . --build=missing -s cppstd=gnu17
-	@cmake -H. -B_builds/linux -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF -DBUILD_SHARED_LIBS=OFF -GNinja -DCMAKE_C_COMPILER="/usr/local/bin/clang" -DCMAKE_CXX_COMPILER="/usr/local/bin/clang++"
+	@cmake -H. -B_builds/linux -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=OFF -DBUILD_SHARED_LIBS=OFF -GNinja
 	@cmake --build _builds/linux
 
 build-mac-release:
 	@conan install . -if _builds/mac --build=missing -s cppstd=gnu17
-	@cmake -H. -B_builds/mac -GNinja -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF -DBUILD_SHARED_LIBS=OFF
+	@cmake -H. -B_builds/mac -GNinja -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=OFF -DBUILD_SHARED_LIBS=OFF
 	@cmake --build _builds/mac
 
 build-mac-debug:
 	@conan install . -if _builds/mac-debug --build=missing -s cppstd=gnu17
-	@cmake -H. -B_builds/mac-debug -GNinja -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTING=ON -DBUILD_SHARED_LIBS=OFF
+	@cmake -H. -B_builds/mac-debug -GNinja -DBUILD_GMOCK=ON -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTS=ON -DBUILD_SHARED_LIBS=OFF
 	@cmake --build _builds/mac-debug
 
 build-mac-unity:
 	@conan install -if _builds/mac-unity . --build=missing -s cppstd=gnu17
-	@cmake -H. -B_builds/mac-unity -GNinja -DCMAKE_BUILD_TYPE=Release -DBUILD_MACOSX_BUNDLE=ON -DBUILD_TESTING=OFF -DBUILD_SHARED_LIBS=OFF
+	@cmake -H. -B_builds/mac-unity -GNinja -DCMAKE_BUILD_TYPE=Release -DBUILD_MACOSX_BUNDLE=ON -DBUILD_TESTS=OFF -DBUILD_SHARED_LIBS=OFF
 	@cmake --build _builds/mac-unity
 
 build-mac-unity-debug:
 	@conan install -if _builds/mac-unity-debug .  --build=missing -s cppstd=gnu17
-	@cmake -H. -B_builds/mac-unity-debug -GNinja -DCMAKE_BUILD_TYPE=Debug -DBUILD_MACOSX_BUNDLE=ON -DBUILD_TESTING=OFF -DBUILD_SHARED_LIBS=OFF
+	@cmake -H. -B_builds/mac-unity-debug -GNinja -DCMAKE_BUILD_TYPE=Debug -DBUILD_MACOSX_BUNDLE=ON -DBUILD_TESTS=OFF -DBUILD_SHARED_LIBS=OFF
 	@cmake --build _builds/mac-unity-debug
 
 build-docker-image:
