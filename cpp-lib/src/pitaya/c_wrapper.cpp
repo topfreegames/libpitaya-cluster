@@ -284,6 +284,7 @@ extern "C"
                                   nc->serverMaxNumberOfRpcs,
                                   nc->maxReconnectionAttempts,
                                   nc->maxPendingMsgs,
+                                  nc->reconnectWait,
                                   nc->reconnectBufSize);
         Server server = CServerToServer(sv);
 

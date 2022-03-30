@@ -748,7 +748,7 @@ TEST_F(Etcdv3ServiceDiscoveryTest, FailsAfterMaxRetrieUsingExponentialBackoff)
     }
 
     _config.syncServersIntervalSec = std::chrono::seconds(1);
-    _config.retryDelayMilliseconds = 300; // set retry delay (in milliseconds)
+    _config.retryDelayMilliseconds = 100; // set retry delay (in milliseconds)
     _config.maxNumberOfRetries = 5;
     auto serviceDiscovery = CreateServiceDiscovery();
     ASSERT_NE(_mockEtcdClient->onWatch, nullptr);
