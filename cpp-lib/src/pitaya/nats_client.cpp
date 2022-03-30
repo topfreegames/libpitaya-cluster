@@ -2,6 +2,8 @@
 
 #include "pitaya/utils.h"
 
+#include <string>
+
 namespace pitaya {
 
 //
@@ -60,15 +62,15 @@ NatsClientImpl::NatsClientImpl(NatsApiType apiType,
 
     natsStatus status = natsOptions_Create(&_opts);
     if (status != NATS_OK) {
-        std::string err_str("nats error - ");
+        std::string err_str("error configuring nats client - ");
         err_str.append(natsStatus_GetText(status));
         throw PitayaException(err_str);
     }
 
     natsOptions_SetTimeout(_opts, config.connectionTimeout.count());
     natsOptions_SetMaxReconnect(_opts, config.maxReconnectionAttempts);
-    natsOptions_SetReconnectWait(_opts, config.reconnectWait);
-    natsOptions_SetReconnectBufSize(_opts, config.reconnectBufSize);
+    natsOptions_SetReconnectWait(_opts, 2000);
+    natsOptions_SetReconnectBufSize(_opts, 8*1024*1024);
     natsOptions_SetRetryOnFailedConnect(_opts, true, NULL, this);
     natsOptions_SetClosedCB(_opts, ClosedCb, this);
     natsOptions_SetDisconnectedCB(_opts, DisconnectedCb, this);
@@ -79,10 +81,17 @@ NatsClientImpl::NatsClientImpl(NatsApiType apiType,
     }
     natsOptions_SetURL(_opts, config.natsAddr.c_str());
 
+    _log->info("NATS Connection Timeout - " + std::to_string(config.connectionTimeout.count()));
+    _log->info("NATS Max Reconnect Attempts - " + std::to_string(config.maxReconnectionAttempts));
+    _log->info("NATS Reconnect Wait Time - " + std::to_string(2000) + " //currently hardcoded ");
+    _log->info("NATS Reconnect Buffer Size - " + std::to_string(8*1024*1024) + " //currently hardcoded");
+
     // TODO, FIXME: Change so that connection happens NOT in the constructor.
     status = natsConnection_Connect(&_conn, _opts);
     if (status != NATS_OK) {
-        throw PitayaException("unable to initialize nats server");
+        std::string err_str("unable to initialize nats server - ");
+        err_str.append(natsStatus_GetText(status));
+        throw PitayaException(err_str);
     }
 }
     

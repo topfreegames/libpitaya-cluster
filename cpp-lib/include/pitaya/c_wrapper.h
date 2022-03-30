@@ -65,6 +65,7 @@ struct CNATSConfig
     int32_t maxReconnectionAttempts;
     int32_t maxPendingMsgs;
     int32_t reconnectBufSize;
+    int64_t reconnectWait = 2000;
 };
 
 struct CBindingStorageConfig
