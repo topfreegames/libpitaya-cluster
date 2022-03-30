@@ -60,14 +60,16 @@ NatsClientImpl::NatsClientImpl(NatsApiType apiType,
 
     natsStatus status = natsOptions_Create(&_opts);
     if (status != NATS_OK) {
-        throw PitayaException("error configuring nats client");
+        std::string err_str("nats error - ");
+        err_str.append(natsStatus_GetText(status));
+        throw PitayaException(err_str);
     }
 
     natsOptions_SetTimeout(_opts, config.connectionTimeout.count());
     natsOptions_SetMaxReconnect(_opts, config.maxReconnectionAttempts);
     natsOptions_SetReconnectWait(_opts, config.reconnectWait);
     natsOptions_SetReconnectBufSize(_opts, config.reconnectBufSize);
-    natsOptions_SetRetryOnFailedConnect(_opts, true, ReconnectedCb, this);
+    natsOptions_SetRetryOnFailedConnect(_opts, true, NULL, this);
     natsOptions_SetClosedCB(_opts, ClosedCb, this);
     natsOptions_SetDisconnectedCB(_opts, DisconnectedCb, this);
     natsOptions_SetReconnectedCB(_opts, ReconnectedCb, this);
