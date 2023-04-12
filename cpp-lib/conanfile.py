@@ -46,6 +46,7 @@ class PitayaCpp(ConanFile):
 
     def generate(self):
         tc = CMakeToolchain(self)
+        tc.presets_prefix = "npitaya"
         tc.generate()
 
         deps = CMakeDeps(self)
