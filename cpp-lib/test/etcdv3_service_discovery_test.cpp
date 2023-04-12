@@ -825,7 +825,7 @@ TEST_F(Etcdv3ServiceDiscoveryTest, ReconnectsAfterSomeRetrieUsingExponentialBack
     onLeaseKeepAliveExit(EtcdLeaseKeepAliveStatus::Fail);
     std::this_thread::sleep_for(std::chrono::milliseconds(600)); // Sleeping 1 second should retry 2 times.
 
-    // after two retries, make it works.
+    // after two retries, make it work.
     auto secondLeaseGrantRes = NewSuccessfullLeaseGrantResponse(10101010);
     {
         EXPECT_CALL(*_mockEtcdClient, LeaseGrant(Eq(_config.heartbeatTTLSec)))
@@ -834,6 +834,6 @@ TEST_F(Etcdv3ServiceDiscoveryTest, ReconnectsAfterSomeRetrieUsingExponentialBack
         .WillOnce(Return(setRes));
         EXPECT_CALL(*_mockEtcdClient, LeaseKeepAlive(Eq(secondLeaseGrantRes.leaseId), _))
         .WillOnce(SaveFunction<1>(&onLeaseKeepAliveExit));
+        EXPECT_CALL(*_mockEtcdClient, LeaseRevoke(10101010));
     }
 }
-
