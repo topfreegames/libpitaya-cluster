@@ -16,23 +16,28 @@
 #include <google/protobuf/port_def.inc>
 
 PROTOBUF_PRAGMA_INIT_SEG
+
+namespace _pb = ::PROTOBUF_NAMESPACE_ID;
+namespace _pbi = _pb::internal;
+
 namespace protos {
-constexpr Doc::Doc(
-  ::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized)
-  : doc_(&::PROTOBUF_NAMESPACE_ID::internal::fixed_address_empty_string){}
+PROTOBUF_CONSTEXPR Doc::Doc(
+    ::_pbi::ConstantInitialized): _impl_{
+    /*decltype(_impl_.doc_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
+  , /*decltype(_impl_._cached_size_)*/{}} {}
 struct DocDefaultTypeInternal {
-  constexpr DocDefaultTypeInternal()
-    : _instance(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized{}) {}
+  PROTOBUF_CONSTEXPR DocDefaultTypeInternal()
+      : _instance(::_pbi::ConstantInitialized{}) {}
   ~DocDefaultTypeInternal() {}
   union {
     Doc _instance;
   };
 };
-PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT DocDefaultTypeInternal _Doc_default_instance_;
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 DocDefaultTypeInternal _Doc_default_instance_;
 }  // namespace protos
-static ::PROTOBUF_NAMESPACE_ID::Metadata file_level_metadata_doc_2eproto[1];
-static constexpr ::PROTOBUF_NAMESPACE_ID::EnumDescriptor const** file_level_enum_descriptors_doc_2eproto = nullptr;
-static constexpr ::PROTOBUF_NAMESPACE_ID::ServiceDescriptor const** file_level_service_descriptors_doc_2eproto = nullptr;
+static ::_pb::Metadata file_level_metadata_doc_2eproto[1];
+static constexpr ::_pb::EnumDescriptor const** file_level_enum_descriptors_doc_2eproto = nullptr;
+static constexpr ::_pb::ServiceDescriptor const** file_level_service_descriptors_doc_2eproto = nullptr;
 
 const uint32_t TableStruct_doc_2eproto::offsets[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
   ~0u,  // no _has_bits_
@@ -41,14 +46,14 @@ const uint32_t TableStruct_doc_2eproto::offsets[] PROTOBUF_SECTION_VARIABLE(prot
   ~0u,  // no _oneof_case_
   ~0u,  // no _weak_field_map_
   ~0u,  // no _inlined_string_donated_
-  PROTOBUF_FIELD_OFFSET(::protos::Doc, doc_),
+  PROTOBUF_FIELD_OFFSET(::protos::Doc, _impl_.doc_),
 };
-static const ::PROTOBUF_NAMESPACE_ID::internal::MigrationSchema schemas[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
+static const ::_pbi::MigrationSchema schemas[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
   { 0, -1, -1, sizeof(::protos::Doc)},
 };
 
-static ::PROTOBUF_NAMESPACE_ID::Message const * const file_default_instances[] = {
-  reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(&::protos::_Doc_default_instance_),
+static const ::_pb::Message* const file_default_instances[] = {
+  &::protos::_Doc_default_instance_._instance,
 };
 
 const char descriptor_table_protodef_doc_2eproto[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) =
@@ -56,19 +61,21 @@ const char descriptor_table_protodef_doc_2eproto[] PROTOBUF_SECTION_VARIABLE(pro
   "<Z)github.com/topfreegames/pitaya/pkg/pr"
   "otos\252\002\016NPitaya.Protosb\006proto3"
   ;
-static ::PROTOBUF_NAMESPACE_ID::internal::once_flag descriptor_table_doc_2eproto_once;
-const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable descriptor_table_doc_2eproto = {
-  false, false, 109, descriptor_table_protodef_doc_2eproto, "doc.proto", 
-  &descriptor_table_doc_2eproto_once, nullptr, 0, 1,
-  schemas, file_default_instances, TableStruct_doc_2eproto::offsets,
-  file_level_metadata_doc_2eproto, file_level_enum_descriptors_doc_2eproto, file_level_service_descriptors_doc_2eproto,
+static ::_pbi::once_flag descriptor_table_doc_2eproto_once;
+const ::_pbi::DescriptorTable descriptor_table_doc_2eproto = {
+    false, false, 109, descriptor_table_protodef_doc_2eproto,
+    "doc.proto",
+    &descriptor_table_doc_2eproto_once, nullptr, 0, 1,
+    schemas, file_default_instances, TableStruct_doc_2eproto::offsets,
+    file_level_metadata_doc_2eproto, file_level_enum_descriptors_doc_2eproto,
+    file_level_service_descriptors_doc_2eproto,
 };
-PROTOBUF_ATTRIBUTE_WEAK const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable* descriptor_table_doc_2eproto_getter() {
+PROTOBUF_ATTRIBUTE_WEAK const ::_pbi::DescriptorTable* descriptor_table_doc_2eproto_getter() {
   return &descriptor_table_doc_2eproto;
 }
 
 // Force running AddDescriptors() at dynamic initialization time.
-PROTOBUF_ATTRIBUTE_INIT_PRIORITY static ::PROTOBUF_NAMESPACE_ID::internal::AddDescriptorsRunner dynamic_init_dummy_doc_2eproto(&descriptor_table_doc_2eproto);
+PROTOBUF_ATTRIBUTE_INIT_PRIORITY2 static ::_pbi::AddDescriptorsRunner dynamic_init_dummy_doc_2eproto(&descriptor_table_doc_2eproto);
 namespace protos {
 
 // ===================================================================
@@ -80,53 +87,58 @@ class Doc::_Internal {
 Doc::Doc(::PROTOBUF_NAMESPACE_ID::Arena* arena,
                          bool is_message_owned)
   : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
-  SharedCtor();
-  if (!is_message_owned) {
-    RegisterArenaDtor(arena);
-  }
+  SharedCtor(arena, is_message_owned);
   // @@protoc_insertion_point(arena_constructor:protos.Doc)
 }
 Doc::Doc(const Doc& from)
   : ::PROTOBUF_NAMESPACE_ID::Message() {
+  Doc* const _this = this; (void)_this;
+  new (&_impl_) Impl_{
+      decltype(_impl_.doc_){}
+    , /*decltype(_impl_._cached_size_)*/{}};
+
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-  doc_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  _impl_.doc_.InitDefault();
   #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-    doc_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), "", GetArenaForAllocation());
+    _impl_.doc_.Set("", GetArenaForAllocation());
   #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
   if (!from._internal_doc().empty()) {
-    doc_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, from._internal_doc(), 
-      GetArenaForAllocation());
+    _this->_impl_.doc_.Set(from._internal_doc(), 
+      _this->GetArenaForAllocation());
   }
   // @@protoc_insertion_point(copy_constructor:protos.Doc)
 }
 
-inline void Doc::SharedCtor() {
-doc_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
-#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  doc_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), "", GetArenaForAllocation());
-#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+inline void Doc::SharedCtor(
+    ::_pb::Arena* arena, bool is_message_owned) {
+  (void)arena;
+  (void)is_message_owned;
+  new (&_impl_) Impl_{
+      decltype(_impl_.doc_){}
+    , /*decltype(_impl_._cached_size_)*/{}
+  };
+  _impl_.doc_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    _impl_.doc_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
 }
 
 Doc::~Doc() {
   // @@protoc_insertion_point(destructor:protos.Doc)
-  if (GetArenaForAllocation() != nullptr) return;
+  if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
+  (void)arena;
+    return;
+  }
   SharedDtor();
-  _internal_metadata_.Delete<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
 inline void Doc::SharedDtor() {
   GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
-  doc_.DestroyNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  _impl_.doc_.Destroy();
 }
 
-void Doc::ArenaDtor(void* object) {
-  Doc* _this = reinterpret_cast< Doc* >(object);
-  (void)_this;
-}
-void Doc::RegisterArenaDtor(::PROTOBUF_NAMESPACE_ID::Arena*) {
-}
 void Doc::SetCachedSize(int size) const {
-  _cached_size_.Set(size);
+  _impl_._cached_size_.Set(size);
 }
 
 void Doc::Clear() {
@@ -135,23 +147,23 @@ void Doc::Clear() {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  doc_.ClearToEmpty();
+  _impl_.doc_.ClearToEmpty();
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
-const char* Doc::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) {
+const char* Doc::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
 #define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
   while (!ctx->Done(&ptr)) {
     uint32_t tag;
-    ptr = ::PROTOBUF_NAMESPACE_ID::internal::ReadTag(ptr, &tag);
+    ptr = ::_pbi::ReadTag(ptr, &tag);
     switch (tag >> 3) {
       // string doc = 1;
       case 1:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 10)) {
           auto str = _internal_mutable_doc();
-          ptr = ::PROTOBUF_NAMESPACE_ID::internal::InlineGreedyStringParser(str, ptr, ctx);
-          CHK_(::PROTOBUF_NAMESPACE_ID::internal::VerifyUTF8(str, "protos.Doc.doc"));
+          ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
           CHK_(ptr);
+          CHK_(::_pbi::VerifyUTF8(str, "protos.Doc.doc"));
         } else
           goto handle_unusual;
         continue;
@@ -195,7 +207,7 @@ uint8_t* Doc::_InternalSerialize(
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
-    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormat::InternalSerializeUnknownFieldsToArray(
+    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
         _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
   }
   // @@protoc_insertion_point(serialize_to_array_end:protos.Doc)
@@ -217,32 +229,28 @@ size_t Doc::ByteSizeLong() const {
         this->_internal_doc());
   }
 
-  return MaybeComputeUnknownFieldsSize(total_size, &_cached_size_);
+  return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
 }
 
 const ::PROTOBUF_NAMESPACE_ID::Message::ClassData Doc::_class_data_ = {
-    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSizeCheck,
+    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSourceCheck,
     Doc::MergeImpl
 };
 const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*Doc::GetClassData() const { return &_class_data_; }
 
-void Doc::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message* to,
-                      const ::PROTOBUF_NAMESPACE_ID::Message& from) {
-  static_cast<Doc *>(to)->MergeFrom(
-      static_cast<const Doc &>(from));
-}
 
-
-void Doc::MergeFrom(const Doc& from) {
-// @@protoc_insertion_point(class_specific_merge_from_start:protos.Doc)
-  GOOGLE_DCHECK_NE(&from, this);
+void Doc::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
+  auto* const _this = static_cast<Doc*>(&to_msg);
+  auto& from = static_cast<const Doc&>(from_msg);
+  // @@protoc_insertion_point(class_specific_merge_from_start:protos.Doc)
+  GOOGLE_DCHECK_NE(&from, _this);
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
   if (!from._internal_doc().empty()) {
-    _internal_set_doc(from._internal_doc());
+    _this->_internal_set_doc(from._internal_doc());
   }
-  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
 }
 
 void Doc::CopyFrom(const Doc& from) {
@@ -262,14 +270,13 @@ void Doc::InternalSwap(Doc* other) {
   auto* rhs_arena = other->GetArenaForAllocation();
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
-      &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
-      &doc_, lhs_arena,
-      &other->doc_, rhs_arena
+      &_impl_.doc_, lhs_arena,
+      &other->_impl_.doc_, rhs_arena
   );
 }
 
 ::PROTOBUF_NAMESPACE_ID::Metadata Doc::GetMetadata() const {
-  return ::PROTOBUF_NAMESPACE_ID::internal::AssignDescriptors(
+  return ::_pbi::AssignDescriptors(
       &descriptor_table_doc_2eproto_getter, &descriptor_table_doc_2eproto_once,
       file_level_metadata_doc_2eproto[0]);
 }
@@ -277,7 +284,8 @@ void Doc::InternalSwap(Doc* other) {
 // @@protoc_insertion_point(namespace_scope)
 }  // namespace protos
 PROTOBUF_NAMESPACE_OPEN
-template<> PROTOBUF_NOINLINE ::protos::Doc* Arena::CreateMaybeMessage< ::protos::Doc >(Arena* arena) {
+template<> PROTOBUF_NOINLINE ::protos::Doc*
+Arena::CreateMaybeMessage< ::protos::Doc >(Arena* arena) {
   return Arena::CreateMessageInternal< ::protos::Doc >(arena);
 }
 PROTOBUF_NAMESPACE_CLOSE

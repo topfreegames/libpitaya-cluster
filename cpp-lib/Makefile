@@ -32,39 +32,39 @@ clean-mac-debug:
 clean-all: clean-mac-debug clean-mac-release clean-mac-unity clean-xcode clean-linux-release
 
 generate-xcode:
-	@conan install -if _builds/xcode . --build=missing -s cppstd=gnu17
-	@cmake -H. -B_builds/xcode -GXcode -DBUILD_TESTS=ON -DBUILD_SHARED_LIBS=OFF
+	@conan install -of _builds/xcode . --build=missing -s compiler.cppstd=gnu17  -c tools.cmake.cmaketoolchain:generator=Xcode
+	@cmake -H. -B_builds/xcode -GXcode --preset conan-release -DBUILD_TESTS=ON -DBUILD_SHARED_LIBS=OFF
 
 build-linux-release:
-	@conan install -if _builds/linux . --build=missing -s cppstd=gnu17
-	@cmake -H. -B_builds/linux -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=OFF -DBUILD_SHARED_LIBS=OFF -GNinja
+	@conan install -of _builds/linux . --build=missing -s compiler.cppstd=gnu17 -c tools.cmake.cmaketoolchain:generator=Ninja
+	@cmake -H. -B_builds/linux --preset conan-release -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=OFF -DBUILD_SHARED_LIBS=OFF -GNinja
 	@cmake --build _builds/linux
 
 build-mac-release:
-	@conan install . -if _builds/mac --build=missing -s cppstd=gnu17
-	@cmake -H. -B_builds/mac -GNinja -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=OFF -DBUILD_SHARED_LIBS=OFF
+	@conan install . -of _builds/mac --build=missing -s compiler.cppstd=gnu17 -c tools.cmake.cmaketoolchain:generator=Ninja
+	@cmake -H. -B_builds/mac -GNinja --preset conan-release -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=OFF -DBUILD_SHARED_LIBS=OFF
 	@cmake --build _builds/mac
 
 build-mac-debug:
-	@conan install . -if _builds/mac-debug --build=missing -s cppstd=gnu17
-	@cmake -H. -B_builds/mac-debug -GNinja -DBUILD_GMOCK=ON -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTS=ON -DBUILD_SHARED_LIBS=OFF
+	@conan install . -of _builds/mac-debug --build=missing -s compiler.cppstd=gnu17 -s build_type=Debug -c tools.cmake.cmaketoolchain:generator=Ninja
+	@cmake -H. -B _builds/mac-debug --preset conan-debug -DBUILD_GMOCK=ON -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTS=ON -DBUILD_SHARED_LIBS=OFF
 	@cmake --build _builds/mac-debug
 
 build-mac-unity:
-	@conan install -if _builds/mac-unity . --build=missing -s cppstd=gnu17
-	@cmake -H. -B_builds/mac-unity -GNinja -DCMAKE_BUILD_TYPE=Release -DBUILD_MACOSX_BUNDLE=ON -DBUILD_TESTS=OFF -DBUILD_SHARED_LIBS=OFF
+	@conan install -of _builds/mac-unity . --build=missing -s compiler.cppstd=gnu17 -c tools.cmake.cmaketoolchain:generator=Ninja
+	@cmake -H. -B_builds/mac-unity -GNinja --preset conan-release -DCMAKE_BUILD_TYPE=Release -DBUILD_MACOSX_BUNDLE=ON -DBUILD_TESTS=OFF -DBUILD_SHARED_LIBS=OFF
 	@cmake --build _builds/mac-unity
 
 build-mac-unity-debug:
-	@conan install -if _builds/mac-unity-debug .  --build=missing -s cppstd=gnu17
-	@cmake -H. -B_builds/mac-unity-debug -GNinja -DCMAKE_BUILD_TYPE=Debug -DBUILD_MACOSX_BUNDLE=ON -DBUILD_TESTS=OFF -DBUILD_SHARED_LIBS=OFF
+	@conan install -of _builds/mac-unity-debug .  --build=missing -s compiler.cppstd=gnu17 -s build_type=Debug -c tools.cmake.cmaketoolchain:generator=Ninja
+	@cmake -H. -B_builds/mac-unity-debug -GNinja --preset conan-debug -DCMAKE_BUILD_TYPE=Debug -DBUILD_MACOSX_BUNDLE=ON -DBUILD_TESTS=OFF -DBUILD_SHARED_LIBS=OFF
 	@cmake --build _builds/mac-unity-debug
 
 build-docker-image:
 	@docker build . -t pitaya-cluster
 
 build-linux-docker:
-	@docker run -v $(shell pwd):/app -v conan:/home/conan -ti pitaya-cluster sh -c "cd /app && make build-linux-release"
+	@docker run -v $(shell pwd):/app -v conan:/home/conan/.conan2/p -ti pitaya-cluster sh -c "cd /app && make build-linux-release"
 
 build-all-mac: build-mac-release build-mac-unity build-linux-docker
 

@@ -1,7 +1,7 @@
 from os.path import join, dirname
-from conans import ConanFile, CMake
-from conans.errors import ConanInvalidConfiguration
-
+from conan import ConanFile
+from conan.tools.cmake import CMakeToolchain, CMakeDeps, CMake, cmake_layout
+from conan.errors import ConanInvalidConfiguration
 
 def get_version():
     with open(join(dirname(__file__), 'version.txt'), 'r') as f:
@@ -14,25 +14,42 @@ class PitayaCpp(ConanFile):
     version = get_version()
     url = 'https://github.com/topfreegames.com/libpitaya-cluster'
     description = 'C++ library that allows the creation of Pitaya servers.'
-    settings = 'cppstd', 'os', 'compiler', 'build_type', 'arch'
+    settings = 'os', 'compiler', 'build_type', 'arch'
     options = {
         'macosx_bundle': [False, True],
     }
     default_options = {
         'macosx_bundle': False,
+        'cpprestsdk/*:with_websockets': False,
+        'openssl/*:shared': False,
+        'openssl/*:build_type': "Debug",
+        'protobuf/*:debug_suffix': False,
+        'spdlog/*:header_only': True,
     }
-    requires = (
-        'zlib/1.2.11',
-        'openssl/3.0.2',
-        'boost/1.78.0',
-        'protobuf/3.19.2',
-        'cpprestsdk/2.10.18',
-    )
     build_requires = (
-        'gtest/1.8.1'
+        'gtest/1.10.0'
     )
-    generators = 'cmake_paths', 'cmake'
     exports = 'version.txt'
+
+    def requirements(self):
+        self.requires("zlib/1.2.13")
+        self.requires("protobuf/3.21.9", force=True)
+        self.requires("boost/1.80.0")
+        self.requires("openssl/1.1.1s")
+        self.requires("cpprestsdk/2.10.18")
+        self.requires("grpc/1.50.1")
+        self.requires("gtest/1.10.0")
+        self.requires("spdlog/1.11.0")
+        
+    def layout(self):
+        cmake_layout(self)
+
+    def generate(self):
+        tc = CMakeToolchain(self)
+        tc.generate()
+
+        deps = CMakeDeps(self)
+        deps.generate()
 
     def source(self):
         self.run('git clone --branch {} --recursive https://github.com/topfreegames/libpitaya-cluster'.format(
