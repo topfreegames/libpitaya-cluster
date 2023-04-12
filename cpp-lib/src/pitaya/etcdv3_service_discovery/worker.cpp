@@ -253,7 +253,6 @@ Worker::StartThread()
                 break;
             }
             case JobInfo::Shutdown: {
-                _log->info("Shutting down");
                 Shutdown();
                 _log->debug("Exiting loop");
                 return;
