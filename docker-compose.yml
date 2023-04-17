@@ -5,7 +5,25 @@ services:
     ports:
       - 4222:4222
   etcd:
-    image: appcelerator/etcd
+    image: docker.io/bitnami/etcd:3.5
+    environment:
+      - ALLOW_NONE_AUTHENTICATION=yes
     ports:
       - 2379:2379
-      - 4001:4001
+  etcd-proxy:
+    image: docker.io/bitnami/etcd:3.5
+    command:
+        - /opt/bitnami/etcd/bin/etcd
+        - grpc-proxy
+        - start
+        - --advertise-client-url=127.0.0.1:23790
+        - --listen-addr=0.0.0.0:23790
+        - --resolver-prefix="___grpc_proxy_endpoint"
+        - --resolver-ttl=60
+        - --endpoints=http://etcd:2379
+    environment:
+      - ALLOW_NONE_AUTHENTICATION=yes
+    ports:
+      - 23790:23790
+
+

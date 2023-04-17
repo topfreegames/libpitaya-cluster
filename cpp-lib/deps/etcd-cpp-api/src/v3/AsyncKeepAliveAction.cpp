@@ -42,39 +42,50 @@ void etcdv3::AsyncKeepAliveAction::waitForResponse()
     void* got_tag = nullptr;
     bool ok = false;
 
-    auto deadline = std::chrono::system_clock::now() + std::chrono::milliseconds(1);
-    CompletionQueue::NextStatus nextStatus = cq_.AsyncNext(&got_tag, &ok, deadline);
+    auto deadline = std::chrono::system_clock::now() + std::chrono::milliseconds(5000);
 
-    if (nextStatus == CompletionQueue::SHUTDOWN) {
-        return;
-    }
 
     _stream->Write(keep_alive_req, reinterpret_cast<void*>(Type::Write));
-
-    for (;;) {
-        if (!cq_.Next(&got_tag, &ok)) {
-            break;
+    // wait write finish
+    switch (cq_.AsyncNext(&got_tag, &ok, deadline)) {
+      case CompletionQueue::NextStatus::TIMEOUT: {
+        status = grpc::Status(grpc::StatusCode::DEADLINE_EXCEEDED, "gRPC timeout during keep alive write");
+        break;
+      }
+      case CompletionQueue::NextStatus::SHUTDOWN: {
+        status = grpc::Status(grpc::StatusCode::UNAVAILABLE, "gRPC already shutdown during keep alive write");
+        break;
+      }
+      case CompletionQueue::NextStatus::GOT_EVENT: {
+        if (!ok || got_tag != reinterpret_cast<void*>(Type::Write)) {
+          return;
         }
-
-        if (!ok) {
-            _stream->Finish(&status, reinterpret_cast<void*>(Type::Finish));
-            cq_.Shutdown();
-            continue;
-        }
-
-        switch (static_cast<Type>(reinterpret_cast<size_t>(got_tag))) {
-            case Type::Read:
-                return;
-            case Type::Write:
-                _stream->Read(&_response, reinterpret_cast<void*>(Type::Read));
-                break;
-            case Type::Finish:
-                return;
-            default:
-                GPR_ASSERT(false);
-                break;
-        }
+      }
     }
+    if (!status.ok()) {
+      return;
+    }
+
+    deadline = std::chrono::system_clock::now() + std::chrono::milliseconds(5000);
+    _stream->Read(&_response, reinterpret_cast<void*>(Type::Read));
+    // wait read finish
+    switch (cq_.AsyncNext(&got_tag, &ok, deadline)) {
+      case CompletionQueue::NextStatus::TIMEOUT: {
+        status = grpc::Status(grpc::StatusCode::DEADLINE_EXCEEDED, "gRPC timeout during keep alive read");
+        break;
+      }
+      case CompletionQueue::NextStatus::SHUTDOWN: {
+        status = grpc::Status(grpc::StatusCode::UNAVAILABLE, "gRPC already shutdown during keep alive read");
+        break;
+      }
+      case CompletionQueue::NextStatus::GOT_EVENT: {
+        if (ok && got_tag == reinterpret_cast<void*>(Type::Read)) {
+          return;
+        }
+        break;
+      }
+    }
+
 }
 
 void etcdv3::AsyncKeepAliveAction::setLeaseId(int64_t lease_id)
