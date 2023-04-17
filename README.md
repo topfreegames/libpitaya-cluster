@@ -8,7 +8,8 @@ The original [Pitaya](https://github.com/topfreegames/pitaya) project supports b
 <!-- ## Requirements -->
 <!-- - Dotnet and Mono (for running csharp example) -->
 <!-- - Docker (for starting testing dependencies) -->
-<!-- - Cmake >= 3.13 for building -->
+<!-- - Cmake >= 3.23 for building -->
+<!-- - Conan >= 2.x for building -->
 
 <!-- ## Pitaya Dependencies -->
 <!-- for running go-server, csharp-example and unity-example you must have an etcd running into localhost, port 2379 and a nats instance running on port 4222, theres a docker-compose file in the project with these dependencies, you can start them with ```make start-deps``` -->

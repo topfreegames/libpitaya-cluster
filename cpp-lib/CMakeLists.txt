@@ -1,17 +1,12 @@
-cmake_minimum_required(VERSION 3.7)
+cmake_minimum_required(VERSION 3.26.3)
 
 project(PitayaCpp)
+
+set(CMAKE_MACOSX_RPATH 0)
 
 # Prefer static libraries over dynamic ones.
 if(UNIX AND NOT APPLE)
   set(CMAKE_FIND_LIBRARY_SUFFIXES ".a" ".so")
-  # FIXME: this is an ugly solution, avoid setting global variables
-  # by adding properties to the targets.
-  set(CMAKE_CXX_FLAGS "-fPIC")
-  set(CMAKE_C_FLAGS "-fPIC")
-  set(CMAKE_PREFIX_PATH "${CMAKE_SOURCE_DIR}/cpprestsdk_install/linux")
-elseif(APPLE)
-  set(CMAKE_FIND_LIBRARY_SUFFIXES ".a" ".lib" ".dylib" ".so" ".dll")
 else()
   set(CMAKE_FIND_LIBRARY_SUFFIXES ".a" ".lib" ".dylib" ".so" ".dll")
 endif()
@@ -21,11 +16,26 @@ if(EXISTS ${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
     conan_basic_setup(TARGETS NO_OUTPUT_DIRS)
 endif()
 
-if(EXISTS ${CMAKE_BINARY_DIR}/conan_paths.cmake)
-    include(${CMAKE_BINARY_DIR}/conan_paths.cmake)
-endif()
-
 find_package(Boost REQUIRED)
+include_directories(${Boost_INCLUDE_DIRS})
+
+find_package(cpprestsdk REQUIRED)
+include_directories(${cpprestsdk_INCLUDE_DIRS})
+
+find_package(spdlog REQUIRED)
+include_directories(${spdlog_INCLUDE_DIRS})
+
+#find_package(fmt REQUIRED)
+#include_directories(${fmt_INCLUDE_DIRS})
+
+find_package(gRPC REQUIRED)
+include_directories(${gRPC_INCLUDE_DIRS})
+
+find_package(Protobuf REQUIRED)
+include_directories(${protobuf_INCLUDE_DIRS})
+
+find_package(absl REQUIRED)
+include_directories(${absl_INCLUDE_DIRS})
 
 # Build dependencies as static libraries
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "")
@@ -35,14 +45,14 @@ if(UNIX AND NOT APPLE)
     set(gRPC_ZLIB_PROVIDER "package")
 endif()
 
-set(ABSL_PROPAGATE_CXX_STD ON CACHE BOOL "")
-add_subdirectory(deps/grpc EXCLUDE_FROM_ALL)
 add_subdirectory(deps/etcd-cpp-api EXCLUDE_FROM_ALL)
+set_target_properties(etcd-cpp-api PROPERTIES COMPILE_FLAGS -fPIC)
 
 set(NATS_BUILD_STREAMING OFF CACHE BOOL "")
 set(NATS_BUILD_TLS_USE_OPENSSL_1_1_API ON CACHE BOOL "" FORCE)
 add_subdirectory(deps/nats.c-3.3.0 EXCLUDE_FROM_ALL)
 
+set_target_properties(nats_static PROPERTIES COMPILE_FLAGS -fPIC)
 option(BUILD_MACOSX_BUNDLE "Should build a bundle for Macosx" OFF)
 
 if(BUILD_MACOSX_BUNDLE)
@@ -132,8 +142,7 @@ target_include_directories(pitaya_cpp
   PUBLIC
     $<BUILD_INTERFACE:
       ${CMAKE_SOURCE_DIR}/include
-      ${CMAKE_SOURCE_DIR}/deps/spdlog/include>
-      ${PROTOBUF_INCLUDE_DIRS}
+      ${spdlog_INCLUDE_DIRS}>
       ${CMAKE_CURRENT_BINARY_DIR}
     $<INSTALL_INTERFACE:include>
   PRIVATE
@@ -145,7 +154,8 @@ target_link_libraries(pitaya_cpp
     etcd-cpp-api
     Boost::boost
   PRIVATE
-    libprotobuf)
+    gRPC::grpc++_unsecure
+    protobuf::libprotobuf)
 
 include(CTest)
 if(BUILD_TESTS AND NOT BUILD_MACOSX_BUNDLE)
@@ -162,6 +172,7 @@ if(BUILD_TESTS AND NOT BUILD_MACOSX_BUNDLE)
     # Enable tests
     #==============================
     find_package(GTest REQUIRED)
+    include_directories(${GTest_INCLUDE_DIRS})
     find_package(Boost REQUIRED COMPONENTS system thread)
 
     add_executable(pitaya_cpp_tests
@@ -203,7 +214,8 @@ if(BUILD_TESTS AND NOT BUILD_MACOSX_BUNDLE)
         Boost::boost
         Boost::system
         Boost::thread
-        CONAN_PKG::gtest)
+        GTest::gmock
+        GTest::gtest)
 
     add_test(tests tests)
 endif()

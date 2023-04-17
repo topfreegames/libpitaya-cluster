@@ -16,13 +16,17 @@
 #include <google/protobuf/port_def.inc>
 
 PROTOBUF_PRAGMA_INIT_SEG
+
+namespace _pb = ::PROTOBUF_NAMESPACE_ID;
+namespace _pbi = _pb::internal;
+
 namespace protos {
 }  // namespace protos
-static constexpr ::PROTOBUF_NAMESPACE_ID::EnumDescriptor const** file_level_enum_descriptors_pitaya_2eproto = nullptr;
-static constexpr ::PROTOBUF_NAMESPACE_ID::ServiceDescriptor const** file_level_service_descriptors_pitaya_2eproto = nullptr;
+static constexpr ::_pb::EnumDescriptor const** file_level_enum_descriptors_pitaya_2eproto = nullptr;
+static constexpr ::_pb::ServiceDescriptor const** file_level_service_descriptors_pitaya_2eproto = nullptr;
 const uint32_t TableStruct_pitaya_2eproto::offsets[1] = {};
-static constexpr ::PROTOBUF_NAMESPACE_ID::internal::MigrationSchema* schemas = nullptr;
-static constexpr ::PROTOBUF_NAMESPACE_ID::Message* const* file_default_instances = nullptr;
+static constexpr ::_pbi::MigrationSchema* schemas = nullptr;
+static constexpr ::_pb::Message* const* file_default_instances = nullptr;
 
 const char descriptor_table_protodef_pitaya_2eproto[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) =
   "\n\014pitaya.proto\022\006protos\032\rrequest.proto\032\016r"
@@ -36,26 +40,28 @@ const char descriptor_table_protodef_pitaya_2eproto[] PROTOBUF_SECTION_VARIABLE(
   "freegames/pitaya/pkg/protos\252\002\016NPitaya.Pr"
   "otosb\006proto3"
   ;
-static const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable*const descriptor_table_pitaya_2eproto_deps[5] = {
+static const ::_pbi::DescriptorTable* const descriptor_table_pitaya_2eproto_deps[5] = {
   &::descriptor_table_bind_2eproto,
   &::descriptor_table_kick_2eproto,
   &::descriptor_table_push_2eproto,
   &::descriptor_table_request_2eproto,
   &::descriptor_table_response_2eproto,
 };
-static ::PROTOBUF_NAMESPACE_ID::internal::once_flag descriptor_table_pitaya_2eproto_once;
-const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable descriptor_table_pitaya_2eproto = {
-  false, false, 372, descriptor_table_protodef_pitaya_2eproto, "pitaya.proto", 
-  &descriptor_table_pitaya_2eproto_once, descriptor_table_pitaya_2eproto_deps, 5, 0,
-  schemas, file_default_instances, TableStruct_pitaya_2eproto::offsets,
-  nullptr, file_level_enum_descriptors_pitaya_2eproto, file_level_service_descriptors_pitaya_2eproto,
+static ::_pbi::once_flag descriptor_table_pitaya_2eproto_once;
+const ::_pbi::DescriptorTable descriptor_table_pitaya_2eproto = {
+    false, false, 372, descriptor_table_protodef_pitaya_2eproto,
+    "pitaya.proto",
+    &descriptor_table_pitaya_2eproto_once, descriptor_table_pitaya_2eproto_deps, 5, 0,
+    schemas, file_default_instances, TableStruct_pitaya_2eproto::offsets,
+    nullptr, file_level_enum_descriptors_pitaya_2eproto,
+    file_level_service_descriptors_pitaya_2eproto,
 };
-PROTOBUF_ATTRIBUTE_WEAK const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable* descriptor_table_pitaya_2eproto_getter() {
+PROTOBUF_ATTRIBUTE_WEAK const ::_pbi::DescriptorTable* descriptor_table_pitaya_2eproto_getter() {
   return &descriptor_table_pitaya_2eproto;
 }
 
 // Force running AddDescriptors() at dynamic initialization time.
-PROTOBUF_ATTRIBUTE_INIT_PRIORITY static ::PROTOBUF_NAMESPACE_ID::internal::AddDescriptorsRunner dynamic_init_dummy_pitaya_2eproto(&descriptor_table_pitaya_2eproto);
+PROTOBUF_ATTRIBUTE_INIT_PRIORITY2 static ::_pbi::AddDescriptorsRunner dynamic_init_dummy_pitaya_2eproto(&descriptor_table_pitaya_2eproto);
 namespace protos {
 
 // @@protoc_insertion_point(namespace_scope)

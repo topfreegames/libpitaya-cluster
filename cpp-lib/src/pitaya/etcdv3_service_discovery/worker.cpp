@@ -216,8 +216,9 @@ Worker::StartThread()
                 _syncServersTicker.Stop();
 
                 while (_numKeepAliveRetriesLeft > 0) {
+                    _log->info("ETCD retries left: {}", _numKeepAliveRetriesLeft);
                     auto delay_milliseconds = 300 << (5 - _numKeepAliveRetriesLeft);
-                    _log->info("delaying retry by {}ms", delay_milliseconds);
+                    _log->info("ETCD retry waiting for {}ms", delay_milliseconds);
                     std::this_thread::sleep_for(std::chrono::milliseconds(delay_milliseconds));
 
                     --_numKeepAliveRetriesLeft;
@@ -238,7 +239,7 @@ Worker::StartThread()
                 }
 
                 if (_numKeepAliveRetriesLeft <= 0) {
-                    _log->critical("Failed to reconnecto to etcd, shutting down");
+                    _log->critical("Failed to reconnect to etcd, shutting down");
                     Shutdown();
                     std::thread(std::bind(raise, SIGTERM)).detach();
                     _log->debug("Exiting loop");
@@ -252,7 +253,6 @@ Worker::StartThread()
                 break;
             }
             case JobInfo::Shutdown: {
-                _log->info("Shutting down");
                 Shutdown();
                 _log->debug("Exiting loop");
                 return;

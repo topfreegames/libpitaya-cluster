@@ -57,7 +57,7 @@ EtcdLeaseKeepAlive::TickWrapper()
     auto status = std::future_status::timeout;
     while (status != std::future_status::ready) {
         if (_shouldLog)
-            _log->debug("Renewing lease");
+            _log->info("Renewing lease: {}", _leaseId);
 
         assert(_leaseId != -1);
         auto res = _client.lease_keep_alive(_leaseId).get();
@@ -81,7 +81,7 @@ EtcdLeaseKeepAlive::TickWrapper()
         auto waitFor = seconds{ static_cast<int>(res.value.ttl / 3.0f) };
 
         if (_shouldLog) {
-            _log->debug("Lease {} renewed for {} seconds, waiting {} for renew",
+            _log->info("Lease {} renewed for {} seconds, waiting {} for renew",
                         _leaseId,
                         res.value.ttl,
                         waitFor.count());

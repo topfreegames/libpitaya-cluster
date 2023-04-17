@@ -16,59 +16,67 @@
 #include <google/protobuf/port_def.inc>
 
 PROTOBUF_PRAGMA_INIT_SEG
+
+namespace _pb = ::PROTOBUF_NAMESPACE_ID;
+namespace _pbi = _pb::internal;
+
 namespace protos {
-constexpr ProtoDescriptor::ProtoDescriptor(
-  ::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized)
-  : desc_(&::PROTOBUF_NAMESPACE_ID::internal::fixed_address_empty_string){}
+PROTOBUF_CONSTEXPR ProtoDescriptor::ProtoDescriptor(
+    ::_pbi::ConstantInitialized): _impl_{
+    /*decltype(_impl_.desc_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
+  , /*decltype(_impl_._cached_size_)*/{}} {}
 struct ProtoDescriptorDefaultTypeInternal {
-  constexpr ProtoDescriptorDefaultTypeInternal()
-    : _instance(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized{}) {}
+  PROTOBUF_CONSTEXPR ProtoDescriptorDefaultTypeInternal()
+      : _instance(::_pbi::ConstantInitialized{}) {}
   ~ProtoDescriptorDefaultTypeInternal() {}
   union {
     ProtoDescriptor _instance;
   };
 };
-PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT ProtoDescriptorDefaultTypeInternal _ProtoDescriptor_default_instance_;
-constexpr ProtoName::ProtoName(
-  ::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized)
-  : name_(&::PROTOBUF_NAMESPACE_ID::internal::fixed_address_empty_string){}
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 ProtoDescriptorDefaultTypeInternal _ProtoDescriptor_default_instance_;
+PROTOBUF_CONSTEXPR ProtoName::ProtoName(
+    ::_pbi::ConstantInitialized): _impl_{
+    /*decltype(_impl_.name_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
+  , /*decltype(_impl_._cached_size_)*/{}} {}
 struct ProtoNameDefaultTypeInternal {
-  constexpr ProtoNameDefaultTypeInternal()
-    : _instance(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized{}) {}
+  PROTOBUF_CONSTEXPR ProtoNameDefaultTypeInternal()
+      : _instance(::_pbi::ConstantInitialized{}) {}
   ~ProtoNameDefaultTypeInternal() {}
   union {
     ProtoName _instance;
   };
 };
-PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT ProtoNameDefaultTypeInternal _ProtoName_default_instance_;
-constexpr ProtoDescriptors::ProtoDescriptors(
-  ::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized)
-  : desc_(){}
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 ProtoNameDefaultTypeInternal _ProtoName_default_instance_;
+PROTOBUF_CONSTEXPR ProtoDescriptors::ProtoDescriptors(
+    ::_pbi::ConstantInitialized): _impl_{
+    /*decltype(_impl_.desc_)*/{}
+  , /*decltype(_impl_._cached_size_)*/{}} {}
 struct ProtoDescriptorsDefaultTypeInternal {
-  constexpr ProtoDescriptorsDefaultTypeInternal()
-    : _instance(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized{}) {}
+  PROTOBUF_CONSTEXPR ProtoDescriptorsDefaultTypeInternal()
+      : _instance(::_pbi::ConstantInitialized{}) {}
   ~ProtoDescriptorsDefaultTypeInternal() {}
   union {
     ProtoDescriptors _instance;
   };
 };
-PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT ProtoDescriptorsDefaultTypeInternal _ProtoDescriptors_default_instance_;
-constexpr ProtoNames::ProtoNames(
-  ::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized)
-  : name_(){}
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 ProtoDescriptorsDefaultTypeInternal _ProtoDescriptors_default_instance_;
+PROTOBUF_CONSTEXPR ProtoNames::ProtoNames(
+    ::_pbi::ConstantInitialized): _impl_{
+    /*decltype(_impl_.name_)*/{}
+  , /*decltype(_impl_._cached_size_)*/{}} {}
 struct ProtoNamesDefaultTypeInternal {
-  constexpr ProtoNamesDefaultTypeInternal()
-    : _instance(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized{}) {}
+  PROTOBUF_CONSTEXPR ProtoNamesDefaultTypeInternal()
+      : _instance(::_pbi::ConstantInitialized{}) {}
   ~ProtoNamesDefaultTypeInternal() {}
   union {
     ProtoNames _instance;
   };
 };
-PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT ProtoNamesDefaultTypeInternal _ProtoNames_default_instance_;
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 ProtoNamesDefaultTypeInternal _ProtoNames_default_instance_;
 }  // namespace protos
-static ::PROTOBUF_NAMESPACE_ID::Metadata file_level_metadata_protodescriptor_2eproto[4];
-static constexpr ::PROTOBUF_NAMESPACE_ID::EnumDescriptor const** file_level_enum_descriptors_protodescriptor_2eproto = nullptr;
-static constexpr ::PROTOBUF_NAMESPACE_ID::ServiceDescriptor const** file_level_service_descriptors_protodescriptor_2eproto = nullptr;
+static ::_pb::Metadata file_level_metadata_protodescriptor_2eproto[4];
+static constexpr ::_pb::EnumDescriptor const** file_level_enum_descriptors_protodescriptor_2eproto = nullptr;
+static constexpr ::_pb::ServiceDescriptor const** file_level_service_descriptors_protodescriptor_2eproto = nullptr;
 
 const uint32_t TableStruct_protodescriptor_2eproto::offsets[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
   ~0u,  // no _has_bits_
@@ -77,41 +85,41 @@ const uint32_t TableStruct_protodescriptor_2eproto::offsets[] PROTOBUF_SECTION_V
   ~0u,  // no _oneof_case_
   ~0u,  // no _weak_field_map_
   ~0u,  // no _inlined_string_donated_
-  PROTOBUF_FIELD_OFFSET(::protos::ProtoDescriptor, desc_),
+  PROTOBUF_FIELD_OFFSET(::protos::ProtoDescriptor, _impl_.desc_),
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::protos::ProtoName, _internal_metadata_),
   ~0u,  // no _extensions_
   ~0u,  // no _oneof_case_
   ~0u,  // no _weak_field_map_
   ~0u,  // no _inlined_string_donated_
-  PROTOBUF_FIELD_OFFSET(::protos::ProtoName, name_),
+  PROTOBUF_FIELD_OFFSET(::protos::ProtoName, _impl_.name_),
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::protos::ProtoDescriptors, _internal_metadata_),
   ~0u,  // no _extensions_
   ~0u,  // no _oneof_case_
   ~0u,  // no _weak_field_map_
   ~0u,  // no _inlined_string_donated_
-  PROTOBUF_FIELD_OFFSET(::protos::ProtoDescriptors, desc_),
+  PROTOBUF_FIELD_OFFSET(::protos::ProtoDescriptors, _impl_.desc_),
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::protos::ProtoNames, _internal_metadata_),
   ~0u,  // no _extensions_
   ~0u,  // no _oneof_case_
   ~0u,  // no _weak_field_map_
   ~0u,  // no _inlined_string_donated_
-  PROTOBUF_FIELD_OFFSET(::protos::ProtoNames, name_),
+  PROTOBUF_FIELD_OFFSET(::protos::ProtoNames, _impl_.name_),
 };
-static const ::PROTOBUF_NAMESPACE_ID::internal::MigrationSchema schemas[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
+static const ::_pbi::MigrationSchema schemas[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
   { 0, -1, -1, sizeof(::protos::ProtoDescriptor)},
   { 7, -1, -1, sizeof(::protos::ProtoName)},
   { 14, -1, -1, sizeof(::protos::ProtoDescriptors)},
   { 21, -1, -1, sizeof(::protos::ProtoNames)},
 };
 
-static ::PROTOBUF_NAMESPACE_ID::Message const * const file_default_instances[] = {
-  reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(&::protos::_ProtoDescriptor_default_instance_),
-  reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(&::protos::_ProtoName_default_instance_),
-  reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(&::protos::_ProtoDescriptors_default_instance_),
-  reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(&::protos::_ProtoNames_default_instance_),
+static const ::_pb::Message* const file_default_instances[] = {
+  &::protos::_ProtoDescriptor_default_instance_._instance,
+  &::protos::_ProtoName_default_instance_._instance,
+  &::protos::_ProtoDescriptors_default_instance_._instance,
+  &::protos::_ProtoNames_default_instance_._instance,
 };
 
 const char descriptor_table_protodef_protodescriptor_2eproto[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) =
@@ -122,19 +130,21 @@ const char descriptor_table_protodef_protodescriptor_2eproto[] PROTOBUF_SECTION_
   "hub.com/topfreegames/pitaya/pkg/protos\252\002"
   "\016NPitaya.Protosb\006proto3"
   ;
-static ::PROTOBUF_NAMESPACE_ID::internal::once_flag descriptor_table_protodescriptor_2eproto_once;
-const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable descriptor_table_protodescriptor_2eproto = {
-  false, false, 223, descriptor_table_protodef_protodescriptor_2eproto, "protodescriptor.proto", 
-  &descriptor_table_protodescriptor_2eproto_once, nullptr, 0, 4,
-  schemas, file_default_instances, TableStruct_protodescriptor_2eproto::offsets,
-  file_level_metadata_protodescriptor_2eproto, file_level_enum_descriptors_protodescriptor_2eproto, file_level_service_descriptors_protodescriptor_2eproto,
+static ::_pbi::once_flag descriptor_table_protodescriptor_2eproto_once;
+const ::_pbi::DescriptorTable descriptor_table_protodescriptor_2eproto = {
+    false, false, 223, descriptor_table_protodef_protodescriptor_2eproto,
+    "protodescriptor.proto",
+    &descriptor_table_protodescriptor_2eproto_once, nullptr, 0, 4,
+    schemas, file_default_instances, TableStruct_protodescriptor_2eproto::offsets,
+    file_level_metadata_protodescriptor_2eproto, file_level_enum_descriptors_protodescriptor_2eproto,
+    file_level_service_descriptors_protodescriptor_2eproto,
 };
-PROTOBUF_ATTRIBUTE_WEAK const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable* descriptor_table_protodescriptor_2eproto_getter() {
+PROTOBUF_ATTRIBUTE_WEAK const ::_pbi::DescriptorTable* descriptor_table_protodescriptor_2eproto_getter() {
   return &descriptor_table_protodescriptor_2eproto;
 }
 
 // Force running AddDescriptors() at dynamic initialization time.
-PROTOBUF_ATTRIBUTE_INIT_PRIORITY static ::PROTOBUF_NAMESPACE_ID::internal::AddDescriptorsRunner dynamic_init_dummy_protodescriptor_2eproto(&descriptor_table_protodescriptor_2eproto);
+PROTOBUF_ATTRIBUTE_INIT_PRIORITY2 static ::_pbi::AddDescriptorsRunner dynamic_init_dummy_protodescriptor_2eproto(&descriptor_table_protodescriptor_2eproto);
 namespace protos {
 
 // ===================================================================
@@ -146,53 +156,58 @@ class ProtoDescriptor::_Internal {
 ProtoDescriptor::ProtoDescriptor(::PROTOBUF_NAMESPACE_ID::Arena* arena,
                          bool is_message_owned)
   : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
-  SharedCtor();
-  if (!is_message_owned) {
-    RegisterArenaDtor(arena);
-  }
+  SharedCtor(arena, is_message_owned);
   // @@protoc_insertion_point(arena_constructor:protos.ProtoDescriptor)
 }
 ProtoDescriptor::ProtoDescriptor(const ProtoDescriptor& from)
   : ::PROTOBUF_NAMESPACE_ID::Message() {
+  ProtoDescriptor* const _this = this; (void)_this;
+  new (&_impl_) Impl_{
+      decltype(_impl_.desc_){}
+    , /*decltype(_impl_._cached_size_)*/{}};
+
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-  desc_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  _impl_.desc_.InitDefault();
   #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-    desc_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), "", GetArenaForAllocation());
+    _impl_.desc_.Set("", GetArenaForAllocation());
   #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
   if (!from._internal_desc().empty()) {
-    desc_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, from._internal_desc(), 
-      GetArenaForAllocation());
+    _this->_impl_.desc_.Set(from._internal_desc(), 
+      _this->GetArenaForAllocation());
   }
   // @@protoc_insertion_point(copy_constructor:protos.ProtoDescriptor)
 }
 
-inline void ProtoDescriptor::SharedCtor() {
-desc_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
-#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  desc_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), "", GetArenaForAllocation());
-#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+inline void ProtoDescriptor::SharedCtor(
+    ::_pb::Arena* arena, bool is_message_owned) {
+  (void)arena;
+  (void)is_message_owned;
+  new (&_impl_) Impl_{
+      decltype(_impl_.desc_){}
+    , /*decltype(_impl_._cached_size_)*/{}
+  };
+  _impl_.desc_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    _impl_.desc_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
 }
 
 ProtoDescriptor::~ProtoDescriptor() {
   // @@protoc_insertion_point(destructor:protos.ProtoDescriptor)
-  if (GetArenaForAllocation() != nullptr) return;
+  if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
+  (void)arena;
+    return;
+  }
   SharedDtor();
-  _internal_metadata_.Delete<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
 inline void ProtoDescriptor::SharedDtor() {
   GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
-  desc_.DestroyNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  _impl_.desc_.Destroy();
 }
 
-void ProtoDescriptor::ArenaDtor(void* object) {
-  ProtoDescriptor* _this = reinterpret_cast< ProtoDescriptor* >(object);
-  (void)_this;
-}
-void ProtoDescriptor::RegisterArenaDtor(::PROTOBUF_NAMESPACE_ID::Arena*) {
-}
 void ProtoDescriptor::SetCachedSize(int size) const {
-  _cached_size_.Set(size);
+  _impl_._cached_size_.Set(size);
 }
 
 void ProtoDescriptor::Clear() {
@@ -201,21 +216,21 @@ void ProtoDescriptor::Clear() {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  desc_.ClearToEmpty();
+  _impl_.desc_.ClearToEmpty();
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
-const char* ProtoDescriptor::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) {
+const char* ProtoDescriptor::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
 #define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
   while (!ctx->Done(&ptr)) {
     uint32_t tag;
-    ptr = ::PROTOBUF_NAMESPACE_ID::internal::ReadTag(ptr, &tag);
+    ptr = ::_pbi::ReadTag(ptr, &tag);
     switch (tag >> 3) {
       // bytes desc = 1;
       case 1:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 10)) {
           auto str = _internal_mutable_desc();
-          ptr = ::PROTOBUF_NAMESPACE_ID::internal::InlineGreedyStringParser(str, ptr, ctx);
+          ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
           CHK_(ptr);
         } else
           goto handle_unusual;
@@ -256,7 +271,7 @@ uint8_t* ProtoDescriptor::_InternalSerialize(
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
-    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormat::InternalSerializeUnknownFieldsToArray(
+    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
         _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
   }
   // @@protoc_insertion_point(serialize_to_array_end:protos.ProtoDescriptor)
@@ -278,32 +293,28 @@ size_t ProtoDescriptor::ByteSizeLong() const {
         this->_internal_desc());
   }
 
-  return MaybeComputeUnknownFieldsSize(total_size, &_cached_size_);
+  return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
 }
 
 const ::PROTOBUF_NAMESPACE_ID::Message::ClassData ProtoDescriptor::_class_data_ = {
-    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSizeCheck,
+    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSourceCheck,
     ProtoDescriptor::MergeImpl
 };
 const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*ProtoDescriptor::GetClassData() const { return &_class_data_; }
 
-void ProtoDescriptor::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message* to,
-                      const ::PROTOBUF_NAMESPACE_ID::Message& from) {
-  static_cast<ProtoDescriptor *>(to)->MergeFrom(
-      static_cast<const ProtoDescriptor &>(from));
-}
 
-
-void ProtoDescriptor::MergeFrom(const ProtoDescriptor& from) {
-// @@protoc_insertion_point(class_specific_merge_from_start:protos.ProtoDescriptor)
-  GOOGLE_DCHECK_NE(&from, this);
+void ProtoDescriptor::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
+  auto* const _this = static_cast<ProtoDescriptor*>(&to_msg);
+  auto& from = static_cast<const ProtoDescriptor&>(from_msg);
+  // @@protoc_insertion_point(class_specific_merge_from_start:protos.ProtoDescriptor)
+  GOOGLE_DCHECK_NE(&from, _this);
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
   if (!from._internal_desc().empty()) {
-    _internal_set_desc(from._internal_desc());
+    _this->_internal_set_desc(from._internal_desc());
   }
-  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
 }
 
 void ProtoDescriptor::CopyFrom(const ProtoDescriptor& from) {
@@ -323,14 +334,13 @@ void ProtoDescriptor::InternalSwap(ProtoDescriptor* other) {
   auto* rhs_arena = other->GetArenaForAllocation();
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
-      &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
-      &desc_, lhs_arena,
-      &other->desc_, rhs_arena
+      &_impl_.desc_, lhs_arena,
+      &other->_impl_.desc_, rhs_arena
   );
 }
 
 ::PROTOBUF_NAMESPACE_ID::Metadata ProtoDescriptor::GetMetadata() const {
-  return ::PROTOBUF_NAMESPACE_ID::internal::AssignDescriptors(
+  return ::_pbi::AssignDescriptors(
       &descriptor_table_protodescriptor_2eproto_getter, &descriptor_table_protodescriptor_2eproto_once,
       file_level_metadata_protodescriptor_2eproto[0]);
 }
@@ -344,53 +354,58 @@ class ProtoName::_Internal {
 ProtoName::ProtoName(::PROTOBUF_NAMESPACE_ID::Arena* arena,
                          bool is_message_owned)
   : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
-  SharedCtor();
-  if (!is_message_owned) {
-    RegisterArenaDtor(arena);
-  }
+  SharedCtor(arena, is_message_owned);
   // @@protoc_insertion_point(arena_constructor:protos.ProtoName)
 }
 ProtoName::ProtoName(const ProtoName& from)
   : ::PROTOBUF_NAMESPACE_ID::Message() {
+  ProtoName* const _this = this; (void)_this;
+  new (&_impl_) Impl_{
+      decltype(_impl_.name_){}
+    , /*decltype(_impl_._cached_size_)*/{}};
+
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-  name_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  _impl_.name_.InitDefault();
   #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-    name_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), "", GetArenaForAllocation());
+    _impl_.name_.Set("", GetArenaForAllocation());
   #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
   if (!from._internal_name().empty()) {
-    name_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, from._internal_name(), 
-      GetArenaForAllocation());
+    _this->_impl_.name_.Set(from._internal_name(), 
+      _this->GetArenaForAllocation());
   }
   // @@protoc_insertion_point(copy_constructor:protos.ProtoName)
 }
 
-inline void ProtoName::SharedCtor() {
-name_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
-#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  name_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), "", GetArenaForAllocation());
-#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+inline void ProtoName::SharedCtor(
+    ::_pb::Arena* arena, bool is_message_owned) {
+  (void)arena;
+  (void)is_message_owned;
+  new (&_impl_) Impl_{
+      decltype(_impl_.name_){}
+    , /*decltype(_impl_._cached_size_)*/{}
+  };
+  _impl_.name_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    _impl_.name_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
 }
 
 ProtoName::~ProtoName() {
   // @@protoc_insertion_point(destructor:protos.ProtoName)
-  if (GetArenaForAllocation() != nullptr) return;
+  if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
+  (void)arena;
+    return;
+  }
   SharedDtor();
-  _internal_metadata_.Delete<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
 inline void ProtoName::SharedDtor() {
   GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
-  name_.DestroyNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  _impl_.name_.Destroy();
 }
 
-void ProtoName::ArenaDtor(void* object) {
-  ProtoName* _this = reinterpret_cast< ProtoName* >(object);
-  (void)_this;
-}
-void ProtoName::RegisterArenaDtor(::PROTOBUF_NAMESPACE_ID::Arena*) {
-}
 void ProtoName::SetCachedSize(int size) const {
-  _cached_size_.Set(size);
+  _impl_._cached_size_.Set(size);
 }
 
 void ProtoName::Clear() {
@@ -399,23 +414,23 @@ void ProtoName::Clear() {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  name_.ClearToEmpty();
+  _impl_.name_.ClearToEmpty();
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
-const char* ProtoName::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) {
+const char* ProtoName::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
 #define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
   while (!ctx->Done(&ptr)) {
     uint32_t tag;
-    ptr = ::PROTOBUF_NAMESPACE_ID::internal::ReadTag(ptr, &tag);
+    ptr = ::_pbi::ReadTag(ptr, &tag);
     switch (tag >> 3) {
       // string name = 1;
       case 1:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 10)) {
           auto str = _internal_mutable_name();
-          ptr = ::PROTOBUF_NAMESPACE_ID::internal::InlineGreedyStringParser(str, ptr, ctx);
-          CHK_(::PROTOBUF_NAMESPACE_ID::internal::VerifyUTF8(str, "protos.ProtoName.name"));
+          ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
           CHK_(ptr);
+          CHK_(::_pbi::VerifyUTF8(str, "protos.ProtoName.name"));
         } else
           goto handle_unusual;
         continue;
@@ -459,7 +474,7 @@ uint8_t* ProtoName::_InternalSerialize(
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
-    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormat::InternalSerializeUnknownFieldsToArray(
+    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
         _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
   }
   // @@protoc_insertion_point(serialize_to_array_end:protos.ProtoName)
@@ -481,32 +496,28 @@ size_t ProtoName::ByteSizeLong() const {
         this->_internal_name());
   }
 
-  return MaybeComputeUnknownFieldsSize(total_size, &_cached_size_);
+  return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
 }
 
 const ::PROTOBUF_NAMESPACE_ID::Message::ClassData ProtoName::_class_data_ = {
-    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSizeCheck,
+    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSourceCheck,
     ProtoName::MergeImpl
 };
 const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*ProtoName::GetClassData() const { return &_class_data_; }
 
-void ProtoName::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message* to,
-                      const ::PROTOBUF_NAMESPACE_ID::Message& from) {
-  static_cast<ProtoName *>(to)->MergeFrom(
-      static_cast<const ProtoName &>(from));
-}
 
-
-void ProtoName::MergeFrom(const ProtoName& from) {
-// @@protoc_insertion_point(class_specific_merge_from_start:protos.ProtoName)
-  GOOGLE_DCHECK_NE(&from, this);
+void ProtoName::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
+  auto* const _this = static_cast<ProtoName*>(&to_msg);
+  auto& from = static_cast<const ProtoName&>(from_msg);
+  // @@protoc_insertion_point(class_specific_merge_from_start:protos.ProtoName)
+  GOOGLE_DCHECK_NE(&from, _this);
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
   if (!from._internal_name().empty()) {
-    _internal_set_name(from._internal_name());
+    _this->_internal_set_name(from._internal_name());
   }
-  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
 }
 
 void ProtoName::CopyFrom(const ProtoName& from) {
@@ -526,14 +537,13 @@ void ProtoName::InternalSwap(ProtoName* other) {
   auto* rhs_arena = other->GetArenaForAllocation();
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
-      &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
-      &name_, lhs_arena,
-      &other->name_, rhs_arena
+      &_impl_.name_, lhs_arena,
+      &other->_impl_.name_, rhs_arena
   );
 }
 
 ::PROTOBUF_NAMESPACE_ID::Metadata ProtoName::GetMetadata() const {
-  return ::PROTOBUF_NAMESPACE_ID::internal::AssignDescriptors(
+  return ::_pbi::AssignDescriptors(
       &descriptor_table_protodescriptor_2eproto_getter, &descriptor_table_protodescriptor_2eproto_once,
       file_level_metadata_protodescriptor_2eproto[1]);
 }
@@ -546,43 +556,47 @@ class ProtoDescriptors::_Internal {
 
 ProtoDescriptors::ProtoDescriptors(::PROTOBUF_NAMESPACE_ID::Arena* arena,
                          bool is_message_owned)
-  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned),
-  desc_(arena) {
-  SharedCtor();
-  if (!is_message_owned) {
-    RegisterArenaDtor(arena);
-  }
+  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
+  SharedCtor(arena, is_message_owned);
   // @@protoc_insertion_point(arena_constructor:protos.ProtoDescriptors)
 }
 ProtoDescriptors::ProtoDescriptors(const ProtoDescriptors& from)
-  : ::PROTOBUF_NAMESPACE_ID::Message(),
-      desc_(from.desc_) {
+  : ::PROTOBUF_NAMESPACE_ID::Message() {
+  ProtoDescriptors* const _this = this; (void)_this;
+  new (&_impl_) Impl_{
+      decltype(_impl_.desc_){from._impl_.desc_}
+    , /*decltype(_impl_._cached_size_)*/{}};
+
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
   // @@protoc_insertion_point(copy_constructor:protos.ProtoDescriptors)
 }
 
-inline void ProtoDescriptors::SharedCtor() {
+inline void ProtoDescriptors::SharedCtor(
+    ::_pb::Arena* arena, bool is_message_owned) {
+  (void)arena;
+  (void)is_message_owned;
+  new (&_impl_) Impl_{
+      decltype(_impl_.desc_){arena}
+    , /*decltype(_impl_._cached_size_)*/{}
+  };
 }
 
 ProtoDescriptors::~ProtoDescriptors() {
   // @@protoc_insertion_point(destructor:protos.ProtoDescriptors)
-  if (GetArenaForAllocation() != nullptr) return;
+  if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
+  (void)arena;
+    return;
+  }
   SharedDtor();
-  _internal_metadata_.Delete<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
 inline void ProtoDescriptors::SharedDtor() {
   GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
+  _impl_.desc_.~RepeatedPtrField();
 }
 
-void ProtoDescriptors::ArenaDtor(void* object) {
-  ProtoDescriptors* _this = reinterpret_cast< ProtoDescriptors* >(object);
-  (void)_this;
-}
-void ProtoDescriptors::RegisterArenaDtor(::PROTOBUF_NAMESPACE_ID::Arena*) {
-}
 void ProtoDescriptors::SetCachedSize(int size) const {
-  _cached_size_.Set(size);
+  _impl_._cached_size_.Set(size);
 }
 
 void ProtoDescriptors::Clear() {
@@ -591,15 +605,15 @@ void ProtoDescriptors::Clear() {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  desc_.Clear();
+  _impl_.desc_.Clear();
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
-const char* ProtoDescriptors::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) {
+const char* ProtoDescriptors::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
 #define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
   while (!ctx->Done(&ptr)) {
     uint32_t tag;
-    ptr = ::PROTOBUF_NAMESPACE_ID::internal::ReadTag(ptr, &tag);
+    ptr = ::_pbi::ReadTag(ptr, &tag);
     switch (tag >> 3) {
       // repeated bytes desc = 1;
       case 1:
@@ -608,7 +622,7 @@ const char* ProtoDescriptors::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPA
           do {
             ptr += 1;
             auto str = _internal_add_desc();
-            ptr = ::PROTOBUF_NAMESPACE_ID::internal::InlineGreedyStringParser(str, ptr, ctx);
+            ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
             CHK_(ptr);
             if (!ctx->DataAvailable(ptr)) break;
           } while (::PROTOBUF_NAMESPACE_ID::internal::ExpectTag<10>(ptr));
@@ -651,7 +665,7 @@ uint8_t* ProtoDescriptors::_InternalSerialize(
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
-    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormat::InternalSerializeUnknownFieldsToArray(
+    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
         _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
   }
   // @@protoc_insertion_point(serialize_to_array_end:protos.ProtoDescriptors)
@@ -668,36 +682,32 @@ size_t ProtoDescriptors::ByteSizeLong() const {
 
   // repeated bytes desc = 1;
   total_size += 1 *
-      ::PROTOBUF_NAMESPACE_ID::internal::FromIntSize(desc_.size());
-  for (int i = 0, n = desc_.size(); i < n; i++) {
+      ::PROTOBUF_NAMESPACE_ID::internal::FromIntSize(_impl_.desc_.size());
+  for (int i = 0, n = _impl_.desc_.size(); i < n; i++) {
     total_size += ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::BytesSize(
-      desc_.Get(i));
+      _impl_.desc_.Get(i));
   }
 
-  return MaybeComputeUnknownFieldsSize(total_size, &_cached_size_);
+  return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
 }
 
 const ::PROTOBUF_NAMESPACE_ID::Message::ClassData ProtoDescriptors::_class_data_ = {
-    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSizeCheck,
+    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSourceCheck,
     ProtoDescriptors::MergeImpl
 };
 const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*ProtoDescriptors::GetClassData() const { return &_class_data_; }
 
-void ProtoDescriptors::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message* to,
-                      const ::PROTOBUF_NAMESPACE_ID::Message& from) {
-  static_cast<ProtoDescriptors *>(to)->MergeFrom(
-      static_cast<const ProtoDescriptors &>(from));
-}
 
-
-void ProtoDescriptors::MergeFrom(const ProtoDescriptors& from) {
-// @@protoc_insertion_point(class_specific_merge_from_start:protos.ProtoDescriptors)
-  GOOGLE_DCHECK_NE(&from, this);
+void ProtoDescriptors::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
+  auto* const _this = static_cast<ProtoDescriptors*>(&to_msg);
+  auto& from = static_cast<const ProtoDescriptors&>(from_msg);
+  // @@protoc_insertion_point(class_specific_merge_from_start:protos.ProtoDescriptors)
+  GOOGLE_DCHECK_NE(&from, _this);
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
-  desc_.MergeFrom(from.desc_);
-  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  _this->_impl_.desc_.MergeFrom(from._impl_.desc_);
+  _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
 }
 
 void ProtoDescriptors::CopyFrom(const ProtoDescriptors& from) {
@@ -714,11 +724,11 @@ bool ProtoDescriptors::IsInitialized() const {
 void ProtoDescriptors::InternalSwap(ProtoDescriptors* other) {
   using std::swap;
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
-  desc_.InternalSwap(&other->desc_);
+  _impl_.desc_.InternalSwap(&other->_impl_.desc_);
 }
 
 ::PROTOBUF_NAMESPACE_ID::Metadata ProtoDescriptors::GetMetadata() const {
-  return ::PROTOBUF_NAMESPACE_ID::internal::AssignDescriptors(
+  return ::_pbi::AssignDescriptors(
       &descriptor_table_protodescriptor_2eproto_getter, &descriptor_table_protodescriptor_2eproto_once,
       file_level_metadata_protodescriptor_2eproto[2]);
 }
@@ -731,43 +741,47 @@ class ProtoNames::_Internal {
 
 ProtoNames::ProtoNames(::PROTOBUF_NAMESPACE_ID::Arena* arena,
                          bool is_message_owned)
-  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned),
-  name_(arena) {
-  SharedCtor();
-  if (!is_message_owned) {
-    RegisterArenaDtor(arena);
-  }
+  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
+  SharedCtor(arena, is_message_owned);
   // @@protoc_insertion_point(arena_constructor:protos.ProtoNames)
 }
 ProtoNames::ProtoNames(const ProtoNames& from)
-  : ::PROTOBUF_NAMESPACE_ID::Message(),
-      name_(from.name_) {
+  : ::PROTOBUF_NAMESPACE_ID::Message() {
+  ProtoNames* const _this = this; (void)_this;
+  new (&_impl_) Impl_{
+      decltype(_impl_.name_){from._impl_.name_}
+    , /*decltype(_impl_._cached_size_)*/{}};
+
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
   // @@protoc_insertion_point(copy_constructor:protos.ProtoNames)
 }
 
-inline void ProtoNames::SharedCtor() {
+inline void ProtoNames::SharedCtor(
+    ::_pb::Arena* arena, bool is_message_owned) {
+  (void)arena;
+  (void)is_message_owned;
+  new (&_impl_) Impl_{
+      decltype(_impl_.name_){arena}
+    , /*decltype(_impl_._cached_size_)*/{}
+  };
 }
 
 ProtoNames::~ProtoNames() {
   // @@protoc_insertion_point(destructor:protos.ProtoNames)
-  if (GetArenaForAllocation() != nullptr) return;
+  if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
+  (void)arena;
+    return;
+  }
   SharedDtor();
-  _internal_metadata_.Delete<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
 inline void ProtoNames::SharedDtor() {
   GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
+  _impl_.name_.~RepeatedPtrField();
 }
 
-void ProtoNames::ArenaDtor(void* object) {
-  ProtoNames* _this = reinterpret_cast< ProtoNames* >(object);
-  (void)_this;
-}
-void ProtoNames::RegisterArenaDtor(::PROTOBUF_NAMESPACE_ID::Arena*) {
-}
 void ProtoNames::SetCachedSize(int size) const {
-  _cached_size_.Set(size);
+  _impl_._cached_size_.Set(size);
 }
 
 void ProtoNames::Clear() {
@@ -776,15 +790,15 @@ void ProtoNames::Clear() {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  name_.Clear();
+  _impl_.name_.Clear();
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
-const char* ProtoNames::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) {
+const char* ProtoNames::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
 #define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
   while (!ctx->Done(&ptr)) {
     uint32_t tag;
-    ptr = ::PROTOBUF_NAMESPACE_ID::internal::ReadTag(ptr, &tag);
+    ptr = ::_pbi::ReadTag(ptr, &tag);
     switch (tag >> 3) {
       // repeated string name = 1;
       case 1:
@@ -793,9 +807,9 @@ const char* ProtoNames::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID:
           do {
             ptr += 1;
             auto str = _internal_add_name();
-            ptr = ::PROTOBUF_NAMESPACE_ID::internal::InlineGreedyStringParser(str, ptr, ctx);
-            CHK_(::PROTOBUF_NAMESPACE_ID::internal::VerifyUTF8(str, "protos.ProtoNames.name"));
+            ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
             CHK_(ptr);
+            CHK_(::_pbi::VerifyUTF8(str, "protos.ProtoNames.name"));
             if (!ctx->DataAvailable(ptr)) break;
           } while (::PROTOBUF_NAMESPACE_ID::internal::ExpectTag<10>(ptr));
         } else
@@ -841,7 +855,7 @@ uint8_t* ProtoNames::_InternalSerialize(
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
-    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormat::InternalSerializeUnknownFieldsToArray(
+    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
         _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
   }
   // @@protoc_insertion_point(serialize_to_array_end:protos.ProtoNames)
@@ -858,36 +872,32 @@ size_t ProtoNames::ByteSizeLong() const {
 
   // repeated string name = 1;
   total_size += 1 *
-      ::PROTOBUF_NAMESPACE_ID::internal::FromIntSize(name_.size());
-  for (int i = 0, n = name_.size(); i < n; i++) {
+      ::PROTOBUF_NAMESPACE_ID::internal::FromIntSize(_impl_.name_.size());
+  for (int i = 0, n = _impl_.name_.size(); i < n; i++) {
     total_size += ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
-      name_.Get(i));
+      _impl_.name_.Get(i));
   }
 
-  return MaybeComputeUnknownFieldsSize(total_size, &_cached_size_);
+  return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
 }
 
 const ::PROTOBUF_NAMESPACE_ID::Message::ClassData ProtoNames::_class_data_ = {
-    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSizeCheck,
+    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSourceCheck,
     ProtoNames::MergeImpl
 };
 const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*ProtoNames::GetClassData() const { return &_class_data_; }
 
-void ProtoNames::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message* to,
-                      const ::PROTOBUF_NAMESPACE_ID::Message& from) {
-  static_cast<ProtoNames *>(to)->MergeFrom(
-      static_cast<const ProtoNames &>(from));
-}
 
-
-void ProtoNames::MergeFrom(const ProtoNames& from) {
-// @@protoc_insertion_point(class_specific_merge_from_start:protos.ProtoNames)
-  GOOGLE_DCHECK_NE(&from, this);
+void ProtoNames::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
+  auto* const _this = static_cast<ProtoNames*>(&to_msg);
+  auto& from = static_cast<const ProtoNames&>(from_msg);
+  // @@protoc_insertion_point(class_specific_merge_from_start:protos.ProtoNames)
+  GOOGLE_DCHECK_NE(&from, _this);
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
-  name_.MergeFrom(from.name_);
-  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  _this->_impl_.name_.MergeFrom(from._impl_.name_);
+  _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
 }
 
 void ProtoNames::CopyFrom(const ProtoNames& from) {
@@ -904,11 +914,11 @@ bool ProtoNames::IsInitialized() const {
 void ProtoNames::InternalSwap(ProtoNames* other) {
   using std::swap;
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
-  name_.InternalSwap(&other->name_);
+  _impl_.name_.InternalSwap(&other->_impl_.name_);
 }
 
 ::PROTOBUF_NAMESPACE_ID::Metadata ProtoNames::GetMetadata() const {
-  return ::PROTOBUF_NAMESPACE_ID::internal::AssignDescriptors(
+  return ::_pbi::AssignDescriptors(
       &descriptor_table_protodescriptor_2eproto_getter, &descriptor_table_protodescriptor_2eproto_once,
       file_level_metadata_protodescriptor_2eproto[3]);
 }
@@ -916,16 +926,20 @@ void ProtoNames::InternalSwap(ProtoNames* other) {
 // @@protoc_insertion_point(namespace_scope)
 }  // namespace protos
 PROTOBUF_NAMESPACE_OPEN
-template<> PROTOBUF_NOINLINE ::protos::ProtoDescriptor* Arena::CreateMaybeMessage< ::protos::ProtoDescriptor >(Arena* arena) {
+template<> PROTOBUF_NOINLINE ::protos::ProtoDescriptor*
+Arena::CreateMaybeMessage< ::protos::ProtoDescriptor >(Arena* arena) {
   return Arena::CreateMessageInternal< ::protos::ProtoDescriptor >(arena);
 }
-template<> PROTOBUF_NOINLINE ::protos::ProtoName* Arena::CreateMaybeMessage< ::protos::ProtoName >(Arena* arena) {
+template<> PROTOBUF_NOINLINE ::protos::ProtoName*
+Arena::CreateMaybeMessage< ::protos::ProtoName >(Arena* arena) {
   return Arena::CreateMessageInternal< ::protos::ProtoName >(arena);
 }
-template<> PROTOBUF_NOINLINE ::protos::ProtoDescriptors* Arena::CreateMaybeMessage< ::protos::ProtoDescriptors >(Arena* arena) {
+template<> PROTOBUF_NOINLINE ::protos::ProtoDescriptors*
+Arena::CreateMaybeMessage< ::protos::ProtoDescriptors >(Arena* arena) {
   return Arena::CreateMessageInternal< ::protos::ProtoDescriptors >(arena);
 }
-template<> PROTOBUF_NOINLINE ::protos::ProtoNames* Arena::CreateMaybeMessage< ::protos::ProtoNames >(Arena* arena) {
+template<> PROTOBUF_NOINLINE ::protos::ProtoNames*
+Arena::CreateMaybeMessage< ::protos::ProtoNames >(Arena* arena) {
   return Arena::CreateMessageInternal< ::protos::ProtoNames >(arena);
 }
 PROTOBUF_NAMESPACE_CLOSE

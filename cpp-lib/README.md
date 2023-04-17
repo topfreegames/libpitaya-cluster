@@ -28,9 +28,9 @@ In the [examples](examples) folder you can find how to create a simple server us
 ## Building
 
 ### Build Requirements (OS X)
-* Apple Clang 10.0 (Newer versions of os x comes with 11.0 preinstalled, install XCode 10.2.1 for getting 10.0 installed)
-* CMake
-* Conan
+* Apple Clang >= 11.0
+* CMake >= 3.23.0
+* Conan >= 2.0
 
 If you want to build the library by yourself, you can do that with CMake (3.7 is the minimum version). There are convenient building targets in the `Makefile`, such as `make build-mac-release`, `make build-mac-unity` and `make build-linux-release`. If you want to provide the CMake variables yourself, these are the ones which have an impact on the build apart from the standard ones (e.g., CMAKE_BUILD_TYPE).
 
@@ -40,8 +40,8 @@ If you want to build the library by yourself, you can do that with CMake (3.7 is
 A sample build could then be something like this:
 
 ```bash
-conan install . -if build # install dependencies on the build folder
-cmake -H. -Bbuild -DCMAKE_BUILD_TYPE=Debug \
+conan install . -of build # install dependencies on the build folder
+cmake -H. -Bbuild --preset conan-release -DCMAKE_BUILD_TYPE=Debug \
       -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DBUILD_TESTING=ON
 cmake --build build
 ```

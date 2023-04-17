@@ -16,35 +16,41 @@
 #include <google/protobuf/port_def.inc>
 
 PROTOBUF_PRAGMA_INIT_SEG
+
+namespace _pb = ::PROTOBUF_NAMESPACE_ID;
+namespace _pbi = _pb::internal;
+
 namespace protos {
-constexpr KickMsg::KickMsg(
-  ::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized)
-  : userid_(&::PROTOBUF_NAMESPACE_ID::internal::fixed_address_empty_string){}
+PROTOBUF_CONSTEXPR KickMsg::KickMsg(
+    ::_pbi::ConstantInitialized): _impl_{
+    /*decltype(_impl_.userid_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
+  , /*decltype(_impl_._cached_size_)*/{}} {}
 struct KickMsgDefaultTypeInternal {
-  constexpr KickMsgDefaultTypeInternal()
-    : _instance(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized{}) {}
+  PROTOBUF_CONSTEXPR KickMsgDefaultTypeInternal()
+      : _instance(::_pbi::ConstantInitialized{}) {}
   ~KickMsgDefaultTypeInternal() {}
   union {
     KickMsg _instance;
   };
 };
-PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT KickMsgDefaultTypeInternal _KickMsg_default_instance_;
-constexpr KickAnswer::KickAnswer(
-  ::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized)
-  : kicked_(false){}
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 KickMsgDefaultTypeInternal _KickMsg_default_instance_;
+PROTOBUF_CONSTEXPR KickAnswer::KickAnswer(
+    ::_pbi::ConstantInitialized): _impl_{
+    /*decltype(_impl_.kicked_)*/false
+  , /*decltype(_impl_._cached_size_)*/{}} {}
 struct KickAnswerDefaultTypeInternal {
-  constexpr KickAnswerDefaultTypeInternal()
-    : _instance(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized{}) {}
+  PROTOBUF_CONSTEXPR KickAnswerDefaultTypeInternal()
+      : _instance(::_pbi::ConstantInitialized{}) {}
   ~KickAnswerDefaultTypeInternal() {}
   union {
     KickAnswer _instance;
   };
 };
-PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT KickAnswerDefaultTypeInternal _KickAnswer_default_instance_;
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 KickAnswerDefaultTypeInternal _KickAnswer_default_instance_;
 }  // namespace protos
-static ::PROTOBUF_NAMESPACE_ID::Metadata file_level_metadata_kick_2eproto[2];
-static constexpr ::PROTOBUF_NAMESPACE_ID::EnumDescriptor const** file_level_enum_descriptors_kick_2eproto = nullptr;
-static constexpr ::PROTOBUF_NAMESPACE_ID::ServiceDescriptor const** file_level_service_descriptors_kick_2eproto = nullptr;
+static ::_pb::Metadata file_level_metadata_kick_2eproto[2];
+static constexpr ::_pb::EnumDescriptor const** file_level_enum_descriptors_kick_2eproto = nullptr;
+static constexpr ::_pb::ServiceDescriptor const** file_level_service_descriptors_kick_2eproto = nullptr;
 
 const uint32_t TableStruct_kick_2eproto::offsets[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
   ~0u,  // no _has_bits_
@@ -53,23 +59,23 @@ const uint32_t TableStruct_kick_2eproto::offsets[] PROTOBUF_SECTION_VARIABLE(pro
   ~0u,  // no _oneof_case_
   ~0u,  // no _weak_field_map_
   ~0u,  // no _inlined_string_donated_
-  PROTOBUF_FIELD_OFFSET(::protos::KickMsg, userid_),
+  PROTOBUF_FIELD_OFFSET(::protos::KickMsg, _impl_.userid_),
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::protos::KickAnswer, _internal_metadata_),
   ~0u,  // no _extensions_
   ~0u,  // no _oneof_case_
   ~0u,  // no _weak_field_map_
   ~0u,  // no _inlined_string_donated_
-  PROTOBUF_FIELD_OFFSET(::protos::KickAnswer, kicked_),
+  PROTOBUF_FIELD_OFFSET(::protos::KickAnswer, _impl_.kicked_),
 };
-static const ::PROTOBUF_NAMESPACE_ID::internal::MigrationSchema schemas[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
+static const ::_pbi::MigrationSchema schemas[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
   { 0, -1, -1, sizeof(::protos::KickMsg)},
   { 7, -1, -1, sizeof(::protos::KickAnswer)},
 };
 
-static ::PROTOBUF_NAMESPACE_ID::Message const * const file_default_instances[] = {
-  reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(&::protos::_KickMsg_default_instance_),
-  reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(&::protos::_KickAnswer_default_instance_),
+static const ::_pb::Message* const file_default_instances[] = {
+  &::protos::_KickMsg_default_instance_._instance,
+  &::protos::_KickAnswer_default_instance_._instance,
 };
 
 const char descriptor_table_protodef_kick_2eproto[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) =
@@ -78,19 +84,21 @@ const char descriptor_table_protodef_kick_2eproto[] PROTOBUF_SECTION_VARIABLE(pr
   ")github.com/topfreegames/pitaya/pkg/prot"
   "os\252\002\016NPitaya.Protosb\006proto3"
   ;
-static ::PROTOBUF_NAMESPACE_ID::internal::once_flag descriptor_table_kick_2eproto_once;
-const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable descriptor_table_kick_2eproto = {
-  false, false, 147, descriptor_table_protodef_kick_2eproto, "kick.proto", 
-  &descriptor_table_kick_2eproto_once, nullptr, 0, 2,
-  schemas, file_default_instances, TableStruct_kick_2eproto::offsets,
-  file_level_metadata_kick_2eproto, file_level_enum_descriptors_kick_2eproto, file_level_service_descriptors_kick_2eproto,
+static ::_pbi::once_flag descriptor_table_kick_2eproto_once;
+const ::_pbi::DescriptorTable descriptor_table_kick_2eproto = {
+    false, false, 147, descriptor_table_protodef_kick_2eproto,
+    "kick.proto",
+    &descriptor_table_kick_2eproto_once, nullptr, 0, 2,
+    schemas, file_default_instances, TableStruct_kick_2eproto::offsets,
+    file_level_metadata_kick_2eproto, file_level_enum_descriptors_kick_2eproto,
+    file_level_service_descriptors_kick_2eproto,
 };
-PROTOBUF_ATTRIBUTE_WEAK const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable* descriptor_table_kick_2eproto_getter() {
+PROTOBUF_ATTRIBUTE_WEAK const ::_pbi::DescriptorTable* descriptor_table_kick_2eproto_getter() {
   return &descriptor_table_kick_2eproto;
 }
 
 // Force running AddDescriptors() at dynamic initialization time.
-PROTOBUF_ATTRIBUTE_INIT_PRIORITY static ::PROTOBUF_NAMESPACE_ID::internal::AddDescriptorsRunner dynamic_init_dummy_kick_2eproto(&descriptor_table_kick_2eproto);
+PROTOBUF_ATTRIBUTE_INIT_PRIORITY2 static ::_pbi::AddDescriptorsRunner dynamic_init_dummy_kick_2eproto(&descriptor_table_kick_2eproto);
 namespace protos {
 
 // ===================================================================
@@ -102,53 +110,58 @@ class KickMsg::_Internal {
 KickMsg::KickMsg(::PROTOBUF_NAMESPACE_ID::Arena* arena,
                          bool is_message_owned)
   : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
-  SharedCtor();
-  if (!is_message_owned) {
-    RegisterArenaDtor(arena);
-  }
+  SharedCtor(arena, is_message_owned);
   // @@protoc_insertion_point(arena_constructor:protos.KickMsg)
 }
 KickMsg::KickMsg(const KickMsg& from)
   : ::PROTOBUF_NAMESPACE_ID::Message() {
+  KickMsg* const _this = this; (void)_this;
+  new (&_impl_) Impl_{
+      decltype(_impl_.userid_){}
+    , /*decltype(_impl_._cached_size_)*/{}};
+
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-  userid_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  _impl_.userid_.InitDefault();
   #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-    userid_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), "", GetArenaForAllocation());
+    _impl_.userid_.Set("", GetArenaForAllocation());
   #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
   if (!from._internal_userid().empty()) {
-    userid_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, from._internal_userid(), 
-      GetArenaForAllocation());
+    _this->_impl_.userid_.Set(from._internal_userid(), 
+      _this->GetArenaForAllocation());
   }
   // @@protoc_insertion_point(copy_constructor:protos.KickMsg)
 }
 
-inline void KickMsg::SharedCtor() {
-userid_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
-#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  userid_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), "", GetArenaForAllocation());
-#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+inline void KickMsg::SharedCtor(
+    ::_pb::Arena* arena, bool is_message_owned) {
+  (void)arena;
+  (void)is_message_owned;
+  new (&_impl_) Impl_{
+      decltype(_impl_.userid_){}
+    , /*decltype(_impl_._cached_size_)*/{}
+  };
+  _impl_.userid_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    _impl_.userid_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
 }
 
 KickMsg::~KickMsg() {
   // @@protoc_insertion_point(destructor:protos.KickMsg)
-  if (GetArenaForAllocation() != nullptr) return;
+  if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
+  (void)arena;
+    return;
+  }
   SharedDtor();
-  _internal_metadata_.Delete<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
 inline void KickMsg::SharedDtor() {
   GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
-  userid_.DestroyNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  _impl_.userid_.Destroy();
 }
 
-void KickMsg::ArenaDtor(void* object) {
-  KickMsg* _this = reinterpret_cast< KickMsg* >(object);
-  (void)_this;
-}
-void KickMsg::RegisterArenaDtor(::PROTOBUF_NAMESPACE_ID::Arena*) {
-}
 void KickMsg::SetCachedSize(int size) const {
-  _cached_size_.Set(size);
+  _impl_._cached_size_.Set(size);
 }
 
 void KickMsg::Clear() {
@@ -157,23 +170,23 @@ void KickMsg::Clear() {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  userid_.ClearToEmpty();
+  _impl_.userid_.ClearToEmpty();
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
-const char* KickMsg::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) {
+const char* KickMsg::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
 #define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
   while (!ctx->Done(&ptr)) {
     uint32_t tag;
-    ptr = ::PROTOBUF_NAMESPACE_ID::internal::ReadTag(ptr, &tag);
+    ptr = ::_pbi::ReadTag(ptr, &tag);
     switch (tag >> 3) {
       // string userId = 1;
       case 1:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 10)) {
           auto str = _internal_mutable_userid();
-          ptr = ::PROTOBUF_NAMESPACE_ID::internal::InlineGreedyStringParser(str, ptr, ctx);
-          CHK_(::PROTOBUF_NAMESPACE_ID::internal::VerifyUTF8(str, "protos.KickMsg.userId"));
+          ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
           CHK_(ptr);
+          CHK_(::_pbi::VerifyUTF8(str, "protos.KickMsg.userId"));
         } else
           goto handle_unusual;
         continue;
@@ -217,7 +230,7 @@ uint8_t* KickMsg::_InternalSerialize(
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
-    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormat::InternalSerializeUnknownFieldsToArray(
+    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
         _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
   }
   // @@protoc_insertion_point(serialize_to_array_end:protos.KickMsg)
@@ -239,32 +252,28 @@ size_t KickMsg::ByteSizeLong() const {
         this->_internal_userid());
   }
 
-  return MaybeComputeUnknownFieldsSize(total_size, &_cached_size_);
+  return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
 }
 
 const ::PROTOBUF_NAMESPACE_ID::Message::ClassData KickMsg::_class_data_ = {
-    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSizeCheck,
+    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSourceCheck,
     KickMsg::MergeImpl
 };
 const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*KickMsg::GetClassData() const { return &_class_data_; }
 
-void KickMsg::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message* to,
-                      const ::PROTOBUF_NAMESPACE_ID::Message& from) {
-  static_cast<KickMsg *>(to)->MergeFrom(
-      static_cast<const KickMsg &>(from));
-}
 
-
-void KickMsg::MergeFrom(const KickMsg& from) {
-// @@protoc_insertion_point(class_specific_merge_from_start:protos.KickMsg)
-  GOOGLE_DCHECK_NE(&from, this);
+void KickMsg::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
+  auto* const _this = static_cast<KickMsg*>(&to_msg);
+  auto& from = static_cast<const KickMsg&>(from_msg);
+  // @@protoc_insertion_point(class_specific_merge_from_start:protos.KickMsg)
+  GOOGLE_DCHECK_NE(&from, _this);
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
   if (!from._internal_userid().empty()) {
-    _internal_set_userid(from._internal_userid());
+    _this->_internal_set_userid(from._internal_userid());
   }
-  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
 }
 
 void KickMsg::CopyFrom(const KickMsg& from) {
@@ -284,14 +293,13 @@ void KickMsg::InternalSwap(KickMsg* other) {
   auto* rhs_arena = other->GetArenaForAllocation();
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
-      &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
-      &userid_, lhs_arena,
-      &other->userid_, rhs_arena
+      &_impl_.userid_, lhs_arena,
+      &other->_impl_.userid_, rhs_arena
   );
 }
 
 ::PROTOBUF_NAMESPACE_ID::Metadata KickMsg::GetMetadata() const {
-  return ::PROTOBUF_NAMESPACE_ID::internal::AssignDescriptors(
+  return ::_pbi::AssignDescriptors(
       &descriptor_table_kick_2eproto_getter, &descriptor_table_kick_2eproto_once,
       file_level_metadata_kick_2eproto[0]);
 }
@@ -305,42 +313,46 @@ class KickAnswer::_Internal {
 KickAnswer::KickAnswer(::PROTOBUF_NAMESPACE_ID::Arena* arena,
                          bool is_message_owned)
   : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
-  SharedCtor();
-  if (!is_message_owned) {
-    RegisterArenaDtor(arena);
-  }
+  SharedCtor(arena, is_message_owned);
   // @@protoc_insertion_point(arena_constructor:protos.KickAnswer)
 }
 KickAnswer::KickAnswer(const KickAnswer& from)
   : ::PROTOBUF_NAMESPACE_ID::Message() {
+  KickAnswer* const _this = this; (void)_this;
+  new (&_impl_) Impl_{
+      decltype(_impl_.kicked_){}
+    , /*decltype(_impl_._cached_size_)*/{}};
+
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-  kicked_ = from.kicked_;
+  _this->_impl_.kicked_ = from._impl_.kicked_;
   // @@protoc_insertion_point(copy_constructor:protos.KickAnswer)
 }
 
-inline void KickAnswer::SharedCtor() {
-kicked_ = false;
+inline void KickAnswer::SharedCtor(
+    ::_pb::Arena* arena, bool is_message_owned) {
+  (void)arena;
+  (void)is_message_owned;
+  new (&_impl_) Impl_{
+      decltype(_impl_.kicked_){false}
+    , /*decltype(_impl_._cached_size_)*/{}
+  };
 }
 
 KickAnswer::~KickAnswer() {
   // @@protoc_insertion_point(destructor:protos.KickAnswer)
-  if (GetArenaForAllocation() != nullptr) return;
+  if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
+  (void)arena;
+    return;
+  }
   SharedDtor();
-  _internal_metadata_.Delete<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
 inline void KickAnswer::SharedDtor() {
   GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
 }
 
-void KickAnswer::ArenaDtor(void* object) {
-  KickAnswer* _this = reinterpret_cast< KickAnswer* >(object);
-  (void)_this;
-}
-void KickAnswer::RegisterArenaDtor(::PROTOBUF_NAMESPACE_ID::Arena*) {
-}
 void KickAnswer::SetCachedSize(int size) const {
-  _cached_size_.Set(size);
+  _impl_._cached_size_.Set(size);
 }
 
 void KickAnswer::Clear() {
@@ -349,20 +361,20 @@ void KickAnswer::Clear() {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  kicked_ = false;
+  _impl_.kicked_ = false;
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
-const char* KickAnswer::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) {
+const char* KickAnswer::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
 #define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
   while (!ctx->Done(&ptr)) {
     uint32_t tag;
-    ptr = ::PROTOBUF_NAMESPACE_ID::internal::ReadTag(ptr, &tag);
+    ptr = ::_pbi::ReadTag(ptr, &tag);
     switch (tag >> 3) {
       // bool kicked = 1;
       case 1:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 8)) {
-          kicked_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          _impl_.kicked_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
           CHK_(ptr);
         } else
           goto handle_unusual;
@@ -399,11 +411,11 @@ uint8_t* KickAnswer::_InternalSerialize(
   // bool kicked = 1;
   if (this->_internal_kicked() != 0) {
     target = stream->EnsureSpace(target);
-    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteBoolToArray(1, this->_internal_kicked(), target);
+    target = ::_pbi::WireFormatLite::WriteBoolToArray(1, this->_internal_kicked(), target);
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
-    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormat::InternalSerializeUnknownFieldsToArray(
+    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
         _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
   }
   // @@protoc_insertion_point(serialize_to_array_end:protos.KickAnswer)
@@ -423,32 +435,28 @@ size_t KickAnswer::ByteSizeLong() const {
     total_size += 1 + 1;
   }
 
-  return MaybeComputeUnknownFieldsSize(total_size, &_cached_size_);
+  return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
 }
 
 const ::PROTOBUF_NAMESPACE_ID::Message::ClassData KickAnswer::_class_data_ = {
-    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSizeCheck,
+    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSourceCheck,
     KickAnswer::MergeImpl
 };
 const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*KickAnswer::GetClassData() const { return &_class_data_; }
 
-void KickAnswer::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message* to,
-                      const ::PROTOBUF_NAMESPACE_ID::Message& from) {
-  static_cast<KickAnswer *>(to)->MergeFrom(
-      static_cast<const KickAnswer &>(from));
-}
 
-
-void KickAnswer::MergeFrom(const KickAnswer& from) {
-// @@protoc_insertion_point(class_specific_merge_from_start:protos.KickAnswer)
-  GOOGLE_DCHECK_NE(&from, this);
+void KickAnswer::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
+  auto* const _this = static_cast<KickAnswer*>(&to_msg);
+  auto& from = static_cast<const KickAnswer&>(from_msg);
+  // @@protoc_insertion_point(class_specific_merge_from_start:protos.KickAnswer)
+  GOOGLE_DCHECK_NE(&from, _this);
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
   if (from._internal_kicked() != 0) {
-    _internal_set_kicked(from._internal_kicked());
+    _this->_internal_set_kicked(from._internal_kicked());
   }
-  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
 }
 
 void KickAnswer::CopyFrom(const KickAnswer& from) {
@@ -465,11 +473,11 @@ bool KickAnswer::IsInitialized() const {
 void KickAnswer::InternalSwap(KickAnswer* other) {
   using std::swap;
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
-  swap(kicked_, other->kicked_);
+  swap(_impl_.kicked_, other->_impl_.kicked_);
 }
 
 ::PROTOBUF_NAMESPACE_ID::Metadata KickAnswer::GetMetadata() const {
-  return ::PROTOBUF_NAMESPACE_ID::internal::AssignDescriptors(
+  return ::_pbi::AssignDescriptors(
       &descriptor_table_kick_2eproto_getter, &descriptor_table_kick_2eproto_once,
       file_level_metadata_kick_2eproto[1]);
 }
@@ -477,10 +485,12 @@ void KickAnswer::InternalSwap(KickAnswer* other) {
 // @@protoc_insertion_point(namespace_scope)
 }  // namespace protos
 PROTOBUF_NAMESPACE_OPEN
-template<> PROTOBUF_NOINLINE ::protos::KickMsg* Arena::CreateMaybeMessage< ::protos::KickMsg >(Arena* arena) {
+template<> PROTOBUF_NOINLINE ::protos::KickMsg*
+Arena::CreateMaybeMessage< ::protos::KickMsg >(Arena* arena) {
   return Arena::CreateMessageInternal< ::protos::KickMsg >(arena);
 }
-template<> PROTOBUF_NOINLINE ::protos::KickAnswer* Arena::CreateMaybeMessage< ::protos::KickAnswer >(Arena* arena) {
+template<> PROTOBUF_NOINLINE ::protos::KickAnswer*
+Arena::CreateMaybeMessage< ::protos::KickAnswer >(Arena* arena) {
   return Arena::CreateMessageInternal< ::protos::KickAnswer >(arena);
 }
 PROTOBUF_NAMESPACE_CLOSE
