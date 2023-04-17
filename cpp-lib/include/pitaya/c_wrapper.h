@@ -38,8 +38,8 @@ struct CSDConfig
     int32_t logServerSync;
     int32_t logServerDetails;
     int32_t syncServersIntervalSec;
-    int32_t maxNumberOfRetries = 10;
-    int32_t retryDelayMilliseconds = 100;
+    int32_t maxNumberOfRetries;
+    int32_t retryDelayMilliseconds;
 
     bool TryGetConfig(pitaya::EtcdServiceDiscoveryConfig& config);
 };

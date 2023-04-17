@@ -31,7 +31,7 @@ Worker::Worker(const EtcdServiceDiscoveryConfig& config,
     , _server(std::move(server))
     , _etcdClient(std::move(etcdClient))
     , _log(utils::CloneLoggerOrCreate(loggerName, kLogTag))
-    , _numKeepAliveRetriesLeft(_config.maxNumberOfRetries)
+    , _numKeepAliveRetriesLeft(5)
     , _syncServersTicker(config.syncServersIntervalSec, std::bind(&Worker::SyncServers, this)) {
 
     if (_config.logServerSync) {
@@ -217,7 +217,7 @@ Worker::StartThread()
 
                 while (_numKeepAliveRetriesLeft > 0) {
                     _log->info("ETCD retries left: {}", _numKeepAliveRetriesLeft);
-                    auto delay_milliseconds = _config.retryDelayMilliseconds << (_config.maxNumberOfRetries - _numKeepAliveRetriesLeft);
+                    auto delay_milliseconds = 300 << (5 - _numKeepAliveRetriesLeft);
                     _log->info("ETCD retry waiting for {}ms", delay_milliseconds);
                     std::this_thread::sleep_for(std::chrono::milliseconds(delay_milliseconds));
 

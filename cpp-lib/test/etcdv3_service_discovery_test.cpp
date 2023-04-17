@@ -817,13 +817,13 @@ TEST_F(Etcdv3ServiceDiscoveryTest, ReconnectsAfterSomeRetrieUsingExponentialBack
         .WillOnce(Return(failedLeaseGrantRes));
     }
 
-    _config.retryDelayMilliseconds = 100; // set retry delay (in milliseconds)
+    _config.retryDelayMilliseconds = 300; // set retry delay (in milliseconds)
     _config.maxNumberOfRetries = 5;
     auto serviceDiscovery = CreateServiceDiscovery();
     ASSERT_NE(_mockEtcdClient->onWatch, nullptr);
 
     onLeaseKeepAliveExit(EtcdLeaseKeepAliveStatus::Fail);
-    std::this_thread::sleep_for(std::chrono::milliseconds(600)); // Sleeping 1 second should retry 2 times.
+    std::this_thread::sleep_for(std::chrono::milliseconds(1100)); // Sleeping 1 second should retry 2 times.
 
     // after two retries, make it work.
     auto secondLeaseGrantRes = NewSuccessfullLeaseGrantResponse(10101010);
