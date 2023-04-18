@@ -24,7 +24,6 @@ class PitayaCpp(ConanFile):
         'openssl/*:shared': False,
         'openssl/*:build_type': "Debug",
         'protobuf/*:debug_suffix': False,
-        'spdlog/*:header_only': True,
     }
     build_requires = (
         'gtest/1.10.0'
