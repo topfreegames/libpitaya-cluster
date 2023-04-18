@@ -20,6 +20,7 @@ namespace etcdv3
 
         void waitForResponse();
         void setLeaseId(int64_t lease_id);
+        void setLeaseTTL(int lease_ttl);
 
     private:
         LeaseKeepAliveResponse _response;

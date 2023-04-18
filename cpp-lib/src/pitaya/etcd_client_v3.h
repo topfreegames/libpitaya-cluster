@@ -15,6 +15,7 @@ public:
     EtcdClientV3(const std::string& endpoints,
                  const std::string& prefix,
                  bool logHeartbeat,
+                 int leaseTTL,
                  const char* loggerName = nullptr);
 
     LeaseGrantResponse LeaseGrant(std::chrono::seconds seconds) override;

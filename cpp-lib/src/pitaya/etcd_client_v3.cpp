@@ -11,13 +11,14 @@ namespace pitaya {
 EtcdClientV3::EtcdClientV3(const std::string& endpoint,
                            const std::string& prefix,
                            bool logHeartbeat,
+                           int leaseTTL,
                            const char* loggerName)
     : _log(loggerName ? spdlog::get(loggerName)->clone("etcd_client_v3")
                       : spdlog::stdout_color_mt("etcd_client_v3"))
     , _endpoint(endpoint)
     , _prefix(prefix)
     , _client(endpoint)
-    , _leaseKeepAlive(_client, logHeartbeat, loggerName)
+    , _leaseKeepAlive(_client, logHeartbeat, loggerName, leaseTTL)
 {}
 
 LeaseGrantResponse

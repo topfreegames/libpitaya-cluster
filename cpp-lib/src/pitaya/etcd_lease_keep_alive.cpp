@@ -8,11 +8,12 @@ using std::chrono::seconds;
 
 namespace pitaya {
 
-EtcdLeaseKeepAlive::EtcdLeaseKeepAlive(etcd::Client& client, bool shouldLog, const char* loggerName)
+EtcdLeaseKeepAlive::EtcdLeaseKeepAlive(etcd::Client& client, bool shouldLog, const char* loggerName, int leaseTTL)
     : _running(false)
     , _log(spdlog::get(loggerName)->clone("lease_keep_alive"))
     , _shouldLog(shouldLog)
     , _client(client)
+    , _leaseTTL(leaseTTL)
     , _leaseId(-1)
     , _donePromise()
     , _doneFuture(_donePromise.get_future())
@@ -60,7 +61,7 @@ EtcdLeaseKeepAlive::TickWrapper()
             _log->info("Renewing lease: {}", _leaseId);
 
         assert(_leaseId != -1);
-        auto res = _client.lease_keep_alive(_leaseId).get();
+        auto res = _client.lease_keep_alive(_leaseId, _leaseTTL).get();
         if (!res.is_ok()) {
             if (res.status.etcd_error_code == etcdv3::V3StatusCode::UNDERLYING_GRPC_ERROR) {
                 _log->error("Failed to renew lease, stopping (grpc: {})", res.status.grpc_error_message);

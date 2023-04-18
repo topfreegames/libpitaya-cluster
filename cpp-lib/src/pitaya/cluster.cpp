@@ -53,14 +53,14 @@ Cluster::InitializeWithGrpc(GrpcConfig config,
     auto bindingStorage = std::unique_ptr<BindingStorage>(new EtcdBindingStorage(
         bindingStorageConfig,
         std::unique_ptr<EtcdClient>(new EtcdClientV3(
-            bindingStorageConfig.endpoint, bindingStorageConfig.etcdPrefix, false, loggerName)),
+            bindingStorageConfig.endpoint, bindingStorageConfig.etcdPrefix, false, bindingStorageConfig.leaseTtl.count(), loggerName)),
         loggerName));
 
     auto serviceDiscovery = std::shared_ptr<ServiceDiscovery>(new Etcdv3ServiceDiscovery(
         sdConfig,
         server,
         std::unique_ptr<EtcdClient>(new EtcdClientV3(
-            sdConfig.endpoints, sdConfig.etcdPrefix + "servers/metagame/", sdConfig.logHeartbeat, loggerName)),
+            sdConfig.endpoints, sdConfig.etcdPrefix + "servers/metagame/", sdConfig.logHeartbeat, sdConfig.heartbeatTTLSec.count(), loggerName)),
         loggerName));
 
     auto rpcClient = std::unique_ptr<RpcClient>(
@@ -88,7 +88,7 @@ Cluster::InitializeWithNats(NatsConfig natsConfig,
     auto rpcServer = std::unique_ptr<RpcServer>(new NatsRpcServer(server, natsConfig, loggerName));
     auto rpcClient = std::unique_ptr<RpcClient>(new NatsRpcClient(natsConfig, loggerName));
     auto etcdClient = std::unique_ptr<EtcdClient>(new EtcdClientV3(
-        sdConfig.endpoints, sdConfig.etcdPrefix + "servers/metagame/", sdConfig.logHeartbeat, loggerName));
+        sdConfig.endpoints, sdConfig.etcdPrefix + "servers/metagame/", sdConfig.logHeartbeat, sdConfig.heartbeatTTLSec.count(), loggerName));
     auto serviceDiscovery = std::shared_ptr<ServiceDiscovery>(
         new Etcdv3ServiceDiscovery(std::move(sdConfig), server, std::move(etcdClient), loggerName));
 

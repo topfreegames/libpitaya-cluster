@@ -15,7 +15,7 @@ namespace pitaya {
 class EtcdLeaseKeepAlive
 {
 public:
-    EtcdLeaseKeepAlive(etcd::Client& client, bool shouldLog, const char* loggerName);
+    EtcdLeaseKeepAlive(etcd::Client& client, bool shouldLog, const char* loggerName, int leaseTTL);
     pplx::task<EtcdLeaseKeepAliveStatus> Start();
     void Stop();
     void SetLeaseId(int64_t leaseId);
@@ -29,6 +29,7 @@ private:
     bool _shouldLog;
     etcd::Client& _client;
     int64_t _leaseId;
+    int _leaseTTL;
     std::promise<void> _donePromise;
     std::shared_future<void> _doneFuture;
     pplx::task<EtcdLeaseKeepAliveStatus> _runTask;

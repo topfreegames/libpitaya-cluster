@@ -198,7 +198,7 @@ namespace etcd
          * Keeps a lease alive.
          * @param id is the lease id.
          */
-        pplx::task<Response> lease_keep_alive(int64_t const id);
+        pplx::task<Response> lease_keep_alive(int64_t const id, int const ttl);
 
         /**
          * Stops a lease keep alive.

@@ -42,8 +42,9 @@ void etcdv3::AsyncKeepAliveAction::waitForResponse()
     void* got_tag = nullptr;
     bool ok = false;
 
-    auto deadline = std::chrono::system_clock::now() + std::chrono::milliseconds(5000);
+    auto grpc_timeout = parameters.ttl/2;
 
+    auto deadline = std::chrono::system_clock::now() + std::chrono::seconds(grpc_timeout);
 
     _stream->Write(keep_alive_req, reinterpret_cast<void*>(Type::Write));
     // wait write finish
@@ -66,7 +67,7 @@ void etcdv3::AsyncKeepAliveAction::waitForResponse()
       return;
     }
 
-    deadline = std::chrono::system_clock::now() + std::chrono::milliseconds(5000);
+    deadline = std::chrono::system_clock::now() + std::chrono::seconds(grpc_timeout);
     _stream->Read(&_response, reinterpret_cast<void*>(Type::Read));
     // wait read finish
     switch (cq_.AsyncNext(&got_tag, &ok, deadline)) {
@@ -91,6 +92,11 @@ void etcdv3::AsyncKeepAliveAction::waitForResponse()
 void etcdv3::AsyncKeepAliveAction::setLeaseId(int64_t lease_id)
 {
     parameters.lease_id = lease_id;
+}
+
+void etcdv3::AsyncKeepAliveAction::setLeaseTTL(int lease_ttl)
+{
+    parameters.ttl = lease_ttl;
 }
 
 etcdv3::AsyncKeepAliveResponse

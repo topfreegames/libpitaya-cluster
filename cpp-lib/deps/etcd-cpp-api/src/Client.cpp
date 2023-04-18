@@ -313,17 +313,19 @@ pplx::task<etcd::Response> etcd::Client::lease_revoke(int64_t const id)
     return Response::create(std::make_shared<etcdv3::AsyncLeaseRevokeAction>(std::move(params)), _task_options);
 }
 
-pplx::task<etcd::Response> etcd::Client::lease_keep_alive(int64_t const id)
+pplx::task<etcd::Response> etcd::Client::lease_keep_alive(int64_t const id, int const ttl)
 {
     if (_keepAliveAction == nullptr) {
         etcdv3::ActionParameters params;
         params.lease_id = id;
+        params.ttl = ttl;
         params.lease_stub = _lease_service_stub.get();
 
         _keepAliveAction = std::make_shared<etcdv3::AsyncKeepAliveAction>(std::move(params));
     }
 
     _keepAliveAction->setLeaseId(id);
+    _keepAliveAction->setLeaseTTL(ttl);
 
     return Response::create(_keepAliveAction, _task_options);
 }
