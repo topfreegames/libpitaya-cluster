@@ -23,10 +23,6 @@ find_package(cpprestsdk REQUIRED)
 include_directories(${cpprestsdk_INCLUDE_DIRS})
 
 find_package(spdlog REQUIRED)
-include_directories(${spdlog_INCLUDE_DIRS})
-
-#find_package(fmt REQUIRED)
-#include_directories(${fmt_INCLUDE_DIRS})
 
 find_package(gRPC REQUIRED)
 include_directories(${gRPC_INCLUDE_DIRS})
@@ -142,7 +138,6 @@ target_include_directories(pitaya_cpp
   PUBLIC
     $<BUILD_INTERFACE:
       ${CMAKE_SOURCE_DIR}/include
-      ${spdlog_INCLUDE_DIRS}>
       ${CMAKE_CURRENT_BINARY_DIR}
     $<INSTALL_INTERFACE:include>
   PRIVATE
@@ -153,6 +148,7 @@ target_link_libraries(pitaya_cpp
     nats_static
     etcd-cpp-api
     Boost::boost
+    spdlog::spdlog
   PRIVATE
     gRPC::grpc++_unsecure
     protobuf::libprotobuf)
