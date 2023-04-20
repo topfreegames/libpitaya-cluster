@@ -11,6 +11,7 @@
 
 #include "spdlog/logger.h"
 
+#include <thread>
 #include <atomic>
 #include <grpcpp/server.h>
 
