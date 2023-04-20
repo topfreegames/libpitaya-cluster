@@ -74,7 +74,7 @@ EtcdLeaseKeepAlive::TickWrapper()
 
         if (res.value.ttl < 1) {
             if (_shouldLog)
-                _log->warn("Received TTL of {} seconds, stopping", res.value.ttl);
+                _log->warn("Lease revoked or expired, received TTL of {} seconds.", res.value.ttl);
             _leaseId = -1;
             return EtcdLeaseKeepAliveStatus::Fail;
         }

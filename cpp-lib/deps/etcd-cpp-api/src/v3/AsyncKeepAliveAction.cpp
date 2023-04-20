@@ -59,7 +59,7 @@ void etcdv3::AsyncKeepAliveAction::waitForResponse()
       }
       case CompletionQueue::NextStatus::GOT_EVENT: {
         if (!ok || got_tag != reinterpret_cast<void*>(Type::Write)) {
-          return;
+          status = grpc::Status(grpc::StatusCode::ABORTED, "Failed to create a lease keep-alive connection: write not ok or invalid tag");
         }
       }
     }
@@ -69,15 +69,16 @@ void etcdv3::AsyncKeepAliveAction::waitForResponse()
 
     deadline = std::chrono::system_clock::now() + std::chrono::seconds(grpc_timeout);
     _stream->Read(&_response, reinterpret_cast<void*>(Type::Read));
+
     // wait read finish
     switch (cq_.AsyncNext(&got_tag, &ok, deadline)) {
       case CompletionQueue::NextStatus::TIMEOUT: {
         status = grpc::Status(grpc::StatusCode::DEADLINE_EXCEEDED, "gRPC timeout during keep alive read");
-        break;
+        return;
       }
       case CompletionQueue::NextStatus::SHUTDOWN: {
         status = grpc::Status(grpc::StatusCode::UNAVAILABLE, "gRPC already shutdown during keep alive read");
-        break;
+        return;
       }
       case CompletionQueue::NextStatus::GOT_EVENT: {
         if (ok && got_tag == reinterpret_cast<void*>(Type::Read)) {
@@ -86,7 +87,7 @@ void etcdv3::AsyncKeepAliveAction::waitForResponse()
         break;
       }
     }
-
+    status = grpc::Status(grpc::StatusCode::ABORTED, "Failed to create a lease keep-alive connection: read not ok or invalid tag");
 }
 
 void etcdv3::AsyncKeepAliveAction::setLeaseId(int64_t lease_id)

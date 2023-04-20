@@ -211,14 +211,13 @@ Worker::StartThread()
                 break;
             }
             case JobInfo::EtcdReconnectionFailure: {
-                _log->error("Reconnection failure, {} retries left!", _numKeepAliveRetriesLeft);
+                _log->error("Connection failure, retrying up to {} times!", _config.maxNumberOfRetries);
                 _etcdClient->StopLeaseKeepAlive();
                 _syncServersTicker.Stop();
 
                 while (_numKeepAliveRetriesLeft > 0) {
-                    _log->info("ETCD retries left: {}", _numKeepAliveRetriesLeft);
                     auto delay_milliseconds = 300 << (5 - _numKeepAliveRetriesLeft);
-                    _log->info("ETCD retry waiting for {}ms", delay_milliseconds);
+                    _log->info("ETCD connection retry waiting for {}ms", delay_milliseconds);
                     std::this_thread::sleep_for(std::chrono::milliseconds(delay_milliseconds));
 
                     --_numKeepAliveRetriesLeft;
@@ -226,16 +225,14 @@ Worker::StartThread()
 
                     if (ok) {
                         _log->info("Etcd reconnection successful");
-                        // FIXME(leo): Do not reset the number of keep alive retries yet,
-                        // since we do not want the server to be keep reconnecting forever in an
-                        // unknown state.
-                        // _numKeepAliveRetriesLeft = _config.maxNumberOfRetries;
+                        _numKeepAliveRetriesLeft = 5;
                         _log->info("Restarting etcd watcher");
                         _etcdClient->Watch(std::bind(&Worker::OnWatch, this, _1));
                         StartLeaseKeepAlive();
                         _syncServersTicker.Start();
                         break;
                     }
+                    _log->info("ETCD retries left: {}", _numKeepAliveRetriesLeft);
                 }
 
                 if (_numKeepAliveRetriesLeft <= 0) {
