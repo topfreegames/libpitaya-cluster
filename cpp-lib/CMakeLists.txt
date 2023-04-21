@@ -54,7 +54,7 @@ option(BUILD_MACOSX_BUNDLE "Should build a bundle for Macosx" OFF)
 if(BUILD_MACOSX_BUNDLE)
     message(STATUS "Setting library to MODULE")
     set(LIB_TYPE MODULE)
-elseif(BUILD_TESTS)
+elseif(BUILD_TESTING)
     set(LIB_TYPE STATIC)
 else()
     set(LIB_TYPE SHARED)
@@ -154,7 +154,7 @@ target_link_libraries(pitaya_cpp
     protobuf::libprotobuf)
 
 include(CTest)
-if(BUILD_TESTS AND NOT BUILD_MACOSX_BUNDLE)
+if(BUILD_TESTING AND NOT BUILD_MACOSX_BUNDLE)
     # ===============================
     # Add example
     # ===============================
@@ -190,7 +190,7 @@ if(BUILD_TESTS AND NOT BUILD_MACOSX_BUNDLE)
         test/c_wrapper_test.cpp
         test/main_test.cpp)
 
-    message(WARNING "Adding profiling data into the library and the tests executable, do not ship this library to production (compile with -DBUILD_TESTS=OFF)")
+    message(WARNING "Adding profiling data into the library and the tests executable, do not ship this library to production (compile with -DBUILD_TESTING=OFF)")
 
     target_compile_options(pitaya_cpp
       PRIVATE -fprofile-instr-generate -fcoverage-mapping -O0)
