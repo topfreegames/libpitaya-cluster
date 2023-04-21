@@ -39,6 +39,9 @@ class PitayaCpp(ConanFile):
         self.requires("grpc/1.50.1")
         self.requires("gtest/1.10.0")
         self.requires("spdlog/1.11.0")
+
+    def build_requirements(self):
+        self.tool_requires("grpc/1.50.1")
         
     def layout(self):
         cmake_layout(self)
