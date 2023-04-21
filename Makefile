@@ -7,9 +7,9 @@ clean-cpp-mac:
 # precompiled folder.
 build-cpp-on-mac:
 	@cd cpp-lib && $(MAKE) build-all-mac
-	@cp cpp-lib/_builds/mac/libpitaya_cpp.dylib precompiled/
-	@cp cpp-lib/_builds/mac-unity/libpitaya_cpp.bundle precompiled/
-	@cp cpp-lib/_builds/linux/libpitaya_cpp.so precompiled/
+	@lipo -create cpp-lib/_builds//macos-x86_64-macosx_bundle_false-release/libpitaya_cpp.dylib cpp-lib/_builds//macos-armv8-macosx_bundle_false-release/libpitaya_cpp.dylib -output ./precompiled/libpitaya_cpp.dylib
+	@lipo -create cpp-lib/_builds//macos-x86_64-macosx_bundle_true-release/libpitaya_cpp.bundle cpp-lib/_builds//macos-armv8-macosx_bundle_true-release/libpitaya_cpp.bundle -output ./precompiled/libpitaya_cpp.bundle
+	@cp cpp-lib/_builds/linux-x86_64-release/libpitaya_cpp.so precompiled/
 
 build-all: build-csharp-lib-release build-cpp-unity
 

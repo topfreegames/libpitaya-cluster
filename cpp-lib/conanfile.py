@@ -16,9 +16,11 @@ class PitayaCpp(ConanFile):
     description = 'C++ library that allows the creation of Pitaya servers.'
     settings = 'os', 'compiler', 'build_type', 'arch'
     options = {
+        'shared': [True, False],
         'macosx_bundle': [False, True],
     }
     default_options = {
+        'shared': False,
         'macosx_bundle': False,
         'cpprestsdk/*:with_websockets': False,
         'openssl/*:shared': False,
@@ -37,18 +39,20 @@ class PitayaCpp(ConanFile):
         self.requires("openssl/1.1.1t", force=True)
         self.requires("cpprestsdk/2.10.18")
         self.requires("grpc/1.50.1")
-        self.requires("gtest/1.10.0")
         self.requires("spdlog/1.11.0")
+        self.test_requires("gtest/1.10.0")
 
     def build_requirements(self):
         self.tool_requires("grpc/1.50.1")
         
     def layout(self):
-        cmake_layout(self)
+        cmake_layout(self, build_folder='_builds')
 
     def generate(self):
         tc = CMakeToolchain(self)
         tc.presets_prefix = "npitaya"
+        if self.settings.os == 'Macos':
+          tc.variables['BUILD_MACOSX_BUNDLE'] = self.options.macosx_bundle
         tc.generate()
 
         deps = CMakeDeps(self)
