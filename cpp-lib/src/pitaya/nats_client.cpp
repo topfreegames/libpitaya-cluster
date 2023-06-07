@@ -75,6 +75,8 @@ NatsClientImpl::NatsClientImpl(NatsApiType apiType,
     natsOptions_SetClosedCB(_opts, ClosedCb, this);
     natsOptions_SetDisconnectedCB(_opts, DisconnectedCb, this);
     natsOptions_SetReconnectedCB(_opts, ReconnectedCb, this);
+    natsOptions_SetPingInterval(_opts, 3);
+    natsOptions_SetMaxPingsOut(_opts, 3);
     if (apiType == NatsApiType::Asynchronous) {
         natsOptions_SetMaxPendingMsgs(_opts, config.maxPendingMsgs);
         natsOptions_SetErrorHandler(_opts, ErrHandler, this);

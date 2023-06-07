@@ -41,7 +41,7 @@ generate-xcode:
 	@cmake -H. -B_builds/xcode -GXcode --preset npitaya-release -DBUILD_TESTS=ON -DBUILD_SHARED_LIBS=OFF
 
 build-linux-release:
-	@conan install . -s arch=x86_64 --build=missing -pr ./conanprofile
+	@conan install . -s arch=x86_64 --build=missing -pr ./conanprofile -s compiler.version=11
 	@cmake --preset npitaya-linux-x86_64-release
 	@cmake --build --preset npitaya-linux-x86_64-release
 
