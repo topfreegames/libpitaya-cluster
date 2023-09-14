@@ -86,7 +86,7 @@ ParseServerTypeFilters(std::vector<std::string>& serverTypeFilters, const char* 
                 gLogger->error("Server type filter elements should be of type string and not empty");
                 return false;
             }
-            serverTypeFilters.push_back(el.as_string());
+            serverTypeFilters.push_back(utility::conversions::to_utf8string(el.as_string()));
         }
         
         return true;

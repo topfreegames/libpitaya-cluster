@@ -527,16 +527,16 @@ ServerAsJson(const Server& server)
 {
     json::value obj;
     obj.object();
-    obj["id"] = json::value::string(server.Id());
-    obj["type"] = json::value::string(server.Type());
+    obj[U("id")] = json::value::string(utility::conversions::to_string_t(server.Id()));
+    obj[U("type")] = json::value::string(utility::conversions::to_string_t(server.Type()));
     try {
-        obj["metadata"] = json::value::parse(server.Metadata());
+        obj[U("metadata")] = json::value::parse(server.Metadata());
     } catch (const json::json_exception& exc) {
-        obj["metadata"] = json::value::string("");
+        obj[U("metadata")] = json::value::string(U(""));
     }
-    obj["hostname"] = json::value::string(server.Hostname());
-    obj["frontend"] = json::value::boolean(server.IsFrontend());
-    return obj.serialize();
+    obj[U("hostname")] = json::value::string(utility::conversions::to_string_t(server.Hostname()));
+    obj[U("frontend")] = json::value::boolean(server.IsFrontend());
+    return utility::conversions::to_utf8string(obj.serialize());
 }
 
 optional<Server>
@@ -553,20 +553,20 @@ Worker::ParseServer(const string& jsonStr)
         bool frontend = false;
         std::string hostname, type, id, metadata;
 
-        if (jsonSrv.has_boolean_field("frontend")) {
-            frontend = jsonSrv["frontend"].as_bool();
+        if (jsonSrv.has_boolean_field(U("frontend"))) {
+            frontend = jsonSrv[U("frontend")].as_bool();
         }
-        if (jsonSrv.has_string_field("type")) {
-            type = jsonSrv["type"].as_string();
+        if (jsonSrv.has_string_field(U("type"))) {
+            type = utility::conversions::to_utf8string(jsonSrv[U("type")].as_string());
         }
-        if (jsonSrv.has_string_field("id")) {
-            id = jsonSrv["id"].as_string();
+        if (jsonSrv.has_string_field(U("id"))) {
+            id = utility::conversions::to_utf8string(jsonSrv[U("id")].as_string());
         }
-        if (jsonSrv.has_object_field("metadata")) {
-            metadata = jsonSrv["metadata"].serialize();
+        if (jsonSrv.has_object_field(U("metadata"))) {
+            metadata = utility::conversions::to_utf8string(jsonSrv[U("metadata")].serialize());
         }
-        if (jsonSrv.has_string_field("hostname")) {
-            hostname = jsonSrv["hostname"].as_string();
+        if (jsonSrv.has_string_field(U("hostname"))) {
+            hostname = utility::conversions::to_utf8string(jsonSrv[U("hostname")].as_string());
         }
 
         if (id.empty() || type.empty()) {

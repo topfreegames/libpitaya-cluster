@@ -203,9 +203,9 @@ Cluster::RPC(const string& serverId,
     // TODO proper jaeger setup
     json::value metadata;
     metadata.object();
-    metadata[constants::kPeerIdKey] = json::value::string(_server.Id());
-    metadata[constants::kPeerServiceKey] = json::value::string(_server.Type());
-    string metadataStr = metadata.serialize();
+    metadata[utility::conversions::to_string_t(constants::kPeerIdKey)] = json::value::string(utility::conversions::to_string_t(_server.Id()));
+    metadata[utility::conversions::to_string_t(constants::kPeerServiceKey)] = json::value::string(utility::conversions::to_string_t(_server.Type()));
+    string metadataStr = utility::conversions::to_utf8string(metadata.serialize());
     req.set_metadata(metadataStr);
 
     pitaya::Server server = sv.value();

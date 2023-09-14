@@ -19,9 +19,9 @@ pitaya::Server::WithMetadata(const std::string& key, const std::string& val)
         throw new PitayaException("Server metadata is not an object");
     }
 
-    metadataJson[key] = json::value::string(val);
+    metadataJson[utility::conversions::to_string_t(key)] = json::value::string(utility::conversions::to_string_t(val));
 
-    _metadata = metadataJson.serialize();
+    _metadata = utility::conversions::to_utf8string(metadataJson.serialize());
 
     return *this;
 }
