@@ -3,7 +3,7 @@ using System.Runtime.Serialization;
 using System.Text;
 using System.Threading.Tasks;
 using NPitaya.Models;
-using NPitaya.Protos;
+using Protos;
 
 #pragma warning disable 1998
 namespace exampleapp.Handlers
@@ -12,7 +12,7 @@ namespace exampleapp.Handlers
     {
         public async Task<RPCRes> Entry(PitayaSession pitayaSession, RPCMsg msg)
         {
-            var response = new NPitaya.Protos.RPCRes
+            var response = new RPCRes
             {
                 Msg = $"hello from csharp handler!!! :) {Guid.NewGuid().ToString()}",
                 Code = 200
@@ -22,7 +22,7 @@ namespace exampleapp.Handlers
 
         public async Task NotifyBind(PitayaSession pitayaSession, RPCMsg msg)
         {
-            var response = new NPitaya.Protos.RPCRes
+            var response = new RPCRes
             {
                 Msg = $"hello from csharp handler!!! :) {Guid.NewGuid().ToString()}",
                 Code = 200

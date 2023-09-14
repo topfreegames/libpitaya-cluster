@@ -39,7 +39,6 @@ class PitayaCpp(ConanFile):
         self.requires("openssl/1.1.1v", force=True)
         self.requires("cpprestsdk/2.10.18")
         self.requires("grpc/1.50.1")
-#        self.requires("spdlog/1.12.0")
         self.test_requires("gtest/1.10.0")
 
     def build_requirements(self):

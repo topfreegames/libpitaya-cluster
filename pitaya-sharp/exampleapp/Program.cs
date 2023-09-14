@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading;
-using System.Threading.Tasks;
 using exampleapp.Handlers;
 using exampleapp.remotes;
 using NPitaya;
@@ -125,7 +124,7 @@ namespace PitayaCSharpExample
     static async void TrySendRpc(){
         try
         {
-            var res = await PitayaCluster.Rpc<NPitaya.Protos.RPCRes>(Route.FromString("csharp.testRemote.remote"),
+            var res = await PitayaCluster.Rpc<Protos.RPCRes>(Route.FromString("csharp.testRemote.remote"),
                 null);
             Console.WriteLine($"Code: {res.Code}");
             Console.WriteLine($"Msg: {res.Msg}");
