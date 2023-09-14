@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.26.3)
 
+include(FetchContent)
+
 project(PitayaCpp)
 
 set(CMAKE_MACOSX_RPATH 0)
@@ -22,7 +24,13 @@ include_directories(${Boost_INCLUDE_DIRS})
 find_package(cpprestsdk REQUIRED)
 include_directories(${cpprestsdk_INCLUDE_DIRS})
 
-find_package(spdlog REQUIRED)
+FetchContent_Declare(
+      spdlog
+      GIT_REPOSITORY https://github.com/gabime/spdlog.git
+      GIT_TAG v1.12.0
+)
+# Download spdlog
+FetchContent_MakeAvailable(spdlog)
 
 find_package(gRPC REQUIRED)
 include_directories(${gRPC_INCLUDE_DIRS})

@@ -35,11 +35,11 @@ class PitayaCpp(ConanFile):
     def requirements(self):
         self.requires("zlib/1.2.13")
         self.requires("protobuf/3.21.9", force=True)
-        self.requires("boost/1.80.0")
-        self.requires("openssl/1.1.1t", force=True)
+        self.requires("boost/1.83.0")
+        self.requires("openssl/1.1.1v", force=True)
         self.requires("cpprestsdk/2.10.18")
         self.requires("grpc/1.50.1")
-        self.requires("spdlog/1.11.0")
+#        self.requires("spdlog/1.12.0")
         self.test_requires("gtest/1.10.0")
 
     def build_requirements(self):
@@ -64,7 +64,7 @@ class PitayaCpp(ConanFile):
         ))
 
     def configure(self):
-        if self.settings.os != 'Linux' and self.settings.os != 'Macos':
+        if self.settings.os != 'Linux' and self.settings.os != 'Macos' and self.settings.os != 'Windows':
             raise ConanInvalidConfiguration('%s is not supported' % self.settings.os)
 
     def config_options(self):
