@@ -18,6 +18,10 @@
 #include <cstdio>
 #include <cpprest/json.h>
 
+#ifdef _WIN32
+#include <signal.h>
+#endif
+
 using namespace std;
 using namespace pitaya;
 using namespace pitaya::service_discovery;
@@ -461,7 +465,9 @@ extern "C"
         gSignalHandler = signalHandler;
         signal(SIGINT, OnSignal);
         signal(SIGTERM, OnSignal);
+        #ifndef _WIN32
         signal(SIGKILL, OnSignal);
+        #endif
     }
 
     struct CRpc

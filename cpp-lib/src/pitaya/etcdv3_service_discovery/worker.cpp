@@ -8,6 +8,10 @@
 #include <cpprest/json.h>
 #include <sstream>
 
+#ifdef _WIN32
+#include <signal.h>
+#endif
+
 using boost::optional;
 using std::string;
 using std::vector;
