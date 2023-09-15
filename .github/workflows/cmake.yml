@@ -22,13 +22,14 @@ jobs:
     - name: Update conan profile
       run: conan profile detect
 
+    - uses: actions/checkout@v2
+
     - name: Go to cpp folder
       run: cd cpp-lib
 
     - name: Install Dependencies
       run: conan install . -of ${{github.workspace}}/build -s build_type=${{env.BUILD_TYPE}}
 
-    - uses: actions/checkout@v2
     - name: Configure CMake
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
       # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
