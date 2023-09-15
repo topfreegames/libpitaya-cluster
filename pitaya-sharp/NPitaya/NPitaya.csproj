@@ -8,7 +8,7 @@
         <Title>NPitaya</Title>
         <Authors>TFG Co</Authors>
         <Description>A full implementation of pitaya backend framework for .NET</Description>
-        <Copyright>2019, TFG Co</Copyright>
+        <Copyright>2023, Wildlife Studios</Copyright>
         <PackageProjectUrl>https://github.com/topfreegames/libpitaya-cluster</PackageProjectUrl>
         <RepositoryUrl>https://github.com/topfreegames/libpitaya-cluster</RepositoryUrl>
         <PackageTags>pitaya,server,games,framework,rpc</PackageTags>
@@ -28,7 +28,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <Content Include="../../precompiled/libpitaya_cluster.*">
+        <Content Include="../../precompiled/libpitaya_cpp.*">
             <PackagePath>\</PackagePath>
             <Pack>true</Pack>
         </Content>
@@ -37,13 +37,4 @@
             <Pack>true</Pack>
         </Content>
     </ItemGroup>
-
-    <ItemGroup>
-      <None Remove="libpitaya_cpp.dll" />
-    </ItemGroup>
-
-    <Target BeforeTargets="PreBuildEvent" Name="PreBuild">
-        <Exec Command="LINK_FILE=$(ProjectDir)$(OutDir)libpitaya_cpp.dylib; if [[ ! -f $LINK_FILE ]]; then ln -s $(ProjectDir)../../precompiled/libpitaya_cpp.dylib $LINK_FILE; fi " Condition=" '$(OS)' == 'Unix' " />
-    </Target>
-
 </Project>

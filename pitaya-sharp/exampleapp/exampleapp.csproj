@@ -6,28 +6,18 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <Compile Remove="resources\**" />
-      <EmbeddedResource Remove="resources\**" />
-      <None Remove="resources\**" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <None Remove="libpitaya_cpp.dll" />
-    </ItemGroup>
-
-    <ItemGroup>
       <ProjectReference Include="..\NPitaya\NPitaya.csproj" />
     </ItemGroup>
 
     <ItemGroup>
-      <Resource Include="libpitaya_cpp.dll">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </Resource>
+      <Content Include="$(ProjectDir)\..\..\precompiled\libpitaya_cpp.dll" Condition=" '$(OS)' == 'Windows_NT' ">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
+      <Content Include="$(ProjectDir)\..\..\precompiled\libpitaya_cpp.so" Condition=" '$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Linux)))' ">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
+      <Content Include="$(ProjectDir)\..\..\precompiled\libpitaya_cpp.dylib" Condition=" '$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::OSX)))' ">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
     </ItemGroup>
-
-    <Target Name="PreBuild" BeforeTargets="PreBuildEvent">
-        <Exec Condition=" '$(OS)' == 'OSX' " Command="&#xA;              LINK_FILE=$(ProjectDir)$(OutDir)/libpitaya_cpp.dylib&#xA;              if [[ ! -f $LINK_FILE ]]; then&#xA;                  ln -s $(ProjectDir)../../precompiled/libpitaya_cpp.dylib $LINK_FILE&#xA;              fi&#xA;            " />
-        <Exec Condition=" '$(OS)' == 'Unix' " Command="&#xA;              LINK_FILE=$(ProjectDir)$(OutDir)/libpitaya_cpp.so&#xA;              if [[ ! -f $LINK_FILE ]]; then&#xA;                  ln -s $(ProjectDir)../../precompiled/libpitaya_cpp.so $LINK_FILE&#xA;              fi&#xA;            " />
-    </Target>
-
 </Project>

@@ -2,12 +2,12 @@
 
     <PropertyGroup>
         <OutputType>Exe</OutputType>
-        <TargetFramework>netcoreapp3.1</TargetFramework>
+        <TargetFramework>net7.0</TargetFramework>
         <RootNamespace>example_orm</RootNamespace>
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="Google.Protobuf" Version="3.7.0" />
+      <PackageReference Include="Google.Protobuf" Version="3.24.3" />
       <PackageReference Include="Grpc.Tools" Version="1.19.0" PrivateAssets="All" />
       <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="2.2.3" />
       <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="2.2.0" />
@@ -25,24 +25,16 @@
       <ProjectReference Include="..\NPitaya\NPitaya.csproj" />
     </ItemGroup>
 
-    <Target Name="PreBuild" BeforeTargets="PreBuildEvent">
-        <Exec
-            Condition=" '$(OS)' == 'Unix' "
-            Command="
-              LINK_FILE=$(ProjectDir)$(OutDir)libpitaya_cpp.so
-              if [[ ! -f $LINK_FILE ]]; then
-                  ln -s $(ProjectDir)../../precompiled/libpitaya_cpp.so $LINK_FILE
-              fi
-            " />
- 
-        <Exec
-            Condition=" '$(OS)' == 'OSX' "
-            Command="
-              LINK_FILE=$(ProjectDir)$(OutDir)libpitaya_cpp.dylib
-              if [[ ! -f $LINK_FILE ]]; then
-                  ln -s $(ProjectDir)../../precompiled/libpitaya_cpp.dylib $LINK_FILE
-              fi
-            " />
-    </Target>
+    <ItemGroup>
+      <Content Include="$(ProjectDir)\..\..\precompiled\libpitaya_cpp.dll" Condition=" '$(OS)' == 'Windows_NT' ">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
+      <Content Include="$(ProjectDir)\..\..\precompiled\libpitaya_cpp.so" Condition=" '$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Linux)))' ">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
+      <Content Include="$(ProjectDir)\..\..\precompiled\libpitaya_cpp.dylib" Condition=" '$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::OSX)))' ">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
+    </ItemGroup>
 
 </Project>
