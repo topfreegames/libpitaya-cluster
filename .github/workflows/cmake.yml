@@ -4,7 +4,6 @@ on:
     branches: [ master ]
 env:
   BUILD_TYPE: Release
-  CONAN_USER_HOME: "$HOME/.conan2"
 jobs:
   build:
     # The CMake configure and build commands are platform agnostic and should work equally
@@ -29,7 +28,7 @@ jobs:
       env:
         cache-name: cache-conan-modules
       with:
-        path: ${{ env.CONAN_USER_HOME }}
+        path: "$HOME/.conan2/"
         key: ${{ runner.os }}-builder-${{ env.cache-name }}-${{ hashFiles('cpp-lib/conanfile.py') }}
         restore-keys: ${{ runner.os }}-builder-${{ env.cache-name }}-
 
@@ -40,12 +39,12 @@ jobs:
     - name: Configure CMake
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
       # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
-      run: cmake . -DCMAKE_TOOLCHAIN_FILE=.\build\_builds\generators\conan_toolchain.cmake -B ${{github.workspace}}\build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DBUILD_TESTING=OFF -DBUILD_SHARED_LIB=true
+      run: cmake . -DCMAKE_TOOLCHAIN_FILE=./build/_builds/generators/conan_toolchain.cmake -B ./build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DBUILD_TESTING=OFF -DBUILD_SHARED_LIB=true
       working-directory: cpp-lib
 
     - name: Build
       # Build your program with the given configuration
-      run: cmake --build .\build --config ${{env.BUILD_TYPE}} --target pitaya_cpp
+      run: cmake --build ./build --config ${{env.BUILD_TYPE}} --target pitaya_cpp
       working-directory: cpp-lib
 
     - uses: actions/cache/save@v3
@@ -53,7 +52,7 @@ jobs:
       env:
         cache-name: cache-conan-modules
       with:
-        path: ${{ env.CONAN_USER_HOME }}
+        path: "$HOME/.conan2/"
         key: ${{ runner.os }}-builder-${{ env.cache-name }}-${{ hashFiles('cpp-lib/conanfile.py') }}
 
 #TODO: fix tests
