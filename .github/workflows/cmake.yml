@@ -15,9 +15,6 @@ jobs:
     - name: Install Conan
       id: conan
       uses: turtlebrowser/get-conan@main
-
-    - name: Conan version
-      run: echo "${{ steps.conan.outputs.version }}"
     
     - name: Update conan profile
       run: conan profile detect
@@ -25,7 +22,7 @@ jobs:
     - uses: actions/checkout@v2
 
     - name: Install Dependencies
-      run: conan install . -of ${{github.workspace}}/build -s build_type=${{env.BUILD_TYPE}}
+      run: conan install . -of ${{github.workspace}}/build -s build_type=${{env.BUILD_TYPE}} --build=cpprestsdk/2.10.18 --build=grpc/1.50.1 --build=protobuf/3.21.9 --build=re2/20230301
       working-directory: cpp-lib
 
     - name: Configure CMake
