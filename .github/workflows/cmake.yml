@@ -4,8 +4,7 @@ on:
     branches: [ master ]
 env:
   BUILD_TYPE: Release
-  CONAN_USER_HOME: "${{ github.workspace }}/release/"
-  CONAN_USER_HOME_SHORT: "${{ github.workspace }}/release/short"
+  CONAN_USER_HOME: "$HOME/.conan2"
 jobs:
   build:
     # The CMake configure and build commands are platform agnostic and should work equally
