@@ -50,10 +50,10 @@ jobs:
       working-directory: cpp-lib
 
     - uses: actions/cache/save@v3
-    if: always()
-    with:
-      path: ${{ env.CONAN_USER_HOME }}
-      key: ${{ steps.restore-cache.outputs.cache-primary-key }}
+      if: always()
+      with:
+        path: ${{ env.CONAN_USER_HOME }}
+        key: ${{ steps.restore-cache.outputs.cache-primary-key }}
 
 #TODO: fix tests
 #    - name: Test
