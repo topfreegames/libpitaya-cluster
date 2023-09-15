@@ -26,7 +26,7 @@ jobs:
     - name: Using the builtin GitHub Cache Action for .conan
       if: matrix.os == 'windows-latest'
       id: cache-conan
-      uses: actions/cache@v1
+      uses: actions/cache@v3
       env:
         cache-name: cache-conan-modules
       with:
