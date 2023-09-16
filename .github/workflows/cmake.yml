@@ -12,13 +12,13 @@ jobs:
         include:
           - os: windows-latest
             preset: npitaya-default
-            cmake_path: ./build/_builds
+            cmake_path: build/_builds
           - os: ubuntu-latest
             preset: npitaya-release
-            cmake_path: ./build/_builds/Release
+            cmake_path: build/_builds/Release
           - os: macos-latest
             preset: npitaya-release
-            cmake_path: ./build
+            cmake_path: build
     runs-on: ${{ matrix.os }}
     steps:
     - name: Install Conan
@@ -43,7 +43,7 @@ jobs:
         restore-keys: ${{ runner.os }}-builder-${{ env.cache-name }}-
 
     - name: Install Dependencies
-      run: conan install . -of ./build -s build_type=${{env.BUILD_TYPE}} --build=missing
+      run: conan install . -of build -s build_type=${{env.BUILD_TYPE}} --build=missing
       working-directory: cpp-lib
     
     - name: Configure CMake
