@@ -35,6 +35,7 @@ FetchContent_Declare(
 )
 # Download spdlog
 FetchContent_MakeAvailable(spdlog)
+set_target_properties(spdlog PROPERTIES COMPILE_FLAGS -fPIC)
 
 find_package(gRPC REQUIRED)
 include_directories(${gRPC_INCLUDE_DIRS})
