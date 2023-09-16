@@ -21,27 +21,24 @@ jobs:
 
     - uses: actions/checkout@v4
 
-    - name: Print conan home
-      run: echo $HOME/.conan2/
-
     - name: Using the builtin GitHub Cache Action for .conan
       id: cache-conan-restore
       uses: actions/cache/restore@v3
       env:
         cache-name: cache-conan-modules
       with:
-        path: $HOME/.conan2/
+        path: ~/.conan2/
         key: ${{ runner.os }}-builder-${{ env.cache-name }}-${{ hashFiles('cpp-lib/conanfile.py') }}
         restore-keys: ${{ runner.os }}-builder-${{ env.cache-name }}-
 
     - name: Install Dependencies
-      run: conan install . -of build -s build_type=${{env.BUILD_TYPE}} --build=missing
+      run: conan install . -of .\build -s build_type=${{env.BUILD_TYPE}} --build=missing
       working-directory: cpp-lib
 
     - name: Configure CMake
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
       # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
-      run: cmake . -DCMAKE_TOOLCHAIN_FILE=./build/_builds/generators/conan_toolchain.cmake -B ./build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DBUILD_TESTING=OFF -DBUILD_SHARED_LIB=true
+      run: cmake . -DCMAKE_TOOLCHAIN_FILE=.\build\_builds\generators\conan_toolchain.cmake -B .\build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DBUILD_TESTING=OFF -DBUILD_SHARED_LIB=true
       working-directory: cpp-lib
 
     - name: Build
@@ -54,7 +51,7 @@ jobs:
       env:
         cache-name: cache-conan-modules
       with:
-        path: $HOME/.conan2/
+        path: ~/.conan2/
         key: ${{ runner.os }}-builder-${{ env.cache-name }}-${{ hashFiles('cpp-lib/conanfile.py') }}
 
 #TODO: fix tests
