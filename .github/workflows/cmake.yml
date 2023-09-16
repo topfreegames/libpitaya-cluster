@@ -20,6 +20,8 @@ jobs:
       run: conan profile detect
 
     - uses: actions/checkout@v4
+      with:
+        submodules: recursive
 
     - name: Using the builtin GitHub Cache Action for .conan
       id: cache-conan-restore
@@ -38,8 +40,7 @@ jobs:
     - name: Configure CMake
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
       # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
-      #run: cmake . -DCMAKE_TOOLCHAIN_FILE=./build/_builds/generators/conan_toolchain.cmake -B ./build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DBUILD_TESTING=OFF -DBUILD_SHARED_LIB=true --preset=npitaya-default
-      run: cmake --preset npitaya-default
+      run: cmake --preset npitaya-default -DBUILD_TESTING=OFF
       working-directory: cpp-lib
 
     - name: Build
