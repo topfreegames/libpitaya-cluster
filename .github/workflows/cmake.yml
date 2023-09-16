@@ -18,7 +18,7 @@ jobs:
             cmake_path: build/_builds/Release
           - os: macos-latest
             preset: npitaya-release
-            cmake_path: build
+            cmake_path: build/_builds/Release
     runs-on: ${{ matrix.os }}
     steps:
     - name: Install Conan
@@ -65,4 +65,8 @@ jobs:
     - uses: actions/upload-artifact@v3
       with:
         name: prebuilt-libs-${{ matrix.os }}
-        path: cpp-lib/${{ matrix.cmake_path }}/Release/
+        path: |
+          **/*pitaya_cpp.dll
+          **/*pitaya_cpp.so
+          **/*pitaya_cpp.dylib
+          **/*pitaya_cpp.bundle
