@@ -1,4 +1,4 @@
-name: CMake
+name: Build Platform Specific Native Libs
 on:
   push:
     branches: [ master ]
@@ -9,6 +9,16 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
+        include:
+          - os: windows-latest
+            preset: npitaya-default
+            cmake_path: ./build/_builds
+          - os: ubuntu-latest
+            preset: npitaya-release
+            cmake_path: ./build/_builds/Release
+          - os: macos-latest
+            preset: npitaya-release
+            cmake_path: ./build
     runs-on: ${{ matrix.os }}
     steps:
     - name: Install Conan
@@ -37,14 +47,11 @@ jobs:
       working-directory: cpp-lib
     
     - name: Configure CMake
-      # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
-      # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
-      run: cmake --preset npitaya-default -DBUILD_TESTING=OFF
+      run: cmake --preset ${{matrix.preset}} -DBUILD_TESTING=OFF
       working-directory: cpp-lib
 
     - name: Build
-      # Build your program with the given configuration
-      run: cmake --build ./build/_builds --config ${{env.BUILD_TYPE}} --target pitaya_cpp
+      run: cmake --build ${{matrix.cmake_path}} --config ${{env.BUILD_TYPE}} --target pitaya_cpp
       working-directory: cpp-lib
 
     - uses: actions/cache/save@v3
@@ -54,7 +61,7 @@ jobs:
       with:
         path: ~/.conan2/
         key: ${{ runner.os }}-builder-${{ env.cache-name }}-${{ hashFiles('cpp-lib/conanfile.py') }}
-        
+
     - uses: actions/upload-artifact@v3
       with:
         name: prebuilt-libs-${{ matrix.os }}
