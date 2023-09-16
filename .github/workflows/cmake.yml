@@ -32,13 +32,14 @@ jobs:
         restore-keys: ${{ runner.os }}-builder-${{ env.cache-name }}-
 
     - name: Install Dependencies
-      run: conan install . -of .\build -s build_type=${{env.BUILD_TYPE}} --build=missing
+      run: conan install . -of ./build -s build_type=${{env.BUILD_TYPE}} --build=missing
       working-directory: cpp-lib
-
+    
     - name: Configure CMake
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
       # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
-      run: cmake . -DCMAKE_TOOLCHAIN_FILE=.\build\_builds\generators\conan_toolchain.cmake -B .\build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DBUILD_TESTING=OFF -DBUILD_SHARED_LIB=true
+      #run: cmake . -DCMAKE_TOOLCHAIN_FILE=./build/_builds/generators/conan_toolchain.cmake -B ./build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DBUILD_TESTING=OFF -DBUILD_SHARED_LIB=true --preset=npitaya-default
+      run: cmake --preset npitaya-default
       working-directory: cpp-lib
 
     - name: Build
