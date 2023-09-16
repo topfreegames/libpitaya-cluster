@@ -96,7 +96,6 @@ private:
 private:
     struct SubscriptionHandler
     {
-        natsSubscription* natsSubscription = nullptr;
         std::function<void(std::shared_ptr<NatsMsg>)> onMessage;
     };
 
