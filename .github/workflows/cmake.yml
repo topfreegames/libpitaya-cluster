@@ -66,7 +66,7 @@ jobs:
       with:
         name: prebuilt-libs-${{ matrix.os }}
         path: |
-          **/*pitaya_cpp.dll
-          **/*pitaya_cpp.so
-          **/*pitaya_cpp.dylib
-          **/*pitaya_cpp.bundle
+          cpp-lib/build/**/*pitaya_cpp.dll
+          cpp-lib/build/**/*pitaya_cpp.so
+          cpp-lib/build/**/*pitaya_cpp.dylib
+          cpp-lib/build/**/*pitaya_cpp.bundle
