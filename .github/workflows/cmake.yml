@@ -21,6 +21,9 @@ jobs:
 
     - uses: actions/checkout@v4
 
+    - name: Print conan home
+      run: echo $HOME/.conan2/
+
     - name: Using the builtin GitHub Cache Action for .conan
       id: cache-conan-restore
       uses: actions/cache/restore@v3
