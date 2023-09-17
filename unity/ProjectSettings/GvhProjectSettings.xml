@@ -1,0 +1,4 @@
+<projectSettings>
+  <projectSetting name="Google.IOSResolver.VerboseLoggingEnabled" value="True" />
+  <projectSetting name="Google.VersionHandler.VerboseLoggingEnabled" value="True" />
+</projectSettings>

@@ -64,3 +64,4 @@ _build
 compile_commands.json
 .ccls-cache
 CMakeFiles
+Logs

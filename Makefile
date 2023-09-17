@@ -24,7 +24,7 @@ protos-compile-cpp: submodules
 
 protos-compile: protos-compile-cpp
 	@protoc --csharp_out=./pitaya-sharp/exampleapp/gen/ ./go-server/protos/*.proto
-	@protoc --csharp_out=./unity-example/Assets/Gen/ ./go-server/protos/*.proto
+	@protoc --csharp_out=./unity/Assets/Gen/ ./go-server/protos/*.proto
 	@protoc --proto_path=pitaya-protos --csharp_out=./pitaya-sharp/NPitaya/src/gen ./pitaya-protos/*.proto
 	@protoc --proto_path=pitaya-protos --python_out=./python-lib/pitayaserver/gen ./pitaya-protos/*.proto
 	@protoc --proto_path=./go-server/protos --python_out=./python-lib/pitayaserver/gen ./go-server/protos/cluster.proto
@@ -45,7 +45,7 @@ run-go-server:
 
 nuget-pack:
 	@rm -rf NugetOutput
-	@nuget pack unity-example/NPitaya.nuspec -OutputDirectory NugetOutput
+	@nuget pack unity/NPitaya.nuspec -OutputDirectory NugetOutput
 
 nuget-push:
 	@nuget push NugetOutput/*.nupkg $(NUGET_API_KEY) -Source nuget.org

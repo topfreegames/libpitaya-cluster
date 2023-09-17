@@ -1,0 +1,62 @@
+[2023-09-17 11:34:26.016] [nats_client] [info] NATS Connection Timeout - 2000
+[2023-09-17 11:34:26.016] [nats_client] [info] NATS Max Reconnect Attempts - 10
+[2023-09-17 11:34:26.016] [nats_client] [info] NATS Reconnect Wait Time - 2000 //currently hardcoded 
+[2023-09-17 11:34:26.016] [nats_client] [info] NATS Reconnect Buffer Size - 8388608 //currently hardcoded
+[2023-09-17 11:34:26.044] [nats_client] [info] NATS Connection Timeout - 2000
+[2023-09-17 11:34:26.044] [nats_client] [info] NATS Max Reconnect Attempts - 10
+[2023-09-17 11:34:26.044] [nats_client] [info] NATS Reconnect Wait Time - 2000 //currently hardcoded 
+[2023-09-17 11:34:26.044] [nats_client] [info] NATS Reconnect Buffer Size - 8388608 //currently hardcoded
+[2023-09-17 11:34:26.046] [nats_rpc_client] [info] nats rpc client configured!
+[2023-09-17 11:34:26.050] [service_discovery_worker] [debug] Will synchronize servers every 60 seconds
+[2023-09-17 11:34:46.065] [nats_rpc_client] [info] Stopping rpc client
+[2023-09-17 11:34:46.065] [nats_client] [warning] nats disconnected
+[2023-09-17 11:34:46.065] [nats_client] [info] nats connection closed!
+[2023-09-17 11:34:46.076] [nats_rpc_server] [info] Stopping rpc server
+[2023-09-17 11:34:46.076] [nats_client] [warning] nats disconnected
+[2023-09-17 11:34:46.076] [nats_client] [info] nats connection closed!
+[2023-09-17 11:34:46.088] [c_wrapper] [error] Failed to create cluster instance: cannot call gRPC method for watch
+[2023-09-17 11:35:49.326] [c_wrapper] [info] Adding signal handler
+[2023-09-17 11:35:49.363] [nats_client] [info] NATS Connection Timeout - 2000
+[2023-09-17 11:35:49.363] [nats_client] [info] NATS Max Reconnect Attempts - 10
+[2023-09-17 11:35:49.363] [nats_client] [info] NATS Reconnect Wait Time - 2000 //currently hardcoded 
+[2023-09-17 11:35:49.363] [nats_client] [info] NATS Reconnect Buffer Size - 8388608 //currently hardcoded
+[2023-09-17 11:35:49.372] [nats_client] [info] NATS Connection Timeout - 2000
+[2023-09-17 11:35:49.372] [nats_client] [info] NATS Max Reconnect Attempts - 10
+[2023-09-17 11:35:49.372] [nats_client] [info] NATS Reconnect Wait Time - 2000 //currently hardcoded 
+[2023-09-17 11:35:49.372] [nats_client] [info] NATS Reconnect Buffer Size - 8388608 //currently hardcoded
+[2023-09-17 11:35:49.380] [nats_rpc_client] [info] nats rpc client configured!
+[2023-09-17 11:35:49.380] [service_discovery_worker] [debug] Will synchronize servers every 60 seconds
+[2023-09-17 11:35:49.398] [service_discovery_worker] [info] Thread started
+[2023-09-17 11:35:49.398] [service_discovery_worker] [debug] Setting thread name for macosx to NPitSrvcDisWk
+[2023-09-17 11:35:49.402] [service_discovery_worker] [info] Got lease id: 5907749167086473036
+[2023-09-17 11:35:49.402] [service_discovery_worker] [info] Adding server to etcd with lease 5907749167086473036
+[2023-09-17 11:35:49.405] [lease_keep_alive] [info] Starting lease keep alive
+[2023-09-17 11:35:49.406] [lease_keep_alive] [info] Starting LeaseKeepAlive
+[2023-09-17 11:35:49.406] [lease_keep_alive] [info] Thread started: lease id: 5907749167086473036
+[2023-09-17 11:35:49.406] [service_discovery_worker] [debug] Will synchronize servers
+[2023-09-17 11:35:49.407] [nats_client] [info] Subscribing to topic pitaya/servers/csharp/7e628e3e-8ffe-40b9-a18c-74d0a129b681
+[2023-09-17 11:35:49.407] [nats_rpc_server] [debug] Subscription at topic pitaya/servers/csharp/7e628e3e-8ffe-40b9-a18c-74d0a129b681 was created
+[2023-09-17 11:35:49.407] [nats_rpc_server] [info] Nats rpc server started!
+[2023-09-17 11:35:49.407] [service_discovery_worker] [warning] Error synchronizing servers: etcd error: Key not found
+[2023-09-17 11:35:49.407] [c_wrapper] [info] Adding native service discovery listener
+[2023-09-17 11:35:49.407] [service_discovery_worker] [debug] Adding listener
+[2023-09-17 11:35:55.636] [c_wrapper] [error] received error on RPC: PIT-404: no servers found for route: room.room.test
+[2023-09-17 11:36:00.155] [c_wrapper] [info] Removing native service discovery listener
+[2023-09-17 11:36:00.155] [service_discovery] [info] Terminating
+[2023-09-17 11:36:00.155] [service_discovery_worker] [debug] Worker Destructor
+[2023-09-17 11:36:00.167] [service_discovery_worker] [debug] Will wait for worker thread
+[2023-09-17 11:36:00.167] [service_discovery_worker] [info] Shutting down
+[2023-09-17 11:36:00.167] [service_discovery_worker] [info] Revoking lease
+[2023-09-17 11:36:00.177] [service_discovery_worker] [info] Lease revoked successfuly
+[2023-09-17 11:36:00.177] [lease_keep_alive] [info] Stopping
+[2023-09-17 11:36:00.177] [lease_keep_alive] [info] Stopped.
+[2023-09-17 11:36:00.177] [service_discovery_worker] [debug] Stopping servers ticker
+[2023-09-17 11:36:00.177] [service_discovery_worker] [info] lease keep alive exited with success
+[2023-09-17 11:36:00.177] [service_discovery_worker] [debug] Servers ticker stopped
+[2023-09-17 11:36:00.177] [service_discovery_worker] [debug] Exiting loop
+[2023-09-17 11:36:00.177] [service_discovery_worker] [debug] Finished waiting for worker thread
+[2023-09-17 11:36:00.178] [nats_rpc_client] [info] Stopping rpc client
+[2023-09-17 11:36:00.178] [nats_client] [warning] nats disconnected
+[2023-09-17 11:36:00.178] [nats_client] [info] nats connection closed!
+[2023-09-17 11:36:00.189] [nats_rpc_server] [info] Nats rpc server was shutdown!
+[2023-09-17 11:36:00.189] [nats_rpc_server] [info] Stopping rpc server
