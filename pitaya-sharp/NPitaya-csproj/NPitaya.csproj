@@ -28,6 +28,10 @@
     </ItemGroup>
 
     <ItemGroup>
+      <Compile Include="../NPitaya/Runtime/**/*.cs"/>
+    </ItemGroup>
+
+    <ItemGroup>
         <Content Include="../../precompiled/libpitaya_cpp.*">
             <PackagePath>\</PackagePath>
             <Pack>true</Pack>

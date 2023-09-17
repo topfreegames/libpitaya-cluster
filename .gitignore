@@ -2,6 +2,7 @@
 #bin
 #obj
 csharp-example/csharp-example/bin
+pitaya-sharp/NPitaya-csproj/bin
 .vscode
 .history
 *.app
