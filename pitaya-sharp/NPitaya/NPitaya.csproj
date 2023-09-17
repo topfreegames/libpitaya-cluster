@@ -24,7 +24,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Protobuf CompileOutputs="false" Include="../../pitaya-protos/*.proto" OutputDir="./src/gen" PrivateAssets="All" />
+      <Protobuf CompileOutputs="false" Include="../../pitaya-protos/*.proto" OutputDir="./Runtime/gen" PrivateAssets="All" />
     </ItemGroup>
 
     <ItemGroup>
