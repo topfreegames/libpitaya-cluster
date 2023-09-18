@@ -14,13 +14,21 @@ jobs:
           - os: windows-latest
             preset: npitaya-default
             cmake_path: build/_builds
+            cppstd: "17"
           - os: ubuntu-latest
             preset: npitaya-release
             cmake_path: build/_builds/Release
+            cppstd: gnu17
+          - os: macos-latest
+            preset: npitaya-release
+            cmake_path: build/_builds/Release
+            arch: x86_64
+            cppstd: gnu17
           - os: macos-latest
             preset: npitaya-release
             cmake_path: build/_builds/Release
             arch: armv8
+            cppstd: gnu17
     runs-on: ${{ matrix.os }}
     steps:
     - name: Install Conan
@@ -41,11 +49,11 @@ jobs:
         cache-name: cache-conan-modules
       with:
         path: ~/.conan2/
-        key: ${{ runner.os }}-builder-${{ env.cache-name }}-${{ hashFiles('cpp-lib/conanfile.py') }}
-        restore-keys: ${{ runner.os }}-builder-${{ env.cache-name }}-
+        key: ${{ runner.os }}-${{ matrix.arch }}-builder-${{ env.cache-name }}-${{ hashFiles('cpp-lib/conanfile.py') }}
+        restore-keys: ${{ runner.os }}-${{ matrix.arch }}-builder-${{ env.cache-name }}-
 
     - name: Install Dependencies
-      run: conan install . -of build -s build_type=${{env.BUILD_TYPE}} -s arch=${{matrix.arch}} --build=missing
+      run: conan install . -of build -s build_type=${{env.BUILD_TYPE}} -s arch=${{matrix.arch}} -s:b compiler.cppstd=${{ matrix.cppstd }} -s compiler.cppstd=${{ matrix.cppstd }} --build=missing
       working-directory: cpp-lib
     
     - name: Configure CMake
@@ -62,7 +70,7 @@ jobs:
         cache-name: cache-conan-modules
       with:
         path: ~/.conan2/
-        key: ${{ runner.os }}-builder-${{ env.cache-name }}-${{ hashFiles('cpp-lib/conanfile.py') }}
+        key: ${{ runner.os }}-${{ matrix.arch }}-builder-${{ env.cache-name }}-${{ hashFiles('cpp-lib/conanfile.py') }}
 
     - uses: actions/upload-artifact@v3
       with:
