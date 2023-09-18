@@ -1,4 +1,4 @@
-name: Build Platform Specific Native Libs
+name: Generate Native Libs
 on:
   push:
     branches: [ master ]
@@ -6,6 +6,7 @@ env:
   BUILD_TYPE: Release
 jobs:
   build:
+    name: Build Platform Specific Native Libs
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
@@ -80,3 +81,40 @@ jobs:
           cpp-lib/build/**/*pitaya_cpp.so
           cpp-lib/build/**/*pitaya_cpp.dylib
           cpp-lib/build/**/*pitaya_cpp.bundle
+
+  consolidate_archive:
+    name: Consolidate all libs into single package
+    needs: build
+    runs-on: macos-latest
+    steps:
+      - name: Download platform specific artifacts
+        uses: actions/download-artifact@v3
+        with:
+          path: downloaded_artifacts
+      - name: Unzip all artifacts
+        run: find . -name '*' -exec sh -c 'unzip -d ../{} "$1"' _ {} \;
+        working-directory: downloaded_artifacts
+      - name: Lipo osx thin libs into fat lib
+        run: lipo -create prebuilt-libs-macos-latest-armv8/_builds/Release/libpitaya_cpp.dylib prebuilt-libs-macos-latest-x86_64/_builds/Release/libpitaya_cpp.dylib -output libpitaya_cpp.dylib
+      - name: Organize libs in folders
+        run: |
+          mkdir macos-fat macos-arm64 macos-x86_64 linux-x86_64 windows-x86_64 macos-fat-unity
+          lipo -create prebuilt-libs-macos-latest-armv8/_builds/Release/libpitaya_cpp.dylib prebuilt-libs-macos-latest-x86_64/_builds/Release/libpitaya_cpp.dylib -output macos-fat/libpitaya_cpp.dylib
+          cp macos-fat/libpitaya_cpp.dylib macos-fat-unity/libpitaya_cpp.bundle
+          mv prebuilt-libs-macos-latest-armv8/_builds/Release/libpitaya_cpp.dylib macos-arm64
+          mv prebuilt-libs-macos-latest-x86_64/_builds/Release/libpitaya_cpp.dylib macos-x86_64
+          mv prebuilt-libs-ubuntu-latest-x86_64/_builds/Release/libpitaya_cpp.so linux-x86_64
+          mv prebuilt-libs-windows-latest-x86_64/_builds/Release/pitaya_cpp.dll windows-x86_64
+          #- name: Zip all
+          #run: zip -r prebuilt-libs.zip linux-x86_64 macos-arm64 macos-x86_64 macos-fat windows-x86_64
+      - name: 'Upload Artifact'
+        uses: actions/upload-artifact@v3
+        with:
+          name: prebuilt-libs-all-archs.zip
+          path: |
+            ./**/*pitaya_cpp.dll
+            ./**/*pitaya_cpp.so
+            ./**/*pitaya_cpp.dylib
+            ./**/*pitaya_cpp.bundle
+
+
