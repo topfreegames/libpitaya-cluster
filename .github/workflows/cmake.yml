@@ -9,19 +9,14 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
+        arch: [x86_64]
         include:
           - os: windows-latest
             preset: npitaya-default
             cmake_path: build/_builds
-            arch: x86_64
           - os: ubuntu-latest
             preset: npitaya-release
             cmake_path: build/_builds/Release
-            arch: x86_64
-          - os: macos-latest
-            preset: npitaya-release
-            cmake_path: build/_builds/Release
-            arch: x86_64
           - os: macos-latest
             preset: npitaya-release
             cmake_path: build/_builds/Release
@@ -71,7 +66,7 @@ jobs:
 
     - uses: actions/upload-artifact@v3
       with:
-        name: prebuilt-libs-${{ matrix.os }}
+        name: prebuilt-libs-${{ matrix.os }}-${{ matrix.arch }}
         path: |
           cpp-lib/build/**/*pitaya_cpp.dll
           cpp-lib/build/**/*pitaya_cpp.so
