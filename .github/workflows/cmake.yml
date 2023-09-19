@@ -100,15 +100,16 @@ jobs:
           mv prebuilt-libs-macos-latest-armv8/_builds/Release/libpitaya_cpp.dylib macos-arm64
           mv prebuilt-libs-macos-latest-x86_64/_builds/Release/libpitaya_cpp.dylib macos-x86_64
           mv prebuilt-libs-ubuntu-latest-x86_64/_builds/Release/libpitaya_cpp.so linux-x86_64
-          mv prebuilt-libs-windows-latest-x86_64/_builds/Release/pitaya_cpp.dll windows-x86_64
+          mv prebuilt-libs-windows-latest-x86_64/_builds/Release/pitaya_cpp.dll windows-x86_64/libpitaya_cpp.dll
         working-directory: downloaded-artifacts
 
       - name: 'Upload Artifact'
         uses: actions/upload-artifact@v3
         with:
-          name: prebuilt-libs-all-archs.zip
+          name: prebuilt-libs-all-archs
           path: |
             ./**/*pitaya_cpp.dll
             ./**/*pitaya_cpp.so
             ./**/*pitaya_cpp.dylib
             ./**/*pitaya_cpp.bundle
+          working-directory: downloaded-artifacts
