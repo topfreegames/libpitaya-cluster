@@ -48,3 +48,11 @@ The original [Pitaya](https://github.com/topfreegames/pitaya) project supports b
 <!-- The binaries will be placed in the `_builds` folder, where each subdirectory will correspond to a different make target. -->
 
 <!-- **Note**: We currently do not support windows. However, it should however not be hard to add support for it. Feel free to make a PR! -->
+
+## Releasing a new version in OpenUPM
+- Wait for the Github Actions Pipeline to run, to generate the platform specific "libpitaya_cpp" binaries.
+- Put the linux, windows, and macos (unity/fat) in the folder pitaya-sharp/NPitaya/Runtime/Plugins
+- Change the version in the file pitaya-sharp/NPitaya/package.json
+- Create a new tag in the format "vX.Y.Z" and push it to the repository
+
+New lib version will be available in [OpenUPM](https://openupm.com/packages/com.wildlifestudios.npitaya/) in a few minutes. Read documentation [here](https://openupm.com/docs/#how-it-works) for more information.
