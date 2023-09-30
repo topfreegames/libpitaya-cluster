@@ -126,8 +126,7 @@ public class LibPitayaExample : MonoBehaviour {
 		var msg = new Protos.RPCMsg {Msg = inputRPC.text};
 		try
         {
-            // var res = PitayaCluster.Rpc<Protos.RPCRes>(Route.FromString("csharp.testremote.remote"), msg);
-            var res = PitayaCluster.Rpc<Protos.RPCRes>(Route.FromString("room.room.test"), msg).Result;
+            var res = PitayaCluster.Rpc<Protos.RPCRes>(Route.FromString("room.room.message"), msg).Result;
             Debug.Log($"received rpc res: {res.Msg}");
         }
 		catch (Exception e)
