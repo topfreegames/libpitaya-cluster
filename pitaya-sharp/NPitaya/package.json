@@ -3,7 +3,14 @@
 	"version": "1.0.1",
 	"unity": "2021.3",
 	"description": "Native pitaya server module",
-	"keywords": ["pitaya", "pomelo", "cluster", "server", "package", "search"],
+	"keywords": [
+		"pitaya",
+		"pomelo",
+		"cluster",
+		"server",
+		"package",
+		"search"
+	],
 	"category": "Server",
 	"dependencies": {
 		"org.nuget.google.protobuf": "3.24.3",
