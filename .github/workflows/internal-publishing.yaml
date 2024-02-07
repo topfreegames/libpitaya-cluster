@@ -23,7 +23,8 @@ jobs:
       - name: Update dependencies to match internal releases
         run: |
           cd pitaya-sharp/NPitaya
-          sed -i.bak 's/"org\.nuget\.google\.protobuf": "[^"]*",/"com\.wildlifestudios\.nuget\.google\.protobuf": "3.23.1",/' package.json && rm package.json.bak
+          sed -i.bak 's/"org\.nuget\.google\.protobuf": "[^"]*"/"com\.wildlifestudios\.nuget\.google\.protobuf": "3.12.4"/' package.json && rm package.json.bak
+          sed -i.bak 's/"org\.nuget\.system\.runtime\.compilerservices\.unsafe": "[^"]*"/"com\.wildlifestudios\.nuget\.system\.runtime\.compilerservices\.unsafe": "4.5.3"/' package.json && rm package.json.bak
 
       - name: Publish to artifactory
         run: cd pitaya-sharp/NPitaya && npm publish
