@@ -1,0 +1,29 @@
+name: Build binaries
+
+on:
+  push:
+    tags:
+      - '*'
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 16
+
+      - run: npm install -g npm-cli-login
+      - run: npm-cli-login login -u "${{ secrets.ARTIFACTORY_USER }}" -p "${{ secrets.ARTIFACTORY_PASS }}" -e "tools-team@tfgco.com" -r "https://artifactory.tfgco.com/artifactory/api/npm/npm-local" -s @wls
+      
+      - name: Update dependencies to match internal releases
+        run: |
+          cd pitaya-sharp/NPitaya
+          sed -i.bak 's/"org\.nuget\.google\.protobuf": "[^"]*",/"com\.wildlifestudios\.nuget\.google\.protobuf": "3.23.1",/' package.json && rm package.json.bak
+
+      - name: Publish to artifactory
+        run: cd pitaya-sharp/NPitaya && npm publish
