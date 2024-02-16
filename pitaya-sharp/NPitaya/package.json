@@ -1,12 +1,12 @@
 {
 	"name": "com.wildlifestudios.npitaya",
-	"version": "1.0.1",
+	"version": "1.0.2",
 	"unity": "2021.3",
 	"description": "Native pitaya server module",
 	"keywords": ["pitaya", "pomelo", "cluster", "server", "package", "search"],
 	"category": "Server",
 	"dependencies": {
-		"org.nuget.google.protobuf": "3.23.1",
+		"org.nuget.google.protobuf": "3.25.3",
 		"org.nuget.system.runtime.compilerservices.unsafe": "4.5.3"
 	}
 }
