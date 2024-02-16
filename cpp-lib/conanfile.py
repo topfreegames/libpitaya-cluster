@@ -34,7 +34,7 @@ class PitayaCpp(ConanFile):
 
     def requirements(self):
         self.requires("zlib/1.2.13")
-        self.requires("protobuf/3.21.9", force=True)
+        self.requires("protobuf/3.23.1", force=True)
         self.requires("boost/1.83.0", force=True)
         self.requires("openssl/1.1.1v", force=True)
         self.requires("cpprestsdk/2.10.18")
