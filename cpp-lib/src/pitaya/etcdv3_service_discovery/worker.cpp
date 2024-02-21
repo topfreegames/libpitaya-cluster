@@ -230,10 +230,7 @@ Worker::StartThread()
 
                     if (ok) {
                         _log->info("Etcd reconnection successful");
-                        // FIXME(leo): Do not reset the number of keep alive retries yet,
-                        // since we do not want the server to be keep reconnecting forever in an
-                        // unknown state.
-                        // _numKeepAliveRetriesLeft = _config.maxNumberOfRetries;
+                        _numKeepAliveRetriesLeft = _config.maxNumberOfRetries;
                         _log->info("Restarting etcd watcher");
                         _etcdClient->Watch(std::bind(&Worker::OnWatch, this, _1));
                         StartLeaseKeepAlive();
