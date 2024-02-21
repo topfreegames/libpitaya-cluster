@@ -6,6 +6,8 @@ project(PitayaCpp)
 
 set(CMAKE_MACOSX_RPATH 0)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 # Prefer static libraries over dynamic ones.
 if(UNIX AND NOT APPLE)
   set(CMAKE_FIND_LIBRARY_SUFFIXES ".a" ".so")
@@ -31,7 +33,7 @@ include_directories(${cpprestsdk_INCLUDE_DIRS})
 FetchContent_Declare(
       spdlog
       GIT_REPOSITORY https://github.com/gabime/spdlog.git
-      GIT_TAG v1.12.0
+      GIT_TAG v1.13.0
 )
 # Download spdlog
 FetchContent_MakeAvailable(spdlog)
@@ -43,8 +45,14 @@ include_directories(${gRPC_INCLUDE_DIRS})
 find_package(Protobuf REQUIRED)
 include_directories(${protobuf_INCLUDE_DIRS})
 
+find_package(protobuf-c REQUIRED)
+include_directories(${protobuf-c_INCLUDE_DIRS})
+
 find_package(absl REQUIRED)
 include_directories(${absl_INCLUDE_DIRS})
+
+find_package(etcd-cpp-apiv3 REQUIRED)
+include_directories(${etcd-cpp-apiv3_INCLUDE_DIRS})
 
 # Build dependencies as static libraries
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "")
@@ -53,9 +61,6 @@ set(gRPC_BUILD_CSHARP_EXT OFF CACHE BOOL "")
 if(UNIX AND NOT APPLE)
     set(gRPC_ZLIB_PROVIDER "package")
 endif()
-
-add_subdirectory(deps/etcd-cpp-api EXCLUDE_FROM_ALL)
-set_target_properties(etcd-cpp-api PROPERTIES COMPILE_FLAGS -fPIC)
 
 set(NATS_BUILD_STREAMING OFF CACHE BOOL "")
 set(NATS_BUILD_TLS_USE_OPENSSL_1_1_API ON CACHE BOOL "" FORCE)
@@ -125,12 +130,7 @@ add_library(pitaya_cpp ${LIB_TYPE}
     src/pitaya/utils/string_utils.h
     src/pitaya/utils/ticker.cpp
     src/pitaya/c_wrapper.cpp
-    src/pitaya/etcd_lease_keep_alive.h
-    src/pitaya/etcd_lease_keep_alive.cpp
     src/pitaya/nats_client.cpp
-    # Include protobuf-c
-    deps/protobuf-c/protobuf-c/protobuf-c.c
-    deps/protobuf-c/protobuf-c/protobuf-c.h
     ${protobuf_files})
 
 add_library(TFG::pitaya_cpp ALIAS pitaya_cpp)
@@ -159,9 +159,10 @@ target_include_directories(pitaya_cpp
 target_link_libraries(pitaya_cpp
   PUBLIC
     nats_static
-    etcd-cpp-api
+    etcd-cpp-apiv3::etcd-cpp-apiv3
     Boost::boost
     spdlog::spdlog
+    protobuf-c::protobuf-c
   PRIVATE
     gRPC::grpc++_unsecure
     protobuf::libprotobuf)
@@ -203,7 +204,7 @@ if(BUILD_TESTING AND NOT BUILD_MACOSX_BUNDLE)
         test/c_wrapper_test.cpp
         test/main_test.cpp)
 
-    message(WARNING "Adding profiling data into the library and the tests executable, do not ship this library to production (compile with -DBUILD_TESTING=OFF)")
+    message(INFO "Adding profiling data into the library and the tests executable, do not ship this library to production (compile with -DBUILD_TESTING=OFF)")
 
     target_compile_options(pitaya_cpp
       PRIVATE -fprofile-instr-generate -fcoverage-mapping -O0)

@@ -50,17 +50,20 @@ Cluster::InitializeWithGrpc(GrpcConfig config,
     // therefore maybe calling a server that it is not started yet.
     auto rpcServer = std::unique_ptr<RpcServer>(new GrpcServer(config, loggerName));
 
+    // TODO: expose etcd client GRPC timeout as a separate configuration option, for now using the client RPC timeout is good enough
+    auto etcdGrpcTimeout = std::chrono::duration_cast<std::chrono::seconds> (config.clientRpcTimeout);
+
     auto bindingStorage = std::unique_ptr<BindingStorage>(new EtcdBindingStorage(
         bindingStorageConfig,
         std::unique_ptr<EtcdClient>(new EtcdClientV3(
-            bindingStorageConfig.endpoint, bindingStorageConfig.etcdPrefix, false, loggerName)),
+            bindingStorageConfig.endpoint, bindingStorageConfig.etcdPrefix, false, etcdGrpcTimeout, loggerName)),
         loggerName));
 
     auto serviceDiscovery = std::shared_ptr<ServiceDiscovery>(new Etcdv3ServiceDiscovery(
         sdConfig,
         server,
         std::unique_ptr<EtcdClient>(new EtcdClientV3(
-            sdConfig.endpoints, sdConfig.etcdPrefix + "servers/metagame/", sdConfig.logHeartbeat, loggerName)),
+            sdConfig.endpoints, sdConfig.etcdPrefix + "servers/metagame/", sdConfig.logHeartbeat, etcdGrpcTimeout, loggerName)),
         loggerName));
 
     auto rpcClient = std::unique_ptr<RpcClient>(
@@ -82,13 +85,16 @@ Cluster::InitializeWithNats(NatsConfig natsConfig,
                             Server server,
                             const char* loggerName)
 {
+    // TODO: expose etcd client GRPC timeout as a separate configuration option, for now using the client RPC timeout is good enough
+    auto etcdGrpcTimeout = std::chrono::duration_cast<std::chrono::seconds> (natsConfig.requestTimeout);
+
     // NOTE: we want to start the RPC server before the service discovery. This is necessary,
     // because as soon as we register the server in the etcd, other servers can start calling it,
     // therefore maybe calling a server that it is not started yet.
     auto rpcServer = std::unique_ptr<RpcServer>(new NatsRpcServer(server, natsConfig, loggerName));
     auto rpcClient = std::unique_ptr<RpcClient>(new NatsRpcClient(natsConfig, loggerName));
     auto etcdClient = std::unique_ptr<EtcdClient>(new EtcdClientV3(
-        sdConfig.endpoints, sdConfig.etcdPrefix + "servers/metagame/", sdConfig.logHeartbeat, loggerName));
+        sdConfig.endpoints, sdConfig.etcdPrefix + "servers/metagame/", sdConfig.logHeartbeat, etcdGrpcTimeout, loggerName));
     auto serviceDiscovery = std::shared_ptr<ServiceDiscovery>(
         new Etcdv3ServiceDiscovery(std::move(sdConfig), server, std::move(etcdClient), loggerName));
 

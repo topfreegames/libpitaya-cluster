@@ -36,13 +36,14 @@ class PitayaCpp(ConanFile):
         self.requires("zlib/1.2.13")
         self.requires("protobuf/3.21.9", force=True)
         self.requires("boost/1.83.0", force=True)
-        self.requires("openssl/1.1.1v", force=True)
-        self.requires("cpprestsdk/2.10.18")
-        self.requires("grpc/1.50.1")
+        self.requires("openssl/3.2.1", force=True)
+        self.requires("grpc/1.54.3")
+        self.requires("protobuf-c/1.5.0")
+        self.requires("etcd-cpp-apiv3/0.15.4")
         self.test_requires("gtest/1.10.0")
 
     def build_requirements(self):
-        self.tool_requires("grpc/1.50.1")
+        self.tool_requires("grpc/1.54.3")
         
     def layout(self):
         cmake_layout(self, build_folder='_builds')

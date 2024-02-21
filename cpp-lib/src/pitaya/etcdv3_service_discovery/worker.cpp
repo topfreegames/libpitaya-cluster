@@ -279,20 +279,22 @@ Worker::StartLeaseKeepAlive()
         return;
     }
 
-    _etcdClient->LeaseKeepAlive(_leaseId, [this](EtcdLeaseKeepAliveStatus status) {
-        switch (status) {
-            case EtcdLeaseKeepAliveStatus::Ok:
-                _log->info("lease keep alive exited with success");
-                break;
-            case EtcdLeaseKeepAliveStatus::Fail: {
+    _etcdClient->LeaseKeepAlive(_config.heartbeatTTLSec.count(), [this](std::exception_ptr exc) {
+        try {
+            if (exc) {
                 _log->error("lease keep alive failed!");
                 std::lock_guard<decltype(_jobQueue)> lock(_jobQueue);
                 _jobQueue.PushBack(Job::NewEtcdReconnectionFailure());
                 _syncServersTicker.Stop();
                 _semaphore.Notify();
-            } break;
-        }
-    });
+                std::rethrow_exception(exc);
+            }
+        } catch(const std::runtime_error& e) {
+            _log->error("ETCD Connection failure: {}", e.what());
+        } catch(const std::out_of_range& e) {
+            _log->error("ETCD Lease expired: {}", e.what());
+        }   
+     });
 }
 
 bool
