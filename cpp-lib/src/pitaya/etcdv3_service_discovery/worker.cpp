@@ -215,7 +215,7 @@ Worker::StartThread()
                 break;
             }
             case JobInfo::EtcdReconnectionFailure: {
-                _log->error("Reconnection failure, {} retries left!", _numKeepAliveRetriesLeft);
+                _log->error("Reconnection failure, {} retries left out of {}!", _numKeepAliveRetriesLeft, _config.maxNumberOfRetries);
                 _etcdClient->StopLeaseKeepAlive();
                 _syncServersTicker.Stop();
 
