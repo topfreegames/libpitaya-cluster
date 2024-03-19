@@ -64,7 +64,7 @@ endif()
 
 set(NATS_BUILD_STREAMING OFF CACHE BOOL "")
 set(NATS_BUILD_TLS_USE_OPENSSL_1_1_API ON CACHE BOOL "" FORCE)
-add_subdirectory(deps/nats.c-3.3.0 EXCLUDE_FROM_ALL)
+add_subdirectory(deps/nats.c-3.8.0 EXCLUDE_FROM_ALL)
 
 set_target_properties(nats_static PROPERTIES COMPILE_FLAGS -fPIC)
 option(BUILD_MACOSX_BUNDLE "Should build a bundle for Macosx" OFF)
