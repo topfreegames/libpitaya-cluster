@@ -2,10 +2,10 @@
 #define PITAYA_ETCD_CLIENT_V3_H
 
 #include "pitaya/etcd_client.h"
-#include "pitaya/etcd_lease_keep_alive.h"
 
 #include <etcd/Client.hpp>
 #include <etcd/Watcher.hpp>
+#include <etcd/KeepAlive.hpp>
 
 namespace pitaya {
 
@@ -15,6 +15,7 @@ public:
     EtcdClientV3(const std::string& endpoints,
                  const std::string& prefix,
                  bool logHeartbeat,
+                 std::chrono::seconds grpcTimeout,
                  const char* loggerName = nullptr);
 
     LeaseGrantResponse LeaseGrant(std::chrono::seconds seconds) override;
@@ -25,8 +26,8 @@ public:
     void Watch(std::function<void(WatchResponse)> onWatch) override;
     void CancelWatch() override;
 
-    void LeaseKeepAlive(int64_t leaseId,
-                        std::function<void(EtcdLeaseKeepAliveStatus)> onExit) override;
+    void LeaseKeepAlive(int64_t ttl,
+                        std::function<void(std::exception_ptr)> onExit) override;
     void StopLeaseKeepAlive() override;
 
 private:
@@ -39,7 +40,7 @@ private:
     etcd::Client _client;
     std::unique_ptr<etcd::Watcher> _watcher;
     std::function<void(WatchResponse)> _onWatch;
-    EtcdLeaseKeepAlive _leaseKeepAlive;
+    std::shared_ptr<etcd::KeepAlive> _leaseKeepAlive;
 };
 
 } // namespace pitaya

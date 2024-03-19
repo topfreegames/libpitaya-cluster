@@ -1,6 +1,5 @@
 #include "pitaya/etcdv3_service_discovery.h"
 
-#include "pitaya/etcd_lease_keep_alive.h"
 #include "pitaya/etcdv3_service_discovery/worker.h"
 #include "pitaya/utils.h"
 #include "pitaya/utils/string_utils.h"

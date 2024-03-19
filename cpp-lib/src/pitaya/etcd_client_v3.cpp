@@ -11,14 +11,16 @@ namespace pitaya {
 EtcdClientV3::EtcdClientV3(const std::string& endpoint,
                            const std::string& prefix,
                            bool logHeartbeat,
+                           std::chrono::seconds grpcTimeout,
                            const char* loggerName)
     : _log(loggerName ? spdlog::get(loggerName)->clone("etcd_client_v3")
                       : spdlog::stdout_color_mt("etcd_client_v3"))
     , _endpoint(endpoint)
     , _prefix(prefix)
     , _client(endpoint)
-    , _leaseKeepAlive(_client, logHeartbeat, loggerName)
-{}
+{
+    _client.set_grpc_timeout(grpcTimeout);
+}
 
 LeaseGrantResponse
 EtcdClientV3::LeaseGrant(std::chrono::seconds seconds)
@@ -27,11 +29,9 @@ EtcdClientV3::LeaseGrant(std::chrono::seconds seconds)
 
     LeaseGrantResponse res;
     res.ok = etcdRes.is_ok();
-    res.leaseId = etcdRes.value.lease_id;
+    res.leaseId = etcdRes.value().lease();
     if (!res.ok) {
-        res.errorMsg = (etcdRes.status.etcd_error_code == etcd::StatusCode::UNDERLYING_GRPC_ERROR)
-                           ? "gRPC error: " + etcdRes.status.grpc_error_message
-                           : "etcd error: " + etcdRes.status.etcd_error_message;
+        res.errorMsg = etcdRes.error_message();
     }
 
     return res;
@@ -40,14 +40,12 @@ EtcdClientV3::LeaseGrant(std::chrono::seconds seconds)
 LeaseRevokeResponse
 EtcdClientV3::LeaseRevoke(int64_t leaseId)
 {
-    etcd::Response etcdRes = _client.lease_revoke(leaseId).get();
+    etcd::Response etcdRes = _client.leaserevoke(leaseId).get();
 
     LeaseRevokeResponse res;
     res.ok = etcdRes.is_ok();
     if (!res.ok) {
-        res.errorMsg = (etcdRes.status.etcd_error_code == etcd::StatusCode::UNDERLYING_GRPC_ERROR)
-                           ? "gRPC error: " + etcdRes.status.grpc_error_message
-                           : "etcd error: " + etcdRes.status.etcd_error_message;
+        res.errorMsg = etcdRes.error_message();
     }
     return res;
 }
@@ -59,9 +57,7 @@ EtcdClientV3::Set(const std::string& key, const std::string& val, int64_t leaseI
     SetResponse res;
     res.ok = etcdRes.is_ok();
     if (!res.ok) {
-        res.errorMsg = (etcdRes.status.etcd_error_code == etcd::StatusCode::UNDERLYING_GRPC_ERROR)
-                           ? "gRPC error: " + etcdRes.status.grpc_error_message
-                           : "etcd error: " + etcdRes.status.etcd_error_message;
+        res.errorMsg = etcdRes.error_message();
     }
     return res;
 }
@@ -73,11 +69,9 @@ EtcdClientV3::Get(const std::string& key)
 
     GetResponse res;
     res.ok = etcdRes.is_ok();
-    res.value = etcdRes.value.value;
+    res.value = etcdRes.value().as_string();
     if (!res.ok) {
-        res.errorMsg = (etcdRes.status.etcd_error_code == etcd::StatusCode::UNDERLYING_GRPC_ERROR)
-                           ? "gRPC error: " + etcdRes.status.grpc_error_message
-                           : "etcd error: " + etcdRes.status.etcd_error_message;
+        res.errorMsg = etcdRes.error_message();
     }
     return res;
 }
@@ -89,26 +83,25 @@ EtcdClientV3::List(const std::string& prefix)
 
     ListResponse res;
     res.ok = etcdRes.is_ok();
-    res.keys = std::move(etcdRes.keys);
+    res.keys = std::move(etcdRes.keys());
     if (!res.ok) {
-        res.errorMsg = (etcdRes.status.etcd_error_code == etcd::StatusCode::UNDERLYING_GRPC_ERROR)
-                           ? "gRPC error: " + etcdRes.status.grpc_error_message
-                           : "etcd error: " + etcdRes.status.etcd_error_message;
+        res.errorMsg =  etcdRes.error_message();
     }
     return res;
 }
 
 void
-EtcdClientV3::LeaseKeepAlive(int64_t leaseId, std::function<void(EtcdLeaseKeepAliveStatus)> onExit)
+EtcdClientV3::LeaseKeepAlive(int64_t ttl, std::function<void(std::exception_ptr)> onExit)
 {
-    _leaseKeepAlive.SetLeaseId(leaseId);
-    _leaseKeepAlive.Start().then(std::move(onExit));
+    etcd::KeepAlive _leaseKeepAlive(_client, onExit, ttl, ttl);
 }
 
 void
 EtcdClientV3::StopLeaseKeepAlive()
 {
-    _leaseKeepAlive.Stop();
+    std::cout << "Stopping lease keepalive" << std::endl;
+     _leaseKeepAlive.reset();
+     std::cout << "Stopped lease keepalive" << std::endl;
 }
 
 void
@@ -118,7 +111,7 @@ EtcdClientV3::Watch(std::function<void(WatchResponse)> onWatch)
         _onWatch = std::move(onWatch);
         _watcher = std::unique_ptr<etcd::Watcher>(
             new etcd::Watcher(_endpoint, _prefix, std::bind(&EtcdClientV3::OnWatch, this, _1)));
-    } catch (const etcd::watch_error& exc) {
+    } catch (const std::runtime_error& exc) {
         throw PitayaException(exc.what());
     }
 }
@@ -134,9 +127,9 @@ EtcdClientV3::OnWatch(etcd::Response res)
 {
     WatchResponse watchRes = {};
     watchRes.ok = res.is_ok();
-    watchRes.action = res.action;
-    watchRes.key = res.value.key;
-    watchRes.value = res.value.value;
+    watchRes.action = res.action();
+    watchRes.key = res.value().key();
+    watchRes.value = res.value().as_string();
     _onWatch(watchRes);
 }
 

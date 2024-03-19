@@ -101,6 +101,8 @@ main()
     sdConfig.logServerDetails = true;
     sdConfig.heartbeatTTLSec = std::chrono::seconds(20);
     sdConfig.syncServersIntervalSec = std::chrono::seconds(20);
+    sdConfig.maxNumberOfRetries = 5;
+    sdConfig.retryDelayMilliseconds = 300;
 
     EtcdBindingStorageConfig bindingStorageConfig;
     bindingStorageConfig.endpoint = sdConfig.endpoints;

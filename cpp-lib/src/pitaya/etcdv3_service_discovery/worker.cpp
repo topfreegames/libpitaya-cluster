@@ -215,7 +215,7 @@ Worker::StartThread()
                 break;
             }
             case JobInfo::EtcdReconnectionFailure: {
-                _log->error("Reconnection failure, {} retries left!", _numKeepAliveRetriesLeft);
+                _log->error("Reconnection failure, {} retries left out of {}!", _numKeepAliveRetriesLeft, _config.maxNumberOfRetries);
                 _etcdClient->StopLeaseKeepAlive();
                 _syncServersTicker.Stop();
 
@@ -230,10 +230,7 @@ Worker::StartThread()
 
                     if (ok) {
                         _log->info("Etcd reconnection successful");
-                        // FIXME(leo): Do not reset the number of keep alive retries yet,
-                        // since we do not want the server to be keep reconnecting forever in an
-                        // unknown state.
-                        // _numKeepAliveRetriesLeft = _config.maxNumberOfRetries;
+                        _numKeepAliveRetriesLeft = _config.maxNumberOfRetries;
                         _log->info("Restarting etcd watcher");
                         _etcdClient->Watch(std::bind(&Worker::OnWatch, this, _1));
                         StartLeaseKeepAlive();
@@ -279,20 +276,22 @@ Worker::StartLeaseKeepAlive()
         return;
     }
 
-    _etcdClient->LeaseKeepAlive(_leaseId, [this](EtcdLeaseKeepAliveStatus status) {
-        switch (status) {
-            case EtcdLeaseKeepAliveStatus::Ok:
-                _log->info("lease keep alive exited with success");
-                break;
-            case EtcdLeaseKeepAliveStatus::Fail: {
+    _etcdClient->LeaseKeepAlive(_config.heartbeatTTLSec.count(), [this](std::exception_ptr exc) {
+        try {
+            if (exc) {
                 _log->error("lease keep alive failed!");
                 std::lock_guard<decltype(_jobQueue)> lock(_jobQueue);
                 _jobQueue.PushBack(Job::NewEtcdReconnectionFailure());
                 _syncServersTicker.Stop();
                 _semaphore.Notify();
-            } break;
-        }
-    });
+                std::rethrow_exception(exc);
+            }
+        } catch(const std::runtime_error& e) {
+            _log->error("ETCD Connection failure: {}", e.what());
+        } catch(const std::out_of_range& e) {
+            _log->error("ETCD Lease expired: {}", e.what());
+        }   
+     });
 }
 
 bool

@@ -70,8 +70,8 @@ public:
     virtual void Watch(std::function<void(WatchResponse)> onWatch) = 0;
     virtual void CancelWatch() = 0;
 
-    virtual void LeaseKeepAlive(int64_t leaseId,
-                                std::function<void(EtcdLeaseKeepAliveStatus)> onExit) = 0;
+    virtual void LeaseKeepAlive(int64_t ttl,
+                                std::function<void(std::exception_ptr)> onExit) = 0;
     virtual void StopLeaseKeepAlive() = 0;
 };
 
