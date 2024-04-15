@@ -71,6 +71,7 @@ public:
     virtual void CancelWatch() = 0;
 
     virtual void LeaseKeepAlive(int64_t ttl,
+                                int64_t _leaseId,
                                 std::function<void(std::exception_ptr)> onExit) = 0;
     virtual void StopLeaseKeepAlive() = 0;
 };

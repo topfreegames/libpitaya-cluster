@@ -276,7 +276,7 @@ Worker::StartLeaseKeepAlive()
         return;
     }
 
-    _etcdClient->LeaseKeepAlive(_config.heartbeatTTLSec.count(), [this](std::exception_ptr exc) {
+    _etcdClient->LeaseKeepAlive(_config.heartbeatTTLSec.count(), _leaseId, [this](std::exception_ptr exc) {
         try {
             if (exc) {
                 _log->error("lease keep alive failed!");
