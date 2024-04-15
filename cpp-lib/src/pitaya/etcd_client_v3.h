@@ -27,7 +27,7 @@ public:
     void CancelWatch() override;
 
     void LeaseKeepAlive(int64_t ttl,
-                        int64_t _leaseId,
+                        int64_t leaseId,
                         std::function<void(std::exception_ptr)> onExit) override;
     void StopLeaseKeepAlive() override;
 

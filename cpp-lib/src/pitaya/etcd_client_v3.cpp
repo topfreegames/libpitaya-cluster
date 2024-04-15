@@ -91,7 +91,7 @@ EtcdClientV3::List(const std::string& prefix)
 }
 
 void
-EtcdClientV3::LeaseKeepAlive(int64_t ttl, int64_t _leaseId, std::function<void(std::exception_ptr)> onExit)
+EtcdClientV3::LeaseKeepAlive(int64_t ttl, int64_t leaseId, std::function<void(std::exception_ptr)> onExit)
 {
     etcd::KeepAlive _leaseKeepAlive(_client, onExit, ttl, leaseId);
 }
