@@ -6,6 +6,7 @@
 #include <etcd/Client.hpp>
 #include <etcd/Watcher.hpp>
 #include <etcd/KeepAlive.hpp>
+#include "spdlog/spdlog.h"
 
 namespace pitaya {
 

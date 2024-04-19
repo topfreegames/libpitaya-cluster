@@ -23,8 +23,8 @@ public:
 
     MOCK_METHOD0(CancelWatch, void());
 
-    MOCK_METHOD2(LeaseKeepAlive,
-                 void(int64_t, std::function<void(std::exception_ptr)>));
+    MOCK_METHOD3(LeaseKeepAlive,
+                 void(int64_t, int64_t, std::function<void(std::exception_ptr)>));
     MOCK_METHOD0(StopLeaseKeepAlive, void());
 
     std::function<void(pitaya::WatchResponse)> onWatch;

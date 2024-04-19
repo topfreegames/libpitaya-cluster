@@ -35,7 +35,7 @@ Worker::Worker(const EtcdServiceDiscoveryConfig& config,
     , _server(std::move(server))
     , _etcdClient(std::move(etcdClient))
     , _log(utils::CloneLoggerOrCreate(loggerName, kLogTag))
-    , _numKeepAliveRetriesLeft(5)
+    , _numKeepAliveRetriesLeft(_config.maxNumberOfRetries)
     , _syncServersTicker(config.syncServersIntervalSec, std::bind(&Worker::SyncServers, this)) {
 
     if (_config.logServerSync) {
@@ -124,6 +124,7 @@ Worker::StartThread()
         switch (job.info) {
             case JobInfo::SyncServers: {
                 _log->debug("Will synchronize servers");
+                
 
                 ListResponse res = _etcdClient->List(_config.etcdPrefix + "servers/metagame/");
 
@@ -276,8 +277,8 @@ Worker::StartLeaseKeepAlive()
         return;
     }
 
-    _etcdClient->LeaseKeepAlive(_config.heartbeatTTLSec.count(), _leaseId, [this](std::exception_ptr exc) {
-        try {
+    std::function<void (std::exception_ptr)> handler = [this](std::exception_ptr exc) {
+    try {
             if (exc) {
                 _log->error("lease keep alive failed!");
                 std::lock_guard<decltype(_jobQueue)> lock(_jobQueue);
@@ -291,7 +292,9 @@ Worker::StartLeaseKeepAlive()
         } catch(const std::out_of_range& e) {
             _log->error("ETCD Lease expired: {}", e.what());
         }   
-     });
+    };
+    _etcdClient->LeaseKeepAlive(_config.heartbeatTTLSec.count(), _leaseId, handler);
+
 }
 
 bool
@@ -302,7 +305,7 @@ Worker::Init()
         _log->error("Service discovery bootstrap failed");
         return false;
     }
-
+    
     StartLeaseKeepAlive();
     _syncServersTicker.Start();
     return true;

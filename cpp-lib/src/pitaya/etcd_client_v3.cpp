@@ -1,8 +1,7 @@
 #include "pitaya/etcd_client_v3.h"
 
 #include "pitaya.h"
-
-#include "spdlog/sinks/stdout_color_sinks.h"
+#include "pitaya/utils.h"
 
 using std::placeholders::_1;
 
@@ -13,8 +12,7 @@ EtcdClientV3::EtcdClientV3(const std::string& endpoint,
                            bool logHeartbeat,
                            std::chrono::seconds grpcTimeout,
                            const char* loggerName)
-    : _log(loggerName ? spdlog::get(loggerName)->clone("etcd_client_v3")
-                      : spdlog::stdout_color_mt("etcd_client_v3"))
+    : _log(utils::CloneLoggerOrCreate(loggerName,"etcd_client_v3"))
     , _endpoint(endpoint)
     , _prefix(prefix)
     , _client(endpoint)
@@ -93,7 +91,10 @@ EtcdClientV3::List(const std::string& prefix)
 void
 EtcdClientV3::LeaseKeepAlive(int64_t ttl, int64_t leaseId, std::function<void(std::exception_ptr)> onExit)
 {
-    etcd::KeepAlive _leaseKeepAlive(_client, onExit, ttl, leaseId);
+
+    _log->info("Starting keepalive with {} seconds interval for leaseID: {}", ttl/3, leaseId );
+    _leaseKeepAlive = std::make_shared<etcd::KeepAlive>(_client, onExit, ttl/3, leaseId);
+
 }
 
 void
