@@ -6,6 +6,7 @@
 #include <etcd/Client.hpp>
 #include <etcd/Watcher.hpp>
 #include <etcd/KeepAlive.hpp>
+#include "spdlog/spdlog.h"
 
 namespace pitaya {
 
@@ -27,6 +28,7 @@ public:
     void CancelWatch() override;
 
     void LeaseKeepAlive(int64_t ttl,
+                        int64_t leaseId,
                         std::function<void(std::exception_ptr)> onExit) override;
     void StopLeaseKeepAlive() override;
 

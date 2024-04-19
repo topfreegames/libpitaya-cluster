@@ -9,4 +9,4 @@ test: start-test-deps
 	@$(MAKE) stop-test-deps
 
 build:
-	@dotnet build NPitaya --configuration Release
+	@dotnet build NPitaya-csproj --configuration Release
