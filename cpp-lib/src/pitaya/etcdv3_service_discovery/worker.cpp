@@ -222,7 +222,7 @@ Worker::StartThread()
 
                 while (_numKeepAliveRetriesLeft > 0) {
                     _log->info("ETCD retries left: {}", _numKeepAliveRetriesLeft);
-                    auto delay_milliseconds = 300 << (5 - _numKeepAliveRetriesLeft);
+                    auto delay_milliseconds = _config.retryDelayMilliseconds << (_config.maxNumberOfRetries - _numKeepAliveRetriesLeft);
                     _log->info("ETCD retry waiting for {}ms", delay_milliseconds);
                     std::this_thread::sleep_for(std::chrono::milliseconds(delay_milliseconds));
 

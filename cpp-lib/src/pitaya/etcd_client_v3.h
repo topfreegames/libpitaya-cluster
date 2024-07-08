@@ -40,7 +40,7 @@ private:
     std::string _endpoint;
     std::string _prefix;
     etcd::Client _client;
-    std::unique_ptr<etcd::Watcher> _watcher;
+    std::shared_ptr<etcd::Watcher> _watcher;
     std::function<void(WatchResponse)> _onWatch;
     std::shared_ptr<etcd::KeepAlive> _leaseKeepAlive;
 };

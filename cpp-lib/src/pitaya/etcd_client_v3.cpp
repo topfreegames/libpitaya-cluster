@@ -109,9 +109,10 @@ void
 EtcdClientV3::Watch(std::function<void(WatchResponse)> onWatch)
 {
     try {
+        _log->info("Starting ETCD Watcher with {} prefix.", _prefix );
         _onWatch = std::move(onWatch);
-        _watcher = std::unique_ptr<etcd::Watcher>(
-            new etcd::Watcher(_endpoint, _prefix, std::bind(&EtcdClientV3::OnWatch, this, _1)));
+        _watcher = std::make_shared<etcd::Watcher>(_client, _prefix, std::bind(&EtcdClientV3::OnWatch, this, _1), true);
+
     } catch (const std::runtime_error& exc) {
         throw PitayaException(exc.what());
     }
