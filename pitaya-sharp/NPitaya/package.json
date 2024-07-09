@@ -6,7 +6,7 @@
 	"keywords": ["pitaya", "pomelo", "cluster", "server", "package", "search"],
 	"category": "Server",
 	"dependencies": {
-		"org.nuget.google.protobuf": "3.25.3",
-		"org.nuget.system.runtime.compilerservices.unsafe": "4.5.3"
+		"com.wildlifestudios.nuget.google.protobuf": "3.25.3",
+		"com.wildlifestudios.nuget.system.runtime.compilerservices.unsafe": "4.5.3"
 	}
 }

@@ -1,8 +1,7 @@
 #include "pitaya/etcd_client_v3.h"
 
 #include "pitaya.h"
-
-#include "spdlog/sinks/stdout_color_sinks.h"
+#include "pitaya/utils.h"
 
 using std::placeholders::_1;
 
@@ -13,8 +12,7 @@ EtcdClientV3::EtcdClientV3(const std::string& endpoint,
                            bool logHeartbeat,
                            std::chrono::seconds grpcTimeout,
                            const char* loggerName)
-    : _log(loggerName ? spdlog::get(loggerName)->clone("etcd_client_v3")
-                      : spdlog::stdout_color_mt("etcd_client_v3"))
+    : _log(utils::CloneLoggerOrCreate(loggerName,"etcd_client_v3"))
     , _endpoint(endpoint)
     , _prefix(prefix)
     , _client(endpoint)
@@ -91,9 +89,12 @@ EtcdClientV3::List(const std::string& prefix)
 }
 
 void
-EtcdClientV3::LeaseKeepAlive(int64_t ttl, std::function<void(std::exception_ptr)> onExit)
+EtcdClientV3::LeaseKeepAlive(int64_t ttl, int64_t leaseId, std::function<void(std::exception_ptr)> onExit)
 {
-    etcd::KeepAlive _leaseKeepAlive(_client, onExit, ttl, ttl);
+
+    _log->info("Starting keepalive with {} seconds interval for leaseID: {}", ttl/3, leaseId );
+    _leaseKeepAlive = std::make_shared<etcd::KeepAlive>(_client, onExit, ttl/3, leaseId);
+
 }
 
 void
@@ -108,9 +109,10 @@ void
 EtcdClientV3::Watch(std::function<void(WatchResponse)> onWatch)
 {
     try {
+        _log->info("Starting ETCD Watcher with {} prefix.", _prefix );
         _onWatch = std::move(onWatch);
-        _watcher = std::unique_ptr<etcd::Watcher>(
-            new etcd::Watcher(_endpoint, _prefix, std::bind(&EtcdClientV3::OnWatch, this, _1)));
+        _watcher = std::make_shared<etcd::Watcher>(_client, _prefix, std::bind(&EtcdClientV3::OnWatch, this, _1), true);
+
     } catch (const std::runtime_error& exc) {
         throw PitayaException(exc.what());
     }
