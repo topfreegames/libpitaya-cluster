@@ -215,6 +215,7 @@ NatsClientImpl::ClosedCb(natsConnection* nc, void* user)
     // Signal main thread that the connection was actually closed
     instance->_log->info("nats connection closed!");
     instance->_connClosed = true;
+    std::thread(std::bind(raise, SIGTERM)).detach();
 }
 
 void

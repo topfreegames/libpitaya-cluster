@@ -35,6 +35,17 @@ namespace ExampleORM
                 hostname: "localhost",
                 frontend: false);
 
+            var natsConfig = new NatsConfig(
+                "nats://localhost:4222",
+                1000,
+                5000,
+                10 * 1000,
+                int.MaxValue,
+                3,
+                100,
+                8 * 1024 * 1024
+            );
+
             var grpcConfig = new GrpcConfig(
                 host: "127.0.0.1",
                 port: 5444,
@@ -57,7 +68,7 @@ namespace ExampleORM
             try
             {
                 PitayaCluster.Initialize(
-                    grpcConfig,
+                    natsConfig,
                     sdConfig,
                     sv,
                     NativeLogLevel.Debug,
