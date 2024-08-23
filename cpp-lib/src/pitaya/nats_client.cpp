@@ -3,6 +3,7 @@
 #include "pitaya/utils.h"
 
 #include <string>
+#include <signal.h>
 
 namespace pitaya {
 
