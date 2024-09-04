@@ -3,7 +3,10 @@
 #include "pitaya/utils.h"
 
 #include <string>
+
+#ifdef _WIN32
 #include <signal.h>
+#endif
 
 namespace pitaya {
 
