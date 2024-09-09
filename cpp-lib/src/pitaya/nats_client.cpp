@@ -52,6 +52,7 @@ NatsClientImpl::NatsClientImpl(NatsApiType apiType,
     , _conn(nullptr)
     , _sub(nullptr)
     , _connClosed(false)
+    , _shuttingDown(false)
 {
     if (config.natsAddr.empty()) {
         throw PitayaException("NATS address should not be empty");
@@ -100,15 +101,18 @@ NatsClientImpl::NatsClientImpl(NatsApiType apiType,
     
 NatsClientImpl::~NatsClientImpl()
 {
+    _shuttingDown = true;
     if (_sub) {
         // Remove interest from the subscription. Note that pending message may still
         // be received by the client.
         natsStatus status;
+        _log->debug("Unsubscribing from NATS subscription");
         status = natsSubscription_Unsubscribe(_sub);
         if (status != NATS_OK) {
             _log->error("Failed to unsubscribe");
         }
         
+        _log->debug("Draining NATS subscription");
         status = natsSubscription_Drain(_sub);
         if (status != NATS_OK) {
             _log->error("Failed to drain subscription");
@@ -198,7 +202,7 @@ NatsClientImpl::DisconnectedCb(natsConnection* nc, void* user)
 {
     auto instance = reinterpret_cast<NatsClientImpl*>(user);
     // TODO: implement logic here
-     instance->_log->warn("nats disconnected");
+    instance->_log->warn("nats disconnected");
 }
 
 void
@@ -216,7 +220,10 @@ NatsClientImpl::ClosedCb(natsConnection* nc, void* user)
     // Signal main thread that the connection was actually closed
     instance->_log->info("nats connection closed!");
     instance->_connClosed = true;
-    std::thread(std::bind(raise, SIGTERM)).detach();
+    if (!instance->_shuttingDown) {
+        // Already shutting down, no need to send SIGTERM
+        std::thread(std::bind(raise, SIGTERM)).detach();
+    }
 }
 
 void
