@@ -1,6 +1,6 @@
 {
 	"name": "com.wildlifestudios.npitaya",
-	"version": "1.0.3",
+	"version": "1.0.4",
 	"unity": "2021.3",
 	"description": "Native pitaya server module",
 	"keywords": ["pitaya", "pomelo", "cluster", "server", "package", "search"],
