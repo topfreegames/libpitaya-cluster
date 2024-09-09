@@ -221,7 +221,8 @@ NatsClientImpl::ClosedCb(natsConnection* nc, void* user)
     instance->_log->info("nats connection closed!");
     instance->_connClosed = true;
     if (!instance->_shuttingDown) {
-        // Already shutting down, no need to send SIGTERM
+        // This was not initiated by a shutdown request.
+        // Send SIGTERM as this was caused by all reconnection attempts failing
         std::thread(std::bind(raise, SIGTERM)).detach();
     }
 }
