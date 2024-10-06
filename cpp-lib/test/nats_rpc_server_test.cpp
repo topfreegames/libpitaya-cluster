@@ -116,7 +116,7 @@ TEST_F(NatsRpcServerTest, CanHandleRpcs)
         std::vector<uint8_t> serverResponseBuf(serverResponse.ByteSizeLong());
         serverResponse.SerializeToArray(serverResponseBuf.data(), serverResponseBuf.size());
 
-        EXPECT_CALL(*mockClient, Publish("my.reply.server", serverResponseBuf))
+        EXPECT_CALL(*mockClient, Publish(StrEq("my.reply.server"), serverResponseBuf))
             .WillOnce(Return(NATS_OK));
     }
 
@@ -177,7 +177,7 @@ TEST_F(NatsRpcServerTest, HasGracefulShutdown)
         std::vector<uint8_t> serverResponseBuf(serverResponse.ByteSizeLong());
         serverResponse.SerializeToArray(serverResponseBuf.data(), serverResponseBuf.size());
 
-        EXPECT_CALL(*mockClient, Publish("my.reply.server", serverResponseBuf))
+        EXPECT_CALL(*mockClient, Publish(StrEq("my.reply.server"), serverResponseBuf))
             .WillOnce(Return(NATS_OK));
     }
 
