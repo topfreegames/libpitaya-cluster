@@ -18,6 +18,10 @@
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <thread>
 
+#ifdef _WIN32
+#include <signal.h>
+#endif
+
 using namespace pitaya;
 using pitaya::service_discovery::ServiceDiscovery;
 
@@ -87,7 +91,6 @@ main()
 #if 1
     signal(SIGTERM, SignalHandler);
     signal(SIGINT, SignalHandler);
-
     auto logger = spdlog::stdout_color_mt("main");
     logger->set_level(spdlog::level::debug);
 

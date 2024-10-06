@@ -69,6 +69,16 @@ build-mac-unity-debug:
 	@cmake --preset npitaya-macos-$(LOCAL_ARCH)-macosx_bundle_true-debug
 	@cmake --build --preset npitaya-macos-$(LOCAL_ARCH)-macosx_bundle_true-debug
 
+build-windows-release:
+	@conan install . -s arch=x86_64 --build=missing -pr ./conanprofile -s compiler.cppstd=17
+	@cmake --preset npitaya-windows-x86_64-release
+	@cmake --build --preset npitaya-windows-x86_64-release
+
+build-windows-debug:
+	@conan install . --build=missing -pr ./conanprofile -s compiler.cppstd=17 -s build_type=Debug -c tools.build:skip_test=False -s compiler.runtime_type=Debug
+	@cmake --preset npitaya-windows-x86_64-debug -DBUILD_GMOCK=ON
+	@cmake --build --preset npitaya-windows-x86_64-debug
+
 build-docker-image:
 	@docker build . -t pitaya-cluster
 
@@ -79,3 +89,6 @@ build-all-mac: build-mac-release build-mac-unity build-linux-docker
 
 run-mac-debug:
 	cmake --build --preset npitaya-macos-$(LOCAL_ARCH)-macosx_bundle_false-debug && ./run-tests-with-coverage.sh _builds/macos-$(LOCAL_ARCH)-macosx_bundle_false-debug/tests
+
+run-windows-debug:
+	cmake --build --preset npitaya-windows-x86_64-debug && _builds\windows-x86_64-debug\Debug\tests
