@@ -77,7 +77,7 @@ jobs:
         path: ~/.conan2/
         key: ${{ runner.os }}-${{ matrix.arch }}-builder-${{ env.cache-name }}-${{ hashFiles('cpp-lib/conanfile.py') }}
 
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
         name: prebuilt-libs-${{ matrix.os }}-${{ matrix.arch }}
         path: |
@@ -92,7 +92,7 @@ jobs:
     runs-on: macos-latest
     steps:
       - name: Download platform specific artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           path: downloaded-artifacts
 
@@ -108,7 +108,7 @@ jobs:
         working-directory: downloaded-artifacts
 
       - name: 'Upload Artifact'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: prebuilt-libs-all-archs
           path: |
