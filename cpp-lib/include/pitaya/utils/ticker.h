@@ -33,7 +33,7 @@ private:
     bool _running;
     std::chrono::milliseconds _tickInterval;
     std::function<void()> _callback;
-    std::promise<void> _donePromise;
+    std::shared_ptr<std::promise<void>> _donePromise;
     std::future<void> _doneFuture;
     std::future<void> _runFuture;
 };

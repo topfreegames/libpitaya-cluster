@@ -116,7 +116,7 @@ private:
 private:
     EtcdServiceDiscoveryConfig _config;
 
-    std::promise<void> _initPromise;
+    std::shared_ptr<std::promise<void>> _initPromise;
     pitaya::Server _server;
 
     std::unique_ptr<EtcdClient> _etcdClient;

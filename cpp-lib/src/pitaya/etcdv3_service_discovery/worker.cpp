@@ -48,6 +48,7 @@ Worker::Worker(const EtcdServiceDiscoveryConfig& config,
         _log->info("Adding server type filter: {}", filter);
     }
     
+    _initPromise = std::make_shared<std::promise<void>>();
     _etcdClient->Watch(std::bind(&Worker::OnWatch, this, _1));
     _workerThread = std::thread(&Worker::StartThread, this);
 } catch (const spdlog::spdlog_ex& exc) {
@@ -103,7 +104,7 @@ Worker::StartThread()
     }
 
     // Notify main thread that the worker is initialized.
-    _initPromise.set_value();
+    _initPromise->set_value();
 
     for (;;) {
         _semaphore.Wait();
@@ -503,7 +504,7 @@ Worker::OnWatch(WatchResponse res)
 void
 Worker::WaitUntilInitialized()
 {
-    _initPromise.get_future().wait();
+    _initPromise->get_future().wait();
 }
 
 // ======================================================

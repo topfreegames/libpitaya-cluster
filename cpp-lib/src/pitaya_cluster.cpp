@@ -17,6 +17,7 @@
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <thread>
+#include <signal.h>
 
 using namespace pitaya;
 using pitaya::service_discovery::ServiceDiscovery;
