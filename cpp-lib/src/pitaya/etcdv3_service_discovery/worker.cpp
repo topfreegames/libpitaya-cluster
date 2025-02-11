@@ -52,9 +52,12 @@ try
     _initPromise = std::make_shared<std::promise<void>>();
     _etcdClient->Watch(std::bind(&Worker::OnWatch, this, _1));
     _workerThread = std::thread(&Worker::StartThread, this);
-} catch (const spdlog::spdlog_ex& exc) {
+
+    WaitUntilInitialized();
+} catch (...) {
+    std::exception_ptr ep = std::current_exception();
     throw PitayaException(
-        fmt::format("Failed to initialize ServiceDiscoveryWorker logger: {}", exc.what()));
+        fmt::format("Failed to initialize ServiceDiscoveryWorker logger: {}", ep.what()));
 }
 
 Worker::~Worker()
@@ -286,9 +289,10 @@ Worker::StartThread()
         }
 
         _log->debug("Thread exited loop");
-    } catch (const std::exception& e) {
-        _log->error("Error in worker thread: {}", e.what());
-        _initPromise->set_exception(std::make_exception_ptr(e));
+    } catch (...) {
+        std::exception_ptr ep = std::current_exception();
+        _log->error("Error in worker thread: {}", ep.what());
+        _initPromise->set_exception(ep);
         return;
     }
 }
