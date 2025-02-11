@@ -51,15 +51,17 @@ try
 
     _initPromise = std::make_shared<std::promise<void>>();
     _etcdClient->Watch(std::bind(&Worker::OnWatch, this, _1));
-    _workerThread = std::thread(&Worker::StartThread, this);
+    localThread = std::thread(&Worker::StartThread, this);
 
     WaitUntilInitialized();
+
+    _workerThread = std::move(localThread);
 } catch (...) {
     auto ep = std::current_exception();
 
     // Ensure thread cleanup
-    if (_workerThread.joinable()) {
-        _workerThread.join();
+    if (localThread.joinable()) {
+        localThread.join();
     }
 
     try {
