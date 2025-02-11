@@ -55,9 +55,21 @@ try
 
     WaitUntilInitialized();
 } catch (...) {
-    std::exception_ptr ep = std::current_exception();
-    throw PitayaException(
-        fmt::format("Failed to initialize ServiceDiscoveryWorker logger: {}", ep.what()));
+    auto ep = std::current_exception();
+
+    // Ensure thread cleanup
+    if (_workerThread.joinable()) {
+        _workerThread.join();
+    }
+
+    try {
+        if (ep)
+            std::rethrow_exception(ep);
+    } catch (const std::exception& e) {
+        throw PitayaException(fmt::format("Worker failed: {}", e.what()));
+    } catch (...) {
+        throw PitayaException("Unknown worker error");
+    }
 }
 
 Worker::~Worker()
@@ -290,9 +302,16 @@ Worker::StartThread()
 
         _log->debug("Thread exited loop");
     } catch (...) {
-        std::exception_ptr ep = std::current_exception();
-        _log->error("Error in worker thread: {}", ep.what());
-        _initPromise->set_exception(ep);
+        auto ep = std::current_exception();
+        try {
+            if (ep)
+                std::rethrow_exception(ep);
+        } catch (const std::exception& e) {
+            _log->error("Critical worker error: {}", e.what());
+        } catch (...) {
+            _log->error("Unknown exception type");
+        }
+        _initPromise->set_exception(ep); // Now properly handles exception_ptr
         return;
     }
 }
