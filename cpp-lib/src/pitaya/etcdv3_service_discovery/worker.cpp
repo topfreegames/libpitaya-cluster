@@ -51,19 +51,11 @@ try
 
     _initPromise = std::make_shared<std::promise<void>>();
     _etcdClient->Watch(std::bind(&Worker::OnWatch, this, _1));
-    localThread = std::thread(&Worker::StartThread, this);
+    _workerThread = std::thread(&Worker::StartThread, this);
 
     WaitUntilInitialized();
-
-    _workerThread = std::move(localThread);
 } catch (...) {
     auto ep = std::current_exception();
-
-    // Ensure thread cleanup
-    if (localThread.joinable()) {
-        localThread.join();
-    }
-
     try {
         if (ep)
             std::rethrow_exception(ep);
@@ -78,6 +70,7 @@ Worker::~Worker()
 {
     _log->debug("Worker Destructor");
     _etcdClient->CancelWatch();
+    _etcdClient->StopLeaseKeepAlive();
 
     {
         // Notify the thread about the shutdown.
@@ -211,8 +204,7 @@ Worker::StartThread()
                     }
 
                     if (job.watchRes.action == "create") {
-                        _log->debug("Watch: received create action for server {}",
-                                    job.watchRes.key);
+                        _log->info("Watch: received create action for server {}", job.watchRes.key);
                         auto server = ParseServer(job.watchRes.value);
                         if (!server) {
                             _log->error("Watch: Error parsing server: {}", job.watchRes.value);
@@ -220,8 +212,7 @@ Worker::StartThread()
                         }
                         AddServer(std::move(server.value()));
                     } else if (job.watchRes.action == "delete") {
-                        _log->debug("Watch: received delete action for server {}",
-                                    job.watchRes.key);
+                        _log->info("Watch: received delete action for server {}", job.watchRes.key);
                         DeleteServer(serverId);
                     }
 
@@ -229,7 +220,7 @@ Worker::StartThread()
                     break;
                 }
                 case JobInfo::AddListener: {
-                    _log->debug("Adding listener");
+                    _log->info("Adding listener");
                     assert(job.listener && "listener should not be null");
                     // Whenever we add a new listener, we want to call ServerAdded
                     // for all existent servers on the class.
@@ -252,6 +243,8 @@ Worker::StartThread()
                                 _numKeepAliveRetriesLeft,
                                 _config.maxNumberOfRetries);
                     _etcdClient->StopLeaseKeepAlive();
+                    _etcdClient->CancelWatch();
+
                     _syncServersTicker.Stop();
 
                     while (_numKeepAliveRetriesLeft > 0) {
@@ -284,6 +277,8 @@ Worker::StartThread()
                         return;
                     }
 
+                    _numKeepAliveRetriesLeft = _config.maxNumberOfRetries;
+
                     break;
                 }
                 case JobInfo::WatchError: {
@@ -313,7 +308,8 @@ Worker::StartThread()
         } catch (...) {
             _log->error("Unknown exception type");
         }
-        _initPromise->set_exception(ep); // Now properly handles exception_ptr
+        _initPromise->set_exception(ep);
+
         return;
     }
 }
@@ -418,7 +414,7 @@ Worker::SyncServers()
 {
     std::lock_guard<decltype(_jobQueue)> lock(_jobQueue);
     _jobQueue.PushBack(Job::NewSyncServers());
-    _semaphore.Notify();
+    _semaphore.NotifyAll();
 }
 
 optional<pitaya::Server>
