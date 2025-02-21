@@ -83,12 +83,13 @@ struct NatsRpcServer::CallData : public pitaya::Rpc
 std::atomic_int NatsRpcServer::_cnt;
 
 NatsRpcServer::NatsRpcServer(const Server& server, const NatsConfig& config, const char* loggerName)
-    : NatsRpcServer(
-          server,
-          config,
-          std::unique_ptr<NatsClient>(new NatsClientImpl(NatsApiType::Asynchronous, config, loggerName)),
-          loggerName)
-{}
+    : NatsRpcServer(server,
+                    config,
+                    std::unique_ptr<NatsClient>(
+                        new NatsClientImpl(NatsApiType::Asynchronous, config, loggerName)),
+                    loggerName)
+{
+}
 
 NatsRpcServer::NatsRpcServer(const Server& server,
                              const NatsConfig& config,
@@ -98,7 +99,8 @@ NatsRpcServer::NatsRpcServer(const Server& server,
     , _config(config)
     , _natsClient(std::move(natsClient))
     , _server(server)
-{}
+{
+}
 
 NatsRpcServer::~NatsRpcServer()
 {
@@ -109,6 +111,7 @@ NatsRpcServer::~NatsRpcServer()
 void
 NatsRpcServer::Start(RpcHandlerFunc handler)
 {
+    _log->info("Starting Nats rpc server!");
     using std::placeholders::_1;
     _handlerFunc = handler;
 

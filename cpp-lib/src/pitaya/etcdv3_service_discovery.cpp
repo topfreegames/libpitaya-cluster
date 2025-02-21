@@ -37,7 +37,6 @@ Etcdv3ServiceDiscovery::Etcdv3ServiceDiscovery(const EtcdServiceDiscoveryConfig&
     }
     _worker = std::unique_ptr<Worker>(
         new Worker(config, server, std::move(etcdClient), loggerName ? loggerName : kLogTag));
-    _worker->WaitUntilInitialized();
 }
 
 Etcdv3ServiceDiscovery::~Etcdv3ServiceDiscovery()

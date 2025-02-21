@@ -12,9 +12,9 @@ void
 Ticker::Start()
 {
     _running = true;
-    _donePromise = std::promise<void>();
-    _doneFuture = _donePromise.get_future();
-    _runFuture = std::async(std::launch::async, &Ticker::TickWrapper, this);
+    _donePromise = std::make_shared<boost::promise<void>>();
+    _doneFuture = _donePromise->get_future();
+    _runFuture = boost::async(boost::launch::async, boost::bind(&Ticker::TickWrapper,this));
 }
 
 void
@@ -22,7 +22,7 @@ Ticker::Stop()
 {
     if (_running) {
         _running = false;
-        _donePromise.set_value();
+        _donePromise->set_value();
         _runFuture.wait();
     }
 }
@@ -30,10 +30,10 @@ Ticker::Stop()
 void
 Ticker::TickWrapper()
 {
-    auto status = std::future_status::timeout;
-    while (status != std::future_status::ready) {
+    auto status = boost::future_status::timeout;
+    while (status != boost::future_status::ready) {
         status = _doneFuture.wait_for(_tickInterval);
-        if (status != std::future_status::ready) {
+        if (status != boost::future_status::ready) {
             _callback();
         }
     }
