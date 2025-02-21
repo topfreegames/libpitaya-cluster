@@ -161,6 +161,7 @@ target_link_libraries(pitaya_cpp
     nats_static
     etcd-cpp-apiv3::etcd-cpp-apiv3
     Boost::boost
+    Boost::thread
     spdlog::spdlog
     protobuf-c::protobuf-c
   PRIVATE
