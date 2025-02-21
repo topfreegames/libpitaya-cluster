@@ -49,9 +49,9 @@ try
         _log->info("Adding server type filter: {}", filter);
     }
 
-    _initPromise = std::make_shared<std::promise<void>>();
+    _initPromise = std::make_shared<boost::promise<void>>();
     _etcdClient->Watch(std::bind(&Worker::OnWatch, this, _1));
-    _workerThread = std::thread(&Worker::StartThread, this);
+    _workerThread = boost::thread(&Worker::StartThread, this);
 
     WaitUntilInitialized();
 } catch (...) {

@@ -19,7 +19,7 @@
 #include <etcd/Watcher.hpp>
 #include <pplx/pplxtasks.h>
 #include <string>
-#include <thread>
+#include <boost/thread.hpp>
 
 namespace pitaya {
 namespace etcdv3_service_discovery {
@@ -116,14 +116,14 @@ private:
 private:
     EtcdServiceDiscoveryConfig _config;
 
-    std::shared_ptr<std::promise<void>> _initPromise;
+    std::shared_ptr<boost::promise<void>> _initPromise;
     pitaya::Server _server;
 
     std::unique_ptr<EtcdClient> _etcdClient;
 
     int64_t _leaseId;
     std::shared_ptr<spdlog::logger> _log;
-    std::thread _workerThread;
+    boost::thread _workerThread;
 
     int _numKeepAliveRetriesLeft;
 
