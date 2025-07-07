@@ -1,8 +1,8 @@
 <?xml version='1.0' encoding='utf-8'?>
 <package>
   <metadata>
-    <id>NPitaya</id>
-    <version>1.0.5</version>
+    <id>com.wildlifestudios.npitaya</id>
+    <version>1.0.6-rc2</version>
     <authors>TFG Co</authors>
     <owners>TFG Co</owners>
     <projectUrl>https://github.com/topfreegames/libpitaya-cluster</projectUrl>
@@ -16,8 +16,8 @@
   </metadata>
 
   <files>
-      <file src="../pitaya-sharp/NPitaya/src/**/*" target="" />
-      <file src="../precompiled/*" target="Plugins" />
-      <file src="NPitaya.asmdef" target="" />
+      <file src="../pitaya-sharp/NPitaya/Runtime/**/*" target="Runtime" />
+      <file src="Plugins/*" target="Plugins" />
+      <file src="../pitaya-sharp/NPitaya/package.json" target="" />
   </files>
 </package>

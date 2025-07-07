@@ -1,3 +1,7 @@
+# 1.0.6-rc2
+
+* Fix multi-arch builds for graviton (#66)
+
 # 1.0.5
 
 * Fix hooks race (#707)

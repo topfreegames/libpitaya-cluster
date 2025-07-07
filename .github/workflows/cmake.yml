@@ -10,34 +10,40 @@ jobs:
   build:
     name: Build Platform Specific Native Libs
     strategy:
+      fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-        arch: [x86_64]
         include:
-          - os: windows-latest
-            preset: npitaya-default
-            cmake_path: build/_builds
-            cppstd: "17"
           - os: ubuntu-latest
-            preset: npitaya-release
-            cmake_path: build/_builds/Release
-            cppstd: gnu17
-          - os: macos-latest
-            preset: npitaya-release
-            cmake_path: build/_builds/Release
             arch: x86_64
+            preset: npitaya-release
             cppstd: gnu17
+            runner: ubuntu-latest
+            cmake_path: build/_builds/Release
+          - os: windows-latest
+            arch: x86_64
+            preset: npitaya-default
+            cppstd: "17"
+            runner: windows-latest
+            cmake_path: build/_builds
           - os: macos-latest
+            arch: x86_64
             preset: npitaya-release
-            cmake_path: build/_builds/Release
-            arch: armv8
             cppstd: gnu17
+            runner: macos-latest
+            cmake_path: build/_builds/Release
+          - os: macos-latest
+            arch: armv8
+            preset: npitaya-release
+            cppstd: gnu17
+            runner: macos-latest
+            cmake_path: build/_builds/Release
           - os: ubuntu-latest
-            preset: npitaya-release
-            cmake_path: build/_builds/Release
             arch: armv8
+            preset: npitaya-release
             cppstd: gnu17
-    runs-on: ${{ matrix.os }}
+            runner: ubuntu-22.04-arm
+            cmake_path: build/_builds/Release
+    runs-on: ${{ matrix.runner }}
     steps:
     - name: Install Conan
       id: conan
@@ -51,12 +57,6 @@ jobs:
     - uses: actions/checkout@v4
       with:
         submodules: recursive
-
-    - name: Install ARM64 cross-compiler
-      if: matrix.os == 'ubuntu-latest' && matrix.arch == 'armv8'
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
 
     - name: Install build tools (Linux)
       if: runner.os == 'Linux'
@@ -79,22 +79,13 @@ jobs:
         restore-keys: ${{ runner.os }}-${{ matrix.arch }}-builder-${{ env.cache-name }}-
 
     - name: Install Dependencies
-      if: matrix.arch != 'armv8'
+      if: matrix.arch == 'x86_64'
       run: conan install . -of build -s build_type=${{env.BUILD_TYPE}} -s arch=${{matrix.arch}} -s:b compiler.cppstd=${{ matrix.cppstd }} -s compiler.cppstd=${{ matrix.cppstd }} --build=missing
       working-directory: cpp-lib
 
-    - name: Install Dependencies (macOS ARMv8)
-      if: matrix.os == 'macos-latest' && matrix.arch == 'armv8'
+    - name: Install Dependencies (Native ARMv8)
+      if: matrix.arch == 'armv8'
       run: conan install . -of build -s build_type=${{env.BUILD_TYPE}} -s arch=${{matrix.arch}} -s:b compiler.cppstd=${{ matrix.cppstd }} -s compiler.cppstd=${{ matrix.cppstd }} --build=missing
-      working-directory: cpp-lib
-
-    - name: Install Dependencies (Ubuntu ARMv8 cross-compile)
-      if: matrix.os == 'ubuntu-latest' && matrix.arch == 'armv8'
-      run: >
-        conan install . -of build -s build_type=${{env.BUILD_TYPE}} -s arch=${{matrix.arch}}
-        -s:b compiler.cppstd=${{ matrix.cppstd }} -s compiler.cppstd=${{ matrix.cppstd }}
-        --build=missing
-        -c "tools.build:compiler_executables={'c': 'aarch64-linux-gnu-gcc', 'cpp': 'aarch64-linux-gnu-g++'}"
       working-directory: cpp-lib
 
     - name: Configure CMake
