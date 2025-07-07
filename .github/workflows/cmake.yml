@@ -32,6 +32,11 @@ jobs:
             cmake_path: build/_builds/Release
             arch: armv8
             cppstd: gnu17
+          - os: ubuntu-latest
+            preset: npitaya-release
+            cmake_path: build/_builds/Release
+            arch: armv8
+            cppstd: gnu17
     runs-on: ${{ matrix.os }}
     steps:
     - name: Install Conan
@@ -39,13 +44,21 @@ jobs:
       uses: turtlebrowser/get-conan@main
       env:
         PIP_BREAK_SYSTEM_PACKAGES: 1
-    
+
     - name: Update conan profile
       run: conan profile detect
 
     - uses: actions/checkout@v4
       with:
         submodules: recursive
+
+    - name: Install ARM64 cross-compiler
+      if: matrix.os == 'ubuntu-latest' && matrix.arch == 'armv8'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
+        echo "CC=aarch64-linux-gnu-gcc" >> $GITHUB_ENV
+        echo "CXX=aarch64-linux-gnu-g++" >> $GITHUB_ENV
 
     - name: Using the builtin GitHub Cache Action for .conan
       id: cache-conan-restore
@@ -60,7 +73,7 @@ jobs:
     - name: Install Dependencies
       run: conan install . -of build -s build_type=${{env.BUILD_TYPE}} -s arch=${{matrix.arch}} -s:b compiler.cppstd=${{ matrix.cppstd }} -s compiler.cppstd=${{ matrix.cppstd }} --build=missing
       working-directory: cpp-lib
-    
+
     - name: Configure CMake
       run: cmake --preset ${{matrix.preset}} -DBUILD_TESTING=OFF
       working-directory: cpp-lib
@@ -98,12 +111,13 @@ jobs:
 
       - name: Process Libs
         run: |
-          mkdir macos-fat macos-arm64 macos-x86_64 linux-x86_64 windows-x86_64 macos-fat-unity
+          mkdir macos-fat macos-arm64 macos-x86_64 linux-x86_64 linux-armv8 windows-x86_64 macos-fat-unity
           lipo -create prebuilt-libs-macos-latest-armv8/_builds/Release/libpitaya_cpp.dylib prebuilt-libs-macos-latest-x86_64/_builds/Release/libpitaya_cpp.dylib -output macos-fat/libpitaya_cpp.dylib
           cp macos-fat/libpitaya_cpp.dylib macos-fat-unity/libpitaya_cpp.bundle
           mv prebuilt-libs-macos-latest-armv8/_builds/Release/libpitaya_cpp.dylib macos-arm64
           mv prebuilt-libs-macos-latest-x86_64/_builds/Release/libpitaya_cpp.dylib macos-x86_64
           mv prebuilt-libs-ubuntu-latest-x86_64/_builds/Release/libpitaya_cpp.so linux-x86_64
+          mv prebuilt-libs-ubuntu-latest-armv8/_builds/Release/libpitaya_cpp.so linux-armv8
           mv prebuilt-libs-windows-latest-x86_64/_builds/Release/pitaya_cpp.dll windows-x86_64/libpitaya_cpp.dll
         working-directory: downloaded-artifacts
 
