@@ -8,5 +8,10 @@
 	"dependencies": {
 		"com.wildlifestudios.nuget.google.protobuf": "3.25.3",
 		"com.wildlifestudios.nuget.system.runtime.compilerservices.unsafe": "4.5.3"
-	}
+	},
+	"files": [
+		"Runtime",
+		"Runtime.meta",
+		"package.json.meta"
+	]
 }
