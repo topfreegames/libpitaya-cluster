@@ -1,4 +1,4 @@
-# 1.0.6-rc3
+# 1.0.6-rc4
 
 * Fix multi-arch builds for graviton (#66)
 
