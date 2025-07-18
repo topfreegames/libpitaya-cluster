@@ -3,6 +3,7 @@ from conan import ConanFile
 from conan.tools.cmake import CMakeToolchain, CMakeDeps, CMake, cmake_layout
 from conan.errors import ConanInvalidConfiguration
 
+
 def get_version():
     with open(join(dirname(__file__), 'version.txt'), 'r') as f:
         content = f.read()
@@ -35,8 +36,10 @@ class PitayaCpp(ConanFile):
     def requirements(self):
         self.requires("zlib/1.3.1")
         self.requires("protobuf/3.21.9", visible=True, force=True)
-        self.requires("boost/1.86.0", force=True)
-        self.requires("openssl/3.4.1", force=True)
+        # Using Ubuntu 22.04+ compatible versions (GLIBC 2.35+)
+        # OpenSSL 3.1.4 and Boost 1.82.0 provide good balance of features and compatibility
+        self.requires("boost/1.82.0", force=True)
+        self.requires("openssl/3.1.4", force=True)
         self.requires("grpc/1.54.3")
         self.requires("protobuf-c/1.5.0")
         self.requires("etcd-cpp-apiv3/0.15.4")
@@ -45,7 +48,7 @@ class PitayaCpp(ConanFile):
     def build_requirements(self):
         self.tool_requires("grpc/1.54.3")
         self.tool_requires("protobuf/3.21.9")
-        
+
     def layout(self):
         cmake_layout(self, build_folder='_builds')
 
@@ -53,7 +56,7 @@ class PitayaCpp(ConanFile):
         tc = CMakeToolchain(self)
         tc.presets_prefix = "npitaya"
         if self.settings.os == 'Macos':
-          tc.variables['BUILD_MACOSX_BUNDLE'] = self.options.macosx_bundle
+            tc.variables['BUILD_MACOSX_BUNDLE'] = self.options.macosx_bundle
         tc.generate()
 
         deps = CMakeDeps(self)

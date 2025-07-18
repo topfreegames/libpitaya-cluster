@@ -13,11 +13,11 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: ubuntu-latest
+          - os: ubuntu-22.04
             arch: x86_64
             preset: npitaya-release
             cppstd: gnu17
-            runner: ubuntu-latest
+            runner: ubuntu-22.04
             cmake_path: build/_builds/Release
           - os: windows-latest
             arch: x86_64
@@ -37,7 +37,7 @@ jobs:
             cppstd: gnu17
             runner: macos-latest
             cmake_path: build/_builds/Release
-          - os: ubuntu-latest
+          - os: ubuntu-22.04
             arch: armv8
             preset: npitaya-release
             cppstd: gnu17
@@ -130,8 +130,8 @@ jobs:
           cp macos-fat/libpitaya_cpp.dylib macos-fat-unity/libpitaya_cpp.bundle
           mv prebuilt-libs-macos-latest-armv8/_builds/Release/libpitaya_cpp.dylib macos-arm64
           mv prebuilt-libs-macos-latest-x86_64/_builds/Release/libpitaya_cpp.dylib macos-x86_64
-          mv prebuilt-libs-ubuntu-latest-x86_64/_builds/Release/libpitaya_cpp.so linux-x86_64
-          mv prebuilt-libs-ubuntu-latest-armv8/_builds/Release/libpitaya_cpp.so linux-armv8
+          mv prebuilt-libs-ubuntu-22.04-x86_64/_builds/Release/libpitaya_cpp.so linux-x86_64
+          mv prebuilt-libs-ubuntu-22.04-armv8/_builds/Release/libpitaya_cpp.so linux-armv8
           mv prebuilt-libs-windows-latest-x86_64/_builds/Release/pitaya_cpp.dll windows-x86_64/libpitaya_cpp.dll
         working-directory: downloaded-artifacts
 
