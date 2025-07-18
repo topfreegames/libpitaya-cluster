@@ -1,0 +1,228 @@
+name: Build NPitaya Native Libraries
+on:
+  push:
+    tags:
+      - '*'
+
+env:
+  BUILD_TYPE: Release
+
+jobs:
+  check-changes:
+    name: Check for relevant changes
+    runs-on: ubuntu-latest
+    outputs:
+      has-changes: ${{ steps.changes.outputs.has-changes }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check for changes in cpp-lib or vendor
+        id: changes
+        run: |
+          # Get the previous tag or commit
+          PREVIOUS_TAG=$(git describe --tags --abbrev=0 HEAD~1 2>/dev/null || echo "HEAD~1")
+          echo "Previous tag: $PREVIOUS_TAG"
+
+          # Check if any files in cpp-lib or vendor have changed since the previous tag
+          if git diff --name-only $PREVIOUS_TAG | grep -E '^(cpp-lib/|vendor/)' > /dev/null; then
+            echo "🔄 Changes detected in cpp-lib or vendor - building required"
+            echo "has-changes=true" >> $GITHUB_OUTPUT
+          else
+            echo "✅ No changes in cpp-lib or vendor - skipping build"
+            echo "has-changes=false" >> $GITHUB_OUTPUT
+          fi
+
+  build:
+    name: Build native libraries
+    needs: check-changes
+    if: needs.check-changes.outputs.has-changes == 'true'
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-22.04
+            arch: x86_64
+            preset: npitaya-release
+            cppstd: gnu17
+            runner: ubuntu-22.04
+            cmake_path: build/_builds/Release
+          - os: windows-latest
+            arch: x86_64
+            preset: npitaya-release
+            cppstd: "17"
+            runner: windows-latest
+            cmake_path: build/_builds/Release
+          - os: macos-latest
+            arch: x86_64
+            preset: npitaya-release
+            cppstd: gnu17
+            runner: macos-latest
+            cmake_path: build/_builds/Release
+          - os: macos-latest
+            arch: armv8
+            preset: npitaya-release
+            cppstd: gnu17
+            runner: macos-latest
+            cmake_path: build/_builds/Release
+          - os: ubuntu-22.04
+            arch: armv8
+            preset: npitaya-release
+            cppstd: gnu17
+            runner: ubuntu-22.04-arm
+            cmake_path: build/_builds/Release
+    steps:
+    - name: Install Conan
+      id: conan
+      uses: turtlebrowser/get-conan@main
+      env:
+        PIP_BREAK_SYSTEM_PACKAGES: 1
+
+    - name: Update conan profile
+      run: conan profile detect
+
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Install build tools (Linux)
+      if: runner.os == 'Linux'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y cmake make g++ gcc
+
+    - name: Install Numpy for macOS builds
+      if: matrix.os == 'macos-latest'
+      run: pip3 install numpy --break-system-packages
+
+    - name: Using the builtin GitHub Cache Action for .conan
+      id: cache-conan-restore
+      uses: actions/cache/restore@v3
+      env:
+        cache-name: cache-conan-modules
+      with:
+        path: ~/.conan2/
+        key: ${{ runner.os }}-${{ matrix.arch }}-builder-${{ env.cache-name }}-${{ hashFiles('cpp-lib/conanfile.py') }}
+        restore-keys: ${{ runner.os }}-${{ matrix.arch }}-builder-${{ env.cache-name }}-
+
+    - name: Install Dependencies (x86_64 - macOS)
+      if: matrix.arch == 'x86_64' && matrix.os == 'macos-latest'
+      run: |
+        # Set environment variables to suppress Boost warnings on macOS
+        export CXXFLAGS="-Wno-enum-constexpr-conversion"
+        export CPPFLAGS="-Wno-enum-constexpr-conversion"
+        conan install . -of build -s build_type=${{env.BUILD_TYPE}} -s arch=${{matrix.arch}} -s:b compiler.cppstd=${{ matrix.cppstd }} -s compiler.cppstd=${{ matrix.cppstd }} -s:b compiler.libcxx=libc++ -s compiler.libcxx=libc++ -s:b compiler.version=15 -s compiler.version=15 --build=missing
+      working-directory: cpp-lib
+
+    - name: Install Dependencies (x86_64 - Non-macOS)
+      if: matrix.arch == 'x86_64' && matrix.os != 'macos-latest'
+      run: conan install . -of build -s build_type=${{env.BUILD_TYPE}} -s arch=${{matrix.arch}} -s:b compiler.cppstd=${{ matrix.cppstd }} -s compiler.cppstd=${{ matrix.cppstd }} --build=missing
+      working-directory: cpp-lib
+
+    - name: Install Dependencies (ARMv8 - macOS)
+      if: matrix.arch == 'armv8' && matrix.os == 'macos-latest'
+      run: |
+        # Set environment variables to suppress Boost warnings on macOS
+        export CXXFLAGS="-Wno-enum-constexpr-conversion"
+        export CPPFLAGS="-Wno-enum-constexpr-conversion"
+        conan install . -of build -s build_type=${{env.BUILD_TYPE}} -s arch=${{matrix.arch}} -s:b compiler.cppstd=${{ matrix.cppstd }} -s compiler.cppstd=${{ matrix.cppstd }} -s:b compiler.libcxx=libc++ -s compiler.libcxx=libc++ -s:b compiler.version=15 -s compiler.version=15 --build=missing
+      working-directory: cpp-lib
+
+    - name: Install Dependencies (ARMv8 - Non-macOS)
+      if: matrix.arch == 'armv8' && matrix.os != 'macos-latest'
+      run: conan install . -of build -s build_type=${{env.BUILD_TYPE}} -s arch=${{matrix.arch}} -s:b compiler.cppstd=${{ matrix.cppstd }} -s compiler.cppstd=${{ matrix.cppstd }} --build=missing
+      working-directory: cpp-lib
+
+    - name: Configure CMake
+      run: cmake --preset ${{matrix.preset}} -DBUILD_TESTING=OFF
+      working-directory: cpp-lib
+
+    - name: Build
+      run: cmake --build ${{matrix.cmake_path}} --config ${{env.BUILD_TYPE}} --target pitaya_cpp
+      working-directory: cpp-lib
+
+    - uses: actions/cache/save@v3
+      env:
+        cache-name: cache-conan-modules
+      with:
+        path: ~/.conan2/
+        key: ${{ runner.os }}-${{ matrix.arch }}-builder-${{ env.cache-name }}-${{ hashFiles('cpp-lib/conanfile.py') }}
+
+    - uses: actions/upload-artifact@v4
+      with:
+        name: prebuilt-libs-${{ matrix.os }}-${{ matrix.arch }}
+        path: |
+          cpp-lib/build/**/*pitaya_cpp.dll
+          cpp-lib/build/**/*pitaya_cpp.so
+          cpp-lib/build/**/*pitaya_cpp.dylib
+          cpp-lib/build/**/*pitaya_cpp.bundle
+
+  consolidate:
+    name: Consolidate all libs into single package
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download platform specific artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: downloaded-artifacts
+
+      - name: Process Libs
+        run: |
+          mkdir -p macos-fat macos-arm64 macos-x86_64 linux-x86_64 linux-armv8 windows-x86_64 macos-fat-unity
+
+          # Process macOS ARM64
+          if [ -d "prebuilt-libs-macos-latest-armv8" ]; then
+            find prebuilt-libs-macos-latest-armv8 -name "*.dylib" -exec cp {} macos-arm64/ \;
+          fi
+
+          # Process macOS x86_64
+          if [ -d "prebuilt-libs-macos-latest-x86_64" ]; then
+            find prebuilt-libs-macos-latest-x86_64 -name "*.dylib" -exec cp {} macos-x86_64/ \;
+          fi
+
+          # Process Linux x86_64
+          if [ -d "prebuilt-libs-ubuntu-22.04-x86_64" ]; then
+            find prebuilt-libs-ubuntu-22.04-x86_64 -name "*.so" -exec cp {} linux-x86_64/ \;
+          fi
+
+          # Process Linux ARMv8
+          if [ -d "prebuilt-libs-ubuntu-22.04-armv8" ]; then
+            find prebuilt-libs-ubuntu-22.04-armv8 -name "*.so" -exec cp {} linux-armv8/ \;
+          fi
+
+          # Process Windows x86_64
+          if [ -d "prebuilt-libs-windows-latest-x86_64" ]; then
+            find prebuilt-libs-windows-latest-x86_64 -name "*.dll" -exec cp {} windows-x86_64/ \;
+          fi
+
+          # Create fat macOS binary if both architectures are available
+          if [ -f "macos-arm64/libpitaya_cpp.dylib" ] && [ -f "macos-x86_64/libpitaya_cpp.dylib" ]; then
+            lipo -create macos-arm64/libpitaya_cpp.dylib macos-x86_64/libpitaya_cpp.dylib -output macos-fat/libpitaya_cpp.dylib
+            cp macos-fat/libpitaya_cpp.dylib macos-fat-unity/libpitaya_cpp.bundle
+          fi
+
+          echo "✅ Processed libraries:"
+          find . -name "*.so" -o -name "*.dylib" -o -name "*.dll" -o -name "*.bundle" | sort
+        working-directory: downloaded-artifacts
+
+      - name: 'Upload Artifact'
+        uses: actions/upload-artifact@v4
+        with:
+          name: prebuilt-libs-all-archs
+          path: |
+            ./**/*pitaya_cpp.dll
+            ./**/*pitaya_cpp.so
+            ./**/*pitaya_cpp.dylib
+            ./**/*pitaya_cpp.bundle
+          working-directory: downloaded-artifacts
+          if-no-files-found: warn
+
+      - name: Cache artifacts
+        uses: actions/cache/save@v3
+        with:
+          path: downloaded-artifacts
+          key: compiled-libs-${{ hashFiles('cpp-lib/**/*', 'vendor/**/*') }}
+          if-no-files-found: error

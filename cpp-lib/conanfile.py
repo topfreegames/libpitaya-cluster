@@ -37,9 +37,9 @@ class PitayaCpp(ConanFile):
         self.requires("zlib/1.3.1")
         self.requires("protobuf/3.21.9", visible=True, force=True)
         # Using Ubuntu 22.04+ compatible versions (GLIBC 2.35+)
-        # OpenSSL 3.1.4 and Boost 1.82.0 provide good balance of features and compatibility
-        self.requires("boost/1.82.0", force=True)
-        self.requires("openssl/3.1.4", force=True)
+        # OpenSSL 3.0.8 and Boost 1.80.0 provide maximum compatibility with Ubuntu 22.04
+        self.requires("boost/1.80.0", force=True)
+        self.requires("openssl/3.0.8", force=True)
         self.requires("grpc/1.54.3")
         self.requires("protobuf-c/1.5.0")
         self.requires("etcd-cpp-apiv3/0.15.4")
