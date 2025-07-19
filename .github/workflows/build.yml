@@ -110,10 +110,8 @@ jobs:
     - name: Install Dependencies (x86_64 - macOS)
       if: matrix.arch == 'x86_64' && matrix.os == 'macos-latest'
       run: |
-        # Set environment variables to suppress Boost warnings on macOS
-        export CXXFLAGS="-Wno-enum-constexpr-conversion"
-        export CPPFLAGS="-Wno-enum-constexpr-conversion"
-        conan install . -of build -s build_type=${{env.BUILD_TYPE}} -s arch=${{matrix.arch}} -s:b compiler.cppstd=${{ matrix.cppstd }} -s compiler.cppstd=${{ matrix.cppstd }} -s:b compiler.libcxx=libc++ -s compiler.libcxx=libc++ -s:b compiler.version=15 -s compiler.version=15 --build=missing
+        # Override Boost version to 1.83.0 for better Apple Clang 15 support
+        conan install . -of build -s build_type=${{env.BUILD_TYPE}} -s arch=${{matrix.arch}} -s:b compiler.cppstd=${{ matrix.cppstd }} -s compiler.cppstd=${{ matrix.cppstd }} -s:b compiler.libcxx=libc++ -s compiler.libcxx=libc++ -s:b compiler.version=15 -s compiler.version=15 --build=missing --require-override boost/1.83.0
       working-directory: cpp-lib
 
     - name: Install Dependencies (x86_64 - Non-macOS)
@@ -124,10 +122,8 @@ jobs:
     - name: Install Dependencies (ARMv8 - macOS)
       if: matrix.arch == 'armv8' && matrix.os == 'macos-latest'
       run: |
-        # Set environment variables to suppress Boost warnings on macOS
-        export CXXFLAGS="-Wno-enum-constexpr-conversion"
-        export CPPFLAGS="-Wno-enum-constexpr-conversion"
-        conan install . -of build -s build_type=${{env.BUILD_TYPE}} -s arch=${{matrix.arch}} -s:b compiler.cppstd=${{ matrix.cppstd }} -s compiler.cppstd=${{ matrix.cppstd }} -s:b compiler.libcxx=libc++ -s compiler.libcxx=libc++ -s:b compiler.version=15 -s compiler.version=15 --build=missing
+        # Override Boost version to 1.83.0 for better Apple Clang 15 support
+        conan install . -of build -s build_type=${{env.BUILD_TYPE}} -s arch=${{matrix.arch}} -s:b compiler.cppstd=${{ matrix.cppstd }} -s compiler.cppstd=${{ matrix.cppstd }} -s:b compiler.libcxx=libc++ -s compiler.libcxx=libc++ -s:b compiler.version=15 -s compiler.version=15 --build=missing --require-override boost/1.83.0
       working-directory: cpp-lib
 
     - name: Install Dependencies (ARMv8 - Non-macOS)
