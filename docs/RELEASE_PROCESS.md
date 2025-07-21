@@ -270,7 +270,7 @@ If the automated version bump fails:
 ### Current Version
 The current version is defined in `cpp-lib/version.txt`:
 ```
-1.0.6-rc5
+1.0.6
 ```
 
 ### Version Updates
