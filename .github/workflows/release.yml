@@ -14,7 +14,7 @@ on:
         required: false
         default: ""
       auto_bump:
-        description: "Auto bump version"
+        description: "Auto commit and bump version"
         required: false
         default: "true"
 
@@ -133,12 +133,14 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.version }}
 
       - name: Restore artifacts from cache
         uses: actions/cache/restore@v3
         with:
           path: downloaded-artifacts
-          key: compiled-libs-${{ hashFiles('cpp-lib/**/*', 'vendor/**/*') }}
+          key: compiled-libs-${{ github.event.inputs.version }}
           restore-keys: |
             compiled-libs-
 

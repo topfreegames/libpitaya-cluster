@@ -246,5 +246,5 @@ jobs:
         uses: actions/cache/save@v3
         with:
           path: downloaded-artifacts
-          key: compiled-libs-${{ hashFiles('cpp-lib/**/*', 'vendor/**/*') }}
+          key: compiled-libs-${{ github.ref_name }}
           if-no-files-found: error
