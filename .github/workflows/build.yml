@@ -51,10 +51,10 @@ jobs:
             cmake_path: build/_builds/Release
           - os: windows-latest
             arch: x86_64
-            preset: npitaya-release
+            preset: npitaya-default
             cppstd: "17"
             runner: windows-latest
-            cmake_path: build/_builds/Release
+            cmake_path: build/_builds
           - os: macos-latest
             arch: x86_64
             preset: npitaya-release
