@@ -38,7 +38,13 @@ class PitayaCpp(ConanFile):
         self.requires("protobuf/3.21.9", visible=True, force=True)
         # Using Ubuntu 22.04+ compatible versions (GLIBC 2.35+)
         # OpenSSL 3.0.8 and Boost 1.80.0 provide maximum compatibility with Ubuntu 22.04
-        self.requires("boost/1.80.0", force=True)
+        # Use Boost 1.83.0 for macOS to fix Apple Clang 15 compatibility issues
+        if self.settings.os == 'Macos':
+            print("DEBUG: Using Boost 1.83.0 for macOS")
+            self.requires("boost/1.83.0", force=True)
+        else:
+            print(f"DEBUG: Using Boost 1.80.0 for {self.settings.os}")
+            self.requires("boost/1.80.0", force=True)
         self.requires("openssl/3.0.8", force=True)
         self.requires("grpc/1.54.3")
         self.requires("protobuf-c/1.5.0")
