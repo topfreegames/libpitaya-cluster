@@ -43,31 +43,36 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: ubuntu-22.04
+          - platform: ubuntu-22.04-x86_64
+            os: ubuntu-22.04
             arch: x86_64
             preset: npitaya-release
             cppstd: gnu17
             runner: ubuntu-22.04
             cmake_path: build/_builds/Release
-          - os: windows-latest
+          - platform: windows-latest-x86_64
+            os: windows-latest
             arch: x86_64
             preset: npitaya-default
             cppstd: "17"
             runner: windows-latest
             cmake_path: build/_builds
-          - os: macos-latest
+          - platform: macos-latest-x86_64
+            os: macos-latest
             arch: x86_64
             preset: npitaya-release
             cppstd: gnu17
             runner: macos-latest
             cmake_path: build/_builds/Release
-          - os: macos-latest
+          - platform: macos-latest-armv8
+            os: macos-latest
             arch: armv8
             preset: npitaya-release
             cppstd: gnu17
             runner: macos-latest
             cmake_path: build/_builds/Release
-          - os: ubuntu-22.04
+          - platform: ubuntu-22.04-armv8
+            os: ubuntu-22.04
             arch: armv8
             preset: npitaya-release
             cppstd: gnu17
@@ -80,28 +85,27 @@ jobs:
       env:
         PIP_BREAK_SYSTEM_PACKAGES: 1
 
-    - name: Update conan profile
-      run: conan profile detect
-
-    - name: Clear Conan cache for macOS (to ensure fresh Boost version)
-      if: matrix.os == 'macos-latest'
+    - name: Optimize Conan
       run: |
-        echo "Clearing Conan cache to ensure fresh Boost version..."
-        conan remove "*" -f || true
-        conan cache clean || true
+        # Enable parallel builds
+        conan config set general.parallel_download=8
+        conan config set general.parallel_build=4
+        conan profile detect
+        conan remote add conancenter https://center.conan.io || true
+        conan remote list
 
     - uses: actions/checkout@v4
       with:
         submodules: recursive
 
     - name: Install build tools (Linux)
-      if: runner.os == 'Linux'
+      if: matrix.platform == 'ubuntu-22.04-x86_64' || matrix.platform == 'ubuntu-22.04-armv8'
       run: |
         sudo apt-get update
         sudo apt-get install -y cmake make g++ gcc
 
     - name: Install Numpy for macOS builds
-      if: matrix.os == 'macos-latest'
+      if: matrix.platform == 'macos-latest-x86_64' || matrix.platform == 'macos-latest-armv8'
       run: pip3 install numpy --break-system-packages
 
     - name: Using the builtin GitHub Cache Action for .conan
@@ -111,31 +115,38 @@ jobs:
         cache-name: cache-conan-modules
       with:
         path: ~/.conan2/
-        key: ${{ runner.os }}-${{ matrix.arch }}-builder-${{ env.cache-name }}-${{ hashFiles('cpp-lib/conanfile.py') }}
-        restore-keys: ${{ runner.os }}-${{ matrix.arch }}-builder-${{ env.cache-name }}-
+        key: ${{ runner.os }}-${{ matrix.arch }}-builder-${{ env.cache-name }}-${{ hashFiles('cpp-lib/conanfile.py', 'cpp-lib/conanprofile') }}
+        restore-keys: |
+          ${{ runner.os }}-${{ matrix.arch }}-builder-${{ env.cache-name }}-
+          ${{ runner.os }}-${{ matrix.arch }}-builder-
 
-    - name: Install Dependencies (x86_64 - macOS)
-      if: matrix.arch == 'x86_64' && matrix.os == 'macos-latest'
+    - name: Install Dependencies - Ubuntu x86_64
+      if: matrix.platform == 'ubuntu-22.04-x86_64'
+      run: conan install . -of build -s build_type=${{env.BUILD_TYPE}} -s arch=${{matrix.arch}} -s:b compiler.cppstd=${{ matrix.cppstd }} -s compiler.cppstd=${{ matrix.cppstd }} -o *:shared=False -o boost:header_only=True -o protobuf:debug_suffix=False -o openssl:shared=False -o cpprestsdk:with_websockets=False --build=missing --build=outdated
+      working-directory: cpp-lib
+
+    - name: Install Dependencies - Ubuntu ARMv8
+      if: matrix.platform == 'ubuntu-22.04-armv8'
+      run: conan install . -of build -s build_type=${{env.BUILD_TYPE}} -s arch=${{matrix.arch}} -s:b compiler.cppstd=${{ matrix.cppstd }} -s compiler.cppstd=${{ matrix.cppstd }} -o *:shared=False -o boost:header_only=True -o protobuf:debug_suffix=False -o openssl:shared=False -o cpprestsdk:with_websockets=False --build=missing --build=outdated
+      working-directory: cpp-lib
+
+    - name: Install Dependencies - Windows x86_64
+      if: matrix.platform == 'windows-latest-x86_64'
+      run: conan install . -of build -s build_type=${{env.BUILD_TYPE}} -s arch=${{matrix.arch}} -s:b compiler.cppstd=${{ matrix.cppstd }} -s compiler.cppstd=${{ matrix.cppstd }} -o *:shared=False -o boost:header_only=True -o protobuf:debug_suffix=False -o openssl:shared=False -o cpprestsdk:with_websockets=False --build=missing --build=outdated
+      working-directory: cpp-lib
+
+    - name: Install Dependencies - macOS x86_64
+      if: matrix.platform == 'macos-latest-x86_64'
       run: |
         # macOS-specific flags for Apple Clang 15 compatibility
-        conan install . -of build -s build_type=${{env.BUILD_TYPE}} -s arch=${{matrix.arch}} -s:b compiler.cppstd=${{ matrix.cppstd }} -s compiler.cppstd=${{ matrix.cppstd }} -s:b compiler.libcxx=libc++ -s compiler.libcxx=libc++ -s:b compiler.version=15 -s compiler.version=15 --build=missing
+        conan install . -of build -s build_type=${{env.BUILD_TYPE}} -s arch=${{matrix.arch}} -s:b compiler.cppstd=${{ matrix.cppstd }} -s compiler.cppstd=${{ matrix.cppstd }} -s:b compiler.libcxx=libc++ -s compiler.libcxx=libc++ -s:b compiler.version=15 -s compiler.version=15 -o *:shared=False -o boost:header_only=True -o protobuf:debug_suffix=False -o openssl:shared=False -o cpprestsdk:with_websockets=False --build=missing --build=outdated
       working-directory: cpp-lib
 
-    - name: Install Dependencies (x86_64 - Non-macOS)
-      if: matrix.arch == 'x86_64' && matrix.os != 'macos-latest'
-      run: conan install . -of build -s build_type=${{env.BUILD_TYPE}} -s arch=${{matrix.arch}} -s:b compiler.cppstd=${{ matrix.cppstd }} -s compiler.cppstd=${{ matrix.cppstd }} --build=missing
-      working-directory: cpp-lib
-
-    - name: Install Dependencies (ARMv8 - macOS)
-      if: matrix.arch == 'armv8' && matrix.os == 'macos-latest'
+    - name: Install Dependencies - macOS ARMv8
+      if: matrix.platform == 'macos-latest-armv8'
       run: |
         # macOS-specific flags for Apple Clang 15 compatibility
-        conan install . -of build -s build_type=${{env.BUILD_TYPE}} -s arch=${{matrix.arch}} -s:b compiler.cppstd=${{ matrix.cppstd }} -s compiler.cppstd=${{ matrix.cppstd }} -s:b compiler.libcxx=libc++ -s compiler.libcxx=libc++ -s:b compiler.version=15 -s compiler.version=15 --build=missing
-      working-directory: cpp-lib
-
-    - name: Install Dependencies (ARMv8 - Non-macOS)
-      if: matrix.arch == 'armv8' && matrix.os != 'macos-latest'
-      run: conan install . -of build -s build_type=${{env.BUILD_TYPE}} -s arch=${{matrix.arch}} -s:b compiler.cppstd=${{ matrix.cppstd }} -s compiler.cppstd=${{ matrix.cppstd }} --build=missing
+        conan install . -of build -s build_type=${{env.BUILD_TYPE}} -s arch=${{matrix.arch}} -s:b compiler.cppstd=${{ matrix.cppstd }} -s compiler.cppstd=${{ matrix.cppstd }} -s:b compiler.libcxx=libc++ -s compiler.libcxx=libc++ -s:b compiler.version=15 -s compiler.version=15 -o *:shared=False -o boost:header_only=True -o protobuf:debug_suffix=False -o openssl:shared=False -o cpprestsdk:with_websockets=False --build=missing --build=outdated
       working-directory: cpp-lib
 
     - name: Configure CMake
@@ -151,11 +162,11 @@ jobs:
         cache-name: cache-conan-modules
       with:
         path: ~/.conan2/
-        key: ${{ runner.os }}-${{ matrix.arch }}-builder-${{ env.cache-name }}-${{ hashFiles('cpp-lib/conanfile.py') }}
+        key: ${{ runner.os }}-${{ matrix.arch }}-builder-${{ env.cache-name }}-${{ hashFiles('cpp-lib/conanfile.py', 'cpp-lib/conanprofile') }}
 
     - uses: actions/upload-artifact@v4
       with:
-        name: prebuilt-libs-${{ matrix.os }}-${{ matrix.arch }}
+        name: prebuilt-libs-${{ matrix.platform }}
         path: |
           cpp-lib/build/**/*pitaya_cpp.dll
           cpp-lib/build/**/*pitaya_cpp.so
