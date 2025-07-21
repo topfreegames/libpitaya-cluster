@@ -2,27 +2,55 @@ name: Release NPitaya NPM to Artifactory
 
 on:
   workflow_run:
-    workflows: ["Build"]
+    workflows: ["Build NPitaya Native Libraries"]
     types:
       - completed
+    tags:
+      - '*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version/tag to release (leave empty for latest tag)"
+        required: false
+        default: ""
 
 jobs:
   bump-version:
     name: Bump Version
     runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     outputs:
-      version: ${{ steps.tag.outputs.tag }}
+      version: ${{ steps.version.outputs.version }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Get tag
-        id: tag
-        uses: dawidd6/action-get-tag@v1
-        with:
-          strip_v: true
+      - name: Get latest tag
+        id: latest-tag
+        run: |
+          # Get the latest tag from the repository
+          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          echo "Latest tag: $LATEST_TAG"
+          echo "tag=$LATEST_TAG" >> $GITHUB_OUTPUT
+
+      - name: Determine version to use
+        id: version
+        run: |
+          # Use provided version or fall back to latest tag
+          if [ -n "${{ github.event.inputs.version }}" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+            echo "Using provided version: $VERSION"
+          else
+            VERSION="${{ steps.latest-tag.outputs.tag }}"
+            echo "Using latest tag: $VERSION"
+          fi
+
+          # Strip 'v' prefix if present
+          VERSION=$(echo "$VERSION" | sed 's/^v//')
+          echo "Final version: $VERSION"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Check if version needs updating
         id: check-version
@@ -30,7 +58,7 @@ jobs:
           # Get current version from version.txt
           if [ -f "cpp-lib/version.txt" ]; then
             CURRENT_VERSION=$(cat cpp-lib/version.txt | tr -d '[:space:]')
-            TARGET_VERSION="v${{steps.tag.outputs.tag}}"
+            TARGET_VERSION="v${{steps.version.outputs.version}}"
 
             if [ "$CURRENT_VERSION" = "$TARGET_VERSION" ]; then
               echo "needs-commit=false" >> $GITHUB_OUTPUT
@@ -53,8 +81,8 @@ jobs:
       - name: Update version references
         if: steps.check-version.outputs.needs-commit == 'true'
         run: |
-          echo "Updating version to ${{steps.tag.outputs.tag}}"
-          VERSION="${{steps.tag.outputs.tag}}" ./update-version.sh
+          echo "Updating version to ${{steps.version.outputs.version}}"
+          VERSION="${{steps.version.outputs.version}}" ./update-version.sh
 
       - name: Commit and push version bump
         id: commit-result
@@ -69,7 +97,7 @@ jobs:
             exit 0
           fi
 
-          git commit -m "chore: bump version to v${{steps.tag.outputs.tag}}"
+          git commit -m "chore: bump version to v${{steps.version.outputs.version}}"
 
           # Fetch all remote references to get access to tags and branches
           echo "Fetching remote references..."
@@ -77,8 +105,8 @@ jobs:
 
           # Get the branch where the tag was created
           # First, get the commit that the tag points to
-          TAG_COMMIT=$(git rev-parse v${{steps.tag.outputs.tag}})
-          echo "Tag v${{steps.tag.outputs.tag}} points to commit: $TAG_COMMIT"
+          TAG_COMMIT=$(git rev-parse v${{steps.version.outputs.version}})
+          echo "Tag v${{steps.version.outputs.version}} points to commit: $TAG_COMMIT"
 
           TAG_BRANCH=$(git branch -r --contains $TAG_COMMIT | head -1 | sed 's/origin\///' | tr -d '[:space:]')
           echo "Found branch containing tag commit: '$TAG_BRANCH'"

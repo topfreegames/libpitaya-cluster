@@ -4,10 +4,9 @@
 [options]
 *:shared=False
 *:fPIC=True
-boost:header_only=True
-protobuf:debug_suffix=False
-openssl:shared=False
-cpprestsdk:with_websockets=False
+protobuf/*:debug_suffix=False
+openssl/*:shared=False
+cpprestsdk/*:with_websockets=False
 
 [conf]
 tools.build:parallel=True

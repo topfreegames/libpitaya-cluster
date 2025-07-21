@@ -87,9 +87,9 @@ jobs:
 
     - name: Optimize Conan
       run: |
-        # Enable parallel builds
-        conan config set general.parallel_download=8
-        conan config set general.parallel_build=4
+        # Show Conan version and available commands
+        conan --version
+        conan config list
         conan profile detect
         conan remote add conancenter https://center.conan.io || true
         conan remote list
@@ -122,31 +122,46 @@ jobs:
 
     - name: Install Dependencies - Ubuntu x86_64
       if: matrix.platform == 'ubuntu-22.04-x86_64'
-      run: conan install . -of build -s build_type=${{env.BUILD_TYPE}} -s arch=${{matrix.arch}} -s:b compiler.cppstd=${{ matrix.cppstd }} -s compiler.cppstd=${{ matrix.cppstd }} -o *:shared=False -o boost:header_only=True -o protobuf:debug_suffix=False -o openssl:shared=False -o cpprestsdk:with_websockets=False --build=missing --build=outdated
+      env:
+        CONAN_PARALLEL_DOWNLOAD: 8
+        CONAN_PARALLEL_BUILD: 4
+      run: conan install . -of build -s build_type=${{env.BUILD_TYPE}} -s arch=${{matrix.arch}} -s:b compiler.cppstd=${{ matrix.cppstd }} -s compiler.cppstd=${{ matrix.cppstd }} -o "*:shared=False" -o "protobuf/*:debug_suffix=False" -o "openssl/*:shared=False" -o "cpprestsdk/*:with_websockets=False" --build=missing --build=outdated
       working-directory: cpp-lib
 
     - name: Install Dependencies - Ubuntu ARMv8
       if: matrix.platform == 'ubuntu-22.04-armv8'
-      run: conan install . -of build -s build_type=${{env.BUILD_TYPE}} -s arch=${{matrix.arch}} -s:b compiler.cppstd=${{ matrix.cppstd }} -s compiler.cppstd=${{ matrix.cppstd }} -o *:shared=False -o boost:header_only=True -o protobuf:debug_suffix=False -o openssl:shared=False -o cpprestsdk:with_websockets=False --build=missing --build=outdated
+      env:
+        CONAN_PARALLEL_DOWNLOAD: 8
+        CONAN_PARALLEL_BUILD: 4
+      run: conan install . -of build -s build_type=${{env.BUILD_TYPE}} -s arch=${{matrix.arch}} -s:b compiler.cppstd=${{ matrix.cppstd }} -s compiler.cppstd=${{ matrix.cppstd }} -o "*:shared=False" -o "protobuf/*:debug_suffix=False" -o "openssl/*:shared=False" -o "cpprestsdk/*:with_websockets=False" --build=missing --build=outdated
       working-directory: cpp-lib
 
     - name: Install Dependencies - Windows x86_64
       if: matrix.platform == 'windows-latest-x86_64'
-      run: conan install . -of build -s build_type=${{env.BUILD_TYPE}} -s arch=${{matrix.arch}} -s:b compiler.cppstd=${{ matrix.cppstd }} -s compiler.cppstd=${{ matrix.cppstd }} -o *:shared=False -o boost:header_only=True -o protobuf:debug_suffix=False -o openssl:shared=False -o cpprestsdk:with_websockets=False --build=missing --build=outdated
+      env:
+        CONAN_PARALLEL_DOWNLOAD: 8
+        CONAN_PARALLEL_BUILD: 4
+      run: conan install . -of build -s build_type=${{env.BUILD_TYPE}} -s arch=${{matrix.arch}} -s:b compiler.cppstd=${{ matrix.cppstd }} -s compiler.cppstd=${{ matrix.cppstd }} -o "*:shared=False" -o "protobuf/*:debug_suffix=False" -o "openssl/*:shared=False" -o "cpprestsdk/*:with_websockets=False" --build=missing --build=outdated
       working-directory: cpp-lib
 
     - name: Install Dependencies - macOS x86_64
       if: matrix.platform == 'macos-latest-x86_64'
+      env:
+        CONAN_PARALLEL_DOWNLOAD: 8
+        CONAN_PARALLEL_BUILD: 4
       run: |
         # macOS-specific flags for Apple Clang 15 compatibility
-        conan install . -of build -s build_type=${{env.BUILD_TYPE}} -s arch=${{matrix.arch}} -s:b compiler.cppstd=${{ matrix.cppstd }} -s compiler.cppstd=${{ matrix.cppstd }} -s:b compiler.libcxx=libc++ -s compiler.libcxx=libc++ -s:b compiler.version=15 -s compiler.version=15 -o *:shared=False -o boost:header_only=True -o protobuf:debug_suffix=False -o openssl:shared=False -o cpprestsdk:with_websockets=False --build=missing --build=outdated
+        conan install . -of build -s build_type=${{env.BUILD_TYPE}} -s arch=${{matrix.arch}} -s:b compiler.cppstd=${{ matrix.cppstd }} -s compiler.cppstd=${{ matrix.cppstd }} -s:b compiler.libcxx=libc++ -s compiler.libcxx=libc++ -s:b compiler.version=15 -s compiler.version=15 -o "*:shared=False" -o "protobuf/*:debug_suffix=False" -o "openssl/*:shared=False" -o "cpprestsdk/*:with_websockets=False" --build=missing --build=outdated
       working-directory: cpp-lib
 
     - name: Install Dependencies - macOS ARMv8
       if: matrix.platform == 'macos-latest-armv8'
+      env:
+        CONAN_PARALLEL_DOWNLOAD: 8
+        CONAN_PARALLEL_BUILD: 4
       run: |
         # macOS-specific flags for Apple Clang 15 compatibility
-        conan install . -of build -s build_type=${{env.BUILD_TYPE}} -s arch=${{matrix.arch}} -s:b compiler.cppstd=${{ matrix.cppstd }} -s compiler.cppstd=${{ matrix.cppstd }} -s:b compiler.libcxx=libc++ -s compiler.libcxx=libc++ -s:b compiler.version=15 -s compiler.version=15 -o *:shared=False -o boost:header_only=True -o protobuf:debug_suffix=False -o openssl:shared=False -o cpprestsdk:with_websockets=False --build=missing --build=outdated
+        conan install . -of build -s build_type=${{env.BUILD_TYPE}} -s arch=${{matrix.arch}} -s:b compiler.cppstd=${{ matrix.cppstd }} -s compiler.cppstd=${{ matrix.cppstd }} -s:b compiler.libcxx=libc++ -s compiler.libcxx=libc++ -s:b compiler.version=15 -s compiler.version=15 -o "*:shared=False" -o "protobuf/*:debug_suffix=False" -o "openssl/*:shared=False" -o "cpprestsdk/*:with_websockets=False" --build=missing --build=outdated
       working-directory: cpp-lib
 
     - name: Configure CMake
@@ -185,7 +200,7 @@ jobs:
 
       - name: Process Libs
         run: |
-          mkdir -p macos-fat macos-arm64 macos-x86_64 linux-x86_64 linux-armv8 windows-x86_64 macos-fat-unity
+          mkdir -p macos-arm64 macos-x86_64 linux-x86_64 linux-armv8 windows-x86_64
 
           # Process macOS ARM64
           if [ -d "prebuilt-libs-macos-latest-armv8" ]; then
@@ -212,14 +227,8 @@ jobs:
             find prebuilt-libs-windows-latest-x86_64 -name "*.dll" -exec cp {} windows-x86_64/ \;
           fi
 
-          # Create fat macOS binary if both architectures are available
-          if [ -f "macos-arm64/libpitaya_cpp.dylib" ] && [ -f "macos-x86_64/libpitaya_cpp.dylib" ]; then
-            lipo -create macos-arm64/libpitaya_cpp.dylib macos-x86_64/libpitaya_cpp.dylib -output macos-fat/libpitaya_cpp.dylib
-            cp macos-fat/libpitaya_cpp.dylib macos-fat-unity/libpitaya_cpp.bundle
-          fi
-
           echo "✅ Processed libraries:"
-          find . -name "*.so" -o -name "*.dylib" -o -name "*.dll" -o -name "*.bundle" | sort
+          find . -name "*.so" -o -name "*.dylib" -o -name "*.dll" | sort
         working-directory: downloaded-artifacts
 
       - name: 'Upload Artifact'
@@ -230,7 +239,6 @@ jobs:
             ./**/*pitaya_cpp.dll
             ./**/*pitaya_cpp.so
             ./**/*pitaya_cpp.dylib
-            ./**/*pitaya_cpp.bundle
           working-directory: downloaded-artifacts
           if-no-files-found: warn
 
