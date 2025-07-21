@@ -12,10 +12,11 @@ PluginImporter:
   validateReferences: 1
   platformData:
   - first:
-      Any: 
+      Linux: 
     second:
       enabled: 1
-      settings: {}
+      settings:
+        CPU: ARM64
   userData: 
   assetBundleName: 
   assetBundleVariant: 
