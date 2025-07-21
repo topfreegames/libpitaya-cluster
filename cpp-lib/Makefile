@@ -73,7 +73,10 @@ build-docker-image:
 	@docker build . -t pitaya-cluster
 
 build-linux-docker:
+	@echo "Building Linux library in Docker container (Ubuntu 22.04) to ensure GLIBC 2.35 compatibility..."
+	@$(MAKE) build-docker-image
 	@docker run -v $(shell pwd):/app -v conan:/home/conan/.conan2/p -ti pitaya-cluster sh -c "cd /app && make build-linux-release"
+	@echo "Linux library built successfully in Docker container"
 
 build-all-mac: build-mac-release build-mac-unity build-linux-docker
 
