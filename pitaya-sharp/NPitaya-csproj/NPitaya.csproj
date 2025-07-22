@@ -34,8 +34,8 @@
     <ItemGroup>
       <Content Include="runtimes/linux-x86_64/libpitaya_cpp.so" PackagePath="runtimes/linux-x86_64/libpitaya_cpp.so" Pack="true" />
       <Content Include="runtimes/linux-armv8/libpitaya_cpp.so" PackagePath="runtimes/linux-armv8/libpitaya_cpp.so" Pack="true" />
-      <Content Include="runtimes/macos-x86_64/libpitaya_cpp.dylib" PackagePath="runtimes/macos-x86_64/libpitaya_cpp.dylib" Pack="true" />
+      <!-- <Content Include="runtimes/macos-x86_64/libpitaya_cpp.dylib" PackagePath="runtimes/macos-x86_64/libpitaya_cpp.dylib" Pack="true" />
       <Content Include="runtimes/macos-arm64/libpitaya_cpp.dylib" PackagePath="runtimes/macos-arm64/libpitaya_cpp.dylib" Pack="true" />
-      <Content Include="runtimes/windows-x86_64/libpitaya_cpp.dll" PackagePath="runtimes/windows-x86_64/libpitaya_cpp.dll" Pack="true" />
+      <Content Include="runtimes/windows-x86_64/libpitaya_cpp.dll" PackagePath="runtimes/windows-x86_64/libpitaya_cpp.dll" Pack="true" /> -->
     </ItemGroup>
 </Project>

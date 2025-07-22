@@ -24,9 +24,9 @@ cp -r pitaya-sharp/NPitaya/* "$PACKAGE_DIR/"
 # Create runtime directories if they don't exist
 mkdir -p "$PACKAGE_DIR/Runtime/Plugins/runtimes/linux-x86_64"
 mkdir -p "$PACKAGE_DIR/Runtime/Plugins/runtimes/linux-armv8"
-mkdir -p "$PACKAGE_DIR/Runtime/Plugins/runtimes/macos-x86_64"
-mkdir -p "$PACKAGE_DIR/Runtime/Plugins/runtimes/macos-arm64"
-mkdir -p "$PACKAGE_DIR/Runtime/Plugins/runtimes/windows-x86_64"
+# mkdir -p "$PACKAGE_DIR/Runtime/Plugins/runtimes/macos-x86_64"
+# mkdir -p "$PACKAGE_DIR/Runtime/Plugins/runtimes/macos-arm64"
+# mkdir -p "$PACKAGE_DIR/Runtime/Plugins/runtimes/windows-x86_64"
 
 # Copy built libraries from artifacts
 echo "Copying built libraries..."
@@ -42,22 +42,22 @@ if [ -f "downloaded-artifacts/linux-armv8/libpitaya_cpp.so" ]; then
     cp downloaded-artifacts/linux-armv8/libpitaya_cpp.so "$PACKAGE_DIR/Runtime/Plugins/runtimes/linux-armv8/"
 fi
 
-# macOS libraries
-if [ -f "downloaded-artifacts/macos-x86_64/libpitaya_cpp.dylib" ]; then
-    echo "  - macOS x86_64 library"
-    cp downloaded-artifacts/macos-x86_64/libpitaya_cpp.dylib "$PACKAGE_DIR/Runtime/Plugins/runtimes/macos-x86_64/"
-fi
+# # macOS libraries
+# if [ -f "downloaded-artifacts/macos-x86_64/libpitaya_cpp.dylib" ]; then
+#     echo "  - macOS x86_64 library"
+#     cp downloaded-artifacts/macos-x86_64/libpitaya_cpp.dylib "$PACKAGE_DIR/Runtime/Plugins/runtimes/macos-x86_64/"
+# fi
 
-if [ -f "downloaded-artifacts/macos-arm64/libpitaya_cpp.dylib" ]; then
-    echo "  - macOS ARM64 library"
-    cp downloaded-artifacts/macos-arm64/libpitaya_cpp.dylib "$PACKAGE_DIR/Runtime/Plugins/runtimes/macos-arm64/"
-fi
+# if [ -f "downloaded-artifacts/macos-arm64/libpitaya_cpp.dylib" ]; then
+#     echo "  - macOS ARM64 library"
+#     cp downloaded-artifacts/macos-arm64/libpitaya_cpp.dylib "$PACKAGE_DIR/Runtime/Plugins/runtimes/macos-arm64/"
+# fi
 
-# Windows library
-if [ -f "downloaded-artifacts/windows-x86_64/libpitaya_cpp.dll" ]; then
-    echo "  - Windows x86_64 library"
-    cp downloaded-artifacts/windows-x86_64/libpitaya_cpp.dll "$PACKAGE_DIR/Runtime/Plugins/runtimes/windows-x86_64/"
-fi
+# # Windows library
+# if [ -f "downloaded-artifacts/windows-x86_64/libpitaya_cpp.dll" ]; then
+#     echo "  - Windows x86_64 library"
+#     cp downloaded-artifacts/windows-x86_64/libpitaya_cpp.dll "$PACKAGE_DIR/Runtime/Plugins/runtimes/windows-x86_64/"
+# fi
 
 # Update package.json version
 echo "Updating package.json version to $VERSION..."
@@ -96,9 +96,9 @@ check_library() {
 
 check_library "$PACKAGE_DIR/Runtime/Plugins/runtimes/linux-x86_64/libpitaya_cpp.so" "Linux x86_64"
 check_library "$PACKAGE_DIR/Runtime/Plugins/runtimes/linux-armv8/libpitaya_cpp.so" "Linux ARMv8"
-check_library "$PACKAGE_DIR/Runtime/Plugins/runtimes/macos-x86_64/libpitaya_cpp.dylib" "macOS x86_64"
-check_library "$PACKAGE_DIR/Runtime/Plugins/runtimes/macos-arm64/libpitaya_cpp.dylib" "macOS ARM64"
-check_library "$PACKAGE_DIR/Runtime/Plugins/runtimes/windows-x86_64/libpitaya_cpp.dll" "Windows x86_64"
+# check_library "$PACKAGE_DIR/Runtime/Plugins/runtimes/macos-x86_64/libpitaya_cpp.dylib" "macOS x86_64"
+# check_library "$PACKAGE_DIR/Runtime/Plugins/runtimes/macos-arm64/libpitaya_cpp.dylib" "macOS ARM64"
+# check_library "$PACKAGE_DIR/Runtime/Plugins/runtimes/windows-x86_64/libpitaya_cpp.dll" "Windows x86_64"
 
 if [ $MISSING_LIBS -gt 0 ]; then
     echo ""
