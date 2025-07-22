@@ -49,3 +49,46 @@ nuget-pack:
 
 nuget-push:
 	@nuget push NugetOutput/*.nupkg $(NUGET_API_KEY) -Source nuget.org
+
+# Release commands
+.PHONY: check-gh install-gh signin-gh release
+
+check-gh:
+	@echo "🔍 Checking GitHub CLI installation..."
+	@if ! command -v gh >/dev/null 2>&1; then \
+		echo "❌ GitHub CLI (gh) is not installed."; \
+		echo "📦 Please install it first:"; \
+		echo "   macOS: brew install gh"; \
+		echo "   Ubuntu/Debian: sudo apt install gh"; \
+		echo "   Windows: winget install GitHub.cli"; \
+		echo "   Or visit: https://cli.github.com/"; \
+		exit 1; \
+	fi
+	@echo "✅ GitHub CLI is installed"
+
+signin-gh: check-gh
+	@echo "🔐 Checking GitHub CLI authentication..."
+	@if ! gh auth status >/dev/null 2>&1; then \
+		echo "❌ Not signed in to GitHub CLI."; \
+		echo "🔑 Please sign in:"; \
+		echo "   gh auth login"; \
+		exit 1; \
+	fi
+	@echo "✅ GitHub CLI is authenticated"
+
+release: signin-gh
+	@if [ -z "$(VERSION)" ]; then \
+		echo "❌ VERSION is required. Usage: make release VERSION=v1.0.7"; \
+		exit 1; \
+	fi
+	@echo "🚀 Starting release process for version $(VERSION)..."
+	@echo "📝 Updating version references..."
+	@VERSION=$(VERSION) ./update-version.sh
+	@echo "📋 Creating GitHub release..."
+	@if [ "$(PRERELEASE)" = "true" ]; then \
+		gh release create $(VERSION) --title "Release $(VERSION)" --generate-notes --prerelease --target $(shell git branch --show-current); \
+	else \
+		gh release create $(VERSION) --title "Release $(VERSION)" --generate-notes --target $(shell git branch --show-current); \
+	fi
+	@echo "✅ Release $(VERSION) created successfully!"
+	@echo "🎉 The GitHub Actions workflow will now build and publish the package automatically."

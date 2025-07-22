@@ -1,4 +1,4 @@
-name: Build NPitaya Native Libraries
+name: Build and Release NPitaya Native Libraries
 on:
   push:
     tags:
@@ -8,36 +8,37 @@ env:
   BUILD_TYPE: Release
 
 jobs:
-  check-changes:
-    name: Check for relevant changes
+  cache-check:
+    name: Check consolidated cache
     runs-on: ubuntu-latest
     outputs:
-      has-changes: ${{ steps.changes.outputs.has-changes }}
+      cache-hit: ${{ steps.cache-check.outputs.cache-hit }}
     steps:
-      - uses: actions/checkout@v4
+      - name: Restore consolidated libraries cache
+        id: cache-consolidated-restore
+        uses: actions/cache/restore@v3
         with:
-          fetch-depth: 0
+          path: downloaded-artifacts
+          key: compiled-libs-${{ github.ref_name }}-${{ hashFiles('cpp-lib/conanfile.py', 'cpp-lib/conanprofile', 'cpp-lib/CMakeLists.txt', 'cpp-lib/src/**/*', 'cpp-lib/include/**/*', 'vendor/**/*') }}
+          restore-keys: |
+            compiled-libs-${{ github.ref_name }}-
+            compiled-libs-
 
-      - name: Check for changes in cpp-lib or vendor
-        id: changes
+      - name: Check if cache was restored
+        id: cache-check
         run: |
-          # Get the previous tag or commit
-          PREVIOUS_TAG=$(git describe --tags --abbrev=0 HEAD~1 2>/dev/null || echo "HEAD~1")
-          echo "Previous tag: $PREVIOUS_TAG"
-
-          # Check if any files in cpp-lib or vendor have changed since the previous tag
-          if git diff --name-only $PREVIOUS_TAG | grep -E '^(cpp-lib/|vendor/)' > /dev/null; then
-            echo "🔄 Changes detected in cpp-lib or vendor - building required"
-            echo "has-changes=true" >> $GITHUB_OUTPUT
+          if [ -d "downloaded-artifacts" ] && [ "$(ls -A downloaded-artifacts 2>/dev/null)" ]; then
+            echo "✅ Consolidated cache found - skipping build"
+            echo "cache-hit=true" >> $GITHUB_OUTPUT
           else
-            echo "✅ No changes in cpp-lib or vendor - skipping build"
-            echo "has-changes=false" >> $GITHUB_OUTPUT
+            echo "❌ No consolidated cache found - will run build"
+            echo "cache-hit=false" >> $GITHUB_OUTPUT
           fi
 
   build:
     name: Build native libraries
-    needs: check-changes
-    if: needs.check-changes.outputs.has-changes == 'true'
+    needs: cache-check
+    if: needs.cache-check.outputs.cache-hit != 'true'
     runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
@@ -49,6 +50,13 @@ jobs:
             preset: npitaya-release
             cppstd: gnu17
             runner: ubuntu-22.04
+            cmake_path: build/_builds/Release
+          - platform: ubuntu-22.04-armv8
+            os: ubuntu-22.04
+            arch: armv8
+            preset: npitaya-release
+            cppstd: gnu17
+            runner: ubuntu-22.04-arm
             cmake_path: build/_builds/Release
           - platform: windows-latest-x86_64
             os: windows-latest
@@ -71,13 +79,6 @@ jobs:
             cppstd: gnu17
             runner: macos-latest
             cmake_path: build/_builds/Release
-          - platform: ubuntu-22.04-armv8
-            os: ubuntu-22.04
-            arch: armv8
-            preset: npitaya-release
-            cppstd: gnu17
-            runner: ubuntu-22.04-arm
-            cmake_path: build/_builds/Release
     steps:
     - name: Install Conan
       id: conan
@@ -99,13 +100,13 @@ jobs:
         submodules: recursive
 
     - name: Install build tools (Linux)
-      if: matrix.platform == 'ubuntu-22.04-x86_64' || matrix.platform == 'ubuntu-22.04-armv8'
+      if: matrix.os == 'ubuntu-22.04'
       run: |
         sudo apt-get update
         sudo apt-get install -y cmake make g++ gcc
 
     - name: Install Numpy for macOS builds
-      if: matrix.platform == 'macos-latest-x86_64' || matrix.platform == 'macos-latest-armv8'
+      if: matrix.os == 'macos-latest'
       run: pip3 install numpy --break-system-packages
 
     - name: Using the builtin GitHub Cache Action for .conan
@@ -120,42 +121,24 @@ jobs:
           ${{ runner.os }}-${{ matrix.arch }}-builder-${{ env.cache-name }}-
           ${{ runner.os }}-${{ matrix.arch }}-builder-
 
-    - name: Install Dependencies - Ubuntu x86_64
-      if: matrix.platform == 'ubuntu-22.04-x86_64'
+    - name: Install Conan Dependencies - Ubuntu
+      if: matrix.os == 'ubuntu-22.04'
       env:
         CONAN_PARALLEL_DOWNLOAD: 8
         CONAN_PARALLEL_BUILD: 4
       run: conan install . -of build -s build_type=${{env.BUILD_TYPE}} -s arch=${{matrix.arch}} -s:b compiler.cppstd=${{ matrix.cppstd }} -s compiler.cppstd=${{ matrix.cppstd }} -o "*:shared=False" -o "protobuf/*:debug_suffix=False" -o "openssl/*:shared=False" -o "cpprestsdk/*:with_websockets=False" --build=missing --build=outdated
       working-directory: cpp-lib
 
-    - name: Install Dependencies - Ubuntu ARMv8
-      if: matrix.platform == 'ubuntu-22.04-armv8'
+    - name: Install Conan Dependencies - Windows
+      if: matrix.os == 'windows-latest'
       env:
         CONAN_PARALLEL_DOWNLOAD: 8
         CONAN_PARALLEL_BUILD: 4
       run: conan install . -of build -s build_type=${{env.BUILD_TYPE}} -s arch=${{matrix.arch}} -s:b compiler.cppstd=${{ matrix.cppstd }} -s compiler.cppstd=${{ matrix.cppstd }} -o "*:shared=False" -o "protobuf/*:debug_suffix=False" -o "openssl/*:shared=False" -o "cpprestsdk/*:with_websockets=False" --build=missing --build=outdated
       working-directory: cpp-lib
 
-    - name: Install Dependencies - Windows x86_64
-      if: matrix.platform == 'windows-latest-x86_64'
-      env:
-        CONAN_PARALLEL_DOWNLOAD: 8
-        CONAN_PARALLEL_BUILD: 4
-      run: conan install . -of build -s build_type=${{env.BUILD_TYPE}} -s arch=${{matrix.arch}} -s:b compiler.cppstd=${{ matrix.cppstd }} -s compiler.cppstd=${{ matrix.cppstd }} -o "*:shared=False" -o "protobuf/*:debug_suffix=False" -o "openssl/*:shared=False" -o "cpprestsdk/*:with_websockets=False" --build=missing --build=outdated
-      working-directory: cpp-lib
-
-    - name: Install Dependencies - macOS x86_64
-      if: matrix.platform == 'macos-latest-x86_64'
-      env:
-        CONAN_PARALLEL_DOWNLOAD: 8
-        CONAN_PARALLEL_BUILD: 4
-      run: |
-        # macOS-specific flags for Apple Clang 15 compatibility
-        conan install . -of build -s build_type=${{env.BUILD_TYPE}} -s arch=${{matrix.arch}} -s:b compiler.cppstd=${{ matrix.cppstd }} -s compiler.cppstd=${{ matrix.cppstd }} -s:b compiler.libcxx=libc++ -s compiler.libcxx=libc++ -s:b compiler.version=15 -s compiler.version=15 -o "*:shared=False" -o "protobuf/*:debug_suffix=False" -o "openssl/*:shared=False" -o "cpprestsdk/*:with_websockets=False" --build=missing --build=outdated
-      working-directory: cpp-lib
-
-    - name: Install Dependencies - macOS ARMv8
-      if: matrix.platform == 'macos-latest-armv8'
+    - name: Install Conan Dependencies - macOS
+      if: matrix.os == 'macos-latest'
       env:
         CONAN_PARALLEL_DOWNLOAD: 8
         CONAN_PARALLEL_BUILD: 4
@@ -186,31 +169,40 @@ jobs:
           cpp-lib/build/**/*pitaya_cpp.dll
           cpp-lib/build/**/*pitaya_cpp.so
           cpp-lib/build/**/*pitaya_cpp.dylib
-          cpp-lib/build/**/*pitaya_cpp.bundle
 
   consolidate:
     name: Consolidate all libs into single package
-    needs: build
+    needs: [cache-check, build]
     runs-on: ubuntu-latest
     steps:
       - name: Download platform specific artifacts
+        if: needs.cache-check.outputs.cache-hit != 'true'
         uses: actions/download-artifact@v4
         with:
           path: downloaded-artifacts
 
+      - name: Restore cached artifacts (cache hit)
+        if: needs.cache-check.outputs.cache-hit == 'true'
+        uses: actions/cache/restore@v3
+        with:
+          path: downloaded-artifacts
+          key: compiled-libs-${{ github.ref_name }}-${{ hashFiles('cpp-lib/conanfile.py', 'cpp-lib/conanprofile', 'cpp-lib/CMakeLists.txt', 'cpp-lib/src/**/*', 'cpp-lib/include/**/*', 'vendor/**/*') }}
+
       - name: Process Libs
+        if: needs.cache-check.outputs.cache-hit != 'true'
         run: |
-          mkdir -p macos-arm64 macos-x86_64 linux-x86_64 linux-armv8 windows-x86_64
+          # mkdir -p macos-arm64 macos-x86_64 linux-x86_64 linux-armv8 windows-x86_64
+          mkdir -p linux-x86_64 linux-armv8
 
-          # Process macOS ARM64
-          if [ -d "prebuilt-libs-macos-latest-armv8" ]; then
-            find prebuilt-libs-macos-latest-armv8 -name "*.dylib" -exec cp {} macos-arm64/ \;
-          fi
+          # # Process macOS ARM64
+          # if [ -d "prebuilt-libs-macos-latest-armv8" ]; then
+          #   find prebuilt-libs-macos-latest-armv8 -name "*.dylib" -exec cp {} macos-arm64/ \;
+          # fi
 
-          # Process macOS x86_64
-          if [ -d "prebuilt-libs-macos-latest-x86_64" ]; then
-            find prebuilt-libs-macos-latest-x86_64 -name "*.dylib" -exec cp {} macos-x86_64/ \;
-          fi
+          # # Process macOS x86_64
+          # if [ -d "prebuilt-libs-macos-latest-x86_64" ]; then
+          #   find prebuilt-libs-macos-latest-x86_64 -name "*.dylib" -exec cp {} macos-x86_64/ \;
+          # fi
 
           # Process Linux x86_64
           if [ -d "prebuilt-libs-ubuntu-22.04-x86_64" ]; then
@@ -222,10 +214,10 @@ jobs:
             find prebuilt-libs-ubuntu-22.04-armv8 -name "*.so" -exec cp {} linux-armv8/ \;
           fi
 
-          # Process Windows x86_64
-          if [ -d "prebuilt-libs-windows-latest-x86_64" ]; then
-            find prebuilt-libs-windows-latest-x86_64 -name "*.dll" -exec cp {} windows-x86_64/ \;
-          fi
+          # # Process Windows x86_64
+          # if [ -d "prebuilt-libs-windows-latest-x86_64" ]; then
+          #   find prebuilt-libs-windows-latest-x86_64 -name "*.dll" -exec cp {} windows-x86_64/ \;
+          # fi
 
           echo "✅ Processed libraries:"
           find . -name "*.so" -o -name "*.dylib" -o -name "*.dll" | sort
@@ -242,9 +234,58 @@ jobs:
           working-directory: downloaded-artifacts
           if-no-files-found: warn
 
-      - name: Cache artifacts
+      - name: Cache consolidated artifacts
+        if: needs.cache-check.outputs.cache-hit != 'true'
         uses: actions/cache/save@v3
         with:
           path: downloaded-artifacts
-          key: compiled-libs-${{ hashFiles('cpp-lib/**/*', 'vendor/**/*') }}
+          key: compiled-libs-${{ github.ref_name }}-${{ hashFiles('cpp-lib/conanfile.py', 'cpp-lib/conanprofile', 'cpp-lib/CMakeLists.txt', 'cpp-lib/src/**/*', 'cpp-lib/include/**/*', 'vendor/**/*') }}
           if-no-files-found: error
+
+  package:
+    name: Package
+    needs: consolidate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Download artifacts from consolidate step
+        uses: actions/download-artifact@v4
+        with:
+          name: prebuilt-libs-all-archs
+          path: downloaded-artifacts
+
+      - name: Package
+        run: VERSION=${{ github.ref_name }} ./package.sh
+
+      - name: Upload package directory
+        uses: actions/upload-artifact@v4
+        with:
+          name: npm-package
+          path: package/
+          retention-days: 1
+
+  publish:
+    name: Publish
+    needs: package
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download package directory
+        uses: actions/download-artifact@v4
+        with:
+          name: npm-package
+          path: package
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - run: npm install -g npm-cli-login
+      - run: npm-cli-login login -u "${{ secrets.ARTIFACTORY_USER }}" -p "${{ secrets.ARTIFACTORY_PASS }}" -e "tools-team@tfgco.com" -r "https://artifactory.tfgco.com/artifactory/api/npm/npm-local" -s @wls
+      - run: npm config set registry https://artifactory.tfgco.com/artifactory/api/npm/npm-local/
+
+      - name: Publish to artifactory
+        run: cd package && npm publish

@@ -6,11 +6,14 @@ set -e
 # Check if VERSION is provided
 if [ -z "$VERSION" ]; then
     echo "Error: VERSION environment variable is required"
-    echo "Usage: VERSION=1.0.0 ./package.sh"
+    echo "Usage: VERSION=v1.0.0 ./package.sh"
+    echo "       VERSION=1.0.0 ./package.sh"
     exit 1
 fi
 
-echo "=== Packaging NPitaya version $VERSION ==="
+# Strip 'v' prefix if present for NPM package
+VERSION_CLEAN=$(echo "$VERSION" | sed 's/^v//')
+echo "=== Packaging NPitaya version $VERSION_CLEAN (from $VERSION) ==="
 
 # Create package directory
 PACKAGE_DIR="package"
@@ -60,13 +63,13 @@ if [ -f "downloaded-artifacts/windows-x86_64/libpitaya_cpp.dll" ]; then
 fi
 
 # Update package.json version
-echo "Updating package.json version to $VERSION..."
+echo "Updating package.json version to $VERSION_CLEAN..."
 if [[ "$OSTYPE" == "darwin"* ]]; then
     # macOS requires an empty string for -i
-    sed -i '' "s/\"version\": \".*\"/\"version\": \"$VERSION\"/" "$PACKAGE_DIR/package.json"
+    sed -i '' "s/\"version\": \".*\"/\"version\": \"$VERSION_CLEAN\"/" "$PACKAGE_DIR/package.json"
 else
     # Linux
-    sed -i "s/\"version\": \".*\"/\"version\": \"$VERSION\"/" "$PACKAGE_DIR/package.json"
+    sed -i "s/\"version\": \".*\"/\"version\": \"$VERSION_CLEAN\"/" "$PACKAGE_DIR/package.json"
 fi
 
 # Verify the package structure
@@ -109,7 +112,7 @@ fi
 echo ""
 echo "=== Package Ready ==="
 echo "Package created in: $PACKAGE_DIR"
-echo "Version: $VERSION"
+echo "Version: $VERSION_CLEAN"
 echo ""
 echo "To publish:"
 echo "cd $PACKAGE_DIR && npm publish"
