@@ -88,10 +88,11 @@ This command will:
 1. ✅ Check if GitHub CLI is installed
 2. ✅ Verify GitHub CLI authentication
 3. ✅ Update version references in all files
-4. ✅ Commit and push changes to current branch
-5. ✅ Create and push git tag `v1.0.7`
-6. ✅ Create GitHub release with auto-generated notes
-7. ✅ Trigger automated build and publish workflow
+4. ✅ Commit changes only if files were actually modified
+5. ✅ Push changes to current branch
+6. ✅ Create and push git tag `v1.0.7`
+7. ✅ Create GitHub release with auto-generated notes
+8. ✅ Trigger automated build and publish workflow
 
 #### Step 3: Monitor the Process
 - Check the GitHub Actions tab to monitor the build and publish process
@@ -219,6 +220,42 @@ The `package.sh` script performs the following operations:
 ```bash
 VERSION=v1.0.7 ./package.sh
 ```
+
+## Smart Commit Behavior
+
+The release process includes intelligent commit handling:
+
+### How It Works
+1. **Checks for Changes**: After updating version references, checks if any files were actually modified
+2. **Conditional Commit**: Only commits if changes were detected
+3. **Skip Logic**: If all version files are already up to date, skips the commit step
+
+### Scenarios
+
+#### Scenario 1: Developer Already Updated Version
+```bash
+# Developer manually updated version
+VERSION=v1.0.7 ./update-version.sh
+git add . && git commit -m "Update version to v1.0.7"
+make release VERSION=v1.0.7
+```
+**Result**: ✅ Script detects no changes, skips commit, proceeds to tag and release
+
+#### Scenario 2: Developer Forgot to Update Version
+```bash
+# Developer forgot to update version (still 1.0.6)
+make release VERSION=v1.0.7
+```
+**Result**: ✅ Script detects changes, commits version bump, then proceeds to tag and release
+
+#### Scenario 3: Mixed Version References
+```bash
+# Some files updated, others not
+# version.txt: 1.0.7
+# package.json: 1.0.6
+make release VERSION=v1.0.7
+```
+**Result**: ✅ Script detects mismatched versions, updates all files, commits changes
 
 ## Workflow Optimization
 

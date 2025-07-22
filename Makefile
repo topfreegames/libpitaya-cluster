@@ -84,15 +84,6 @@ release: signin-gh
 	@echo "🚀 Starting release process for version $(VERSION)..."
 	@echo "📝 Updating version references..."
 	@VERSION=$(VERSION) ./update-version.sh
-	@echo "📦 Staging changes..."
-	@git add -u
-	@echo "💾 Committing version bump..."
-	@git commit -m "chore: bump version to v$(VERSION)"
-	@echo "📤 Pushing to remote..."
-	@git push origin HEAD
-	@echo "🏷️  Creating tag v$(VERSION)..."
-	@git tag v$(VERSION)
-	@git push origin v$(VERSION)
 	@echo "📋 Creating GitHub release..."
 	@gh release create v$(VERSION) --title "Release v$(VERSION)" --generate-notes
 	@echo "✅ Release v$(VERSION) created successfully!"

@@ -90,3 +90,16 @@ echo "✅ pitaya-sharp/NPitaya/package.json"
 echo "✅ pitaya-sharp/NPitaya-csproj/NPitaya.csproj"
 echo "✅ unity/NPitaya.nuspec"
 echo ""
+
+# Check if there are any changes to commit
+echo "Checking for changes to commit..."
+if git diff --quiet; then
+    echo "✅ No changes detected - version files are already up to date"
+else
+    echo "📦 Changes detected - staging files..."
+    git add -u
+    echo "💾 Committing version bump..."
+    git commit -m "chore: bump version to v$VERSION_CLEAN"
+    echo "📤 Pushing to remote..."
+    git push origin HEAD
+fi
