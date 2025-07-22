@@ -49,3 +49,51 @@ nuget-pack:
 
 nuget-push:
 	@nuget push NugetOutput/*.nupkg $(NUGET_API_KEY) -Source nuget.org
+
+# Release commands
+.PHONY: check-gh install-gh signin-gh release
+
+check-gh:
+	@echo "🔍 Checking GitHub CLI installation..."
+	@if ! command -v gh >/dev/null 2>&1; then \
+		echo "❌ GitHub CLI (gh) is not installed."; \
+		echo "📦 Please install it first:"; \
+		echo "   macOS: brew install gh"; \
+		echo "   Ubuntu/Debian: sudo apt install gh"; \
+		echo "   Windows: winget install GitHub.cli"; \
+		echo "   Or visit: https://cli.github.com/"; \
+		exit 1; \
+	fi
+	@echo "✅ GitHub CLI is installed"
+
+signin-gh: check-gh
+	@echo "🔐 Checking GitHub CLI authentication..."
+	@if ! gh auth status >/dev/null 2>&1; then \
+		echo "❌ Not signed in to GitHub CLI."; \
+		echo "🔑 Please sign in:"; \
+		echo "   gh auth login"; \
+		exit 1; \
+	fi
+	@echo "✅ GitHub CLI is authenticated"
+
+release: signin-gh
+	@if [ -z "$(VERSION)" ]; then \
+		echo "❌ VERSION is required. Usage: make release VERSION=v1.0.7"; \
+		exit 1; \
+	fi
+	@echo "🚀 Starting release process for version $(VERSION)..."
+	@echo "📝 Updating version references..."
+	@VERSION=$(VERSION) ./update-version.sh
+	@echo "📦 Staging changes..."
+	@git add -u
+	@echo "💾 Committing version bump..."
+	@git commit -m "chore: bump version to v$(VERSION)"
+	@echo "📤 Pushing to remote..."
+	@git push origin HEAD
+	@echo "🏷️  Creating tag v$(VERSION)..."
+	@git tag v$(VERSION)
+	@git push origin v$(VERSION)
+	@echo "📋 Creating GitHub release..."
+	@gh release create v$(VERSION) --title "Release v$(VERSION)" --generate-notes
+	@echo "✅ Release v$(VERSION) created successfully!"
+	@echo "🎉 The GitHub Actions workflow will now build and publish the package automatically."

@@ -2,70 +2,133 @@
 
 ## Overview
 
-This document describes the automated release process for NPitaya packages. The release workflow is triggered when a new tag is pushed to the repository and reuses the existing build artifacts from the `cmake.yml` workflow.
+This document describes the automated release process for NPitaya packages. The release workflow is triggered when a new tag is pushed to the repository and automatically builds, packages, and publishes the package to Artifactory.
 
-## Automated Release Options
+## Release Methods
 
-### Option 1: Fully Automated (Recommended)
-Use the `release-with-bump.yml` workflow which automatically:
-1. Checks if version has already been updated by developer
-2. Updates version references only if needed
-3. Commits changes to master (only if version was updated)
-4. Packages and publishes to Artifactory
+### Method 1: Make Command (Recommended)
+Use the `make release` command which automatically:
+1. Checks GitHub CLI installation and authentication
+2. Updates version references across all files
+3. Commits and pushes changes to the current branch
+4. Creates a git tag
+5. Creates a GitHub release with auto-generated notes
+6. Triggers the automated build and publish workflow
 
-### Option 2: PR-Based Version Bump
-Use the `bump-version.yml` workflow which:
-1. Creates a PR with version updates
-2. Requires manual merge
-3. Then run the release workflow
+### Method 2: Manual Process
+Manually update versions, create tags, and trigger releases through the GitHub UI.
 
-### Option 3: Manual Version Update
-Manually update versions and then run the release workflow.
+## Prerequisites
+
+### GitHub CLI Installation
+The recommended release method requires GitHub CLI (`gh`). If not installed:
+
+**macOS:**
+```bash
+brew install gh
+```
+
+**Ubuntu/Debian:**
+```bash
+sudo apt install gh
+```
+
+**Windows:**
+```bash
+winget install GitHub.cli
+```
+
+**Or download from:** https://cli.github.com/
+
+### GitHub CLI Authentication
+After installation, authenticate with GitHub:
+
+```bash
+gh auth login
+```
+
+Follow the prompts to complete authentication.
+
+### Repository Secrets
+The following secrets must be configured in the GitHub repository:
+
+- `ARTIFACTORY_USER`: Artifactory username
+- `ARTIFACTORY_PASS`: Artifactory password
 
 ## Release Workflow
 
-### Prerequisites
-Before creating a release, ensure that:
-1. The latest build has completed successfully (check GitHub Actions)
-2. The `prebuilt-libs-all-archs` artifact is available from the latest build
+### Automated Workflow Process
+The `build-and-release.yml` workflow performs the following steps:
+
+1. **Cache Check**: Checks if consolidated libraries are cached (skips build if available)
+2. **Build**: Builds native libraries for all supported platforms (if cache miss)
+3. **Consolidate**: Processes and consolidates libraries from all platforms
+4. **Package**: Creates the NPM package with the correct version
+5. **Publish**: Publishes the package to Artifactory
 
 ### Trigger
-The release workflow is triggered automatically when a tag is pushed:
+The release workflow is triggered automatically when a tag is pushed to the repository.
 
+## Release Process
+
+### Method 1: Make Command (Recommended)
+
+#### Step 1: Ensure Build is Ready
+Before creating a release, make sure your changes are ready:
+1. All code changes are committed and pushed
+2. Tests pass locally
+3. You're on the correct branch
+
+#### Step 2: Run the Release Command
 ```bash
-git tag v1.0.7
-git push origin v1.0.7
+make release VERSION=v1.0.7
 ```
 
-### Process
+This command will:
+1. ✅ Check if GitHub CLI is installed
+2. ✅ Verify GitHub CLI authentication
+3. ✅ Update version references in all files
+4. ✅ Commit and push changes to current branch
+5. ✅ Create and push git tag `v1.0.7`
+6. ✅ Create GitHub release with auto-generated notes
+7. ✅ Trigger automated build and publish workflow
 
-#### Option 1: Fully Automated Release
-The `release-with-bump.yml` workflow performs the following steps:
+#### Step 3: Monitor the Process
+- Check the GitHub Actions tab to monitor the build and publish process
+- The package will be automatically published to Artifactory
 
-1. **Version Check**: Checks if the version in `cpp-lib/version.txt` matches the tag
-2. **Conditional Version Bump**: Updates version references only if they don't match
-3. **Conditional Commit**: Commits changes to master only if version was updated
-4. **Download Artifacts**: Downloads the latest `prebuilt-libs-all-archs` artifact
-5. **Package Preparation**: Runs `package.sh` script to prepare the NPM package
-6. **Publish**: Publishes the package to Artifactory
+### Method 2: Manual Process
 
-#### Option 2: PR-Based Release
-The `bump-version.yml` workflow:
-1. Creates a PR with version updates
-2. Requires manual review and merge
-3. After merge, run the release workflow manually
+#### Step 1: Update Version References
+```bash
+VERSION=v1.0.7 ./update-version.sh
+```
 
-#### Option 3: Manual Release
-1. **Update Version References**: Run `VERSION=1.0.7 ./update-version.sh`
-2. **Commit Changes**: `git add . && git commit -m "Update version to 1.0.7"`
-3. **Create Tag**: `git tag v1.0.7 && git push origin v1.0.7`
-4. **Monitor Release**: The release workflow will package and publish automatically
+#### Step 2: Commit and Push Changes
+```bash
+git add .
+git commit -m "chore: update version to v1.0.7"
+git push origin HEAD
+```
+
+#### Step 3: Create Tag and Release
+```bash
+# Create and push tag
+git tag v1.0.7
+git push origin v1.0.7
+
+# Create GitHub release (if gh is available)
+gh release create v1.0.7 --title "Release v1.0.7" --generate-notes
+```
+
+#### Step 4: Monitor Release
+- Check the GitHub Actions tab to monitor the release process
+- The package will be automatically published to Artifactory
 
 ## Build Workflow
 
-The build workflow (`.github/workflows/cmake.yml`) runs on:
-- Push to master branch
-- Pull requests to master branch
+The build workflow (`.github/workflows/build-and-release.yml`) runs on:
+- Tag push (automatically triggered by release process)
 
 This workflow builds native libraries for all supported platforms:
 - Linux x86_64 (Ubuntu 22.04)
@@ -74,7 +137,10 @@ This workflow builds native libraries for all supported platforms:
 - macOS ARM64
 - Windows x86_64
 
-And creates a consolidated artifact: `prebuilt-libs-all-archs`
+The workflow includes intelligent caching:
+- **Conan Cache**: Caches build dependencies per platform
+- **Consolidated Cache**: Caches processed libraries (skips build if no changes)
+- **Smart Invalidation**: Cache invalidates when cpp-lib/vendor files change
 
 ## Package Structure
 
@@ -100,72 +166,44 @@ package/
 │   └── ... (other Unity package files)
 ```
 
-## Prerequisites
+### NPM Version Format
+Versions should follow semantic versioning:
+- `1.0.7` (stable release)
+- `1.0.8-rc1` (release candidate)
+- `2.0.0-beta1` (beta release)
 
-### Repository Secrets
-The following secrets must be configured in the GitHub repository:
+The `v` prefix is removed for NPM release
 
-- `ARTIFACTORY_USER`: Artifactory username
-- `ARTIFACTORY_PASS`: Artifactory password
+## Make Commands
 
-### Tag Format
-Tags should follow semantic versioning:
-- `v1.0.7` (stable release)
-- `v1.0.8-rc1` (release candidate)
-- `v2.0.0-beta1` (beta release)
+### Available Commands
 
-## Release Process
+#### `make check-gh`
+Checks if GitHub CLI is installed and provides installation instructions if not.
 
-### Step 1: Ensure Build is Ready
-Before creating a release, make sure the latest build has completed successfully:
+#### `make signin-gh`
+Checks GitHub CLI authentication and prompts to sign in if needed.
 
-1. Check the GitHub Actions tab
-2. Verify that the `cmake.yml` workflow completed successfully
-3. Confirm that the `prebuilt-libs-all-archs` artifact was created
+#### `make release VERSION=x.y.z`
+Complete release process:
+- Checks GitHub CLI installation and authentication
+- Updates version references in all files
+- Commits and pushes changes
+- Creates git tag
+- Creates GitHub release
+- Triggers automated build and publish
 
-### Step 2: Choose Release Method
-
-#### Method A: Fully Automated (Recommended)
+### Examples
 ```bash
-# Simply create and push a tag
-git tag v1.0.7
-git push origin v1.0.7
+# Check GitHub CLI setup
+make check-gh
+
+# Sign in to GitHub CLI
+make signin-gh
+
+# Create a release candidate
+make release VERSION=v1.0.8-rc1
 ```
-The workflow will automatically:
-- Check if version needs updating
-- Update version references only if needed
-- Commit changes to master (only if version was updated)
-- Package and publish to Artifactory
-
-#### Method B: PR-Based
-```bash
-# Create tag to trigger PR creation
-git tag v1.0.7
-git push origin v1.0.7
-# Review and merge the PR
-# Then manually trigger release workflow
-```
-
-#### Method C: Manual
-```bash
-# Update versions manually
-VERSION=1.0.7 ./update-version.sh
-
-# Review changes
-git diff
-
-# Commit version updates
-git add .
-git commit -m "Update version to 1.0.7"
-
-# Create and push tag
-git tag v1.0.7
-git push origin v1.0.7
-```
-
-### Step 3: Monitor Release
-- Check the GitHub Actions tab to monitor the release process
-- The package will be automatically published to Artifactory
 
 ## Package Script
 
@@ -179,48 +217,32 @@ The `package.sh` script performs the following operations:
 
 ### Usage
 ```bash
-VERSION=1.0.7 ./package.sh
+VERSION=v1.0.7 ./package.sh
 ```
 
-## Smart Version Checking
+## Workflow Optimization
 
-The automated workflow includes intelligent version checking:
+The release workflow includes intelligent caching to optimize build times:
 
-### How It Works
-1. **Checks Current Version**: Reads `cpp-lib/version.txt` to get current version
-2. **Compares with Tag**: Compares current version with the git tag
-3. **Conditional Update**: Only updates if versions don't match
-4. **Conditional Commit**: Only commits if version was actually updated
+### Cache Strategy
+- **Conan Cache**: Caches build dependencies per platform/architecture
+- **Consolidated Cache**: Caches processed libraries across all platforms
+- **Smart Invalidation**: Cache invalidates when source files or dependencies change
 
-### Scenarios
+### Cache Hit Scenario
+When no changes are made to cpp-lib or vendor files:
+1. ✅ Cache check finds existing consolidated libraries
+2. ✅ Skips entire build process
+3. ✅ Proceeds directly to packaging and publishing
+4. ✅ Significantly faster release process
 
-#### Scenario 1: Developer Already Updated Version
-```bash
-# Developer manually updated version
-VERSION=1.0.7 ./update-version.sh
-git add . && git commit -m "Update version to 1.0.7"
-git tag v1.0.7
-git push origin v1.0.7
-```
-**Result**: ✅ Workflow skips version bump, proceeds directly to packaging
-
-#### Scenario 2: Developer Forgot to Update Version
-```bash
-# Developer forgot to update version (still 1.0.6-rc4)
-git tag v1.0.7
-git push origin v1.0.7
-```
-**Result**: ✅ Workflow updates version, commits changes, then packages
-
-#### Scenario 3: Mixed Version References
-```bash
-# Some files updated, others not
-# version.txt: 1.0.7
-# package.json: 1.0.6-rc4
-git tag v1.0.7
-git push origin v1.0.7
-```
-**Result**: ✅ Workflow detects mismatch, updates all files, commits changes
+### Cache Miss Scenario
+When changes are made to cpp-lib or vendor files:
+1. ✅ Cache check finds no valid cache
+2. ✅ Runs full build for all platforms
+3. ✅ Processes and consolidates libraries
+4. ✅ Caches results for future releases
+5. ✅ Proceeds to packaging and publishing
 
 ## Version Update Script
 
@@ -234,18 +256,17 @@ The `update-version.sh` script updates all version references across the reposit
 
 ### Usage
 ```bash
-VERSION=1.0.7 ./update-version.sh
+VERSION=v1.0.7 ./update-version.sh
 ```
 
 ## Troubleshooting
 
-### Missing Build Artifacts
-If the release fails because build artifacts are missing:
+### GitHub CLI Issues
+If the make release command fails:
 
-1. **Check Build Status**: Ensure the latest `cmake.yml` workflow completed successfully
-2. **Wait for Build**: If a build is in progress, wait for it to complete
-3. **Trigger Manual Build**: Push a commit to master to trigger a new build
-4. **Retry Release**: Once the build completes, retry the release
+1. **Installation Issues**: Run `make check-gh` for installation instructions
+2. **Authentication Issues**: Run `make signin-gh` to check and fix authentication
+3. **Permission Issues**: Ensure your GitHub account has push access to the repository
 
 ### Build Failures
 If the build workflow fails:
@@ -259,19 +280,13 @@ If publishing to Artifactory fails:
 2. Check that the user has publish permissions
 3. Verify that the package version doesn't already exist
 
-### Version Bump Issues
-If the automated version bump fails:
+### Manual Release Issues
+If manual release process fails:
 1. Check that the `update-version.sh` script is executable
 2. Verify that all version files exist and are writable
-3. Check the GitHub Actions logs for specific error messages
+3. Ensure you have push access to create tags and releases
 
 ## Version Management
-
-### Current Version
-The current version is defined in `cpp-lib/version.txt`:
-```
-1.0.6
-```
 
 ### Version Updates
 When creating a new release:
@@ -285,15 +300,6 @@ The package is published to:
 - **Registry**: `https://artifactory.tfgco.com/artifactory/api/npm/npm-local`
 - **Scope**: `@wls`
 - **Package Name**: `com.wildlifestudios.npitaya`
-
-## Benefits of This Approach
-
-1. **No Duplication**: Reuses existing build artifacts instead of rebuilding
-2. **Faster Releases**: Release process is much faster since it doesn't rebuild
-3. **Consistency**: Uses the same build artifacts that were tested in CI
-4. **Simpler Maintenance**: Only one build workflow to maintain
-5. **Automated Version Management**: No manual version updates required
-6. **Consistent Commit Messages**: All version bumps follow the same format
 
 ## Support
 

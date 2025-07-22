@@ -6,11 +6,14 @@ set -e
 # Check if VERSION is provided
 if [ -z "$VERSION" ]; then
     echo "Error: VERSION environment variable is required"
-    echo "Usage: VERSION=1.0.7 ./update-version.sh"
+    echo "Usage: VERSION=v1.0.7 ./update-version.sh"
+    echo "       VERSION=1.0.7 ./update-version.sh"
     exit 1
 fi
 
-echo "=== Updating version references to $VERSION ==="
+# Strip 'v' prefix if present for internal use
+VERSION_CLEAN=$(echo "$VERSION" | sed 's/^v//')
+echo "=== Updating version references to $VERSION_CLEAN (from $VERSION) ==="
 
 # Function to update version in package.json
 update_package_json() {
@@ -18,10 +21,10 @@ update_package_json() {
     if [ -f "$file_path" ]; then
         if [[ "$OSTYPE" == "darwin"* ]]; then
             # macOS requires an empty string for -i
-            sed -i '' 's/"version": "[^"]*"/"version": "'"$VERSION"'"/' "$file_path"
+            sed -i '' 's/"version": "[^"]*"/"version": "'"$VERSION_CLEAN"'"/' "$file_path"
         else
             # Linux
-            sed -i 's/"version": "[^"]*"/"version": "'"$VERSION"'"/' "$file_path"
+            sed -i 's/"version": "[^"]*"/"version": "'"$VERSION_CLEAN"'"/' "$file_path"
         fi
         echo "✅ Updated: $file_path"
     else
@@ -35,10 +38,10 @@ update_csproj() {
     if [ -f "$file_path" ]; then
         if [[ "$OSTYPE" == "darwin"* ]]; then
             # macOS requires an empty string for -i
-            sed -i '' 's/<PackageVersion>[^<]*<\/PackageVersion>/<PackageVersion>'"$VERSION"'<\/PackageVersion>/' "$file_path"
+            sed -i '' 's/<PackageVersion>[^<]*<\/PackageVersion>/<PackageVersion>'"$VERSION_CLEAN"'<\/PackageVersion>/' "$file_path"
         else
             # Linux
-            sed -i 's/<PackageVersion>[^<]*<\/PackageVersion>/<PackageVersion>'"$VERSION"'<\/PackageVersion>/' "$file_path"
+            sed -i 's/<PackageVersion>[^<]*<\/PackageVersion>/<PackageVersion>'"$VERSION_CLEAN"'<\/PackageVersion>/' "$file_path"
         fi
         echo "✅ Updated: $file_path"
     else
@@ -52,10 +55,10 @@ update_nuspec() {
     if [ -f "$file_path" ]; then
         if [[ "$OSTYPE" == "darwin"* ]]; then
             # macOS requires an empty string for -i
-            sed -i '' 's/<version>[^<]*<\/version>/<version>'"$VERSION"'<\/version>/' "$file_path"
+            sed -i '' 's/<version>[^<]*<\/version>/<version>'"$VERSION_CLEAN"'<\/version>/' "$file_path"
         else
             # Linux
-            sed -i 's/<version>[^<]*<\/version>/<version>'"$VERSION"'<\/version>/' "$file_path"
+            sed -i 's/<version>[^<]*<\/version>/<version>'"$VERSION_CLEAN"'<\/version>/' "$file_path"
         fi
         echo "✅ Updated: $file_path"
     else
@@ -65,7 +68,7 @@ update_nuspec() {
 
 # Update version.txt
 if [ -f "cpp-lib/version.txt" ]; then
-    echo "$VERSION" > cpp-lib/version.txt
+    echo "$VERSION_CLEAN" > cpp-lib/version.txt
     echo "✅ Updated: cpp-lib/version.txt"
 else
     echo "⚠️  File not found: cpp-lib/version.txt"
@@ -81,7 +84,7 @@ update_nuspec "unity/NPitaya.nuspec"
 
 echo ""
 echo "=== Version Update Complete ==="
-echo "Updated to $VERSION in:"
+echo "Updated to $VERSION_CLEAN in:"
 echo "✅ cpp-lib/version.txt"
 echo "✅ pitaya-sharp/NPitaya/package.json"
 echo "✅ pitaya-sharp/NPitaya-csproj/NPitaya.csproj"
