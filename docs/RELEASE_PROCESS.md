@@ -175,6 +175,15 @@ Versions should follow semantic versioning:
 
 The `v` prefix is removed for NPM release
 
+### Prerelease Support
+The release process supports prereleases (betas, release candidates, etc.):
+
+- **Stable Release**: `make release VERSION=v1.0.7`
+- **Prerelease**: `make release VERSION=v1.0.8-rc1 PRERELEASE=true`
+- **Beta Release**: `make release VERSION=v2.0.0-beta1 PRERELEASE=true`
+
+Prereleases are marked with the `--prerelease` flag in GitHub and are always created from the current branch.
+
 ## Make Commands
 
 ### Available Commands
@@ -185,13 +194,13 @@ Checks if GitHub CLI is installed and provides installation instructions if not.
 #### `make signin-gh`
 Checks GitHub CLI authentication and prompts to sign in if needed.
 
-#### `make release VERSION=x.y.z`
+#### `make release VERSION=x.y.z [PRERELEASE=true]`
 Complete release process:
 - Checks GitHub CLI installation and authentication
 - Updates version references in all files
-- Commits and pushes changes
+- Commits changes only if files were actually modified
 - Creates git tag
-- Creates GitHub release
+- Creates GitHub release (with optional prerelease flag)
 - Triggers automated build and publish
 
 ### Examples
@@ -202,8 +211,14 @@ make check-gh
 # Sign in to GitHub CLI
 make signin-gh
 
-# Create a release candidate
-make release VERSION=v1.0.8-rc1
+# Create a stable release
+make release VERSION=v1.0.7
+
+# Create a prerelease (beta/rc)
+make release VERSION=v1.0.8-rc1 PRERELEASE=true
+
+# Create a prerelease from current branch
+make release VERSION=v2.0.0-beta1 PRERELEASE=true
 ```
 
 ## Package Script

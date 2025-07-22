@@ -85,6 +85,10 @@ release: signin-gh
 	@echo "📝 Updating version references..."
 	@VERSION=$(VERSION) ./update-version.sh
 	@echo "📋 Creating GitHub release..."
-	@gh release create v$(VERSION) --title "Release v$(VERSION)" --generate-notes
-	@echo "✅ Release v$(VERSION) created successfully!"
+	@if [ "$(PRERELEASE)" = "true" ]; then \
+		gh release create $(VERSION) --title "Release $(VERSION)" --generate-notes --prerelease --target $(shell git branch --show-current); \
+	else \
+		gh release create $(VERSION) --title "Release $(VERSION)" --generate-notes --target $(shell git branch --show-current); \
+	fi
+	@echo "✅ Release $(VERSION) created successfully!"
 	@echo "🎉 The GitHub Actions workflow will now build and publish the package automatically."

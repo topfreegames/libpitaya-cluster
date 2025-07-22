@@ -93,7 +93,7 @@ echo ""
 
 # Check if there are any changes to commit
 echo "Checking for changes to commit..."
-if git diff --quiet; then
+if git --no-pager diff --quiet; then
     echo "✅ No changes detected - version files are already up to date"
 else
     echo "📦 Changes detected - staging files..."
