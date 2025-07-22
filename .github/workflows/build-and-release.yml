@@ -1,0 +1,355 @@
+name: Build and Release NPitaya Native Libraries
+on:
+  push:
+    tags:
+      - '*'
+
+env:
+  BUILD_TYPE: Release
+
+jobs:
+  cache-check:
+    name: Check consolidated cache
+    runs-on: ubuntu-latest
+    outputs:
+      cache-hit: ${{ steps.cache-check.outputs.cache-hit }}
+    steps:
+      - name: Restore consolidated libraries cache
+        id: cache-consolidated-restore
+        uses: actions/cache/restore@v3
+        with:
+          path: downloaded-artifacts
+          key: compiled-libs-${{ github.ref_name }}-${{ hashFiles('cpp-lib/conanfile.py', 'cpp-lib/conanprofile', 'cpp-lib/CMakeLists.txt', 'cpp-lib/src/**/*', 'cpp-lib/include/**/*', 'vendor/**/*') }}
+          restore-keys: |
+            compiled-libs-${{ github.ref_name }}-
+            compiled-libs-
+
+      - name: Check if cache was restored
+        id: cache-check
+        run: |
+          if [ -d "downloaded-artifacts" ] && [ "$(ls -A downloaded-artifacts 2>/dev/null)" ]; then
+            echo "✅ Consolidated cache found - skipping build"
+            echo "cache-hit=true" >> $GITHUB_OUTPUT
+          else
+            echo "❌ No consolidated cache found - will run build"
+            echo "cache-hit=false" >> $GITHUB_OUTPUT
+          fi
+
+  build:
+    name: Build native libraries
+    needs: cache-check
+    if: needs.cache-check.outputs.cache-hit != 'true'
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: ubuntu-22.04-x86_64
+            os: ubuntu-22.04
+            arch: x86_64
+            preset: npitaya-release
+            cppstd: gnu17
+            runner: ubuntu-22.04
+            cmake_path: build/_builds/Release
+          - platform: ubuntu-22.04-armv8
+            os: ubuntu-22.04
+            arch: armv8
+            preset: npitaya-release
+            cppstd: gnu17
+            runner: ubuntu-22.04-arm
+            cmake_path: build/_builds/Release
+          - platform: windows-latest-x86_64
+            os: windows-latest
+            arch: x86_64
+            preset: npitaya-default
+            cppstd: "17"
+            runner: windows-latest
+            cmake_path: build/_builds
+          - platform: macos-latest-x86_64
+            os: macos-latest
+            arch: x86_64
+            preset: npitaya-release
+            cppstd: gnu17
+            runner: macos-latest
+            cmake_path: build/_builds/Release
+          - platform: macos-latest-armv8
+            os: macos-latest
+            arch: armv8
+            preset: npitaya-release
+            cppstd: gnu17
+            runner: macos-latest
+            cmake_path: build/_builds/Release
+    steps:
+    - name: Install Conan
+      id: conan
+      uses: turtlebrowser/get-conan@main
+      env:
+        PIP_BREAK_SYSTEM_PACKAGES: 1
+
+    - name: Optimize Conan
+      run: |
+        # Show Conan version and available commands
+        conan --version
+        conan config list
+        conan profile detect
+        conan remote add conancenter https://center.conan.io || true
+        conan remote list
+
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Install build tools (Linux)
+      if: matrix.os == 'ubuntu-22.04'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y cmake make g++ gcc
+
+    - name: Install Numpy for macOS builds
+      if: matrix.os == 'macos-latest'
+      run: pip3 install numpy --break-system-packages
+
+    - name: Using the builtin GitHub Cache Action for .conan
+      id: cache-conan-restore
+      uses: actions/cache/restore@v3
+      env:
+        cache-name: cache-conan-modules
+      with:
+        path: ~/.conan2/
+        key: ${{ runner.os }}-${{ matrix.arch }}-builder-${{ env.cache-name }}-${{ hashFiles('cpp-lib/conanfile.py', 'cpp-lib/conanprofile') }}
+        restore-keys: |
+          ${{ runner.os }}-${{ matrix.arch }}-builder-${{ env.cache-name }}-
+          ${{ runner.os }}-${{ matrix.arch }}-builder-
+
+    - name: Install Conan Dependencies - Ubuntu
+      if: matrix.os == 'ubuntu-22.04'
+      env:
+        CONAN_PARALLEL_DOWNLOAD: 8
+        CONAN_PARALLEL_BUILD: 4
+      run: conan install . -of build -s build_type=${{env.BUILD_TYPE}} -s arch=${{matrix.arch}} -s:b compiler.cppstd=${{ matrix.cppstd }} -s compiler.cppstd=${{ matrix.cppstd }} -o "*:shared=False" -o "protobuf/*:debug_suffix=False" -o "openssl/*:shared=False" -o "cpprestsdk/*:with_websockets=False" --build=missing --build=outdated
+      working-directory: cpp-lib
+
+    - name: Install Conan Dependencies - Windows
+      if: matrix.os == 'windows-latest'
+      env:
+        CONAN_PARALLEL_DOWNLOAD: 8
+        CONAN_PARALLEL_BUILD: 4
+      run: conan install . -of build -s build_type=${{env.BUILD_TYPE}} -s arch=${{matrix.arch}} -s:b compiler.cppstd=${{ matrix.cppstd }} -s compiler.cppstd=${{ matrix.cppstd }} -o "*:shared=False" -o "protobuf/*:debug_suffix=False" -o "openssl/*:shared=False" -o "cpprestsdk/*:with_websockets=False" --build=missing --build=outdated
+      working-directory: cpp-lib
+
+    - name: Install Conan Dependencies - macOS
+      if: matrix.os == 'macos-latest'
+      env:
+        CONAN_PARALLEL_DOWNLOAD: 8
+        CONAN_PARALLEL_BUILD: 4
+      run: |
+        # macOS-specific flags for Apple Clang 15 compatibility
+        conan install . -of build -s build_type=${{env.BUILD_TYPE}} -s arch=${{matrix.arch}} -s:b compiler.cppstd=${{ matrix.cppstd }} -s compiler.cppstd=${{ matrix.cppstd }} -s:b compiler.libcxx=libc++ -s compiler.libcxx=libc++ -s:b compiler.version=15 -s compiler.version=15 -o "*:shared=False" -o "protobuf/*:debug_suffix=False" -o "openssl/*:shared=False" -o "cpprestsdk/*:with_websockets=False" --build=missing --build=outdated
+      working-directory: cpp-lib
+
+    - name: Configure CMake
+      run: cmake --preset ${{matrix.preset}} -DBUILD_TESTING=OFF
+      working-directory: cpp-lib
+
+    - name: Build
+      run: cmake --build ${{matrix.cmake_path}} --config ${{env.BUILD_TYPE}} --target pitaya_cpp
+      working-directory: cpp-lib
+
+    - uses: actions/cache/save@v3
+      env:
+        cache-name: cache-conan-modules
+      with:
+        path: ~/.conan2/
+        key: ${{ runner.os }}-${{ matrix.arch }}-builder-${{ env.cache-name }}-${{ hashFiles('cpp-lib/conanfile.py', 'cpp-lib/conanprofile') }}
+
+    - uses: actions/upload-artifact@v4
+      with:
+        name: prebuilt-libs-${{ matrix.platform }}
+        path: |
+          cpp-lib/build/**/*pitaya_cpp.dll
+          cpp-lib/build/**/*pitaya_cpp.so
+          cpp-lib/build/**/*pitaya_cpp.dylib
+
+  consolidate:
+    name: Consolidate all libs into single package
+    needs: [cache-check, build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download platform specific artifacts
+        if: needs.cache-check.outputs.cache-hit != 'true'
+        uses: actions/download-artifact@v4
+        with:
+          path: downloaded-artifacts
+
+      - name: Restore cached artifacts (cache hit)
+        if: needs.cache-check.outputs.cache-hit == 'true'
+        uses: actions/cache/restore@v3
+        with:
+          path: downloaded-artifacts
+          key: compiled-libs-${{ github.ref_name }}-${{ hashFiles('cpp-lib/conanfile.py', 'cpp-lib/conanprofile', 'cpp-lib/CMakeLists.txt', 'cpp-lib/src/**/*', 'cpp-lib/include/**/*', 'vendor/**/*') }}
+
+      - name: Process Libs
+        if: needs.cache-check.outputs.cache-hit != 'true'
+        run: |
+          # mkdir -p macos-arm64 macos-x86_64 linux-x86_64 linux-armv8 windows-x86_64
+          mkdir -p linux-x86_64 linux-armv8
+
+          # # Process macOS ARM64
+          # if [ -d "prebuilt-libs-macos-latest-armv8" ]; then
+          #   find prebuilt-libs-macos-latest-armv8 -name "*.dylib" -exec cp {} macos-arm64/ \;
+          # fi
+
+          # # Process macOS x86_64
+          # if [ -d "prebuilt-libs-macos-latest-x86_64" ]; then
+          #   find prebuilt-libs-macos-latest-x86_64 -name "*.dylib" -exec cp {} macos-x86_64/ \;
+          # fi
+
+          # Process Linux x86_64
+          if [ -d "prebuilt-libs-ubuntu-22.04-x86_64" ]; then
+            find prebuilt-libs-ubuntu-22.04-x86_64 -name "*.so" -exec cp {} linux-x86_64/ \;
+          fi
+
+          # Process Linux ARMv8
+          if [ -d "prebuilt-libs-ubuntu-22.04-armv8" ]; then
+            find prebuilt-libs-ubuntu-22.04-armv8 -name "*.so" -exec cp {} linux-armv8/ \;
+          fi
+
+          # # Process Windows x86_64
+          # if [ -d "prebuilt-libs-windows-latest-x86_64" ]; then
+          #   find prebuilt-libs-windows-latest-x86_64 -name "*.dll" -exec cp {} windows-x86_64/ \;
+          # fi
+
+          echo "✅ Processed libraries:"
+          find . -name "*.so" -o -name "*.dylib" -o -name "*.dll" | sort
+        working-directory: downloaded-artifacts
+
+      - name: 'Upload Artifact'
+        uses: actions/upload-artifact@v4
+        with:
+          name: prebuilt-libs-all-archs
+          path: |
+            ./**/*pitaya_cpp.dll
+            ./**/*pitaya_cpp.so
+            ./**/*pitaya_cpp.dylib
+          working-directory: downloaded-artifacts
+          if-no-files-found: warn
+
+      - name: Cache consolidated artifacts
+        if: needs.cache-check.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v3
+        with:
+          path: downloaded-artifacts
+          key: compiled-libs-${{ github.ref_name }}-${{ hashFiles('cpp-lib/conanfile.py', 'cpp-lib/conanprofile', 'cpp-lib/CMakeLists.txt', 'cpp-lib/src/**/*', 'cpp-lib/include/**/*', 'vendor/**/*') }}
+          if-no-files-found: error
+
+  bump-version:
+    name: Bump Version
+    runs-on: ubuntu-latest
+    needs: cache-check
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Determine version from tag
+        id: version
+        run: |
+          # Get the tag that triggered this workflow
+          TAG_NAME="${{ github.ref_name }}"
+          echo "Tag that triggered workflow: $TAG_NAME"
+
+          # Strip 'v' prefix if present for version number
+          VERSION=$(echo "$TAG_NAME" | sed 's/^v//')
+          echo "Version number (without v prefix): $VERSION"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Configure Git
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+
+      - name: Update version references
+        run: |
+          echo "Updating version to ${{steps.version.outputs.version}}"
+          VERSION="${{steps.version.outputs.version}}" ./update-version.sh
+
+      - name: Commit and push version bump
+        id: commit-result
+        run: |
+          git add -u
+
+          # Check if there are any changes to commit
+          if git diff --cached --quiet; then
+            echo "✅ No changes to commit - version files are already up to date"
+            echo "success=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          git commit -m "chore: bump version to v${{steps.version.outputs.version}}"
+
+          # Fetch all remote references to get access to tags and branches
+          echo "Fetching remote references..."
+          git fetch origin --tags --prune
+
+          # Get the branch where the tag was created
+          # First, get the commit that the tag points to
+          TAG_COMMIT=$(git rev-parse v${{steps.version.outputs.version}})
+          echo "Tag v${{steps.version.outputs.version}} points to commit: $TAG_COMMIT"
+
+          TAG_BRANCH=$(git branch -r --contains $TAG_COMMIT | head -1 | sed 's/origin\///' | tr -d '[:space:]')
+          echo "Found branch containing tag commit: '$TAG_BRANCH'"
+
+          echo "Pushing to branch: $TAG_BRANCH"
+          git push origin HEAD:${TAG_BRANCH}
+          echo "success=true" >> $GITHUB_OUTPUT
+
+  package:
+    name: Package
+    needs: [bump-version, consolidate]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Download artifacts from consolidate step
+        uses: actions/download-artifact@v4
+        with:
+          name: prebuilt-libs-all-archs
+          path: downloaded-artifacts
+
+      - name: Package
+        run: VERSION=${{needs.bump-version.outputs.version}} ./package.sh
+
+      - name: Upload package directory
+        uses: actions/upload-artifact@v4
+        with:
+          name: npm-package
+          path: package/
+          retention-days: 1
+
+  publish:
+    name: Publish
+    needs: package
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download package directory
+        uses: actions/download-artifact@v4
+        with:
+          name: npm-package
+          path: package
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - run: npm install -g npm-cli-login
+      - run: npm-cli-login login -u "${{ secrets.ARTIFACTORY_USER }}" -p "${{ secrets.ARTIFACTORY_PASS }}" -e "tools-team@tfgco.com" -r "https://artifactory.tfgco.com/artifactory/api/npm/npm-local" -s @wls
+      - run: npm config set registry https://artifactory.tfgco.com/artifactory/api/npm/npm-local/
+
+      - name: Publish to artifactory
+        run: cd package && npm publish
