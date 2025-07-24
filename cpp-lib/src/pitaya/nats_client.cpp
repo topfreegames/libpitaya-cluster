@@ -210,7 +210,7 @@ NatsClientImpl::ReconnectedCb(natsConnection* nc, void* user)
 {
     auto instance = reinterpret_cast<NatsClientImpl*>(user);
     // TODO: implement logic here
-    instance->_log->info("nats reconnected!");
+    instance->_log->warn("nats reconnected!");
 }
 
 void
