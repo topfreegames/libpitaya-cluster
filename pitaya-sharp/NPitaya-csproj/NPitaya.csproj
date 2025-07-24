@@ -4,7 +4,7 @@
     <PropertyGroup>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <PackageId>NPitaya</PackageId>
-        <PackageVersion>1.0.7-rc3</PackageVersion>
+        <PackageVersion>1.0.8</PackageVersion>
         <Title>NPitaya</Title>
         <Authors>TFG Co</Authors>
         <Description>A full implementation of pitaya backend framework for .NET</Description>
