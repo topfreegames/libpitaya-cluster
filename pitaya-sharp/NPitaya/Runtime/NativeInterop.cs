@@ -189,27 +189,106 @@ namespace NPitaya
         public int requestTimeoutMs;
         public int serverShutdownDeadlineMs;
         public int serverMaxNumberOfRpcs;
-        public int maxConnectionRetries;
+        public int maxReconnectionAttempts;
         public int maxPendingMessages;
         public int reconnectBufSize;
+        public Int64 reconnectWaitInMs;
+        public Int64 reconnectJitterInMs;
+        public Int64 pingIntervalInMs;
+        public int maxPingsOut;
 
+        // Backward compatibility constructor with default values
+        [Obsolete("This constructor is deprecated. Use the constructor without maxConnectionRetries parameter or NatsConfig.CreateWithDefaults().")]
         public NatsConfig(string endpoint,
                           int connectionTimeoutMs,
                           int requestTimeoutMs,
                           int serverShutdownDeadlineMs,
                           int serverMaxNumberOfRpcs,
-                          int maxConnectionRetries,
+                          int maxConnectionRetries, // Deprecated parameter - ignored
                           int maxPendingMessages,
-                          int reconnectBufSize)
+                          int reconnectBufSize,
+                          int maxReconnectionAttempts = 30,
+                          int reconnectWaitInMs = 100,
+                          int reconnectJitterInMs = 50,
+                          int pingIntervalInMs = 1000,
+                          int maxPingsOut = 2)
         {
             this.endpoint = endpoint;
             this.connectionTimeoutMs = connectionTimeoutMs;
             this.requestTimeoutMs = requestTimeoutMs;
             this.serverShutdownDeadlineMs = serverShutdownDeadlineMs;
             this.serverMaxNumberOfRpcs = serverMaxNumberOfRpcs;
-            this.maxConnectionRetries = maxConnectionRetries;
+            this.maxReconnectionAttempts = maxReconnectionAttempts;
             this.maxPendingMessages = maxPendingMessages;
             this.reconnectBufSize = reconnectBufSize;
+            this.reconnectWaitInMs = reconnectWaitInMs;
+            this.reconnectJitterInMs = reconnectJitterInMs;
+            this.pingIntervalInMs = pingIntervalInMs;
+            this.maxPingsOut = maxPingsOut;
+        }
+
+        // Simple constructor for common use case
+        public NatsConfig(string endpoint)
+        {
+            this.endpoint = endpoint;
+            this.connectionTimeoutMs = 2000;
+            this.requestTimeoutMs = 2000;
+            this.serverShutdownDeadlineMs = 2000;
+            this.serverMaxNumberOfRpcs = 500;
+            this.maxReconnectionAttempts = 30;
+            this.maxPendingMessages = 100;
+            this.reconnectBufSize = 8 * 1024 * 1024;
+            this.reconnectWaitInMs = 100;
+            this.reconnectJitterInMs = 50;
+            this.pingIntervalInMs = 1000;
+            this.maxPingsOut = 2;
+        }
+
+        // New constructor without deprecated maxConnectionRetries parameter
+        public NatsConfig(string endpoint,
+                          int connectionTimeoutMs,
+                          int requestTimeoutMs,
+                          int serverShutdownDeadlineMs,
+                          int serverMaxNumberOfRpcs,
+                          int maxPendingMessages,
+                          int reconnectBufSize,
+                          int maxReconnectionAttempts = 30,
+                          int reconnectWaitInMs = 100,
+                          int reconnectJitterInMs = 50,
+                          int pingIntervalInMs = 1000,
+                          int maxPingsOut = 2)
+        {
+            this.endpoint = endpoint;
+            this.connectionTimeoutMs = connectionTimeoutMs;
+            this.requestTimeoutMs = requestTimeoutMs;
+            this.serverShutdownDeadlineMs = serverShutdownDeadlineMs;
+            this.serverMaxNumberOfRpcs = serverMaxNumberOfRpcs;
+            this.maxReconnectionAttempts = maxReconnectionAttempts;
+            this.maxPendingMessages = maxPendingMessages;
+            this.reconnectBufSize = reconnectBufSize;
+            this.reconnectWaitInMs = reconnectWaitInMs;
+            this.reconnectJitterInMs = reconnectJitterInMs;
+            this.pingIntervalInMs = pingIntervalInMs;
+            this.maxPingsOut = maxPingsOut;
+        }
+
+        // Static factory method for backward compatibility
+        public static NatsConfig CreateWithDefaults(string endpoint)
+        {
+            return new NatsConfig(
+                endpoint,
+                2000, // connectionTimeoutMs
+                2000, // requestTimeoutMs
+                2000, // serverShutdownDeadlineMs
+                500,  // serverMaxNumberOfRpcs
+                100,  // maxPendingMessages
+                8 * 1024 * 1024, // reconnectBufSize
+                30,   // maxReconnectionAttempts
+                100, // reconnectWaitInMs
+                50,   // reconnectJitterInMs
+                1000, // pingIntervalInMs
+                2     // maxPingsOut
+            );
         }
     }
 }

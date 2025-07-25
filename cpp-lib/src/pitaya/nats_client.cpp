@@ -71,14 +71,20 @@ NatsClientImpl::NatsClientImpl(NatsApiType apiType,
 
     natsOptions_SetTimeout(_opts, config.connectionTimeout.count());
     natsOptions_SetMaxReconnect(_opts, config.maxReconnectionAttempts);
-    natsOptions_SetReconnectWait(_opts, 2000);
-    natsOptions_SetReconnectBufSize(_opts, 8*1024*1024);
+
+    // Reconnect parameters
+    natsOptions_SetReconnectBufSize(_opts, config.reconnectBufSize);
+    natsOptions_SetReconnectWait(_opts, config.reconnectWaitInMs.count());
     natsOptions_SetRetryOnFailedConnect(_opts, true, NULL, this);
+    natsOptions_SetPingInterval(_opts, config.pingIntervalInMs.count());
+    natsOptions_SetMaxPingsOut(_opts, config.maxPingsOut);
+    natsOptions_SetReconnectJitter(
+        _opts, config.reconnectJitterInMs.count(), config.reconnectJitterInMs.count());
+
+    // Callbacks
     natsOptions_SetClosedCB(_opts, ClosedCb, this);
     natsOptions_SetDisconnectedCB(_opts, DisconnectedCb, this);
     natsOptions_SetReconnectedCB(_opts, ReconnectedCb, this);
-    natsOptions_SetPingInterval(_opts, 3000);
-    natsOptions_SetMaxPingsOut(_opts, 3);
     if (apiType == NatsApiType::Asynchronous) {
         natsOptions_SetMaxPendingMsgs(_opts, config.maxPendingMsgs);
         natsOptions_SetErrorHandler(_opts, ErrHandler, this);
@@ -87,8 +93,11 @@ NatsClientImpl::NatsClientImpl(NatsApiType apiType,
 
     _log->info("NATS Connection Timeout - " + std::to_string(config.connectionTimeout.count()));
     _log->info("NATS Max Reconnect Attempts - " + std::to_string(config.maxReconnectionAttempts));
-    _log->info("NATS Reconnect Wait Time - " + std::to_string(2000) + " //currently hardcoded ");
-    _log->info("NATS Reconnect Buffer Size - " + std::to_string(8*1024*1024) + " //currently hardcoded");
+    _log->info("NATS Reconnect Wait Time - " + std::to_string(config.reconnectWaitInMs.count()));
+    _log->info("NATS Reconnect Buffer Size - " + std::to_string(config.reconnectBufSize));
+    _log->info("NATS Ping Interval - " + std::to_string(config.pingIntervalInMs.count()));
+    _log->info("NATS Max Pings Out - " + std::to_string(config.maxPingsOut));
+    _log->info("NATS Reconnect Jitter - " + std::to_string(config.reconnectJitterInMs.count()));
 
     // TODO, FIXME: Change so that connection happens NOT in the constructor.
     status = natsConnection_Connect(&_conn, _opts);
@@ -210,7 +219,7 @@ NatsClientImpl::ReconnectedCb(natsConnection* nc, void* user)
 {
     auto instance = reinterpret_cast<NatsClientImpl*>(user);
     // TODO: implement logic here
-    instance->_log->info("nats reconnected!");
+    instance->_log->warn("nats reconnected!");
 }
 
 void

@@ -292,8 +292,11 @@ extern "C"
                                   nc->serverMaxNumberOfRpcs,
                                   nc->maxReconnectionAttempts,
                                   nc->maxPendingMsgs,
-                                  nc->reconnectWait,
-                                  nc->reconnectBufSize);
+                                  milliseconds(nc->reconnectWaitInMs),
+                                  nc->reconnectBufSize,
+                                  milliseconds(nc->reconnectJitterInMs),
+                                  milliseconds(nc->pingIntervalInMs),
+                                  nc->maxPingsOut);
         Server server = CServerToServer(sv);
 
         EtcdServiceDiscoveryConfig serviceDiscoveryConfig;

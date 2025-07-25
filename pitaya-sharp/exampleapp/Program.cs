@@ -44,7 +44,6 @@ namespace PitayaCSharpExample
           requestTimeoutMs: 1000,
           serverShutdownDeadlineMs: 3,
           serverMaxNumberOfRpcs: 100,
-          maxConnectionRetries: 3,
           maxPendingMessages: 1000,
           reconnectBufSize: 4 * 1024 * 1024);
 

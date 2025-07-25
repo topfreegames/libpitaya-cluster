@@ -41,7 +41,6 @@ namespace ExampleORM
                 5000,
                 10 * 1000,
                 int.MaxValue,
-                3,
                 100,
                 8 * 1024 * 1024
             );

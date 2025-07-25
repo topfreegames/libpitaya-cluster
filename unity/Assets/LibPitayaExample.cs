@@ -62,7 +62,6 @@ public class LibPitayaExample : MonoBehaviour {
 		    requestTimeoutMs: 2000,
 		    serverShutdownDeadlineMs: 4000,
 		    serverMaxNumberOfRpcs: 1000,
-		    maxConnectionRetries: 10,
 		    maxPendingMessages: 100,
           	reconnectBufSize: 4 * 1024 * 1024);
 
