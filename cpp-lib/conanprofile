@@ -4,6 +4,8 @@ include(default)
 
 [settings]
 compiler.cppstd=gnu17
+core.download:parallel=4
+core.upload:parallel=4
 
 [options]
 *:shared=False
@@ -15,7 +17,4 @@ cpprestsdk/*:with_websockets=False
 [conf]
 tools.cmake.cmake_layout:build_folder_vars=['settings.os', 'settings.arch', 'options.macosx_bundle', 'settings.build_type']
 tools.build:skip_test=True
-tools.build:parallel=True
 tools.build:jobs=4
-tools.download:parallel=True
-tools.download:parallel_download=8
