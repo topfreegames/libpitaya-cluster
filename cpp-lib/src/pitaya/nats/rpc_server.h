@@ -10,7 +10,7 @@
 #include "pitaya/utils/sync_vector.h"
 #include "spdlog/spdlog.h"
 
-#include <nats.h>
+#include <nats/nats.h>
 #include <string>
 
 namespace pitaya {
