@@ -1,5 +1,6 @@
 #include "pitaya.h"
 #include "pitaya/cluster.h"
+#include "pitaya/nats_config.h"
 
 #include <chrono>
 #include <string>
@@ -58,14 +59,17 @@ struct CGrpcConfig
 struct CNATSConfig
 {
     const char* addr;
-    int64_t connectionTimeoutMs;
-    int32_t requestTimeoutMs;
-    int32_t serverShutdownDeadlineMs;
-    int32_t serverMaxNumberOfRpcs;
-    int32_t maxReconnectionAttempts;
-    int32_t maxPendingMsgs;
-    int32_t reconnectBufSize;
-    int64_t reconnectWait = 2000;
+    int64_t connectionTimeoutMs = PITAYA_NATS_DEFAULT_CONNECTION_TIMEOUT_IN_MS;
+    int32_t requestTimeoutMs = PITAYA_NATS_DEFAULT_REQUEST_TIMEOUT_IN_MS;
+    int32_t serverShutdownDeadlineMs = PITAYA_NATS_DEFAULT_SERVER_SHUTDOWN_DEADLINE_IN_MS;
+    int32_t serverMaxNumberOfRpcs = PITAYA_NATS_DEFAULT_SERVER_MAX_NUMBER_OF_RPCS;
+    int32_t maxReconnectionAttempts = PITAYA_NATS_DEFAULT_MAX_RECONNECTION_ATTEMPTS;
+    int32_t maxPendingMsgs = PITAYA_NATS_DEFAULT_MAX_PENDING_MSGS;
+    int32_t reconnectBufSize = PITAYA_NATS_DEFAULT_RECONNECT_BUF_SIZE;
+    int64_t reconnectWaitInMs = PITAYA_NATS_DEFAULT_RECONNECT_WAIT_IN_MS;
+    int64_t reconnectJitterInMs = PITAYA_NATS_DEFAULT_RECONNECT_JITTER_IN_MS;
+    int64_t pingIntervalInMs = PITAYA_NATS_DEFAULT_PING_INTERVAL_IN_MS;
+    int32_t maxPingsOut = PITAYA_NATS_DEFAULT_MAX_PINGS_OUT;
 };
 
 struct CBindingStorageConfig
