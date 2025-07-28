@@ -49,35 +49,35 @@ jobs:
           - platform: ubuntu-22.04-x86_64
             os: ubuntu-22.04
             arch: x86_64
-            preset: npitaya-release
+            preset: conan-release
             cppstd: gnu17
             runner: ubuntu-22.04
             cmake_path: build/_builds/Release
           - platform: ubuntu-22.04-armv8
             os: ubuntu-22.04
             arch: armv8
-            preset: npitaya-release
+            preset: conan-release
             cppstd: gnu17
             runner: ubuntu-22.04-arm
             cmake_path: build/_builds/Release
           - platform: windows-latest-x86_64
             os: windows-latest
             arch: x86_64
-            preset: npitaya-default
+            preset: conan-default
             cppstd: "17"
             runner: windows-latest
             cmake_path: build/_builds
           - platform: macos-latest-x86_64
             os: macos-latest
             arch: x86_64
-            preset: npitaya-release
+            preset: conan-release
             cppstd: gnu17
             runner: macos-latest
             cmake_path: build/_builds/Release
-          - platform: macos-latest-armv8
+          - platform: macos-latest-arm64
             os: macos-latest
-            arch: armv8
-            preset: npitaya-release
+            arch: arm64
+            preset: conan-release
             cppstd: gnu17
             runner: macos-latest
             cmake_path: build/_builds/Release
@@ -128,7 +128,7 @@ jobs:
         env:
           CONAN_PARALLEL_DOWNLOAD: 8
           CONAN_PARALLEL_BUILD: 4
-        run: conan install . -of build -s build_type=${{env.BUILD_TYPE}} -s arch=${{matrix.arch}} -s:b compiler.cppstd=${{ matrix.cppstd }} -s compiler.cppstd=${{ matrix.cppstd }} -o "*:shared=False" -o "protobuf/*:debug_suffix=False" -o "openssl/*:shared=False" -o "cpprestsdk/*:with_websockets=False" --build=missing --build=outdated
+        run: conan install . -of build -s build_type=${{env.BUILD_TYPE}} -s arch=${{matrix.arch}} -s:b compiler.cppstd=${{ matrix.cppstd }} -s compiler.cppstd=${{ matrix.cppstd }} -o "*:shared=False" -o "protobuf/*:debug_suffix=False" -o "openssl/*:shared=False" -o "cpprestsdk/*:with_websockets=False" -o "cnats/*:shared=False" -o "cnats/*:with_streaming=False" -o "cnats/*:with_tls=True" -o "cnats/*:tls_use_openssl_1_1_api=True" -o "etcd-cpp-apiv3/*:with_nats=True" -o "etcd-cpp-apiv3/*:nats_package_name=cnats" --build=missing --build=outdated
         working-directory: cpp-lib
 
       - name: Install Conan Dependencies - Windows
@@ -136,7 +136,7 @@ jobs:
         env:
           CONAN_PARALLEL_DOWNLOAD: 8
           CONAN_PARALLEL_BUILD: 4
-        run: conan install . -of build -s build_type=${{env.BUILD_TYPE}} -s arch=${{matrix.arch}} -s:b compiler.cppstd=${{ matrix.cppstd }} -s compiler.cppstd=${{ matrix.cppstd }} -o "*:shared=False" -o "protobuf/*:debug_suffix=False" -o "openssl/*:shared=False" -o "cpprestsdk/*:with_websockets=False" --build=missing --build=outdated
+        run: conan install . -of build -s build_type=${{env.BUILD_TYPE}} -s arch=${{matrix.arch}} -s:b compiler.cppstd=${{ matrix.cppstd }} -s compiler.cppstd=${{ matrix.cppstd }} -o "*:shared=False" -o "protobuf/*:debug_suffix=False" -o "openssl/*:shared=False" -o "cpprestsdk/*:with_websockets=False" -o "cnats/*:shared=False" -o "cnats/*:with_streaming=False" -o "cnats/*:with_tls=True" -o "cnats/*:tls_use_openssl_1_1_api=True" -o "etcd-cpp-apiv3/*:with_nats=True" -o "etcd-cpp-apiv3/*:nats_package_name=cnats" --build=missing --build=outdated
         working-directory: cpp-lib
 
       - name: Install Conan Dependencies - macOS
@@ -146,7 +146,7 @@ jobs:
           CONAN_PARALLEL_BUILD: 4
         run: |
           # macOS-specific flags for Apple Clang 15 compatibility
-          conan install . -of build -s build_type=${{env.BUILD_TYPE}} -s arch=${{matrix.arch}} -s:b compiler.cppstd=${{ matrix.cppstd }} -s compiler.cppstd=${{ matrix.cppstd }} -s:b compiler.libcxx=libc++ -s compiler.libcxx=libc++ -s:b compiler.version=15 -s compiler.version=15 -o "*:shared=False" -o "protobuf/*:debug_suffix=False" -o "openssl/*:shared=False" -o "cpprestsdk/*:with_websockets=False" --build=missing --build=outdated
+          conan install . -of build -s build_type=${{env.BUILD_TYPE}} -s arch=${{matrix.arch}} -s:b compiler.cppstd=${{ matrix.cppstd }} -s compiler.cppstd=${{ matrix.cppstd }} -s:b compiler.libcxx=libc++ -s compiler.libcxx=libc++ -s:b compiler.version=15 -s compiler.version=15 -o "*:shared=False" -o "protobuf/*:debug_suffix=False" -o "openssl/*:shared=False" -o "cpprestsdk/*:with_websockets=False" -o "cnats/*:shared=False" -o "cnats/*:with_streaming=False" -o "cnats/*:with_tls=True" -o "cnats/*:tls_use_openssl_1_1_api=True" -o "etcd-cpp-apiv3/*:with_nats=True" -o "etcd-cpp-apiv3/*:nats_package_name=cnats" --build=missing --build=outdated
         working-directory: cpp-lib
 
       - name: Configure CMake
@@ -193,18 +193,17 @@ jobs:
       - name: Process Libs
         if: needs.cache-check.outputs.cache-hit != 'true'
         run: |
-          # mkdir -p macos-arm64 macos-x86_64 linux-x86_64 linux-armv8 windows-x86_64
-          mkdir -p linux-x86_64 linux-armv8
+          mkdir -p macos-arm64 macos-x86_64 linux-x86_64 linux-armv8 windows-x86_64
 
-          # # Process macOS ARM64
-          # if [ -d "prebuilt-libs-macos-latest-armv8" ]; then
-          #   find prebuilt-libs-macos-latest-armv8 -name "*.dylib" -exec cp {} macos-arm64/ \;
-          # fi
+          # Process macOS ARM64
+          if [ -d "prebuilt-libs-macos-latest-arm64" ]; then
+            find prebuilt-libs-macos-latest-arm64 -name "*.dylib" -exec cp {} macos-arm64/ \;
+          fi
 
-          # # Process macOS x86_64
-          # if [ -d "prebuilt-libs-macos-latest-x86_64" ]; then
-          #   find prebuilt-libs-macos-latest-x86_64 -name "*.dylib" -exec cp {} macos-x86_64/ \;
-          # fi
+          # Process macOS x86_64
+          if [ -d "prebuilt-libs-macos-latest-x86_64" ]; then
+            find prebuilt-libs-macos-latest-x86_64 -name "*.dylib" -exec cp {} macos-x86_64/ \;
+          fi
 
           # Process Linux x86_64
           if [ -d "prebuilt-libs-ubuntu-22.04-x86_64" ]; then
@@ -216,10 +215,10 @@ jobs:
             find prebuilt-libs-ubuntu-22.04-armv8 -name "*.so" -exec cp {} linux-armv8/ \;
           fi
 
-          # # Process Windows x86_64
-          # if [ -d "prebuilt-libs-windows-latest-x86_64" ]; then
-          #   find prebuilt-libs-windows-latest-x86_64 -name "*.dll" -exec cp {} windows-x86_64/ \;
-          # fi
+          # Process Windows x86_64
+          if [ -d "prebuilt-libs-windows-latest-x86_64" ]; then
+            find prebuilt-libs-windows-latest-x86_64 -name "*.dll" -exec cp {} windows-x86_64/ \;
+          fi
 
           echo "✅ Processed libraries:"
           find . -name "*.so" -o -name "*.dylib" -o -name "*.dll" | sort
