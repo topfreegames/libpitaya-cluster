@@ -1,7 +1,10 @@
 SRC_FILES = $(shell find src test -name '*.cpp')
 HDR_FILES = $(shell find include test -not -path 'include/pitaya/protos/*' -not -path 'test/doctest.h' -name '*.h')
-ARCHES = x86_64 arm64
+ARCHES = x86_64 armv8
 LOCAL_ARCH = $(shell uname -m)
+ifeq ($(LOCAL_ARCH),arm64)
+LOCAL_ARCH=armv8
+endif
 
 format:
 	@for f in ${SRC_FILES} ; do \
@@ -35,7 +38,7 @@ clean-mac-debug:
 clean-all: clean-mac-debug clean-mac-release clean-mac-unity clean-xcode clean-linux-release clean-build
 
 clean-build:
-	@rm -rf build
+	@rm -rf build build-x86_64 build-armv8
 
 generate-xcode:
 	@conan install -of _builds/xcode . --build=missing -pr ./conanprofile -c tools.cmake.cmaketoolchain:generator=Xcode
@@ -48,9 +51,10 @@ build-linux-release:
 
 build-mac-release:
 	for arch in $(ARCHES); do \
-		conan install . -of build -s build_type=Release -s arch=$${arch} -s:b compiler.cppstd=gnu17 -s compiler.cppstd=gnu17 -s:b compiler.libcxx=libc++ -s compiler.libcxx=libc++ -s:b compiler.version=15 -s compiler.version=15 -o "*:shared=False" -o "protobuf/*:debug_suffix=False" -o "openssl/*:shared=False" -o "cpprestsdk/*:with_websockets=False" -o "cnats/*:shared=False" -o "cnats/*:with_streaming=False" -o "cnats/*:with_tls=True" -o "cnats/*:tls_use_openssl_1_1_api=True" -o "etcd-cpp-apiv3/*:with_nats=True" -o "etcd-cpp-apiv3/*:nats_package_name=cnats" --build=missing --build=outdated; \
-		cmake --preset conan-release; \
-		cmake --build --preset conan-release; \
+		rm -f CMakeUserPresets.json; \
+		conan install . -of build-$${arch} -s build_type=Release -s arch=$${arch} -s:b compiler.cppstd=gnu17 -s compiler.cppstd=gnu17 -s:b compiler.libcxx=libc++ -s compiler.libcxx=libc++ -s:b compiler.version=15 -s compiler.version=15 -o "*:shared=False" -o "protobuf/*:debug_suffix=False" -o "openssl/*:shared=False" -o "cpprestsdk/*:with_websockets=False" -o "cnats/*:shared=False" -o "cnats/*:with_streaming=False" -o "cnats/*:with_tls=True" -o "cnats/*:tls_use_openssl_1_1_api=True" -o "etcd-cpp-apiv3/*:with_nats=True" -o "etcd-cpp-apiv3/*:nats_package_name=cnats" --build=missing --build=outdated; \
+		cmake --preset conan-release -B build-$${arch}/_builds/Release; \
+		cmake --build build-$${arch}/_builds/Release --preset conan-release; \
 	done
 
 build-mac-debug:
@@ -60,9 +64,10 @@ build-mac-debug:
 
 build-mac-unity:
 	for arch in $(ARCHES); do \
-		conan install . -of build -s build_type=Release -s arch=$${arch} -s:b compiler.cppstd=gnu17 -s compiler.cppstd=gnu17 -s:b compiler.libcxx=libc++ -s compiler.libcxx=libc++ -s:b compiler.version=15 -s compiler.version=15 -o "*:shared=False" -o "protobuf/*:debug_suffix=False" -o "openssl/*:shared=False" -o "cpprestsdk/*:with_websockets=False" -o "cnats/*:shared=False" -o "cnats/*:with_streaming=False" -o "cnats/*:with_tls=True" -o "cnats/*:tls_use_openssl_1_1_api=True" -o "etcd-cpp-apiv3/*:with_nats=True" -o "etcd-cpp-apiv3/*:nats_package_name=cnats" -o "macosx_bundle=True" --build=missing --build=outdated; \
-		cmake --preset conan-release; \
-		cmake --build --preset conan-release; \
+		rm -f CMakeUserPresets.json; \
+		conan install . -of build-$${arch} -s build_type=Release -s arch=$${arch} -s:b compiler.cppstd=gnu17 -s compiler.cppstd=gnu17 -s:b compiler.libcxx=libc++ -s compiler.libcxx=libc++ -s:b compiler.version=15 -s compiler.version=15 -o "*:shared=False" -o "protobuf/*:debug_suffix=False" -o "openssl/*:shared=False" -o "cpprestsdk/*:with_websockets=False" -o "cnats/*:shared=False" -o "cnats/*:with_streaming=False" -o "cnats/*:with_tls=True" -o "cnats/*:tls_use_openssl_1_1_api=True" -o "etcd-cpp-apiv3/*:with_nats=True" -o "etcd-cpp-apiv3/*:nats_package_name=cnats" -o "macosx_bundle=True" --build=missing --build=outdated; \
+		cmake --preset conan-release -B build-$${arch}/_builds/Release; \
+		cmake --build build-$${arch}/_builds/Release --preset conan-release; \
 	done
 
 build-mac-unity-debug:

@@ -74,9 +74,9 @@ jobs:
             cppstd: gnu17
             runner: macos-latest
             cmake_path: build/_builds/Release
-          - platform: macos-latest-arm64
+          - platform: macos-latest-armv8
             os: macos-latest
-            arch: arm64
+            arch: armv8
             preset: conan-release
             cppstd: gnu17
             runner: macos-latest
@@ -196,8 +196,8 @@ jobs:
           mkdir -p macos-arm64 macos-x86_64 linux-x86_64 linux-armv8 windows-x86_64
 
           # Process macOS ARM64
-          if [ -d "prebuilt-libs-macos-latest-arm64" ]; then
-            find prebuilt-libs-macos-latest-arm64 -name "*.dylib" -exec cp {} macos-arm64/ \;
+          if [ -d "prebuilt-libs-macos-latest-armv8" ]; then
+            find prebuilt-libs-macos-latest-armv8 -name "*.dylib" -exec cp {} macos-arm64/ \;
           fi
 
           # Process macOS x86_64
