@@ -38,7 +38,7 @@ jobs:
           fi
 
   build:
-    name: Build native libraries
+    name: Build
     needs: cache-check
     if: needs.cache-check.outputs.cache-hit != 'true'
     runs-on: ${{ matrix.runner }}
@@ -49,38 +49,38 @@ jobs:
           - platform: ubuntu-22.04-x86_64
             os: ubuntu-22.04
             arch: x86_64
-            preset: conan-release
+            preset: conan-linux-x86_64-release
             cppstd: gnu17
             runner: ubuntu-22.04
-            cmake_path: build/_builds/Release
+            cmake_path: build/_builds/linux-x86_64-release
           - platform: ubuntu-22.04-armv8
             os: ubuntu-22.04
             arch: armv8
-            preset: conan-release
+            preset: conan-linux-armv8-release
             cppstd: gnu17
             runner: ubuntu-22.04-arm
-            cmake_path: build/_builds/Release
+            cmake_path: build/_builds/linux-armv8-release
           - platform: windows-latest-x86_64
             os: windows-latest
             arch: x86_64
-            preset: conan-default
+            preset: conan-windows-x86_64-release
             cppstd: "17"
             runner: windows-latest
-            cmake_path: build/_builds
+            cmake_path: build/_builds/windows-x86_64-release
           - platform: macos-latest-x86_64
             os: macos-latest
             arch: x86_64
-            preset: conan-release
+            preset: conan-macos-x86_64-macosx_bundle_false-release
             cppstd: gnu17
             runner: macos-latest
-            cmake_path: build/_builds/Release
+            cmake_path: build/_builds/macos-x86_64-macosx_bundle_false-release
           - platform: macos-latest-armv8
             os: macos-latest
             arch: armv8
-            preset: conan-release
+            preset: conan-macos-armv8-macosx_bundle_false-release
             cppstd: gnu17
             runner: macos-latest
-            cmake_path: build/_builds/Release
+            cmake_path: build/_builds/macos-armv8-macosx_bundle_false-release
     steps:
       - name: Install Conan
         id: conan
@@ -128,7 +128,7 @@ jobs:
         env:
           CONAN_PARALLEL_DOWNLOAD: 8
           CONAN_PARALLEL_BUILD: 4
-        run: conan install . -of build -s build_type=${{env.BUILD_TYPE}} -s arch=${{matrix.arch}} -s:b compiler.cppstd=${{ matrix.cppstd }} -s compiler.cppstd=${{ matrix.cppstd }} -o "*:shared=False" -o "protobuf/*:debug_suffix=False" -o "openssl/*:shared=False" -o "cpprestsdk/*:with_websockets=False" -o "cnats/*:shared=False" -o "cnats/*:with_streaming=False" -o "cnats/*:with_tls=True" -o "cnats/*:tls_use_openssl_1_1_api=True" -o "etcd-cpp-apiv3/*:with_nats=True" -o "etcd-cpp-apiv3/*:nats_package_name=cnats" --build=missing --build=outdated
+        run: conan install . -pr conanprofile -of build -s build_type=${{env.BUILD_TYPE}} -s arch=${{matrix.arch}} -s:b compiler.cppstd=${{ matrix.cppstd }} -s compiler.cppstd=${{ matrix.cppstd }} --build=missing --build=outdated
         working-directory: cpp-lib
 
       - name: Install Conan Dependencies - Windows
@@ -136,7 +136,7 @@ jobs:
         env:
           CONAN_PARALLEL_DOWNLOAD: 8
           CONAN_PARALLEL_BUILD: 4
-        run: conan install . -of build -s build_type=${{env.BUILD_TYPE}} -s arch=${{matrix.arch}} -s:b compiler.cppstd=${{ matrix.cppstd }} -s compiler.cppstd=${{ matrix.cppstd }} -o "*:shared=False" -o "protobuf/*:debug_suffix=False" -o "openssl/*:shared=False" -o "cpprestsdk/*:with_websockets=False" -o "cnats/*:shared=False" -o "cnats/*:with_streaming=False" -o "cnats/*:with_tls=True" -o "cnats/*:tls_use_openssl_1_1_api=True" -o "etcd-cpp-apiv3/*:with_nats=True" -o "etcd-cpp-apiv3/*:nats_package_name=cnats" --build=missing --build=outdated
+        run: conan install . -pr conanprofile -of build -s build_type=${{env.BUILD_TYPE}} -s arch=${{matrix.arch}} -s:b compiler.cppstd=${{ matrix.cppstd }} -s compiler.cppstd=${{ matrix.cppstd }} --build=missing --build=outdated
         working-directory: cpp-lib
 
       - name: Install Conan Dependencies - macOS
@@ -146,7 +146,7 @@ jobs:
           CONAN_PARALLEL_BUILD: 4
         run: |
           # macOS-specific flags for Apple Clang 15 compatibility
-          conan install . -of build -s build_type=${{env.BUILD_TYPE}} -s arch=${{matrix.arch}} -s:b compiler.cppstd=${{ matrix.cppstd }} -s compiler.cppstd=${{ matrix.cppstd }} -s:b compiler.libcxx=libc++ -s compiler.libcxx=libc++ -s:b compiler.version=15 -s compiler.version=15 -o "*:shared=False" -o "protobuf/*:debug_suffix=False" -o "openssl/*:shared=False" -o "cpprestsdk/*:with_websockets=False" -o "cnats/*:shared=False" -o "cnats/*:with_streaming=False" -o "cnats/*:with_tls=True" -o "cnats/*:tls_use_openssl_1_1_api=True" -o "etcd-cpp-apiv3/*:with_nats=True" -o "etcd-cpp-apiv3/*:nats_package_name=cnats" --build=missing --build=outdated
+          conan install . -pr conanprofile -of build -s build_type=${{env.BUILD_TYPE}} -s arch=${{matrix.arch}} -s:b compiler.cppstd=${{ matrix.cppstd }} -s compiler.cppstd=${{ matrix.cppstd }} -s:b compiler.libcxx=libc++ -s compiler.libcxx=libc++ -s:b compiler.version=15 -s compiler.version=15 --build=missing --build=outdated
         working-directory: cpp-lib
 
       - name: Configure CMake
