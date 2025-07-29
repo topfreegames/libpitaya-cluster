@@ -36,7 +36,9 @@ FetchContent_Declare(
 )
 # Download spdlog
 FetchContent_MakeAvailable(spdlog)
-set_target_properties(spdlog PROPERTIES COMPILE_FLAGS -fPIC)
+if(UNIX OR APPLE)
+    set_target_properties(spdlog PROPERTIES COMPILE_FLAGS -fPIC)
+endif()
 
 # Build dependencies as static libraries
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "")
@@ -146,7 +148,10 @@ target_link_libraries(pitaya_cpp
   PUBLIC
     ${CNATS_TARGET}
     etcd-cpp-apiv3::etcd-cpp-apiv3
-    Boost::boost
+    boost::boost
+    Boost::thread
+    Boost::system
+    Boost::filesystem
     spdlog::spdlog
     protobuf-c::protobuf-c
     grpc::grpc
@@ -203,6 +208,9 @@ if(BUILD_TESTING AND NOT BUILD_MACOSX_BUNDLE)
       PRIVATE
         pitaya_cpp
         boost::boost
+        Boost::thread
+        Boost::system
+        Boost::filesystem
         gtest::gtest)
 
     add_test(tests tests)

@@ -25,7 +25,6 @@ class PitayaCpp(ConanFile):
         'macosx_bundle': False,
         'cpprestsdk/*:with_websockets': False,
         'openssl/*:shared': False,
-        'openssl/*:build_type': "Debug",
         'protobuf/*:debug_suffix': False,
         'cnats/*:shared': False,
         'cnats/*:with_streaming': False,
@@ -97,8 +96,13 @@ class PitayaCpp(ConanFile):
         self.copy('*.dylib', dst='lib', src='cmake_install/lib')
         self.copy('*.so', dst='lib', src='cmake_install/lib')
         self.copy('*.bundle', dst='lib', src='cmake_install/lib')
+        self.copy('*.dll', dst='lib', src='cmake_install/lib')
+        self.copy('*.lib', dst='lib', src='cmake_install/lib')
 
     def package_info(self):
         self.cpp_info.libs = ['pitaya_cpp']
         self.cpp_info.libdirs = ['lib/PitayaCpp']
-        self.cpp_info.cxxflags = ['-std=c++17']
+        if self.settings.os == 'Windows':
+            self.cpp_info.cxxflags = ['/std:c++17']
+        else:
+            self.cpp_info.cxxflags = ['-std=c++17']
