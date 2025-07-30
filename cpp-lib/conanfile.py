@@ -25,8 +25,13 @@ class PitayaCpp(ConanFile):
         'macosx_bundle': False,
         'cpprestsdk/*:with_websockets': False,
         'openssl/*:shared': False,
-        'openssl/*:build_type': "Debug",
         'protobuf/*:debug_suffix': False,
+        'cnats/*:shared': False,
+        'cnats/*:with_streaming': False,
+        'cnats/*:with_tls': True,
+        'cnats/*:tls_use_openssl_1_1_api': True,
+        'etcd-cpp-apiv3/*:with_nats': True,
+        'etcd-cpp-apiv3/*:nats_package_name': 'cnats',
     }
     build_requires = (
         'gtest/1.10.0'
@@ -36,19 +41,12 @@ class PitayaCpp(ConanFile):
     def requirements(self):
         self.requires("zlib/1.3.1")
         self.requires("protobuf/3.21.9", visible=True, force=True)
-        # Using Ubuntu 22.04+ compatible versions (GLIBC 2.35+)
-        # OpenSSL 3.0.8 and Boost 1.80.0 provide maximum compatibility with Ubuntu 22.04
-        # Use Boost 1.83.0 for macOS to fix Apple Clang 15 compatibility issues
-        if self.settings.os == 'Macos':
-            print("DEBUG: Using Boost 1.83.0 for macOS")
-            self.requires("boost/1.83.0", force=True)
-        else:
-            print(f"DEBUG: Using Boost 1.80.0 for {self.settings.os}")
-            self.requires("boost/1.80.0", force=True)
+        self.requires("boost/1.83.0")
         self.requires("openssl/3.0.8", force=True)
         self.requires("grpc/1.54.3")
         self.requires("protobuf-c/1.5.0")
         self.requires("etcd-cpp-apiv3/0.15.4")
+        self.requires("cnats/3.10.1")
         self.test_requires("gtest/1.10.0")
 
     def build_requirements(self):
@@ -60,7 +58,7 @@ class PitayaCpp(ConanFile):
 
     def generate(self):
         tc = CMakeToolchain(self)
-        tc.presets_prefix = "npitaya"
+        tc.presets_prefix = "conan"
         if self.settings.os == 'Macos':
             tc.variables['BUILD_MACOSX_BUNDLE'] = self.options.macosx_bundle
         tc.generate()
@@ -98,8 +96,13 @@ class PitayaCpp(ConanFile):
         self.copy('*.dylib', dst='lib', src='cmake_install/lib')
         self.copy('*.so', dst='lib', src='cmake_install/lib')
         self.copy('*.bundle', dst='lib', src='cmake_install/lib')
+        self.copy('*.dll', dst='lib', src='cmake_install/lib')
+        self.copy('*.lib', dst='lib', src='cmake_install/lib')
 
     def package_info(self):
         self.cpp_info.libs = ['pitaya_cpp']
         self.cpp_info.libdirs = ['lib/PitayaCpp']
-        self.cpp_info.cxxflags = ['-std=c++17']
+        if self.settings.os == 'Windows':
+            self.cpp_info.cxxflags = ['/std:c++17']
+        else:
+            self.cpp_info.cxxflags = ['-std=c++17']

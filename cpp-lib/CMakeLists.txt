@@ -19,16 +19,15 @@ if(WIN32)
   set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 endif()
 
-if(EXISTS ${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
-    include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
-    conan_basic_setup(TARGETS NO_OUTPUT_DIRS)
-endif()
-
+find_package(protobuf-c REQUIRED)
+find_package(etcd-cpp-apiv3 REQUIRED)
+find_package(gRPC REQUIRED)
+find_package(protobuf REQUIRED)
 find_package(Boost REQUIRED)
-include_directories(${Boost_INCLUDE_DIRS})
-
-find_package(cpprestsdk REQUIRED)
-include_directories(${cpprestsdk_INCLUDE_DIRS})
+find_package(cnats REQUIRED)
+find_package(OpenSSL REQUIRED)
+find_package(ZLIB REQUIRED)
+find_package(GTest REQUIRED)
 
 FetchContent_Declare(
       spdlog
@@ -37,22 +36,9 @@ FetchContent_Declare(
 )
 # Download spdlog
 FetchContent_MakeAvailable(spdlog)
-set_target_properties(spdlog PROPERTIES COMPILE_FLAGS -fPIC)
-
-find_package(gRPC REQUIRED)
-include_directories(${gRPC_INCLUDE_DIRS})
-
-find_package(Protobuf REQUIRED)
-include_directories(${protobuf_INCLUDE_DIRS})
-
-find_package(protobuf-c REQUIRED)
-include_directories(${protobuf-c_INCLUDE_DIRS})
-
-find_package(absl REQUIRED)
-include_directories(${absl_INCLUDE_DIRS})
-
-find_package(etcd-cpp-apiv3 REQUIRED)
-include_directories(${etcd-cpp-apiv3_INCLUDE_DIRS})
+if(UNIX OR APPLE)
+    set_target_properties(spdlog PROPERTIES COMPILE_FLAGS -fPIC)
+endif()
 
 # Build dependencies as static libraries
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "")
@@ -62,11 +48,6 @@ if(UNIX AND NOT APPLE)
     set(gRPC_ZLIB_PROVIDER "package")
 endif()
 
-set(NATS_BUILD_STREAMING OFF CACHE BOOL "")
-set(NATS_BUILD_TLS_USE_OPENSSL_1_1_API ON CACHE BOOL "" FORCE)
-add_subdirectory(deps/nats.c-3.8.0 EXCLUDE_FROM_ALL)
-
-set_target_properties(nats_static PROPERTIES COMPILE_FLAGS -fPIC)
 option(BUILD_MACOSX_BUNDLE "Should build a bundle for Macosx" OFF)
 
 if(BUILD_MACOSX_BUNDLE)
@@ -154,19 +135,27 @@ target_include_directories(pitaya_cpp
       ${CMAKE_CURRENT_BINARY_DIR}
     $<INSTALL_INTERFACE:include>
   PRIVATE
-    src)
+    src
+    ${CMAKE_CURRENT_BINARY_DIR}/generators)
+
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    set(CNATS_TARGET cnats::nats_staticd)
+else()
+    set(CNATS_TARGET cnats::nats_static)
+endif()
 
 target_link_libraries(pitaya_cpp
   PUBLIC
-    nats_static
+    ${CNATS_TARGET}
     etcd-cpp-apiv3::etcd-cpp-apiv3
-    Boost::boost
+    boost::boost
     Boost::thread
+    Boost::system
+    Boost::filesystem
     spdlog::spdlog
     protobuf-c::protobuf-c
-  PRIVATE
-    gRPC::grpc++_unsecure
-    protobuf::libprotobuf)
+    grpc::grpc
+    protobuf::protobuf)
 
 include(CTest)
 if(BUILD_TESTING AND NOT BUILD_MACOSX_BUNDLE)
@@ -182,10 +171,6 @@ if(BUILD_TESTING AND NOT BUILD_MACOSX_BUNDLE)
     #==============================
     # Enable tests
     #==============================
-    find_package(GTest REQUIRED)
-    include_directories(${GTest_INCLUDE_DIRS})
-    find_package(Boost REQUIRED COMPONENTS system thread)
-
     add_executable(pitaya_cpp_tests
         test/test_common.h
         test/mock_service_discovery.h
@@ -222,11 +207,11 @@ if(BUILD_TESTING AND NOT BUILD_MACOSX_BUNDLE)
     target_link_libraries(pitaya_cpp_tests
       PRIVATE
         pitaya_cpp
-        Boost::boost
-        Boost::system
+        boost::boost
         Boost::thread
-        GTest::gmock
-        GTest::gtest)
+        Boost::system
+        Boost::filesystem
+        gtest::gtest)
 
     add_test(tests tests)
 endif()

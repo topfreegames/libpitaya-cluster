@@ -4,6 +4,8 @@ include(default)
 
 [settings]
 compiler.cppstd=gnu17
+core.download:parallel=4
+core.upload:parallel=4
 
 [options]
 *:shared=False
@@ -11,11 +13,14 @@ compiler.cppstd=gnu17
 protobuf/*:debug_suffix=False
 openssl/*:shared=False
 cpprestsdk/*:with_websockets=False
+cnats/*:shared=False
+cnats/*:with_streaming=False
+cnats/*:with_tls=True
+cnats/*:tls_use_openssl_1_1_api=True
+etcd-cpp-apiv3/*:with_nats=True
+etcd-cpp-apiv3/*:nats_package_name=cnats
 
 [conf]
 tools.cmake.cmake_layout:build_folder_vars=['settings.os', 'settings.arch', 'options.macosx_bundle', 'settings.build_type']
 tools.build:skip_test=True
-tools.build:parallel=True
 tools.build:jobs=4
-tools.download:parallel=True
-tools.download:parallel_download=8
