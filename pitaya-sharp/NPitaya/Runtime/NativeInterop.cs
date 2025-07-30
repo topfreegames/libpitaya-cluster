@@ -196,6 +196,8 @@ namespace NPitaya
         public Int64 reconnectJitterInMs;
         public Int64 pingIntervalInMs;
         public int maxPingsOut;
+        public int drainTimeoutMs;
+        public int flushTimeoutMs;
 
         // Backward compatibility constructor with default values
         [Obsolete("This constructor is deprecated. Use the constructor without maxConnectionRetries parameter or NatsConfig.CreateWithDefaults().")]
@@ -225,6 +227,8 @@ namespace NPitaya
             this.reconnectJitterInMs = reconnectJitterInMs;
             this.pingIntervalInMs = pingIntervalInMs;
             this.maxPingsOut = maxPingsOut;
+            this.drainTimeoutMs = 1000;
+            this.flushTimeoutMs = 1000;
         }
 
         // Simple constructor for common use case
@@ -242,6 +246,8 @@ namespace NPitaya
             this.reconnectJitterInMs = 50;
             this.pingIntervalInMs = 1000;
             this.maxPingsOut = 2;
+            this.drainTimeoutMs = 1000;
+            this.flushTimeoutMs = 1000;
         }
 
         // New constructor without deprecated maxConnectionRetries parameter
@@ -256,7 +262,9 @@ namespace NPitaya
                           int reconnectWaitInMs = 100,
                           int reconnectJitterInMs = 50,
                           int pingIntervalInMs = 1000,
-                          int maxPingsOut = 2)
+                          int maxPingsOut = 2,
+                          int drainTimeoutMs = 1000,
+                          int flushTimeoutMs = 1000)
         {
             this.endpoint = endpoint;
             this.connectionTimeoutMs = connectionTimeoutMs;
@@ -270,6 +278,8 @@ namespace NPitaya
             this.reconnectJitterInMs = reconnectJitterInMs;
             this.pingIntervalInMs = pingIntervalInMs;
             this.maxPingsOut = maxPingsOut;
+            this.drainTimeoutMs = drainTimeoutMs;
+            this.flushTimeoutMs = flushTimeoutMs;
         }
 
         // Static factory method for backward compatibility
@@ -287,7 +297,9 @@ namespace NPitaya
                 100, // reconnectWaitInMs
                 50,   // reconnectJitterInMs
                 1000, // pingIntervalInMs
-                2     // maxPingsOut
+                2,    // maxPingsOut
+                1000, // drainTimeoutMs
+                1000  // flushTimeoutMs
             );
         }
     }

@@ -2,8 +2,8 @@
 
 #include "pitaya/utils.h"
 
-#include <string>
 #include <signal.h>
+#include <string>
 
 namespace pitaya {
 
@@ -12,7 +12,8 @@ namespace pitaya {
 //
 NatsMsgImpl::NatsMsgImpl(natsMsg* msg)
     : _msg(msg)
-{}
+{
+}
 
 NatsMsgImpl::~NatsMsgImpl()
 {
@@ -53,6 +54,9 @@ NatsClientImpl::NatsClientImpl(NatsApiType apiType,
     , _sub(nullptr)
     , _connClosed(false)
     , _shuttingDown(false)
+    , _lameDuckMode(false)
+    , _drainTimeout(config.drainTimeout)
+    , _lameDuckModeFlushTimeout(config.flushTimeout)
 {
     if (config.natsAddr.empty()) {
         throw PitayaException("NATS address should not be empty");
@@ -85,6 +89,9 @@ NatsClientImpl::NatsClientImpl(NatsApiType apiType,
     natsOptions_SetClosedCB(_opts, ClosedCb, this);
     natsOptions_SetDisconnectedCB(_opts, DisconnectedCb, this);
     natsOptions_SetReconnectedCB(_opts, ReconnectedCb, this);
+    // Register lame duck mode handler
+    natsOptions_SetLameDuckModeCB(_opts, LameDuckModeCb, this);
+
     if (apiType == NatsApiType::Asynchronous) {
         natsOptions_SetMaxPendingMsgs(_opts, config.maxPendingMsgs);
         natsOptions_SetErrorHandler(_opts, ErrHandler, this);
@@ -107,7 +114,7 @@ NatsClientImpl::NatsClientImpl(NatsApiType apiType,
         throw PitayaException(err_str);
     }
 }
-    
+
 NatsClientImpl::~NatsClientImpl()
 {
     _shuttingDown = true;
@@ -120,19 +127,19 @@ NatsClientImpl::~NatsClientImpl()
         if (status != NATS_OK) {
             _log->error("Failed to unsubscribe");
         }
-        
+
         _log->debug("Draining NATS subscription");
         status = natsSubscription_Drain(_sub);
         if (status != NATS_OK) {
             _log->error("Failed to drain subscription");
         }
-        
-        status =
-            natsSubscription_WaitForDrainCompletion(_sub, _subscriptionDrainTimeout.count());
+
+        status = natsSubscription_WaitForDrainCompletion(_sub, _drainTimeout.count());
         if (status != NATS_OK) {
             _log->error("Failed to wait for subscription drain");
         }
-        // Called only here, because it needs to wait for the natsSubscription_WaitForDrainCompletion
+        // Called only here, because it needs to wait for the
+        // natsSubscription_WaitForDrainCompletion
         natsSubscription_Destroy(_sub);
     }
 
@@ -152,6 +159,12 @@ NatsClientImpl::Request(std::shared_ptr<NatsMsg>* msg,
                         const std::vector<uint8_t>& data,
                         std::chrono::milliseconds timeout)
 {
+    // Check if in lame duck mode
+    if (IsInLameDuckMode()) {
+        _log->warn("Attempting to make request during lame duck mode - operation skipped");
+        return NATS_ILLEGAL_STATE;
+    }
+
     natsMsg* reply = nullptr;
     natsStatus status = natsConnection_Request(
         &reply, _conn, topic.c_str(), data.data(), data.size(), timeout.count());
@@ -172,6 +185,12 @@ natsStatus
 NatsClientImpl::Subscribe(const std::string& topic,
                           std::function<void(std::shared_ptr<NatsMsg>)> onMessage)
 {
+    // Check if in lame duck mode
+    if (IsInLameDuckMode()) {
+        _log->warn("Attempting to subscribe during lame duck mode - operation skipped");
+        return NATS_ILLEGAL_STATE;
+    }
+
     _log->info("Subscribing to topic {}", topic);
     _onMessage = std::move(onMessage);
     natsStatus status = natsConnection_Subscribe(&_sub, _conn, topic.c_str(), HandleMsg, this);
@@ -182,9 +201,26 @@ NatsClientImpl::Subscribe(const std::string& topic,
     return status;
 }
 
+bool
+NatsClientImpl::IsInLameDuckMode() const
+{
+    std::lock_guard<std::mutex> lock(_lameDuckModeMutex);
+    return _lameDuckMode;
+}
+
 natsStatus
 NatsClientImpl::Publish(const char* reply, const std::vector<uint8_t>& buf)
 {
+    // During lame duck mode, allow publishing but it will be buffered by NATS.c
+    // This is different from other operations which are blocked
+    {
+        std::lock_guard<std::mutex> lock(_lameDuckModeMutex);
+        if (_lameDuckMode) {
+            _log->info(
+                "Publishing during lame duck mode - message will be buffered for reconnection");
+        }
+    }
+
     natsStatus status = natsConnection_Publish(_conn, reply, buf.data(), buf.size());
 
     if (status != NATS_OK) {
@@ -218,8 +254,16 @@ void
 NatsClientImpl::ReconnectedCb(natsConnection* nc, void* user)
 {
     auto instance = reinterpret_cast<NatsClientImpl*>(user);
-    // TODO: implement logic here
     instance->_log->warn("nats reconnected!");
+
+    // Reset lame duck mode flag after successful reconnection
+    {
+        std::lock_guard<std::mutex> lock(instance->_lameDuckModeMutex);
+        if (instance->_lameDuckMode) {
+            instance->_lameDuckMode = false;
+            instance->_log->info("Lame duck mode flag reset after successful reconnection");
+        }
+    }
 }
 
 void
@@ -234,6 +278,61 @@ NatsClientImpl::ClosedCb(natsConnection* nc, void* user)
         // Send SIGTERM as this was caused by all reconnection attempts failing
         std::thread(std::bind(raise, SIGTERM)).detach();
     }
+}
+
+void
+NatsClientImpl::LameDuckModeCb(natsConnection* nc, void* user)
+{
+    auto instance = reinterpret_cast<NatsClientImpl*>(user);
+
+    instance->_log->info("=== LAME DUCK MODE DETECTED ===");
+    char serverUrl[256];
+    natsConnection_GetConnectedUrl(nc, serverUrl, sizeof(serverUrl));
+    instance->_log->info("Server: {}", serverUrl);
+
+    {
+        std::lock_guard<std::mutex> lock(instance->_lameDuckModeMutex);
+        instance->_lameDuckMode = true;
+        instance->_log->info("Lame duck mode flag set - preventing new operations");
+    }
+
+    // 1. Drain existing subscriptions gracefully
+    if (instance->_sub) {
+        instance->_log->info("Draining subscription...");
+        natsStatus status = natsSubscription_Drain(instance->_sub);
+        if (status == NATS_OK) {
+            instance->_log->info("Successfully initiated subscription drain");
+
+            // Wait for drain completion with configurable timeout
+            status = natsSubscription_WaitForDrainCompletion(instance->_sub,
+                                                             instance->_drainTimeout.count());
+            if (status == NATS_OK) {
+                instance->_log->info("Subscription drain completed successfully");
+            } else {
+                instance->_log->warn("Subscription drain timeout or failed: {}",
+                                     natsStatus_GetText(status));
+            }
+        } else {
+            instance->_log->warn("Failed to drain subscription: {}", natsStatus_GetText(status));
+        }
+    }
+
+    // 2. Flush pending messages to current server
+    instance->_log->info("Flushing pending messages...");
+    natsStatus status = natsConnection_FlushTimeout(
+        nc, instance->_lameDuckModeFlushTimeout.count()); // Use configurable timeout
+    if (status == NATS_OK) {
+        instance->_log->info("Successfully flushed pending messages");
+    } else {
+        instance->_log->warn("Flush failed: {}", natsStatus_GetText(status));
+    }
+
+    // 3. Trigger reconnection to other servers
+    instance->_log->info("Initiating reconnection...");
+    natsConnection_Reconnect(nc);
+
+    // 4. Reset lame duck mode flag after reconnection completes
+    instance->_log->info("=== LAME DUCK MODE HANDLING COMPLETE ===");
 }
 
 void
