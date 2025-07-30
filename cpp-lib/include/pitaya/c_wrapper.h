@@ -70,6 +70,8 @@ struct CNATSConfig
     int64_t reconnectJitterInMs = PITAYA_NATS_DEFAULT_RECONNECT_JITTER_IN_MS;
     int64_t pingIntervalInMs = PITAYA_NATS_DEFAULT_PING_INTERVAL_IN_MS;
     int32_t maxPingsOut = PITAYA_NATS_DEFAULT_MAX_PINGS_OUT;
+    int32_t drainTimeoutMs = PITAYA_NATS_DEFAULT_DRAIN_TIMEOUT_IN_MS;
+    int32_t flushTimeoutMs = PITAYA_NATS_DEFAULT_FLUSH_TIMEOUT_IN_MS;
 };
 
 struct CBindingStorageConfig
