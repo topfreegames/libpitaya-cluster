@@ -17,6 +17,7 @@ endif()
 
 if(WIN32)
   set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
+  add_definitions(-DNOMINMAX)
 endif()
 
 find_package(protobuf-c REQUIRED)
@@ -188,6 +189,7 @@ if(BUILD_TESTING AND NOT BUILD_MACOSX_BUNDLE)
         test/grpc_client_test.cpp
         test/grpc_server_test.cpp
         test/c_wrapper_test.cpp
+        test/lame_duck_mode_test.cpp
         test/main_test.cpp)
 
     message(INFO "Adding profiling data into the library and the tests executable, do not ship this library to production (compile with -DBUILD_TESTING=OFF)")

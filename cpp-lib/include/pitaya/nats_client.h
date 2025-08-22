@@ -6,10 +6,15 @@
 
 #include "spdlog/logger.h"
 
+#include <algorithm>
 #include <chrono>
+#include <functional>
+#include <future>
 #include <memory>
+#include <mutex>
 #include <nats/nats.h>
-#include <unordered_map>
+#include <string>
+#include <thread>
 #include <vector>
 
 namespace pitaya {
@@ -65,6 +70,14 @@ public:
                                  std::function<void(std::shared_ptr<NatsMsg>)> onMessage) = 0;
 
     virtual natsStatus Publish(const char* reply, const std::vector<uint8_t>& buf) = 0;
+
+    // Check if the client is currently in lame duck mode
+    virtual bool IsInLameDuckMode() const = 0;
+
+    // Hot-swap support for zero-downtime lame duck mode
+    virtual void SetHotSwapClient(std::shared_ptr<NatsClient> newClient) = 0;
+    virtual std::shared_ptr<NatsClient> GetHotSwapClient() const = 0;
+    virtual bool IsHotSwapAvailable() const = 0;
 };
 
 class NatsClientImpl : public NatsClient
@@ -83,15 +96,37 @@ public:
 
     natsStatus Publish(const char* reply, const std::vector<uint8_t>& buf) override;
 
+    // Check if the client is currently in lame duck mode
+    bool IsInLameDuckMode() const override;
+
+    // Hot-swap support for zero-downtime lame duck mode
+    void SetHotSwapClient(std::shared_ptr<NatsClient> newClient) override;
+    std::shared_ptr<NatsClient> GetHotSwapClient() const override;
+    bool IsHotSwapAvailable() const override;
+
 private:
     static void DisconnectedCb(natsConnection* nc, void* user);
     static void ReconnectedCb(natsConnection* nc, void* user);
     static void ClosedCb(natsConnection* nc, void* user);
+    static void LameDuckModeCb(natsConnection* nc, void* user);
     static void ErrHandler(natsConnection* nc,
                            natsSubscription* subscription,
                            natsStatus err,
                            void* user);
     static void HandleMsg(natsConnection* nc, natsSubscription* sub, natsMsg* msg, void* user);
+
+    // Request processing methods
+    natsStatus ExecuteRequest(std::shared_ptr<NatsMsg>* msg,
+                              const std::string& topic,
+                              const std::vector<uint8_t>& data,
+                              std::chrono::milliseconds timeout);
+
+    natsStatus BufferRequest(std::shared_ptr<NatsMsg>* msg,
+                             const std::string& topic,
+                             const std::vector<uint8_t>& data,
+                             std::chrono::milliseconds timeout);
+
+    void ProcessPendingRequests();
 
 private:
     struct SubscriptionHandler
@@ -101,13 +136,41 @@ private:
 
 private:
     std::shared_ptr<spdlog::logger> _log;
-    std::chrono::milliseconds _subscriptionDrainTimeout;
+    NatsConfig _config; // Store original configuration for hot-swap client creation
+    std::chrono::milliseconds _drainTimeout;
+    std::chrono::milliseconds _lameDuckModeFlushTimeout;
+    mutable std::mutex _lameDuckModeMutex;
     natsOptions* _opts;
     natsConnection* _conn;
     natsSubscription* _sub;
-    std::function<void(std::shared_ptr<NatsMsg>)> _onMessage;
     bool _connClosed;
     bool _shuttingDown;
+    bool _lameDuckMode; // Lame duck mode flag
+    std::function<void(std::shared_ptr<NatsMsg>)> _onMessage;
+
+    // Hot-swap support for zero-downtime lame duck mode
+    mutable std::mutex _hotSwapMutex;
+    std::shared_ptr<NatsClient> _hotSwapClient;
+    bool _hotSwapAvailable;
+
+    // Application-level request buffering during lame duck mode
+    struct PendingRequest
+    {
+        std::string topic;
+        std::vector<uint8_t> data;
+        std::chrono::milliseconds timeout;
+        std::chrono::steady_clock::time_point timestamp;
+        std::promise<std::pair<natsStatus, std::shared_ptr<NatsMsg>>> promise;
+    };
+
+    mutable std::mutex _pendingRequestsMutex;
+    std::vector<std::unique_ptr<PendingRequest>> _pendingRequests;
+    std::thread _requestProcessingThread;
+    bool _processingPendingRequests;
+
+    // Calculate max pending requests based on reconnectBufSize
+    // Assumes average request size of ~1KB, so buffer can hold reconnectBufSize/1024 requests
+    int GetMaxPendingRequests() const { return std::max(100, _config.reconnectBufSize / 1024); }
 };
 
 } // namespace pitaya

@@ -1,0 +1,157 @@
+version: '3.8'
+
+services:
+  # NATS cluster with 3 nodes
+  nats-1:
+    image: nats:2.10.7-alpine
+    container_name: nats-1
+    ports:
+      - "4222:4222"    # Client port
+      - "8222:8222"    # HTTP monitoring port
+    command: |
+      --server_name=nats-1
+      --cluster_name=nats_cluster_test
+      --cluster=nats://0.0.0.0:6222
+      --routes=nats://nats-2:6222,nats://nats-3:6222
+      --http_port=8222
+      --log_time=true
+      --max_connections=1000
+      --max_control_line=512
+      --max_payload=1048576
+      --max_pending=67108864
+      --max_subscriptions=0
+      --write_deadline=2s
+      --lame_duck_duration=10s
+      --lame_duck_grace_period=2s
+    networks:
+      - nats_network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8222/healthz"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+
+  nats-2:
+    image: nats:2.10.7-alpine
+    container_name: nats-2
+    ports:
+      - "4223:4222"    # Client port
+      - "8223:8222"    # HTTP monitoring port
+    command: |
+      --server_name=nats-2
+      --cluster_name=nats_cluster_test
+      --cluster=nats://0.0.0.0:6222
+      --routes=nats://nats-1:6222,nats://nats-3:6222
+      --http_port=8222
+      --log_time=true
+      --max_connections=1000
+      --max_control_line=512
+      --max_payload=1048576
+      --max_pending=67108864
+      --max_subscriptions=0
+      --write_deadline=2s
+      --lame_duck_duration=10s
+      --lame_duck_grace_period=2s
+    networks:
+      - nats_network
+    depends_on:
+      - nats-1
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8222/healthz"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 15s
+
+  nats-3:
+    image: nats:2.10.7-alpine
+    container_name: nats-3
+    ports:
+      - "4224:4222"    # Client port
+      - "8224:8222"    # HTTP monitoring port
+    command: |
+      --server_name=nats-3
+      --cluster_name=nats_cluster_test
+      --cluster=nats://0.0.0.0:6222
+      --routes=nats://nats-1:6222,nats://nats-2:6222
+      --http_port=8222
+      --log_time=true
+      --max_connections=1000
+      --max_control_line=512
+      --max_payload=1048576
+      --max_pending=67108864
+      --max_subscriptions=0
+      --write_deadline=2s
+      --lame_duck_duration=10s
+      --lame_duck_grace_period=2s
+    networks:
+      - nats_network
+    depends_on:
+      - nats-1
+      - nats-2
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8222/healthz"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 20s
+
+  # Simple etcd for service discovery
+  etcd:
+    image: quay.io/coreos/etcd:v3.5.7
+    container_name: etcd-test
+    ports:
+      - "2379:2379"    # Client port
+      - "2380:2380"    # Peer port
+    environment:
+      - ETCD_NAME=etcd-test
+      - ETCD_DATA_DIR=/etcd-data
+      - ETCD_LISTEN_CLIENT_URLS=http://0.0.0.0:2379
+      - ETCD_ADVERTISE_CLIENT_URLS=http://localhost:2379
+      - ETCD_LISTEN_PEER_URLS=http://0.0.0.0:2380
+      - ETCD_INITIAL_ADVERTISE_PEER_URLS=http://localhost:2380
+      - ETCD_INITIAL_CLUSTER=etcd-test=http://localhost:2380
+      - ETCD_INITIAL_CLUSTER_TOKEN=etcd-cluster-token
+      - ETCD_INITIAL_CLUSTER_STATE=new
+      - ETCD_AUTO_COMPACTION_RETENTION=1
+      - ETCD_MAX_REQUEST_BYTES=33554432
+      - ETCD_QUOTA_BACKEND_BYTES=6442450944
+    networks:
+      - nats_network
+    healthcheck:
+      test: ["CMD", "etcdctl", "endpoint", "health", "--endpoints=http://localhost:2379"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+
+  # NATS monitoring dashboard (optional)
+  nats-surveyor:
+    image: natsio/nats-surveyor:0.5.0
+    container_name: nats-surveyor
+    ports:
+      - "7777:7777"    # Surveyor dashboard port
+    command: |
+      -s http://nats-1:8222,http://nats-2:8222,http://nats-3:8222
+      -a 0.0.0.0:7777
+    networks:
+      - nats_network
+    depends_on:
+      nats-1:
+        condition: service_healthy
+      nats-2:
+        condition: service_healthy
+      nats-3:
+        condition: service_healthy
+
+networks:
+  nats_network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.25.0.0/16
+
+volumes:
+  etcd_data:
+    driver: local

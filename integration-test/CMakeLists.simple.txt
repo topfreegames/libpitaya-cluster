@@ -1,0 +1,101 @@
+cmake_minimum_required(VERSION 3.26.3)
+
+project(PitayaSimpleIntegrationTest)
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+# Set build type if not specified
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE Release)
+endif()
+
+# Find required packages
+find_package(Threads REQUIRED)
+
+# Find NATS C library from the conan build
+set(NATS_LIB_PATHS
+    ../cpp-lib/build/_builds/Debug/_deps
+    ~/.conan2/p/*/b/*/p/lib
+    /usr/local/lib
+    /opt/homebrew/lib
+)
+
+find_library(CNATS_LIB 
+    NAMES cnats nats_static nats_staticd
+    PATHS ${NATS_LIB_PATHS}
+    PATH_SUFFIXES lib
+    NO_DEFAULT_PATH
+)
+
+if(NOT CNATS_LIB)
+    find_library(CNATS_LIB 
+        NAMES cnats nats_static nats_staticd
+        PATHS /usr/local/lib /opt/homebrew/lib
+    )
+endif()
+
+if(NOT CNATS_LIB)
+    message(FATAL_ERROR "CNATS library not found. Please ensure the main library is built.")
+endif()
+
+message(STATUS "Found CNATS: ${CNATS_LIB}")
+
+# Find NATS include directory
+find_path(CNATS_INCLUDE_DIR
+    NAMES nats/nats.h
+    PATHS ~/.conan2/p/*/b/*/p/include
+          ../cpp-lib/build/_builds/Debug/_deps
+          /usr/local/include
+          /opt/homebrew/include
+    NO_DEFAULT_PATH
+)
+
+if(NOT CNATS_INCLUDE_DIR)
+    find_path(CNATS_INCLUDE_DIR
+        NAMES nats/nats.h
+        PATHS /usr/local/include /opt/homebrew/include
+    )
+endif()
+
+if(NOT CNATS_INCLUDE_DIR)
+    message(FATAL_ERROR "CNATS headers not found")
+endif()
+
+message(STATUS "Found CNATS headers: ${CNATS_INCLUDE_DIR}")
+
+# Create simple test executable
+add_executable(simple_test
+    src/simple_test.cpp
+)
+
+# Include directories
+target_include_directories(simple_test PRIVATE
+    ${CNATS_INCLUDE_DIR}
+    src
+)
+
+# Link libraries
+target_link_libraries(simple_test PRIVATE
+    ${CNATS_LIB}
+    Threads::Threads
+)
+
+# Additional libraries that CNATS might need
+if(APPLE)
+    find_library(CORE_FOUNDATION CoreFoundation)
+    find_library(SECURITY Security)
+    target_link_libraries(simple_test PRIVATE ${CORE_FOUNDATION} ${SECURITY})
+endif()
+
+# Find OpenSSL (CNATS may need it)
+find_package(OpenSSL QUIET)
+if(OpenSSL_FOUND)
+    target_link_libraries(simple_test PRIVATE OpenSSL::SSL OpenSSL::Crypto)
+endif()
+
+# Set properties
+set_target_properties(simple_test PROPERTIES
+    CXX_STANDARD 17
+    OUTPUT_NAME simple_test
+)

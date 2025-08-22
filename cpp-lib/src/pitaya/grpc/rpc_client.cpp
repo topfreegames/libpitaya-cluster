@@ -107,10 +107,19 @@ GrpcClient::Call(const pitaya::Server& target, const protos::Request& req)
             _log->error(msg);
             _log->error("Server details: id = {}, type = {}, hostname = {}, isFrontend = {}, metadata = {}",
                         target.Id(), target.Type(), target.Hostname(), target.IsFrontend(), target.Metadata());
-            if (status.error_code() == grpc::StatusCode::DEADLINE_EXCEEDED) {
-                return NewErrorResponse(constants::kCodeTimeout, msg);
-            } else {
-                return NewErrorResponse(constants::kCodeInternalError, msg);
+            
+            // Enhanced error handling for different scenarios
+            switch (status.error_code()) {
+                case grpc::StatusCode::DEADLINE_EXCEEDED:
+                    return NewErrorResponse(constants::kCodeTimeout, "Request timeout - server may be under high load");
+                case grpc::StatusCode::UNAVAILABLE:
+                    return NewErrorResponse(constants::kCodeServiceUnavailable, "Service temporarily unavailable - server may be in lame duck mode or restarting");
+                case grpc::StatusCode::RESOURCE_EXHAUSTED:
+                    return NewErrorResponse(constants::kCodeServiceUnavailable, "Server resources exhausted - too many concurrent requests");
+                case grpc::StatusCode::CANCELLED:
+                    return NewErrorResponse(constants::kCodeServiceUnavailable, "Request cancelled - server may be shutting down");
+                default:
+                    return NewErrorResponse(constants::kCodeInternalError, msg);
             }
         }
 
@@ -156,8 +165,19 @@ GrpcClient::SendPushToUser(const std::string& providedServerId,
     auto status = stub->PushToUser(&context, push, &res);
 
     if (!status.ok()) {
-        auto msg = fmt::format("Push failed: {}", status.error_message());
-        return PitayaError(constants::kCodeInternalError, msg);
+        auto msg = fmt::format("Push failed: error_code = {}, error_message = {}",
+                              status.error_code(), status.error_message());
+        
+        switch (status.error_code()) {
+            case grpc::StatusCode::DEADLINE_EXCEEDED:
+                return PitayaError(constants::kCodeTimeout, "Push timeout - server may be under high load");
+            case grpc::StatusCode::UNAVAILABLE:
+                return PitayaError(constants::kCodeServiceUnavailable, "Service temporarily unavailable - server may be in lame duck mode");
+            case grpc::StatusCode::RESOURCE_EXHAUSTED:
+                return PitayaError(constants::kCodeServiceUnavailable, "Server resources exhausted");
+            default:
+                return PitayaError(constants::kCodeInternalError, msg);
+        }
     }
 
     return boost::none;
@@ -205,8 +225,19 @@ GrpcClient::SendKickToUser(const std::string& providedServerId,
     auto status = stub->KickUser(&context, kick, &kickAns);
 
     if (!status.ok()) {
-        return PitayaError(constants::kCodeInternalError,
-                           fmt::format("Kick failed: {}", status.error_message()));
+        auto msg = fmt::format("Kick failed: error_code = {}, error_message = {}",
+                              status.error_code(), status.error_message());
+        
+        switch (status.error_code()) {
+            case grpc::StatusCode::DEADLINE_EXCEEDED:
+                return PitayaError(constants::kCodeTimeout, "Kick timeout - server may be under high load");
+            case grpc::StatusCode::UNAVAILABLE:
+                return PitayaError(constants::kCodeServiceUnavailable, "Service temporarily unavailable - server may be in lame duck mode");
+            case grpc::StatusCode::RESOURCE_EXHAUSTED:
+                return PitayaError(constants::kCodeServiceUnavailable, "Server resources exhausted");
+            default:
+                return PitayaError(constants::kCodeInternalError, msg);
+        }
     }
 
     return boost::none;
