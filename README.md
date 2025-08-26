@@ -21,6 +21,11 @@ The original [Pitaya](https://github.com/topfreegames/pitaya) project supports b
 - **go-server**: thats an example server for using with the other components, you can run it with ```make run-go-server```
 - **unity-example**: this is an unity example that uses NPitaya. For running it you must place (or link) out/libpitaya_cluster.dylib into Assets/Plugins folder
 
+## Documentation
+
+### C++ Library Documentation
+- **[NATS Lame Duck Mode Handling](cpp-lib/docs/LAME_DUCK_MODE.md)**: Comprehensive guide on how the NATS client handles graceful server shutdowns, including automatic message buffering, thread-safe operations, and reconnection strategies.
+
 ## Installation
 | Language | Project Location             |
 | -------- |------------------------------|

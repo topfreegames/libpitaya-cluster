@@ -64,7 +64,22 @@ struct NatsRpcServer::CallData : public pitaya::Rpc
 
                 natsStatus status = natsClient->Publish(msg->GetReply(), std::move(buf));
                 if (status != NATS_OK) {
-                    log->error("Failed to publish RPC response");
+                    switch (status) {
+                        case NATS_ILLEGAL_STATE:
+                            log->warn("Failed to publish RPC response - lame duck mode active");
+                            break;
+                        case NATS_INSUFFICIENT_BUFFER:
+                            log->warn("Failed to publish RPC response - buffer full during lame "
+                                      "duck mode");
+                            break;
+                        case NATS_TIMEOUT:
+                            log->error("Failed to publish RPC response - timeout");
+                            break;
+                        default:
+                            log->error("Failed to publish RPC response: {}",
+                                       natsStatus_GetText(status));
+                            break;
+                    }
                 }
 
                 // the RPC response was published, now remove it from the in process rpcs
@@ -213,7 +228,21 @@ NatsRpcServer::OnNewMessage(std::shared_ptr<NatsMsg> msg)
 
         natsStatus status = _natsClient->Publish(msg->GetReply(), std::move(buf));
         if (status != NATS_OK) {
-            _log->error("Failed to publish RPC response");
+            switch (status) {
+                case NATS_ILLEGAL_STATE:
+                    _log->warn("Failed to publish RPC response - lame duck mode active");
+                    break;
+                case NATS_INSUFFICIENT_BUFFER:
+                    _log->warn(
+                        "Failed to publish RPC response - buffer full during lame duck mode");
+                    break;
+                case NATS_TIMEOUT:
+                    _log->error("Failed to publish RPC response - timeout");
+                    break;
+                default:
+                    _log->error("Failed to publish RPC response: {}", natsStatus_GetText(status));
+                    break;
+            }
         }
     }
 }
@@ -225,7 +254,20 @@ NatsRpcServer::OnRpcFinished(const char* reply,
 {
     natsStatus status = _natsClient->Publish(reply, std::move(responseBuf));
     if (status != NATS_OK) {
-        _log->error("Failed to publish RPC response");
+        switch (status) {
+            case NATS_ILLEGAL_STATE:
+                _log->warn("Failed to publish RPC response - lame duck mode active");
+                break;
+            case NATS_INSUFFICIENT_BUFFER:
+                _log->warn("Failed to publish RPC response - buffer full during lame duck mode");
+                break;
+            case NATS_TIMEOUT:
+                _log->error("Failed to publish RPC response - timeout");
+                break;
+            default:
+                _log->error("Failed to publish RPC response: {}", natsStatus_GetText(status));
+                break;
+        }
     }
 
     // the RPC response was published, now remove it from the in process rpcs

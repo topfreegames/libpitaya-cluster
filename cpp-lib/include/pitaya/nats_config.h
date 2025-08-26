@@ -19,6 +19,10 @@
 #define PITAYA_NATS_DEFAULT_PING_INTERVAL_IN_MS 1000
 #define PITAYA_NATS_DEFAULT_MAX_PINGS_OUT 2
 
+// Lame duck mode and drain timeouts
+#define PITAYA_NATS_DEFAULT_DRAIN_TIMEOUT_IN_MS 1000
+#define PITAYA_NATS_DEFAULT_FLUSH_TIMEOUT_IN_MS 1000
+
 namespace pitaya {
 
 struct NatsConfig
@@ -36,6 +40,9 @@ struct NatsConfig
     std::chrono::milliseconds reconnectJitterInMs;
     std::chrono::milliseconds pingIntervalInMs;
     int maxPingsOut;
+    // Lame duck mode and drain timeouts
+    std::chrono::milliseconds drainTimeout;
+    std::chrono::milliseconds flushTimeout;
 
     NatsConfig(const std::string& addr,
                std::chrono::milliseconds requestTimeout,
@@ -48,7 +55,9 @@ struct NatsConfig
                int reconnectBufSize,
                std::chrono::milliseconds reconnectJitterInMs,
                std::chrono::milliseconds pingIntervalInMs,
-               int maxPingsOut)
+               int maxPingsOut,
+               std::chrono::milliseconds drainTimeout,
+               std::chrono::milliseconds flushTimeout)
         : natsAddr(addr)
         , connectionTimeout(connectionTimeout)
         , requestTimeout(requestTimeout)
@@ -61,6 +70,8 @@ struct NatsConfig
         , reconnectJitterInMs(reconnectJitterInMs)
         , pingIntervalInMs(pingIntervalInMs)
         , maxPingsOut(maxPingsOut)
+        , drainTimeout(drainTimeout)
+        , flushTimeout(flushTimeout)
     {
     }
 
@@ -77,6 +88,8 @@ struct NatsConfig
         , reconnectJitterInMs(std::chrono::milliseconds(PITAYA_NATS_DEFAULT_RECONNECT_JITTER_IN_MS))
         , pingIntervalInMs(std::chrono::milliseconds(PITAYA_NATS_DEFAULT_PING_INTERVAL_IN_MS))
         , maxPingsOut(PITAYA_NATS_DEFAULT_MAX_PINGS_OUT)
+        , drainTimeout(std::chrono::milliseconds(PITAYA_NATS_DEFAULT_DRAIN_TIMEOUT_IN_MS))
+        , flushTimeout(std::chrono::milliseconds(PITAYA_NATS_DEFAULT_FLUSH_TIMEOUT_IN_MS))
     {
     }
 };
