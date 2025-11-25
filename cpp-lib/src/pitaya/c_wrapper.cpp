@@ -15,6 +15,7 @@
 #include <assert.h>
 #include <boost/optional.hpp>
 #include <chrono>
+#include <csignal>
 #include <cstdio>
 #include <cpprest/json.h>
 
@@ -269,6 +270,8 @@ extern "C"
             return true;
         } catch (const PitayaException& exc) {
             gLogger->error("Failed to create cluster instance: {}", exc.what());
+            gLogger->error("Sending SIGTERM to terminate process due to initialization failure");
+            std::raise(SIGTERM);
             return false;
         }
     }
@@ -312,6 +315,8 @@ extern "C"
             return true;
         } catch (const PitayaException& exc) {
             gLogger->error("Failed to create cluster instance: {}", exc.what());
+            gLogger->error("Sending SIGTERM to terminate process due to initialization failure");
+            std::raise(SIGTERM);
             return false;
         }
     }
