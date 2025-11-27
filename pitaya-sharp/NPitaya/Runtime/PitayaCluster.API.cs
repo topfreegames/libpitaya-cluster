@@ -56,13 +56,16 @@ namespace NPitaya
 
         public static void AddSignalHandler(Action cb)
         {
+            Logger.Info("[IL2CPP Debug] AddSignalHandler called, registering OnSignal callback with native code");
             _onSignalEvent += cb;
             OnSignalInternal(OnSignal);
+            Logger.Info("[IL2CPP Debug] AddSignalHandler completed");
         }
 
         [MonoPInvokeCallback(typeof(OnSignalFunc))]
         private static void OnSignal()
         {
+            Logger.Info("[IL2CPP Debug] OnSignal callback invoked");
             Logger.Info("Invoking signal handler");
             _onSignalEvent?.Invoke();
         }
@@ -74,20 +77,28 @@ namespace NPitaya
                                       ServiceDiscoveryListener serviceDiscoveryListener = null,
                                       string logFile = "")
         {
+            Logger.SetLevel(LogLevel.DEBUG);
+            Logger.Info("[IL2CPP Debug] Initialize (GRPC) called");
+            
             IntPtr grpcCfgPtr = new StructWrapper(grpcCfg);
             IntPtr sdCfgPtr = new StructWrapper(sdCfg);
             IntPtr serverPtr = new StructWrapper(server);
 
+            Logger.Info("[IL2CPP Debug] Calling InitializeWithGrpcInternal");
             bool ok = InitializeWithGrpcInternal(grpcCfgPtr, sdCfgPtr, serverPtr, logLevel,
                 logFile);
+            Logger.Info($"[IL2CPP Debug] InitializeWithGrpcInternal returned: {ok}");
 
             if (!ok)
             {
                 throw new PitayaException("Initialization failed");
             }
 
+            Logger.Info("[IL2CPP Debug] About to call AddServiceDiscoveryListener");
             AddServiceDiscoveryListener(serviceDiscoveryListener);
+            Logger.Info("[IL2CPP Debug] AddServiceDiscoveryListener done, about to call ListenToIncomingRPCs");
             ListenToIncomingRPCs();
+            Logger.Info("[IL2CPP Debug] Initialize (GRPC) completed");
         }
 
         private static void ListenToIncomingRPCs()
@@ -121,21 +132,29 @@ namespace NPitaya
                                       ServiceDiscoveryListener serviceDiscoveryListener = null,
                                       string logFile = "")
         {
+            Logger.SetLevel(LogLevel.DEBUG);
+            Logger.Info("[IL2CPP Debug] Initialize (NATS) called");
+            
             IntPtr natsCfgPtr = new StructWrapper(natsCfg);
             IntPtr sdCfgPtr = new StructWrapper(sdCfg);
             IntPtr serverPtr = new StructWrapper(server);
 
+            Logger.Info("[IL2CPP Debug] Calling InitializeWithNatsInternal");
             bool ok = InitializeWithNatsInternal(natsCfgPtr, sdCfgPtr, serverPtr,
                 logLevel,
                 logFile);
+            Logger.Info($"[IL2CPP Debug] InitializeWithNatsInternal returned: {ok}");
 
             if (!ok)
             {
                 throw new PitayaException("Initialization failed");
             }
 
+            Logger.Info("[IL2CPP Debug] About to call AddServiceDiscoveryListener");
             AddServiceDiscoveryListener(serviceDiscoveryListener);
+            Logger.Info("[IL2CPP Debug] AddServiceDiscoveryListener done, about to call ListenToIncomingRPCs");
             ListenToIncomingRPCs();
+            Logger.Info("[IL2CPP Debug] Initialize (NATS) completed");
         }
 
         public static void RegisterRemote(BaseRemote remote)
@@ -367,37 +386,63 @@ namespace NPitaya
         [MonoPInvokeCallback(typeof(ServerAddedOrRemoved))]
         private static void OnServerAddedOrRemovedNativeCb(int serverAdded, IntPtr serverPtr, IntPtr user)
         {
-            var pitayaClusterHandle = (GCHandle)user;
-            var serviceDiscoveryListener = pitayaClusterHandle.Target as ServiceDiscoveryListener;
-
-            if (serviceDiscoveryListener == null)
+            Logger.Info($"[IL2CPP Debug] OnServerAddedOrRemovedNativeCb invoked: serverAdded={serverAdded}, serverPtr={serverPtr}, user={user}");
+            
+            try
             {
-                Logger.Warn("The service discovery listener is null!");
-                return;
+                var pitayaClusterHandle = (GCHandle)user;
+                Logger.Info($"[IL2CPP Debug] GCHandle created successfully");
+                
+                var serviceDiscoveryListener = pitayaClusterHandle.Target as ServiceDiscoveryListener;
+                Logger.Info($"[IL2CPP Debug] ServiceDiscoveryListener retrieved: {(serviceDiscoveryListener != null ? "not null" : "null")}");
+
+                if (serviceDiscoveryListener == null)
+                {
+                    Logger.Warn("The service discovery listener is null!");
+                    return;
+                }
+
+                var server = (Server)Marshal.PtrToStructure(serverPtr, typeof(Server));
+                Logger.Info($"[IL2CPP Debug] Server unmarshaled: id={server.id}, type={server.type}");
+
+                if (serverAdded == 1)
+                    serviceDiscoveryListener.onServer(ServiceDiscoveryAction.ServerAdded, server);
+                else
+                    serviceDiscoveryListener.onServer(ServiceDiscoveryAction.ServerRemoved, server);
+                    
+                Logger.Info("[IL2CPP Debug] OnServerAddedOrRemovedNativeCb completed successfully");
             }
-
-            var server = (Server)Marshal.PtrToStructure(serverPtr, typeof(Server));
-
-            if (serverAdded == 1)
-                serviceDiscoveryListener.onServer(ServiceDiscoveryAction.ServerAdded, server);
-            else
-                serviceDiscoveryListener.onServer(ServiceDiscoveryAction.ServerRemoved, server);
+            catch (Exception ex)
+            {
+                Logger.Error($"[IL2CPP Debug] Exception in OnServerAddedOrRemovedNativeCb: {ex.Message}\n{ex.StackTrace}");
+                throw;
+            }
         }
 
         private static void AddServiceDiscoveryListener(ServiceDiscoveryListener listener)
         {
+            Logger.Info($"[IL2CPP Debug] AddServiceDiscoveryListener called, listener is {(listener != null ? "not null" : "null")}");
+            
             _serviceDiscoveryListener = listener;
             if (listener == null)
+            {
+                Logger.Info("[IL2CPP Debug] AddServiceDiscoveryListener: listener is null, returning early");
                 return;
+            }
 
+            Logger.Info("[IL2CPP Debug] Allocating GCHandle for serviceDiscoveryListener");
             _serviceDiscoveryListenerHandle = GCHandle.Alloc(_serviceDiscoveryListener);
+            Logger.Info($"[IL2CPP Debug] GCHandle allocated: {(IntPtr)_serviceDiscoveryListenerHandle}");
 
+            Logger.Info("[IL2CPP Debug] Calling tfg_pitc_AddServiceDiscoveryListener with OnServerAddedOrRemovedNativeCb callback");
             IntPtr nativeListenerHandle = tfg_pitc_AddServiceDiscoveryListener(
                 OnServerAddedOrRemovedNativeCb,
                 (IntPtr)_serviceDiscoveryListenerHandle
             );
+            Logger.Info($"[IL2CPP Debug] tfg_pitc_AddServiceDiscoveryListener returned: {nativeListenerHandle}");
 
             listener.NativeListenerHandle = nativeListenerHandle;
+            Logger.Info("[IL2CPP Debug] AddServiceDiscoveryListener completed");
         }
 
         private static void RemoveServiceDiscoveryListener(ServiceDiscoveryListener listener)
