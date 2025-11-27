@@ -153,6 +153,7 @@ CSDConfig::TryGetConfig(pitaya::EtcdServiceDiscoveryConfig& config)
     } else {
         config.retryDelayMilliseconds = 100;
     }
+    config.initializationTimeoutSec = initializationTimeoutSec > 0 ? initializationTimeoutSec : 10;
     return ParseServerTypeFilters(config.serverTypeFilters, this->serverTypeFilters);
 }
 

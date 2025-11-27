@@ -75,7 +75,10 @@ NatsClientImpl::NatsClientImpl(NatsApiType apiType,
     // Reconnect parameters
     natsOptions_SetReconnectBufSize(_opts, config.reconnectBufSize);
     natsOptions_SetReconnectWait(_opts, config.reconnectWaitInMs.count());
-    natsOptions_SetRetryOnFailedConnect(_opts, true, NULL, this);
+    // Only enable RetryOnFailedConnect if maxReconnectionAttempts > 0
+    // Otherwise the initial connection will hang indefinitely
+    bool retryOnFailedConnect = (config.maxReconnectionAttempts > 0);
+    natsOptions_SetRetryOnFailedConnect(_opts, retryOnFailedConnect, NULL, this);
     natsOptions_SetPingInterval(_opts, config.pingIntervalInMs.count());
     natsOptions_SetMaxPingsOut(_opts, config.maxPingsOut);
     natsOptions_SetReconnectJitter(

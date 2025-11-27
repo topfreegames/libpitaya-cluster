@@ -88,3 +88,6 @@ build-all-mac: build-mac-release build-mac-unity build-linux-docker
 
 run-mac-debug:
 	cmake --build --preset conan-debug && ./run-tests-with-coverage.sh _builds/macos-$(LOCAL_ARCH)-macosx_bundle_false-debug/tests
+
+build-mac-debug-cmake-policy-3.5:
+	CMAKE_POLICY_VERSION_MINIMUM=3.5 && $(MAKE) build-mac-debug
