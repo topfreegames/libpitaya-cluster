@@ -144,10 +144,11 @@ jobs:
         env:
           CONAN_PARALLEL_DOWNLOAD: 8
           CONAN_PARALLEL_BUILD: 4
+          # CMAKE_POLICY_VERSION_MINIMUM=3.5 is needed for older packages (etcd-cpp-apiv3) that use cmake_minimum_required < 3.5
+          CMAKE_POLICY_VERSION_MINIMUM: "3.5"
         run: |
           # macOS 13 uses Xcode 15 with Apple Clang 15
-          # CMAKE_POLICY_VERSION_MINIMUM=3.5 is needed for older packages (etcd-cpp-apiv3) that use cmake_minimum_required < 3.5
-          conan install . -pr conanprofile -of build -s build_type=${{env.BUILD_TYPE}} -s arch=${{matrix.arch}} -s:b compiler.cppstd=${{ matrix.cppstd }} -s compiler.cppstd=${{ matrix.cppstd }} -s:b compiler.libcxx=libc++ -s compiler.libcxx=libc++ -s:b compiler.version=15 -s compiler.version=15 -c tools.cmake.cmaketoolchain:cache_variables="{'CMAKE_POLICY_VERSION_MINIMUM': '3.5'}" --build=missing --build=outdated
+          conan install . -pr conanprofile -of build -s build_type=${{env.BUILD_TYPE}} -s arch=${{matrix.arch}} -s:b compiler.cppstd=${{ matrix.cppstd }} -s compiler.cppstd=${{ matrix.cppstd }} -s:b compiler.libcxx=libc++ -s compiler.libcxx=libc++ -s:b compiler.version=15 -s compiler.version=15 --build=missing --build=outdated
         working-directory: cpp-lib
 
       - name: Configure CMake
