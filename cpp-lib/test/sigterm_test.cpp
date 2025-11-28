@@ -6,22 +6,22 @@
 #include <signal.h>
 #include <cstring>
 
-// Variável global atômica para detectar SIGTERM
+// Global atomic variable to detect SIGTERM
 static std::atomic<bool> gSigtermReceived{false};
 
-// Signal handler para capturar SIGTERM
+// Signal handler to capture SIGTERM
 void sigterm_handler(int signum) {
     if (signum == SIGTERM) {
         gSigtermReceived = true;
     }
 }
 
-// Reseta o estado do teste
+// Resets the test state
 void reset_test_state() {
     gSigtermReceived = false;
 }
 
-// Instala o signal handler
+// Installs the signal handler
 void install_signal_handler() {
     struct sigaction sa;
     sa.sa_handler = sigterm_handler;
@@ -30,23 +30,23 @@ void install_signal_handler() {
     sigaction(SIGTERM, &sa, nullptr);
 }
 
-// Teste 1: Sem retry (maxReconnectionAttempts = 0) - falha imediata
+// Test 1: No retry (maxReconnectionAttempts = 0) - immediate failure
 bool test_sigterm_no_retry() {
-    std::cout << "\n=== TESTE 1: Sem retry (falha imediata) ===" << std::endl;
+    std::cout << "\n=== TEST 1: No retry (immediate failure) ===" << std::endl;
     
     reset_test_state();
     install_signal_handler();
     
     std::thread worker([]() {
-        std::cout << "[Thread] Tentando inicializar sem retry..." << std::endl;
+        std::cout << "[Thread] Attempting to initialize without retry..." << std::endl;
         
         CNATSConfig nc = {};
-        nc.addr = "nats://192.0.2.1:4222";  // IP inválido
+        nc.addr = "nats://192.0.2.1:4222";  // Invalid IP
         nc.connectionTimeoutMs = 100;
         nc.requestTimeoutMs = 1000;
         nc.serverShutdownDeadlineMs = 1000;
         nc.serverMaxNumberOfRpcs = 100;
-        nc.maxReconnectionAttempts = 0;  // SEM RETRY
+        nc.maxReconnectionAttempts = 0;  // NO RETRY
         nc.maxPendingMsgs = 1000;
         nc.reconnectWaitInMs = 100;
         nc.reconnectBufSize = 8*1024*1024;
@@ -74,27 +74,27 @@ bool test_sigterm_no_retry() {
         
         tfg_pitc_InitializeWithNats(&nc, &sd, &sv, LogLevel_Info, nullptr);
         
-        std::cout << "[Thread] Inicialização retornou" << std::endl;
+        std::cout << "[Thread] Initialization returned" << std::endl;
     });
     
-    // Aguarda a thread terminar
+    // Wait for the thread to finish
     worker.join();
     
-    // Pequeno delay para garantir que o signal handler seja chamado
+    // Small delay to ensure the signal handler is called
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
     
     if (gSigtermReceived) {
-        std::cout << "✓ TESTE 1 PASSOU: SIGTERM recebido pelo processo pai (sem retry)" << std::endl;
+        std::cout << "✓ TEST 1 PASSED: SIGTERM received by parent process (no retry)" << std::endl;
         return true;
     }
     
-    std::cout << "✗ TESTE 1 FALHOU: SIGTERM não foi recebido" << std::endl;
+    std::cout << "✗ TEST 1 FAILED: SIGTERM was not received" << std::endl;
     return false;
 }
 
-// Teste 2: Com retry (maxReconnectionAttempts > 0) - falha após retries
+// Test 2: With retry (maxReconnectionAttempts > 0) - failure after retries
 bool test_sigterm_with_retry() {
-    std::cout << "\n=== TESTE 2: Com retry (falha após retries) ===" << std::endl;
+    std::cout << "\n=== TEST 2: With retry (failure after retries) ===" << std::endl;
     
     reset_test_state();
     install_signal_handler();
@@ -102,17 +102,17 @@ bool test_sigterm_with_retry() {
     std::atomic<bool> threadFinished{false};
     
     std::thread worker([&threadFinished]() {
-        std::cout << "[Thread] Tentando inicializar com 2 retries..." << std::endl;
+        std::cout << "[Thread] Attempting to initialize with 2 retries..." << std::endl;
         
         CNATSConfig nc = {};
-        nc.addr = "nats://192.0.2.1:4222";  // IP inválido
-        nc.connectionTimeoutMs = 100;       // 100ms timeout por tentativa
+        nc.addr = "nats://192.0.2.1:4222";  // Invalid IP
+        nc.connectionTimeoutMs = 100;       // 100ms timeout per attempt
         nc.requestTimeoutMs = 1000;
         nc.serverShutdownDeadlineMs = 1000;
         nc.serverMaxNumberOfRpcs = 100;
         nc.maxReconnectionAttempts = 2;     // 2 RETRIES
         nc.maxPendingMsgs = 1000;
-        nc.reconnectWaitInMs = 100;         // 100ms entre retries
+        nc.reconnectWaitInMs = 100;         // 100ms between retries
         nc.reconnectBufSize = 8*1024*1024;
         nc.reconnectJitterInMs = 50;
         nc.pingIntervalInMs = 1000;
@@ -127,7 +127,7 @@ bool test_sigterm_with_retry() {
         sd.logServerDetails = false;
         sd.syncServersIntervalSec = 20;
         sd.serverTypeFilters = nullptr;
-        sd.initializationTimeoutSec = 10;   // Maior timeout para permitir retries
+        sd.initializationTimeoutSec = 10;   // Larger timeout to allow retries
         
         CServer sv = {};
         sv.id = (char*)"test";
@@ -138,9 +138,9 @@ bool test_sigterm_with_retry() {
         
         tfg_pitc_InitializeWithNats(&nc, &sd, &sv, LogLevel_Info, nullptr);
         
-        std::cout << "[Thread] Inicialização retornou, aguardando SIGTERM dos retries..." << std::endl;
+        std::cout << "[Thread] Initialization returned, waiting for SIGTERM from retries..." << std::endl;
         
-        // Aguarda o SIGTERM do ClosedCb quando os retries falharem
+        // Wait for SIGTERM from ClosedCb when retries fail
         for (int i = 0; i < 100 && !gSigtermReceived; i++) {
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
         }
@@ -148,12 +148,12 @@ bool test_sigterm_with_retry() {
         threadFinished = true;
     });
     
-    // Aguarda com timeout
+    // Wait with timeout
     int timeout_sec = 15;
     for (int i = 0; i < timeout_sec * 10; i++) {
         if (gSigtermReceived) {
             worker.join();
-            std::cout << "✓ TESTE 2 PASSOU: SIGTERM recebido pelo processo pai após retries falharem" << std::endl;
+            std::cout << "✓ TEST 2 PASSED: SIGTERM received by parent process after retries failed" << std::endl;
             return true;
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
@@ -161,13 +161,13 @@ bool test_sigterm_with_retry() {
     
     // Timeout
     worker.join();
-    std::cout << "✗ TESTE 2 FALHOU: Timeout esperando SIGTERM" << std::endl;
+    std::cout << "✗ TEST 2 FAILED: Timeout waiting for SIGTERM" << std::endl;
     return false;
 }
 
-// Teste 3: Conexão bem-sucedida - NÃO deve enviar SIGTERM
+// Test 3: Successful connection - should NOT send SIGTERM
 bool test_successful_connection() {
-    std::cout << "\n=== TESTE 3: Conexão bem-sucedida (sem SIGTERM) ===" << std::endl;
+    std::cout << "\n=== TEST 3: Successful connection (no SIGTERM) ===" << std::endl;
     
     reset_test_state();
     install_signal_handler();
@@ -175,10 +175,10 @@ bool test_successful_connection() {
     std::atomic<bool> initSuccess{false};
     
     std::thread worker([&initSuccess]() {
-        std::cout << "[Thread] Tentando conectar ao NATS e etcd reais..." << std::endl;
+        std::cout << "[Thread] Attempting to connect to real NATS and etcd..." << std::endl;
         
         CNATSConfig nc = {};
-        nc.addr = "nats://127.0.0.1:4222";  // NATS local (Docker)
+        nc.addr = "nats://127.0.0.1:4222";  // Local NATS (Docker)
         nc.connectionTimeoutMs = 5000;
         nc.requestTimeoutMs = 5000;
         nc.serverShutdownDeadlineMs = 1000;
@@ -192,7 +192,7 @@ bool test_successful_connection() {
         nc.maxPingsOut = 2;
         
         CSDConfig sd = {};
-        sd.endpoints = "http://127.0.0.1:2379";  // etcd local (Docker)
+        sd.endpoints = "http://127.0.0.1:2379";  // Local etcd (Docker)
         sd.etcdPrefix = "pitaya/";
         sd.heartbeatTTLSec = 5;
         sd.logHeartbeat = false;
@@ -212,31 +212,31 @@ bool test_successful_connection() {
         bool result = tfg_pitc_InitializeWithNats(&nc, &sd, &sv, LogLevel_Info, nullptr);
         
         if (result) {
-            std::cout << "[Thread] ✓ Inicialização bem-sucedida!" << std::endl;
+            std::cout << "[Thread] ✓ Initialization successful!" << std::endl;
             initSuccess = true;
             
-            // Aguarda um pouco para garantir estabilidade
+            // Wait a bit to ensure stability
             std::this_thread::sleep_for(std::chrono::seconds(2));
             
-            // Termina normalmente
+            // Terminate normally
             tfg_pitc_Terminate();
-            std::cout << "[Thread] Terminado normalmente" << std::endl;
+            std::cout << "[Thread] Terminated normally" << std::endl;
         } else {
-            std::cout << "[Thread] ✗ Inicialização falhou!" << std::endl;
+            std::cout << "[Thread] ✗ Initialization failed!" << std::endl;
         }
     });
     
-    // Aguarda a thread com timeout
+    // Wait for thread with timeout
     int timeout_sec = 20;
     for (int i = 0; i < timeout_sec * 10; i++) {
         if (gSigtermReceived) {
             worker.join();
-            std::cout << "✗ TESTE 3 FALHOU: SIGTERM foi recebido (não deveria!)" << std::endl;
+            std::cout << "✗ TEST 3 FAILED: SIGTERM was received (it shouldn't!)" << std::endl;
             return false;
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
         
-        // Se a thread terminou com sucesso
+        // If thread finished successfully
         if (initSuccess) {
             break;
         }
@@ -245,12 +245,12 @@ bool test_successful_connection() {
     worker.join();
     
     if (initSuccess && !gSigtermReceived) {
-        std::cout << "✓ TESTE 3 PASSOU: Conexão bem-sucedida, sem SIGTERM" << std::endl;
+        std::cout << "✓ TEST 3 PASSED: Successful connection, no SIGTERM" << std::endl;
         return true;
     }
     
     if (!initSuccess) {
-        std::cout << "✗ TESTE 3 FALHOU: Inicialização não foi bem-sucedida" << std::endl;
+        std::cout << "✗ TEST 3 FAILED: Initialization was not successful" << std::endl;
     }
     
     return false;
@@ -276,12 +276,12 @@ int main(int argc, char* argv[]) {
         if (!test_successful_connection()) failures++;
     }
     
-    std::cout << "\n=== RESULTADO ===" << std::endl;
+    std::cout << "\n=== RESULT ===" << std::endl;
     if (failures == 0) {
-        std::cout << "✓ Todos os testes passaram!" << std::endl;
+        std::cout << "✓ All tests passed!" << std::endl;
         return 0;
     } else {
-        std::cout << "✗ " << failures << " teste(s) falhou(aram)" << std::endl;
+        std::cout << "✗ " << failures << " test(s) failed" << std::endl;
         return 1;
     }
 }
