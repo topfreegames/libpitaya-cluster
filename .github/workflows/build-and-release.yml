@@ -6,6 +6,13 @@ on:
   pull_request:
     branches:
       - master
+  workflow_dispatch:
+    inputs:
+      alpha:
+        description: 'Publish as alpha version (validates version contains "alpha")'
+        required: false
+        type: boolean
+        default: false
 
 env:
   BUILD_TYPE: Release
@@ -246,13 +253,41 @@ jobs:
   package:
     name: Package
     needs: consolidate
-    if: github.event_name == 'push'
+    # Run on tag push, or on PR/workflow_dispatch with alpha flag
+    if: github.event_name == 'push' || github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && inputs.alpha)
     runs-on: ubuntu-latest
+    outputs:
+      is_alpha: ${{ steps.version-check.outputs.is_alpha }}
+      version: ${{ steps.version-check.outputs.version }}
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
         with:
           submodules: recursive
+
+      - name: Check version and validate alpha
+        id: version-check
+        run: |
+          VERSION=$(cat cpp-lib/version.txt | tr -d '[:space:]')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          
+          if [[ "$VERSION" == *"alpha"* ]]; then
+            echo "is_alpha=true" >> $GITHUB_OUTPUT
+            echo "✅ Alpha version detected: $VERSION"
+          else
+            echo "is_alpha=false" >> $GITHUB_OUTPUT
+            echo "ℹ️ Non-alpha version: $VERSION"
+          fi
+          
+          # For PRs, validate that version must be alpha
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            if [[ "$VERSION" != *"alpha"* ]]; then
+              echo "❌ ERROR: Pull request builds require an alpha version in version.txt"
+              echo "Current version: $VERSION"
+              echo "Please update version.txt to include 'alpha' (e.g., 1.0.0-alpha.1)"
+              exit 1
+            fi
+          fi
 
       - name: Download artifacts from consolidate step
         uses: actions/download-artifact@v4
@@ -261,7 +296,12 @@ jobs:
           path: downloaded-artifacts
 
       - name: Package
-        run: VERSION=${{ github.ref_name }} ./package.sh
+        run: |
+          if [[ "${{ github.event_name }}" == "push" ]]; then
+            VERSION=${{ github.ref_name }} ./package.sh
+          else
+            VERSION=${{ steps.version-check.outputs.version }} ./package.sh
+          fi
 
       - name: Upload package directory
         uses: actions/upload-artifact@v4
@@ -273,7 +313,8 @@ jobs:
   publish:
     name: Publish
     needs: package
-    if: github.event_name == 'push'
+    # Run on tag push, or on PR/workflow_dispatch if alpha version validated
+    if: github.event_name == 'push' || ((github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch') && needs.package.outputs.is_alpha == 'true')
     runs-on: ubuntu-latest
     steps:
       - name: Download package directory
