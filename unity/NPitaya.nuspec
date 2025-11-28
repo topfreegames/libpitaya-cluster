@@ -2,7 +2,7 @@
 <package>
   <metadata>
     <id>com.wildlifestudios.npitaya</id>
-    <version>1.0.10-il2cpp-rc.1</version>
+    <version>1.0.10-il2cpp-alpha.1</version>
     <authors>TFG Co</authors>
     <owners>TFG Co</owners>
     <projectUrl>https://github.com/topfreegames/libpitaya-cluster</projectUrl>
