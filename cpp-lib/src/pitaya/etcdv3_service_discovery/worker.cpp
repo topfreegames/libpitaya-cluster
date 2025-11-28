@@ -50,7 +50,7 @@ try
         _log->info("Adding server type filter: {}", filter);
     }
 
-    _initPromise = std::make_shared<boost::promise<void>>();
+    _initPromise = std::make_shared<std::promise<void>>();
     _etcdClient->Watch(std::bind(&Worker::OnWatch, this, _1));
     _workerThread = boost::thread(&Worker::StartThread, this);
 
@@ -549,9 +549,9 @@ void
 Worker::WaitUntilInitialized()
 {
     auto future = _initPromise->get_future();
-    auto status = future.wait_for(boost::chrono::seconds(_config.initializationTimeoutSec));
+    auto status = future.wait_for(std::chrono::seconds(_config.initializationTimeoutSec));
     
-    if (status == boost::future_status::timeout) {
+    if (status == std::future_status::timeout) {
         throw PitayaException("Service discovery initialization timed out - failed to connect to etcd");
     }
 }
