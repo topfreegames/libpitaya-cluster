@@ -4,9 +4,10 @@
 #include "pitaya/utils/string_utils.h"
 
 #include <algorithm>
-#include <boost/chrono.hpp>
 #include <assert.h>
+#include <chrono>
 #include <cpprest/json.h>
+#include <future>
 #include <sstream>
 
 #ifdef _WIN32
@@ -550,7 +551,6 @@ Worker::WaitUntilInitialized()
 {
     auto future = _initPromise->get_future();
     auto status = future.wait_for(std::chrono::seconds(_config.initializationTimeoutSec));
-    
     if (status == std::future_status::timeout) {
         throw PitayaException("Service discovery initialization timed out - failed to connect to etcd");
     }
