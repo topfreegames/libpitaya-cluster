@@ -23,6 +23,9 @@ struct EtcdServiceDiscoveryConfig
     // Delay used on the exponential backoff retry (given in
     // milliseconds).
     int32_t retryDelayMilliseconds;
+    // Timeout for service discovery initialization (in seconds).
+    // If initialization takes longer than this, a PitayaException is thrown.
+    int32_t initializationTimeoutSec;
 
     EtcdServiceDiscoveryConfig()
         : heartbeatTTLSec(std::chrono::seconds(60))
@@ -32,6 +35,7 @@ struct EtcdServiceDiscoveryConfig
         , syncServersIntervalSec(std::chrono::seconds(60))
         , maxNumberOfRetries(10)
         , retryDelayMilliseconds(100)
+        , initializationTimeoutSec(10)  // Default: 10 seconds timeout
     {}
 };
 
