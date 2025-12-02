@@ -41,6 +41,7 @@ struct CSDConfig
     int32_t syncServersIntervalSec;
     int32_t maxNumberOfRetries = 5;
     int32_t retryDelayMilliseconds;
+    int32_t initializationTimeoutSec = 10;  // Default: 10 seconds
 
     bool TryGetConfig(pitaya::EtcdServiceDiscoveryConfig& config);
 };

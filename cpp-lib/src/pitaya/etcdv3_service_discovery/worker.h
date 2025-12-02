@@ -17,6 +17,7 @@
 #include <chrono>
 #include <etcd/Client.hpp>
 #include <etcd/Watcher.hpp>
+#include <future>
 #include <pplx/pplxtasks.h>
 #include <string>
 #include <boost/thread.hpp>
@@ -116,7 +117,7 @@ private:
 private:
     EtcdServiceDiscoveryConfig _config;
 
-    std::shared_ptr<boost::promise<void>> _initPromise;
+    std::shared_ptr<std::promise<void>> _initPromise;
     pitaya::Server _server;
 
     std::unique_ptr<EtcdClient> _etcdClient;

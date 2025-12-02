@@ -21,6 +21,12 @@ The original [Pitaya](https://github.com/topfreegames/pitaya) project supports b
 - **go-server**: thats an example server for using with the other components, you can run it with ```make run-go-server```
 - **unity-example**: this is an unity example that uses NPitaya. For running it you must place (or link) out/libpitaya_cluster.dylib into Assets/Plugins folder
 
+## Build Requirements (macOS)
+
+> **Important**: The gRPC library is not compatible with Clang 17 (Xcode 16+). If you are on an Apple device, you must use an older version such as **Xcode 14.3** (Clang 15) for the build to work.
+>
+> You can download older Xcode versions from: https://developer.apple.com/download/all/
+
 ## Installation
 | Language | Project Location             |
 | -------- |------------------------------|
