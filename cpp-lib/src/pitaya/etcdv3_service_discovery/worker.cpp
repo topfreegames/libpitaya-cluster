@@ -5,7 +5,9 @@
 
 #include <algorithm>
 #include <assert.h>
+#include <chrono>
 #include <cpprest/json.h>
+#include <future>
 #include <sstream>
 
 #ifdef _WIN32
@@ -49,7 +51,7 @@ try
         _log->info("Adding server type filter: {}", filter);
     }
 
-    _initPromise = std::make_shared<boost::promise<void>>();
+    _initPromise = std::make_shared<std::promise<void>>();
     _etcdClient->Watch(std::bind(&Worker::OnWatch, this, _1));
     _workerThread = boost::thread(&Worker::StartThread, this);
 
@@ -547,7 +549,11 @@ Worker::OnWatch(WatchResponse res)
 void
 Worker::WaitUntilInitialized()
 {
-    _initPromise->get_future().wait();
+    auto future = _initPromise->get_future();
+    auto status = future.wait_for(std::chrono::seconds(_config.initializationTimeoutSec));
+    if (status == std::future_status::timeout) {
+        throw PitayaException("Service discovery initialization timed out - failed to connect to etcd");
+    }
 }
 
 // ======================================================

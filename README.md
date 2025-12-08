@@ -25,6 +25,11 @@ The original [Pitaya](https://github.com/topfreegames/pitaya) project supports b
 
 ### C++ Library Documentation
 - **[NATS Lame Duck Mode Handling](cpp-lib/docs/LAME_DUCK_MODE.md)**: Comprehensive guide on how the NATS client handles graceful server shutdowns, including automatic message buffering, thread-safe operations, and reconnection strategies.
+## Build Requirements (macOS)
+
+> **Important**: The gRPC library is not compatible with Clang 17 (Xcode 16+). If you are on an Apple device, you must use an older version such as **Xcode 14.3** (Clang 15) for the build to work.
+>
+> You can download older Xcode versions from: https://developer.apple.com/download/all/
 
 ## Installation
 | Language | Project Location             |

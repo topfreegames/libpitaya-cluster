@@ -216,6 +216,12 @@ if(BUILD_TESTING AND NOT BUILD_MACOSX_BUNDLE)
         gtest::gtest)
 
     add_test(tests tests)
+
+    # Sigterm test - standalone executable to test early exit on init failure
+    add_executable(sigterm_test test/sigterm_test.cpp)
+    target_link_libraries(sigterm_test PRIVATE pitaya_cpp)
+    set_target_properties(sigterm_test PROPERTIES CXX_STANDARD 17)
+    add_test(NAME sigterm_test COMMAND sigterm_test)
 endif()
 
 #------------------------------------------------------
