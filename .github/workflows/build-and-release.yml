@@ -72,14 +72,14 @@ jobs:
             arch: x86_64
             preset: conan-macos-x86_64-macosx_bundle_false-release
             cppstd: gnu17
-            runner: mac-15
+            runner: macos-15
             cmake_path: build/_builds/macos-x86_64-macosx_bundle_false-release
           - platform: macos-15-armv8
             os: macos-15
             arch: armv8
             preset: conan-macos-armv8-macosx_bundle_false-release
             cppstd: gnu17
-            runner: mac-15
+            runner: macos-15
             cmake_path: build/_builds/macos-armv8-macosx_bundle_false-release
     steps:
       - name: Install Conan
