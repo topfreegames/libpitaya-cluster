@@ -13,6 +13,8 @@ using NPitaya.Utils;
 using static NPitaya.Utils.Utils;
 using System.Linq;
 
+using AOT;
+
 // TODO profiling
 // TODO better reflection performance in task async call
 // TODO support to sync methods
@@ -58,6 +60,7 @@ namespace NPitaya
             OnSignalInternal(OnSignal);
         }
 
+        [MonoPInvokeCallback(typeof(OnSignalFunc))]
         private static void OnSignal()
         {
             Logger.Info("Invoking signal handler");
@@ -361,6 +364,7 @@ namespace NPitaya
             return Rpc<T>("", route, msg);
         }
 
+        [MonoPInvokeCallback(typeof(ServerAddedOrRemoved))]
         private static void OnServerAddedOrRemovedNativeCb(int serverAdded, IntPtr serverPtr, IntPtr user)
         {
             var pitayaClusterHandle = (GCHandle)user;
