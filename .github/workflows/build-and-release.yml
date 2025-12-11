@@ -110,13 +110,24 @@ jobs:
           PIP_BREAK_SYSTEM_PACKAGES: 1
 
       - name: Optimize Conan
+        shell: bash
         run: |
           # Show Conan version and available commands
           conan --version
-          conan config list
           conan profile detect
-          conan remote add conancenter https://center.conan.io || true
+
+          # Configure Conan remotes - add Conan Center as primary (ignore if exists)
+          conan remote add conancenter https://center.conan.io 2>/dev/null || true
           conan remote list
+
+          # Configure download settings for better reliability (Conan 2.x uses global.conf)
+          mkdir -p ~/.conan2
+          echo "core.download:retry=5" >> ~/.conan2/global.conf
+          echo "core.download:retry_wait=10" >> ~/.conan2/global.conf
+
+          echo "✅ Conan configured with retry settings"
+          echo "📄 global.conf contents:"
+          cat ~/.conan2/global.conf
 
       - uses: actions/checkout@v4
         with:
@@ -289,11 +300,15 @@ jobs:
         with:
           name: prebuilt-libs-all-archs
           path: |
-            ./**/*pitaya_cpp.dll
-            ./**/*pitaya_cpp.so
-            ./**/*pitaya_cpp.dylib
-          working-directory: downloaded-artifacts
-          if-no-files-found: warn
+            downloaded-artifacts/linux-x86_64/*pitaya_cpp.so
+            downloaded-artifacts/linux-armv8/*pitaya_cpp.so
+            downloaded-artifacts/macos-x86_64/*pitaya_cpp.dylib
+            downloaded-artifacts/macos-arm64/*pitaya_cpp.dylib
+            downloaded-artifacts/windows-x86_64/*pitaya_cpp.dll
+          # If we can't find built libs here, packaging would silently fall back to
+          # whatever is already committed under pitaya-sharp/NPitaya/Runtime/Plugins/,
+          # which can ship stale binaries.
+          if-no-files-found: error
 
       - name: Cache consolidated artifacts
         if: needs.cache-check.outputs.cache-hit != 'true'
