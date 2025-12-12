@@ -77,6 +77,41 @@ copy_or_fail() {
     fi
 }
 
+copy_or_fail_rename() {
+    local src="$1"
+    local dst_dir="$2"
+    local dst_name="$3"
+    local label="$4"
+    if [ -f "$src" ]; then
+        echo "  - $label ($(shasum -a 256 "$src" | awk '{print $1}'))"
+        cp "$src" "$dst_dir/$dst_name"
+    else
+        echo "Error: missing expected artifact: $src"
+        exit 1
+    fi
+}
+
+copy_windows_dll() {
+    local artifacts_dir="$1"
+    local dst_dir="$2"
+
+    # CI produces `pitaya_cpp.dll` (CMake target name), but the Unity package layout
+    # expects `libpitaya_cpp.dll` for consistency with other platforms/docs.
+    if [ -f "$artifacts_dir/windows-x86_64/libpitaya_cpp.dll" ]; then
+        copy_or_fail_rename "$artifacts_dir/windows-x86_64/libpitaya_cpp.dll" "$dst_dir" "libpitaya_cpp.dll" "Windows x86_64 library"
+        return 0
+    fi
+    if [ -f "$artifacts_dir/windows-x86_64/pitaya_cpp.dll" ]; then
+        copy_or_fail_rename "$artifacts_dir/windows-x86_64/pitaya_cpp.dll" "$dst_dir" "libpitaya_cpp.dll" "Windows x86_64 library"
+        return 0
+    fi
+
+    echo "Error: missing expected Windows artifact:"
+    echo "  - $artifacts_dir/windows-x86_64/libpitaya_cpp.dll OR"
+    echo "  - $artifacts_dir/windows-x86_64/pitaya_cpp.dll"
+    exit 1
+}
+
 # Linux libraries
 copy_or_fail "$EFFECTIVE_ARTIFACTS_DIR/linux-x86_64/libpitaya_cpp.so" \
              "$PACKAGE_DIR/Runtime/Plugins/runtimes/linux-x86_64" \
@@ -96,9 +131,8 @@ copy_or_fail "$EFFECTIVE_ARTIFACTS_DIR/macos-arm64/libpitaya_cpp.dylib" \
              "macOS ARM64 library"
 
 # Windows library
-copy_or_fail "$EFFECTIVE_ARTIFACTS_DIR/windows-x86_64/libpitaya_cpp.dll" \
-             "$PACKAGE_DIR/Runtime/Plugins/runtimes/windows-x86_64" \
-             "Windows x86_64 library"
+copy_windows_dll "$EFFECTIVE_ARTIFACTS_DIR" \
+                 "$PACKAGE_DIR/Runtime/Plugins/runtimes/windows-x86_64"
 
 # Update package.json version
 echo "Updating package.json version to $VERSION_CLEAN..."
