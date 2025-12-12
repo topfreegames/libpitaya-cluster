@@ -245,6 +245,11 @@ jobs:
   consolidate:
     name: Consolidate all libs into single package
     needs: [cache-check, build]
+    # If the consolidated cache is a hit, the `build` job is skipped.
+    # By default, a skipped job in `needs` will skip downstream jobs too, which would
+    # prevent packaging/publishing. We want to continue on cache-hit and only require
+    # `build` success when we actually built.
+    if: ${{ always() && (needs.cache-check.outputs.cache-hit == 'true' || needs.build.result == 'success') }}
     runs-on: ubuntu-latest
     steps:
       - name: Download platform specific artifacts
