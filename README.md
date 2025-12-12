@@ -61,7 +61,7 @@ The original [Pitaya](https://github.com/topfreegames/pitaya) project supports b
 
 ## Releasing a new version in OpenUPM
 - Wait for the Github Actions Pipeline to run, to generate the platform specific "libpitaya_cpp" binaries.
-- Put the linux, windows, and macos (unity/fat) in the folder pitaya-sharp/NPitaya/Runtime/Plugins
+- Do NOT commit native binaries. For local Unity testing, build them with `scripts/build-unity-native-libs.sh` (they are gitignored).
 - Change the version in the file pitaya-sharp/NPitaya/package.json
 - Create a new tag in the format "vX.Y.Z" and push it to the repository
 
