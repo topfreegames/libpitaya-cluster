@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.26.3)
 
-project(PitayaSimpleIntegrationTest)
+project(PitayaIntegrationTest)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -13,12 +13,11 @@ endif()
 # Find required packages
 find_package(Threads REQUIRED)
 
-# Use exact path to CNATS library
-set(CNATS_LIB "/Users/hspedro/.conan2/p/b/cnats390e964bbd2f6/p/lib/libnats_static.a")
-set(CNATS_INCLUDE_DIR "/Users/hspedro/.conan2/p/b/cnats390e964bbd2f6/p/include")
+# Find CNATS from Conan
+find_package(cnats REQUIRED)
 
-message(STATUS "Using CNATS library: ${CNATS_LIB}")
-message(STATUS "Using CNATS headers: ${CNATS_INCLUDE_DIR}")
+# Find OpenSSL from Conan (optional, CNATS may need it)
+find_package(OpenSSL QUIET)
 
 # Create simple test executable
 add_executable(simple_test
@@ -30,41 +29,48 @@ add_executable(responder
     src/responder.cpp
 )
 
-# Include directories
-target_include_directories(simple_test PRIVATE
-    ${CNATS_INCLUDE_DIR}
-    src
+# Create lame duck zombie test executable
+add_executable(lame_duck_zombie_test
+    src/lame_duck_zombie_test.cpp
 )
 
-target_include_directories(responder PRIVATE
-    ${CNATS_INCLUDE_DIR}
-    src
-)
+# Include directories (using Conan targets)
+target_include_directories(simple_test PRIVATE src)
+target_include_directories(responder PRIVATE src)
+target_include_directories(lame_duck_zombie_test PRIVATE src)
 
-# Link libraries
+# Link libraries using Conan targets
 target_link_libraries(simple_test PRIVATE
-    ${CNATS_LIB}
+    cnats::nats_static
     Threads::Threads
 )
 
 target_link_libraries(responder PRIVATE
-    ${CNATS_LIB}
+    cnats::nats_static
     Threads::Threads
 )
 
-# Additional libraries that CNATS might need
-if(APPLE)
-    find_library(CORE_FOUNDATION CoreFoundation)
-    find_library(SECURITY Security)
-    target_link_libraries(simple_test PRIVATE ${CORE_FOUNDATION} ${SECURITY})
-    target_link_libraries(responder PRIVATE ${CORE_FOUNDATION} ${SECURITY})
-endif()
+target_link_libraries(lame_duck_zombie_test PRIVATE
+    cnats::nats_static
+    Threads::Threads
+)
 
-# Find OpenSSL (CNATS may need it)
-find_package(OpenSSL QUIET)
+# Link OpenSSL if found
 if(OpenSSL_FOUND)
     target_link_libraries(simple_test PRIVATE OpenSSL::SSL OpenSSL::Crypto)
     target_link_libraries(responder PRIVATE OpenSSL::SSL OpenSSL::Crypto)
+    target_link_libraries(lame_duck_zombie_test PRIVATE OpenSSL::SSL OpenSSL::Crypto)
+endif()
+
+# Additional libraries for Apple
+if(APPLE)
+    find_library(CORE_FOUNDATION CoreFoundation)
+    find_library(SECURITY Security)
+    if(CORE_FOUNDATION AND SECURITY)
+        target_link_libraries(simple_test PRIVATE ${CORE_FOUNDATION} ${SECURITY})
+        target_link_libraries(responder PRIVATE ${CORE_FOUNDATION} ${SECURITY})
+        target_link_libraries(lame_duck_zombie_test PRIVATE ${CORE_FOUNDATION} ${SECURITY})
+    endif()
 endif()
 
 # Set properties
@@ -76,4 +82,9 @@ set_target_properties(simple_test PROPERTIES
 set_target_properties(responder PROPERTIES
     CXX_STANDARD 17
     OUTPUT_NAME responder
+)
+
+set_target_properties(lame_duck_zombie_test PROPERTIES
+    CXX_STANDARD 17
+    OUTPUT_NAME lame_duck_zombie_test
 )

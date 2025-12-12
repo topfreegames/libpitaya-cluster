@@ -507,22 +507,20 @@ NatsClientImpl::ProcessPendingRequests()
 
             // #region agent log
             debugLog("nats_client.cpp:ProcessPendingRequests",
-                     "BEFORE acquiring hotSwapMutex then lameDuckModeMutex",
+                     "BEFORE acquiring locks atomically (FIX: using std::lock to prevent deadlock)",
                      "A",
                      "{\"thread\":\"processing\"}");
             // #endregion
             {
-                std::lock_guard<std::mutex> hotSwapLock(_hotSwapMutex);
+                // FIX: Use std::lock() to acquire both locks atomically, preventing ABBA deadlock
+                // Previously: acquired hotSwapMutex then lameDuckModeMutex (could deadlock with
+                // LameDuckModeCb) Now: acquire both atomically using std::lock()
+                std::unique_lock<std::mutex> hotSwapLock(_hotSwapMutex, std::defer_lock);
+                std::unique_lock<std::mutex> lameDuckLock(_lameDuckModeMutex, std::defer_lock);
+                std::lock(hotSwapLock, lameDuckLock);
                 // #region agent log
                 debugLog("nats_client.cpp:ProcessPendingRequests",
-                         "ACQUIRED hotSwapMutex, BEFORE lameDuckModeMutex",
-                         "A",
-                         "{\"thread\":\"processing\"}");
-                // #endregion
-                std::lock_guard<std::mutex> lameDuckLock(_lameDuckModeMutex);
-                // #region agent log
-                debugLog("nats_client.cpp:ProcessPendingRequests",
-                         "ACQUIRED both locks",
+                         "ACQUIRED both locks atomically (deadlock-free)",
                          "A",
                          "{\"thread\":\"processing\"}");
                 // #endregion
@@ -615,39 +613,55 @@ NatsClientImpl::LameDuckModeCb(natsConnection* nc, void* user)
              "{\"thread\":\"lameduck\",\"instance\":\"" + instanceAddr + "\"}");
     // #endregion
 
-    // ENHANCEMENT: Create hot-swap client immediately for zero-downtime
-    instance->_log->debug("Creating hot-swap client for zero-downtime failover...");
-    try {
+    // FIX: Check if we already have a hot-swap client to prevent recursive creation
+    // This can happen when the hot-swap client itself receives a lame duck callback
+    bool alreadyHasHotSwap = instance->IsHotSwapAvailable();
+    if (alreadyHasHotSwap) {
+        instance->_log->info(
+            "Hot-swap client already exists - skipping creation (prevents recursion)");
         // #region agent log
         debugLog("nats_client.cpp:LameDuckModeCb",
-                 "BEFORE creating hot-swap client (may trigger recursive lame duck)",
+                 "SKIPPING hot-swap creation - already exists (FIX: prevents infinite recursion)",
                  "B",
                  "{\"recursionDepth\":" + std::to_string(recursionDepth) + ",\"instance\":\"" +
                      instanceAddr + "\"}");
         // #endregion
-        // Create new client with same configuration but different logger name
-        std::string hotSwapLoggerName = std::string(instance->_log->name()) + "_hotswap";
-        auto hotSwapClient = std::make_shared<NatsClientImpl>(
-            NatsApiType::Synchronous, instance->_config, hotSwapLoggerName.c_str());
-        // #region agent log
-        debugLog("nats_client.cpp:LameDuckModeCb",
-                 "Hot-swap client created, BEFORE SetHotSwapClient (acquires hotSwapMutex)",
-                 "A,B",
-                 "{\"recursionDepth\":" + std::to_string(recursionDepth) + ",\"instance\":\"" +
-                     instanceAddr + "\"}");
-        // #endregion
+        // Don't return - still need to run the drain thread below
+    } else {
+        // ENHANCEMENT: Create hot-swap client immediately for zero-downtime
+        instance->_log->debug("Creating hot-swap client for zero-downtime failover...");
+        try {
+            // #region agent log
+            debugLog("nats_client.cpp:LameDuckModeCb",
+                     "BEFORE creating hot-swap client",
+                     "B",
+                     "{\"recursionDepth\":" + std::to_string(recursionDepth) + ",\"instance\":\"" +
+                         instanceAddr + "\"}");
+            // #endregion
+            // Create new client with same configuration but different logger name
+            std::string hotSwapLoggerName = std::string(instance->_log->name()) + "_hotswap";
+            auto hotSwapClient = std::make_shared<NatsClientImpl>(
+                NatsApiType::Synchronous, instance->_config, hotSwapLoggerName.c_str());
+            // #region agent log
+            debugLog("nats_client.cpp:LameDuckModeCb",
+                     "Hot-swap client created, BEFORE SetHotSwapClient",
+                     "A,B",
+                     "{\"recursionDepth\":" + std::to_string(recursionDepth) + ",\"instance\":\"" +
+                         instanceAddr + "\"}");
+            // #endregion
 
-        instance->SetHotSwapClient(hotSwapClient);
-        instance->_log->debug("Hot-swap client created successfully");
-    } catch (const std::exception& e) {
-        // #region agent log
-        debugLog("nats_client.cpp:LameDuckModeCb",
-                 "EXCEPTION creating hot-swap client",
-                 "B",
-                 "{\"error\":\"" + std::string(e.what()) + "\",\"instance\":\"" + instanceAddr +
-                     "\"}");
-        // #endregion
-        instance->_log->error("Failed to create hot-swap client: {}", e.what());
+            instance->SetHotSwapClient(hotSwapClient);
+            instance->_log->debug("Hot-swap client created successfully");
+        } catch (const std::exception& e) {
+            // #region agent log
+            debugLog("nats_client.cpp:LameDuckModeCb",
+                     "EXCEPTION creating hot-swap client",
+                     "B",
+                     "{\"error\":\"" + std::string(e.what()) + "\",\"instance\":\"" + instanceAddr +
+                         "\"}");
+            // #endregion
+            instance->_log->error("Failed to create hot-swap client: {}", e.what());
+        }
     }
     // #region agent log
     recursionDepth--;
