@@ -398,7 +398,7 @@ NatsClientImpl::ClosedCb(natsConnection* nc, void* user)
 {
     auto instance = reinterpret_cast<NatsClientImpl*>(user);
     // Signal main thread that the connection was actually closed
-    instance->_log->info("nats connection closed!");
+    instance->_log->warn("nats connection closed!");
     instance->_connClosed = true;
     if (!instance->_shuttingDown) {
         // This was not initiated by a shutdown request.
@@ -493,16 +493,16 @@ NatsClientImpl::LameDuckModeCb(natsConnection* nc, void* user)
     instance->_log->info("=== LAME DUCK MODE DETECTED ===");
     char serverUrl[256];
     natsConnection_GetConnectedUrl(nc, serverUrl, sizeof(serverUrl));
-    instance->_log->info("Server: {}", serverUrl);
+    instance->_log->debug("Server: {}", serverUrl);
 
     {
         std::lock_guard<std::mutex> lock(instance->_lameDuckModeMutex);
         instance->_lameDuckMode = true;
-        instance->_log->info("Lame duck mode flag set - preventing new operations");
+        instance->_log->debug("Lame duck mode flag set - preventing new operations");
     }
 
     // ENHANCEMENT: Create hot-swap client immediately for zero-downtime
-    instance->_log->info("Creating hot-swap client for zero-downtime failover...");
+    instance->_log->debug("Creating hot-swap client for zero-downtime failover...");
     try {
         // Create new client with same configuration but different logger name
         std::string hotSwapLoggerName = std::string(instance->_log->name()) + "_hotswap";
@@ -510,7 +510,7 @@ NatsClientImpl::LameDuckModeCb(natsConnection* nc, void* user)
             NatsApiType::Synchronous, instance->_config, hotSwapLoggerName.c_str());
 
         instance->SetHotSwapClient(hotSwapClient);
-        instance->_log->info("Hot-swap client created successfully");
+        instance->_log->debug("Hot-swap client created successfully");
     } catch (const std::exception& e) {
         instance->_log->error("Failed to create hot-swap client: {}", e.what());
     }
@@ -518,16 +518,16 @@ NatsClientImpl::LameDuckModeCb(natsConnection* nc, void* user)
     // 1. Drain existing subscriptions gracefully (in background)
     std::thread([instance, nc]() {
         if (instance->_sub) {
-            instance->_log->info("Draining subscription in background...");
+            instance->_log->debug("Draining subscription in background...");
             natsStatus status = natsSubscription_Drain(instance->_sub);
             if (status == NATS_OK) {
-                instance->_log->info("Successfully initiated subscription drain");
+                instance->_log->debug("Successfully initiated subscription drain");
 
                 // Wait for drain completion with configurable timeout
                 status = natsSubscription_WaitForDrainCompletion(instance->_sub,
                                                                  instance->_drainTimeout.count());
                 if (status == NATS_OK) {
-                    instance->_log->info("Subscription drain completed successfully");
+                    instance->_log->debug("Subscription drain completed successfully");
                 } else {
                     instance->_log->warn("Subscription drain timeout or failed: {}",
                                          natsStatus_GetText(status));
@@ -539,17 +539,17 @@ NatsClientImpl::LameDuckModeCb(natsConnection* nc, void* user)
         }
 
         // 2. Flush pending messages to current server
-        instance->_log->info("Flushing pending messages...");
+        instance->_log->debug("Flushing pending messages...");
         natsStatus status =
             natsConnection_FlushTimeout(nc, instance->_lameDuckModeFlushTimeout.count());
         if (status == NATS_OK) {
-            instance->_log->info("Successfully flushed pending messages");
+            instance->_log->debug("Successfully flushed pending messages");
         } else {
             instance->_log->warn("Flush failed: {}", natsStatus_GetText(status));
         }
 
         // 3. Trigger reconnection to other servers
-        instance->_log->info("Initiating reconnection...");
+        instance->_log->debug("Initiating reconnection...");
         natsConnection_Reconnect(nc);
 
         instance->_log->info("=== LAME DUCK MODE HANDLING COMPLETE ===");
