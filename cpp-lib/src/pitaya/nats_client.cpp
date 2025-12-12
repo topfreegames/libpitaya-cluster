@@ -105,6 +105,11 @@ NatsClientImpl::NatsClientImpl(NatsApiType apiType,
     }
     natsOptions_SetURL(_opts, config.natsAddr.c_str());
 
+    _log->info("[Constructor] Creating NatsClient with logger: {}", loggerName ? loggerName : "default");
+    if (loggerName && std::string(loggerName).find("_hotswap") != std::string::npos) {
+        _log->warn("[Recursion Check] This is a HOT-SWAP client - will it create another hot-swap?");
+    }
+    
     _log->info("NATS Connection Timeout - " + std::to_string(config.connectionTimeout.count()));
     _log->info("NATS Max Reconnect Attempts - " + std::to_string(config.maxReconnectionAttempts));
     _log->info("NATS Reconnect Wait Time - " + std::to_string(config.reconnectWaitInMs.count()));
@@ -300,7 +305,9 @@ NatsClientImpl::Subscribe(const std::string& topic,
 void
 NatsClientImpl::SetHotSwapClient(std::shared_ptr<NatsClient> newClient)
 {
+    _log->info("[Mutex] SetHotSwapClient acquiring hotSwapMutex...");
     std::lock_guard<std::mutex> lock(_hotSwapMutex);
+    _log->info("[Mutex] SetHotSwapClient acquired hotSwapMutex");
     _hotSwapClient = newClient;
     _hotSwapAvailable = (newClient != nullptr);
     if (_hotSwapAvailable) {
@@ -383,6 +390,10 @@ NatsClientImpl::ReconnectedCb(natsConnection* nc, void* user)
     auto instance = reinterpret_cast<NatsClientImpl*>(user);
     instance->_log->warn("nats reconnected!");
 
+    instance->_log->info("[Reconnect] Hot-swap client still exists: {}, use_count: {}", 
+                        instance->_hotSwapAvailable,
+                        instance->_hotSwapClient ? instance->_hotSwapClient.use_count() : 0);
+
     // Reset lame duck mode flag after successful reconnection
     {
         std::lock_guard<std::mutex> lock(instance->_lameDuckModeMutex);
@@ -391,6 +402,8 @@ NatsClientImpl::ReconnectedCb(natsConnection* nc, void* user)
             instance->_log->info("Lame duck mode flag reset after successful reconnection");
         }
     }
+    
+    instance->_log->info("[Reconnect] Hot-swap NOT cleaned up - will accumulate on next lame duck!");
 }
 
 void
@@ -439,8 +452,11 @@ NatsClientImpl::ProcessPendingRequests()
             bool usePrimaryClient = false;
 
             {
+                _log->info("[Mutex] ProcessPendingRequests acquiring hotSwapMutex...");
                 std::lock_guard<std::mutex> hotSwapLock(_hotSwapMutex);
+                _log->info("[Mutex] ProcessPendingRequests acquired hotSwapMutex, now acquiring lameDuckModeMutex...");
                 std::lock_guard<std::mutex> lameDuckLock(_lameDuckModeMutex);
+                _log->info("[Mutex] ProcessPendingRequests acquired both mutexes");
 
                 if (_hotSwapAvailable && _hotSwapClient) {
                     clientToUse = _hotSwapClient;
@@ -493,32 +509,46 @@ NatsClientImpl::LameDuckModeCb(natsConnection* nc, void* user)
     instance->_log->info("=== LAME DUCK MODE DETECTED ===");
     char serverUrl[256];
     natsConnection_GetConnectedUrl(nc, serverUrl, sizeof(serverUrl));
-    instance->_log->debug("Server: {}", serverUrl);
+    instance->_log->info("Server: {}", serverUrl);
+    
+    // Log current state to detect issues
+    instance->_log->info("[LameDuck Entry] Already in lame duck: {}, Hot-swap exists: {}, Processing thread active: {}", 
+                        instance->_lameDuckMode, 
+                        instance->_hotSwapAvailable,
+                        instance->_processingPendingRequests);
 
     {
+        instance->_log->info("[Mutex] Acquiring lameDuckModeMutex...");
         std::lock_guard<std::mutex> lock(instance->_lameDuckModeMutex);
         instance->_lameDuckMode = true;
-        instance->_log->debug("Lame duck mode flag set - preventing new operations");
+        instance->_log->info("Lame duck mode flag set - preventing new operations");
     }
 
     // ENHANCEMENT: Create hot-swap client immediately for zero-downtime
-    instance->_log->debug("Creating hot-swap client for zero-downtime failover...");
+    instance->_log->info("Creating hot-swap client for zero-downtime failover...");
+    instance->_log->info("[HotSwap] Current logger name: {}", instance->_log->name());
+    
     try {
         // Create new client with same configuration but different logger name
         std::string hotSwapLoggerName = std::string(instance->_log->name()) + "_hotswap";
+        instance->_log->info("[HotSwap] Creating new client with logger: {}", hotSwapLoggerName);
+        
         auto hotSwapClient = std::make_shared<NatsClientImpl>(
             NatsApiType::Synchronous, instance->_config, hotSwapLoggerName.c_str());
 
+        instance->_log->info("[Mutex] About to call SetHotSwapClient (will acquire hotSwapMutex)...");
         instance->SetHotSwapClient(hotSwapClient);
-        instance->_log->debug("Hot-swap client created successfully");
+        instance->_log->info("Hot-swap client created successfully");
     } catch (const std::exception& e) {
         instance->_log->error("Failed to create hot-swap client: {}", e.what());
     }
 
     // 1. Drain existing subscriptions gracefully (in background)
     std::thread([instance, nc]() {
+        instance->_log->info("[Background Thread] Started - handling lame duck cleanup");
+        
         if (instance->_sub) {
-            instance->_log->debug("Draining subscription in background...");
+            instance->_log->info("[Subscription] Draining subscription in background...");
             natsStatus status = natsSubscription_Drain(instance->_sub);
             if (status == NATS_OK) {
                 instance->_log->debug("Successfully initiated subscription drain");
