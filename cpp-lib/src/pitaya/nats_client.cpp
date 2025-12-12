@@ -96,8 +96,15 @@ NatsClientImpl::NatsClientImpl(NatsApiType apiType,
     natsOptions_SetClosedCB(_opts, ClosedCb, this);
     natsOptions_SetDisconnectedCB(_opts, DisconnectedCb, this);
     natsOptions_SetReconnectedCB(_opts, ReconnectedCb, this);
-    // Register lame duck mode handler
-    natsOptions_SetLameDuckModeCB(_opts, LameDuckModeCb, this);
+    
+    // CRITICAL FIX: Hot-swap clients should NOT handle lame duck mode
+    // to prevent infinite recursion of hot-swap client creation
+    bool isHotSwapClient = (loggerName && std::string(loggerName).find("_hotswap") != std::string::npos);
+    
+    if (!isHotSwapClient) {
+        // Only register lame duck callback for primary clients
+        natsOptions_SetLameDuckModeCB(_opts, LameDuckModeCb, this);
+    }
 
     if (apiType == NatsApiType::Asynchronous) {
         natsOptions_SetMaxPendingMsgs(_opts, config.maxPendingMsgs);
@@ -106,8 +113,10 @@ NatsClientImpl::NatsClientImpl(NatsApiType apiType,
     natsOptions_SetURL(_opts, config.natsAddr.c_str());
 
     _log->info("[Constructor] Creating NatsClient with logger: {}", loggerName ? loggerName : "default");
-    if (loggerName && std::string(loggerName).find("_hotswap") != std::string::npos) {
-        _log->warn("[Recursion Check] This is a HOT-SWAP client - will it create another hot-swap?");
+    if (isHotSwapClient) {
+        _log->info("[FIX] Hot-swap client - lame duck callback NOT registered (prevents recursion)");
+    } else {
+        _log->info("[FIX] Primary client - lame duck callback registered");
     }
     
     _log->info("NATS Connection Timeout - " + std::to_string(config.connectionTimeout.count()));
@@ -390,7 +399,7 @@ NatsClientImpl::ReconnectedCb(natsConnection* nc, void* user)
     auto instance = reinterpret_cast<NatsClientImpl*>(user);
     instance->_log->warn("nats reconnected!");
 
-    instance->_log->info("[Reconnect] Hot-swap client still exists: {}, use_count: {}", 
+    instance->_log->info("[Reconnect] Hot-swap client exists: {}, use_count: {}", 
                         instance->_hotSwapAvailable,
                         instance->_hotSwapClient ? instance->_hotSwapClient.use_count() : 0);
 
@@ -403,7 +412,15 @@ NatsClientImpl::ReconnectedCb(natsConnection* nc, void* user)
         }
     }
     
-    instance->_log->info("[Reconnect] Hot-swap NOT cleaned up - will accumulate on next lame duck!");
+    // FIX: Clean up hot-swap client after primary connection recovers
+    {
+        std::lock_guard<std::mutex> lock(instance->_hotSwapMutex);
+        if (instance->_hotSwapClient) {
+            instance->_log->info("[Reconnect] Cleaning up hot-swap client (primary connection recovered)");
+            instance->_hotSwapClient.reset();
+            instance->_hotSwapAvailable = false;
+        }
+    }
 }
 
 void
@@ -452,11 +469,12 @@ NatsClientImpl::ProcessPendingRequests()
             bool usePrimaryClient = false;
 
             {
-                _log->info("[Mutex] ProcessPendingRequests acquiring hotSwapMutex...");
-                std::lock_guard<std::mutex> hotSwapLock(_hotSwapMutex);
-                _log->info("[Mutex] ProcessPendingRequests acquired hotSwapMutex, now acquiring lameDuckModeMutex...");
+                // FIX: Acquire mutexes in consistent order (lameDuck -> hotSwap) to prevent ABBA deadlock
+                _log->info("[Mutex] ProcessPendingRequests acquiring lameDuckModeMutex first...");
                 std::lock_guard<std::mutex> lameDuckLock(_lameDuckModeMutex);
-                _log->info("[Mutex] ProcessPendingRequests acquired both mutexes");
+                _log->info("[Mutex] ProcessPendingRequests acquired lameDuckModeMutex, now acquiring hotSwapMutex...");
+                std::lock_guard<std::mutex> hotSwapLock(_hotSwapMutex);
+                _log->info("[Mutex] ProcessPendingRequests acquired both mutexes (ABBA deadlock prevented)");
 
                 if (_hotSwapAvailable && _hotSwapClient) {
                     clientToUse = _hotSwapClient;
