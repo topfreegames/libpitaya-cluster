@@ -18,6 +18,7 @@
 #include <csignal>
 #include <cstdio>
 #include <cpprest/json.h>
+#include <cstdio>
 
 #ifdef _WIN32
 #include <signal.h>
@@ -71,29 +72,31 @@ FreeServer(const CServer* sv)
 }
 
 static bool
-ParseServerTypeFilters(std::vector<std::string>& serverTypeFilters, const char* serverTypeFiltersStr)
+ParseServerTypeFilters(std::vector<std::string>& serverTypeFilters,
+                       const char* serverTypeFiltersStr)
 {
     serverTypeFilters = std::vector<std::string>();
-    
+
     if (!serverTypeFiltersStr) {
         return true;
     }
-    
+
     try {
         json::value val = json::value::parse(serverTypeFiltersStr);
         if (!val.is_array()) {
             gLogger->error("Server type filters should be a json array: {}", serverTypeFiltersStr);
             return false;
         }
-        
+
         for (const auto& el : val.as_array()) {
             if (!el.is_string() || el.as_string().empty()) {
-                gLogger->error("Server type filter elements should be of type string and not empty");
+                gLogger->error(
+                    "Server type filter elements should be of type string and not empty");
                 return false;
             }
             serverTypeFilters.push_back(utility::conversions::to_utf8string(el.as_string()));
         }
-        
+
         return true;
     } catch (const json::json_exception& exc) {
         gLogger->error("Failed to parse serverTypeFilters: {}", exc.what());
@@ -109,7 +112,8 @@ public:
     CServiceDiscoveryListener(ServerAddedOrRemovedCb cb, void* user)
         : _onServerAddedOrRemoved(cb)
         , _user(user)
-    {}
+    {
+    }
 
     void ServerAdded(const pitaya::Server& server) override
     {
@@ -300,7 +304,9 @@ extern "C"
                                   nc->reconnectBufSize,
                                   milliseconds(nc->reconnectJitterInMs),
                                   milliseconds(nc->pingIntervalInMs),
-                                  nc->maxPingsOut);
+                                  nc->maxPingsOut,
+                                  milliseconds(nc->drainTimeoutMs),
+                                  milliseconds(nc->flushTimeoutMs));
         Server server = CServerToServer(sv);
 
         EtcdServiceDiscoveryConfig serviceDiscoveryConfig;
@@ -309,10 +315,8 @@ extern "C"
         }
 
         try {
-            Cluster::Instance().InitializeWithNats(std::move(natsCfg),
-                                                   serviceDiscoveryConfig,
-                                                   server,
-                                                   "c_wrapper");
+            Cluster::Instance().InitializeWithNats(
+                std::move(natsCfg), serviceDiscoveryConfig, server, "c_wrapper");
             return true;
         } catch (const PitayaException& exc) {
             gLogger->error("Failed to create cluster instance: {}", exc.what());
@@ -339,9 +343,15 @@ extern "C"
         return true;
     }
 
-    void tfg_pitc_FreeServer(CServer* cServer) { FreeServer(cServer); }
+    void tfg_pitc_FreeServer(CServer* cServer)
+    {
+        FreeServer(cServer);
+    }
 
-    void tfg_pitc_Terminate() { pitaya::Cluster::Instance().Terminate(); }
+    void tfg_pitc_Terminate()
+    {
+        pitaya::Cluster::Instance().Terminate();
+    }
 
     static bool SendResponseToManaged(MemoryBuffer** outBuf,
                                       const protos::Response& res,
@@ -448,8 +458,26 @@ extern "C"
 
         if (err) {
             retErr->code = ConvertToCString(err->code);
-            retErr->msg = ConvertToCString(err->msg);
-            gLogger->error("received error on RPC: {}: {}", retErr->code, retErr->msg);
+
+            // Enhanced error messaging for C# applications
+            std::string enhancedMsg = err->msg;
+            if (err->code == constants::kCodeTimeout) {
+                enhancedMsg += " - Consider retrying with exponential backoff";
+            } else if (err->code == constants::kCodeServiceUnavailable) {
+                enhancedMsg += " - Service may be in lame duck mode or restarting";
+            }
+
+            retErr->msg = ConvertToCString(enhancedMsg);
+
+            // Log with different levels based on error severity
+            if (err->code == constants::kCodeTimeout ||
+                err->code == constants::kCodeServiceUnavailable) {
+                gLogger->warn(
+                    "RPC operation failed (retryable): {}: {}", retErr->code, retErr->msg);
+            } else {
+                gLogger->error(
+                    "RPC operation failed (non-retryable): {}: {}", retErr->code, retErr->msg);
+            }
             return false;
         } else {
             gLogger->debug("received message on RPC: {}", res.data());
@@ -458,9 +486,15 @@ extern "C"
         return SendResponseToManaged(outBuf, res, retErr);
     }
 
-    void tfg_pitc_FreeMem(void* mem) { free(mem); }
+    void tfg_pitc_FreeMem(void* mem)
+    {
+        free(mem);
+    }
 
-    void* tfg_pitc_AllocMem(int sz) { return malloc(sz); }
+    void* tfg_pitc_AllocMem(int sz)
+    {
+        return malloc(sz);
+    }
 
     void tfg_pitc_FreeMemoryBuffer(MemoryBuffer* buf)
     {
@@ -468,7 +502,10 @@ extern "C"
         delete buf;
     }
 
-    void tfg_pitc_FreePitayaError(CPitayaError* err) { FreePitayaError(err); }
+    void tfg_pitc_FreePitayaError(CPitayaError* err)
+    {
+        FreePitayaError(err);
+    }
 
     void tfg_pitc_OnSignal(void (*signalHandler)())
     {
@@ -478,9 +515,9 @@ extern "C"
         gSignalHandler = signalHandler;
         signal(SIGINT, OnSignal);
         signal(SIGTERM, OnSignal);
-        #ifndef _WIN32
+#ifndef _WIN32
         signal(SIGKILL, OnSignal);
-        #endif
+#endif
     }
 
     struct CRpc

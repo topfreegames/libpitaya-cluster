@@ -22,11 +22,12 @@ static constexpr const char* kLogTag = "nats_rpc_client";
 namespace pitaya {
 
 NatsRpcClient::NatsRpcClient(const NatsConfig& config, const char* loggerName)
-    : NatsRpcClient(
-          config,
-          std::unique_ptr<NatsClient>(new NatsClientImpl(NatsApiType::Synchronous, config, loggerName)),
-          loggerName)
-{}
+    : NatsRpcClient(config,
+                    std::unique_ptr<NatsClient>(
+                        new NatsClientImpl(NatsApiType::Synchronous, config, loggerName)),
+                    loggerName)
+{
+}
 
 NatsRpcClient::NatsRpcClient(const NatsConfig& config,
                              std::unique_ptr<NatsClient> natsClient,
@@ -59,14 +60,25 @@ NatsRpcClient::Call(const pitaya::Server& target, const protos::Request& req)
 
     if (status != NATS_OK) {
         auto err = new protos::Error();
-        if (status == NATS_TIMEOUT) {
-            err->set_code(constants::kCodeTimeout);
-            err->set_msg("nats timeout - sending request");
-        } else {
-            err->set_code(constants::kCodeInternalError);
-            std::string err_str("nats error - ");
-            err_str.append(natsStatus_GetText(status));
-            err->set_msg(err_str);
+        switch (status) {
+            case NATS_TIMEOUT:
+                err->set_code(constants::kCodeTimeout);
+                err->set_msg("nats timeout - sending request");
+                break;
+            case NATS_ILLEGAL_STATE:
+                err->set_code(constants::kCodeServiceUnavailable);
+                err->set_msg("service temporarily unavailable - lame duck mode");
+                break;
+            case NATS_INSUFFICIENT_BUFFER:
+                err->set_code(constants::kCodeInternalError);
+                err->set_msg("service temporarily unavailable - buffer full");
+                break;
+            default:
+                err->set_code(constants::kCodeInternalError);
+                std::string err_str("nats error - ");
+                err_str.append(natsStatus_GetText(status));
+                err->set_msg(err_str);
+                break;
         }
         res.set_allocated_error(err);
     } else {
@@ -104,12 +116,23 @@ NatsRpcClient::SendKickToUser(const std::string& serverId,
     optional<PitayaError> error;
 
     if (status != NATS_OK) {
-        if (status == NATS_TIMEOUT) {
-            error = PitayaError(constants::kCodeTimeout, "nats timeout - sending kick to user");
-        } else {
-            std::string err_str("nats error - ");
-            err_str.append(natsStatus_GetText(status));
-            error = PitayaError(constants::kCodeInternalError, err_str);
+        switch (status) {
+            case NATS_TIMEOUT:
+                error = PitayaError(constants::kCodeTimeout, "nats timeout - sending kick to user");
+                break;
+            case NATS_ILLEGAL_STATE:
+                error = PitayaError(constants::kCodeServiceUnavailable,
+                                    "service temporarily unavailable - lame duck mode");
+                break;
+            case NATS_INSUFFICIENT_BUFFER:
+                error = PitayaError(constants::kCodeInternalError,
+                                    "service temporarily unavailable - buffer full");
+                break;
+            default:
+                std::string err_str("nats error - ");
+                err_str.append(natsStatus_GetText(status));
+                error = PitayaError(constants::kCodeInternalError, err_str);
+                break;
         }
     } else {
         error = boost::none;
@@ -146,12 +169,23 @@ NatsRpcClient::SendPushToUser(const std::string& serverId,
     optional<PitayaError> error;
 
     if (status != NATS_OK) {
-        if (status == NATS_TIMEOUT) {
-            error = PitayaError(constants::kCodeTimeout, "nats timeout - sending push to user");
-        } else {
-            std::string err_str("nats error - ");
-            err_str.append(natsStatus_GetText(status));
-            error = PitayaError(constants::kCodeInternalError, err_str);
+        switch (status) {
+            case NATS_TIMEOUT:
+                error = PitayaError(constants::kCodeTimeout, "nats timeout - sending push to user");
+                break;
+            case NATS_ILLEGAL_STATE:
+                error = PitayaError(constants::kCodeServiceUnavailable,
+                                    "service temporarily unavailable - lame duck mode");
+                break;
+            case NATS_INSUFFICIENT_BUFFER:
+                error = PitayaError(constants::kCodeInternalError,
+                                    "service temporarily unavailable - buffer full");
+                break;
+            default:
+                std::string err_str("nats error - ");
+                err_str.append(natsStatus_GetText(status));
+                error = PitayaError(constants::kCodeInternalError, err_str);
+                break;
         }
     } else {
         error = boost::none;

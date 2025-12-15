@@ -20,6 +20,7 @@ fi
 # Step 3: Copy the library to the correct location
 echo "Copying library to pitaya-sharp plugins..."
 cp cpp-lib/_builds/linux-x86_64-release/libpitaya_cpp.so pitaya-sharp/NPitaya/Runtime/Plugins/runtimes/linux-x86_64/
+cp cpp-lib/_builds/linux-x86_64-release/libpitaya_cpp.so pitaya-sharp/NPitaya-csproj/runtimes/linux-x86_64/
 
 # Step 4: Check GLIBC version requirements
 echo "Checking GLIBC version requirements..."
@@ -38,6 +39,7 @@ cd ..
 
 echo "=== Build completed successfully! ==="
 echo "Library location: pitaya-sharp/NPitaya/Runtime/Plugins/runtimes/linux-x86_64/libpitaya_cpp.so"
+echo "Note: these binaries are generated and gitignored (do not commit)."
 echo ""
 echo "Compatibility:"
 echo "- Ubuntu 22.04 (jammy): GLIBC 2.35 ✅"

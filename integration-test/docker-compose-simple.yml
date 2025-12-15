@@ -1,0 +1,18 @@
+services:
+  nats:
+    image: nats:2.11.8-alpine
+    container_name: nats-simple
+    ports:
+      - "4222:4222"
+      - "8222:8222"
+    volumes:
+      - ./nats.conf:/etc/nats/nats.conf:ro
+    command: |
+      --config=/etc/nats/nats.conf
+      --logtime=true
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8222/healthz"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 10s

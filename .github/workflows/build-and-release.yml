@@ -16,24 +16,45 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       cache-hit: ${{ steps.cache-check.outputs.cache-hit }}
+      cpp-lib-sha: ${{ steps.get-sha.outputs.cpp-lib-sha }}
     steps:
+      - name: Checkout repo (for git SHA computation)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Full history needed for accurate git log
+
+      - name: Get short SHA of latest cpp-lib change
+        id: get-sha
+        run: |
+          # Get the short SHA of the latest commit that modified cpp-lib/ or vendor/
+          # This is more reliable than hashFiles() for large directories
+          CPP_LIB_SHA=$(git log -1 --format=%h -- cpp-lib/ vendor/)
+          echo "cpp-lib-sha=$CPP_LIB_SHA" >> $GITHUB_OUTPUT
+          echo "📝 Cache key will use cpp-lib SHA: $CPP_LIB_SHA"
+          echo "📝 From commit: $(git log -1 --format='%s' -- cpp-lib/ vendor/)"
+
       - name: Restore consolidated libraries cache
         id: cache-consolidated-restore
         uses: actions/cache/restore@v3
         with:
           path: downloaded-artifacts
-          key: compiled-libs-${{ hashFiles('cpp-lib/conanfile.py', 'cpp-lib/conanprofile', 'cpp-lib/CMakeLists.txt', 'cpp-lib/src/**/*', 'cpp-lib/include/**/*', 'vendor/**/*') }}
-          restore-keys: |
-            compiled-libs-
+          # Use git SHA instead of hashFiles() - more reliable for large directories
+          # IMPORTANT: Do NOT use restore-keys fallback - it causes stale binaries
+          key: compiled-libs-${{ steps.get-sha.outputs.cpp-lib-sha }}
 
       - name: Check if cache was restored
         id: cache-check
         run: |
-          if [ -d "downloaded-artifacts" ] && [ "$(ls -A downloaded-artifacts 2>/dev/null)" ]; then
-            echo "✅ Consolidated cache found - skipping build"
+          # Use the cache action's output to determine if an EXACT key match occurred.
+          # This prevents using stale binaries when source code has changed.
+          CACHE_HIT="${{ steps.cache-consolidated-restore.outputs.cache-hit }}"
+          if [ "$CACHE_HIT" == "true" ]; then
+            echo "✅ Exact cache key match found (SHA: ${{ steps.get-sha.outputs.cpp-lib-sha }}) - skipping build"
             echo "cache-hit=true" >> $GITHUB_OUTPUT
           else
-            echo "❌ No consolidated cache found - will run build"
+            echo "❌ No exact cache match for SHA: ${{ steps.get-sha.outputs.cpp-lib-sha }} - will run build"
+            # Clean up any partially restored cache
+            rm -rf downloaded-artifacts 2>/dev/null || true
             echo "cache-hit=false" >> $GITHUB_OUTPUT
           fi
 
@@ -89,13 +110,24 @@ jobs:
           PIP_BREAK_SYSTEM_PACKAGES: 1
 
       - name: Optimize Conan
+        shell: bash
         run: |
           # Show Conan version and available commands
           conan --version
-          conan config list
           conan profile detect
-          conan remote add conancenter https://center.conan.io || true
+
+          # Configure Conan remotes - add Conan Center as primary (ignore if exists)
+          conan remote add conancenter https://center.conan.io 2>/dev/null || true
           conan remote list
+
+          # Configure download settings for better reliability (Conan 2.x uses global.conf)
+          mkdir -p ~/.conan2
+          echo "core.download:retry=5" >> ~/.conan2/global.conf
+          echo "core.download:retry_wait=10" >> ~/.conan2/global.conf
+
+          echo "✅ Conan configured with retry settings"
+          echo "📄 global.conf contents:"
+          cat ~/.conan2/global.conf
 
       - uses: actions/checkout@v4
         with:
@@ -128,7 +160,19 @@ jobs:
         env:
           CONAN_PARALLEL_DOWNLOAD: 8
           CONAN_PARALLEL_BUILD: 4
-        run: conan install . -pr conanprofile -of build -s build_type=${{env.BUILD_TYPE}} -s arch=${{matrix.arch}} -s:b compiler.cppstd=${{ matrix.cppstd }} -s compiler.cppstd=${{ matrix.cppstd }} --build=missing --build=outdated
+        run: |
+          # Retry logic for transient network failures (GitHub 504 errors, etc.)
+          for attempt in 1 2 3; do
+            echo "🔄 Attempt $attempt of 3..."
+            if conan install . -pr conanprofile -of build -s build_type=${{env.BUILD_TYPE}} -s arch=${{matrix.arch}} -s:b compiler.cppstd=${{ matrix.cppstd }} -s compiler.cppstd=${{ matrix.cppstd }} --build=missing --build=outdated; then
+              echo "✅ Conan install succeeded on attempt $attempt"
+              exit 0
+            fi
+            echo "⚠️ Attempt $attempt failed, waiting 30 seconds before retry..."
+            sleep 30
+          done
+          echo "❌ All attempts failed"
+          exit 1
         working-directory: cpp-lib
 
       - name: Install Conan Dependencies - Windows
@@ -136,7 +180,22 @@ jobs:
         env:
           CONAN_PARALLEL_DOWNLOAD: 8
           CONAN_PARALLEL_BUILD: 4
-        run: conan install . -pr conanprofile -of build -s build_type=${{env.BUILD_TYPE}} -s arch=${{matrix.arch}} -s:b compiler.cppstd=${{ matrix.cppstd }} -s compiler.cppstd=${{ matrix.cppstd }} --build=missing --build=outdated
+        run: |
+          # Retry logic for transient network failures
+          $maxAttempts = 3
+          for ($attempt = 1; $attempt -le $maxAttempts; $attempt++) {
+            Write-Host "🔄 Attempt $attempt of $maxAttempts..."
+            conan install . -pr conanprofile -of build -s build_type=${{env.BUILD_TYPE}} -s arch=${{matrix.arch}} -s:b compiler.cppstd=${{ matrix.cppstd }} -s compiler.cppstd=${{ matrix.cppstd }} --build=missing --build=outdated
+            if ($LASTEXITCODE -eq 0) {
+              Write-Host "✅ Conan install succeeded on attempt $attempt"
+              exit 0
+            }
+            Write-Host "⚠️ Attempt $attempt failed, waiting 30 seconds before retry..."
+            Start-Sleep -Seconds 30
+          }
+          Write-Host "❌ All attempts failed"
+          exit 1
+        shell: pwsh
         working-directory: cpp-lib
 
       - name: Install Conan Dependencies - macOS
@@ -145,8 +204,19 @@ jobs:
           CONAN_PARALLEL_DOWNLOAD: 8
           CONAN_PARALLEL_BUILD: 4
         run: |
+          # Retry logic for transient network failures (GitHub 504 errors, etc.)
           # macOS 14 uses Xcode 15 with Apple Clang 15
-          conan install . -pr conanprofile -of build -s build_type=${{env.BUILD_TYPE}} -s arch=${{matrix.arch}} -s:b compiler.cppstd=${{ matrix.cppstd }} -s compiler.cppstd=${{ matrix.cppstd }} -s:b compiler.libcxx=libc++ -s compiler.libcxx=libc++ -s:b compiler.version=15 -s compiler.version=15 --build=missing --build=outdated
+          for attempt in 1 2 3; do
+            echo "🔄 Attempt $attempt of 3..."
+            if conan install . -pr conanprofile -of build -s build_type=${{env.BUILD_TYPE}} -s arch=${{matrix.arch}} -s:b compiler.cppstd=${{ matrix.cppstd }} -s compiler.cppstd=${{ matrix.cppstd }} -s:b compiler.libcxx=libc++ -s compiler.libcxx=libc++ -s:b compiler.version=15 -s compiler.version=15 --build=missing --build=outdated; then
+              echo "✅ Conan install succeeded on attempt $attempt"
+              exit 0
+            fi
+            echo "⚠️ Attempt $attempt failed, waiting 30 seconds before retry..."
+            sleep 30
+          done
+          echo "❌ All attempts failed"
+          exit 1
         working-directory: cpp-lib
 
       - name: Configure CMake
@@ -175,6 +245,11 @@ jobs:
   consolidate:
     name: Consolidate all libs into single package
     needs: [cache-check, build]
+    # If the consolidated cache is a hit, the `build` job is skipped.
+    # By default, a skipped job in `needs` will skip downstream jobs too, which would
+    # prevent packaging/publishing. We want to continue on cache-hit and only require
+    # `build` success when we actually built.
+    if: ${{ always() && (needs.cache-check.outputs.cache-hit == 'true' || needs.build.result == 'success') }}
     runs-on: ubuntu-latest
     steps:
       - name: Download platform specific artifacts
@@ -188,7 +263,8 @@ jobs:
         uses: actions/cache/restore@v3
         with:
           path: downloaded-artifacts
-          key: compiled-libs-${{ hashFiles('cpp-lib/conanfile.py', 'cpp-lib/conanprofile', 'cpp-lib/CMakeLists.txt', 'cpp-lib/src/**/*', 'cpp-lib/include/**/*', 'vendor/**/*') }}
+          # Use the SHA computed in cache-check job for consistency
+          key: compiled-libs-${{ needs.cache-check.outputs.cpp-lib-sha }}
 
       - name: Process Libs
         if: needs.cache-check.outputs.cache-hit != 'true'
@@ -229,19 +305,23 @@ jobs:
         with:
           name: prebuilt-libs-all-archs
           path: |
-            ./**/*pitaya_cpp.dll
-            ./**/*pitaya_cpp.so
-            ./**/*pitaya_cpp.dylib
-          working-directory: downloaded-artifacts
-          if-no-files-found: warn
+            downloaded-artifacts/linux-x86_64/*pitaya_cpp.so
+            downloaded-artifacts/linux-armv8/*pitaya_cpp.so
+            downloaded-artifacts/macos-x86_64/*pitaya_cpp.dylib
+            downloaded-artifacts/macos-arm64/*pitaya_cpp.dylib
+            downloaded-artifacts/windows-x86_64/*pitaya_cpp.dll
+          # If we can't find built libs here, packaging would silently fall back to
+          # whatever is already committed under pitaya-sharp/NPitaya/Runtime/Plugins/,
+          # which can ship stale binaries.
+          if-no-files-found: error
 
       - name: Cache consolidated artifacts
         if: needs.cache-check.outputs.cache-hit != 'true'
         uses: actions/cache/save@v3
         with:
           path: downloaded-artifacts
-          key: compiled-libs-${{ hashFiles('cpp-lib/conanfile.py', 'cpp-lib/conanprofile', 'cpp-lib/CMakeLists.txt', 'cpp-lib/src/**/*', 'cpp-lib/include/**/*', 'vendor/**/*') }}
-          if-no-files-found: error
+          # Use the SHA computed in cache-check job for consistency
+          key: compiled-libs-${{ needs.cache-check.outputs.cpp-lib-sha }}
 
   package:
     name: Package

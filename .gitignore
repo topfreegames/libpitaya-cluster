@@ -66,3 +66,20 @@ compile_commands.json
 .ccls-cache
 CMakeFiles
 Logs
+
+# ------------------------------------------------------------
+# Generated native plugins (do NOT commit).
+#
+# These files are built locally (or produced by CI) and copied into the Unity
+# package layout under `pitaya-sharp/NPitaya/Runtime/Plugins/runtimes/...`.
+# Historically they were committed, which caused stale native binaries to be
+# shipped when packaging steps missed artifacts.
+# ------------------------------------------------------------
+pitaya-sharp/NPitaya/Runtime/Plugins/runtimes/**/libpitaya_cpp.so
+pitaya-sharp/NPitaya/Runtime/Plugins/runtimes/**/libpitaya_cpp.dylib
+pitaya-sharp/NPitaya/Runtime/Plugins/runtimes/**/libpitaya_cpp.dll
+
+# Same native libraries for the NPitaya NuGet project (generated on build).
+pitaya-sharp/NPitaya-csproj/runtimes/**/libpitaya_cpp.so
+pitaya-sharp/NPitaya-csproj/runtimes/**/libpitaya_cpp.dylib
+pitaya-sharp/NPitaya-csproj/runtimes/**/libpitaya_cpp.dll

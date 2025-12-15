@@ -21,6 +21,10 @@ The original [Pitaya](https://github.com/topfreegames/pitaya) project supports b
 - **go-server**: thats an example server for using with the other components, you can run it with ```make run-go-server```
 - **unity-example**: this is an unity example that uses NPitaya. For running it you must place (or link) out/libpitaya_cluster.dylib into Assets/Plugins folder
 
+## Documentation
+
+### C++ Library Documentation
+- **[NATS Lame Duck Mode Handling](cpp-lib/docs/LAME_DUCK_MODE.md)**: Comprehensive guide on how the NATS client handles graceful server shutdowns, including automatic message buffering, thread-safe operations, and reconnection strategies.
 ## Build Requirements (macOS)
 
 > **Important**: The gRPC library is not compatible with Clang 17 (Xcode 16+). If you are on an Apple device, you must use an older version such as **Xcode 14.3** (Clang 15) for the build to work.
@@ -57,7 +61,7 @@ The original [Pitaya](https://github.com/topfreegames/pitaya) project supports b
 
 ## Releasing a new version in OpenUPM
 - Wait for the Github Actions Pipeline to run, to generate the platform specific "libpitaya_cpp" binaries.
-- Put the linux, windows, and macos (unity/fat) in the folder pitaya-sharp/NPitaya/Runtime/Plugins
+- Do NOT commit native binaries. For local Unity testing, build them with `scripts/build-unity-native-libs.sh` (they are gitignored).
 - Change the version in the file pitaya-sharp/NPitaya/package.json
 - Create a new tag in the format "vX.Y.Z" and push it to the repository
 

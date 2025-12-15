@@ -1,0 +1,85 @@
+services:
+  # NATS cluster with 3 nodes - configured for lame duck mode testing
+  nats-1:
+    image: nats:2.10.7-alpine
+    container_name: nats-1
+    ports:
+      - "4222:4222"
+      - "8222:8222"
+    volumes:
+      - ./nats-cluster.conf:/etc/nats/nats.conf:ro
+    command:
+      - "-c"
+      - "/etc/nats/nats.conf"
+      - "--server_name=nats-1"
+      - "--cluster_name=nats_cluster_test"
+      - "--cluster=nats://0.0.0.0:6222"
+      - "--routes=nats://nats-2:6222,nats://nats-3:6222"
+      - "--http_port=8222"
+    networks:
+      - nats_network
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8222/healthz"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+
+  nats-2:
+    image: nats:2.10.7-alpine
+    container_name: nats-2
+    ports:
+      - "4223:4222"
+      - "8223:8222"
+    volumes:
+      - ./nats-cluster.conf:/etc/nats/nats.conf:ro
+    command:
+      - "-c"
+      - "/etc/nats/nats.conf"
+      - "--server_name=nats-2"
+      - "--cluster_name=nats_cluster_test"
+      - "--cluster=nats://0.0.0.0:6222"
+      - "--routes=nats://nats-1:6222,nats://nats-3:6222"
+      - "--http_port=8222"
+    networks:
+      - nats_network
+    depends_on:
+      - nats-1
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8222/healthz"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+
+  nats-3:
+    image: nats:2.10.7-alpine
+    container_name: nats-3
+    ports:
+      - "4224:4222"
+      - "8224:8222"
+    volumes:
+      - ./nats-cluster.conf:/etc/nats/nats.conf:ro
+    command:
+      - "-c"
+      - "/etc/nats/nats.conf"
+      - "--server_name=nats-3"
+      - "--cluster_name=nats_cluster_test"
+      - "--cluster=nats://0.0.0.0:6222"
+      - "--routes=nats://nats-1:6222,nats://nats-2:6222"
+      - "--http_port=8222"
+    networks:
+      - nats_network
+    depends_on:
+      - nats-1
+      - nats-2
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8222/healthz"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+
+networks:
+  nats_network:
+    driver: bridge

@@ -34,33 +34,105 @@ mkdir -p "$PACKAGE_DIR/Runtime/Plugins/runtimes/windows-x86_64"
 # Copy built libraries from artifacts
 echo "Copying built libraries..."
 
-# Linux libraries
-if [ -f "downloaded-artifacts/linux-x86_64/libpitaya_cpp.so" ]; then
-    echo "  - Linux x86_64 library"
-    cp downloaded-artifacts/linux-x86_64/libpitaya_cpp.so "$PACKAGE_DIR/Runtime/Plugins/runtimes/linux-x86_64/"
+# In CI, we always expect `downloaded-artifacts/` to be present (from the workflow).
+# If it's missing, or if a library file isn't found, the old behavior was to silently
+# ship the already-committed binaries from pitaya-sharp/NPitaya/Runtime/Plugins/.
+# That can publish stale native libraries even when C++ code changed.
+ARTIFACTS_DIR="downloaded-artifacts"
+# Some historical workflow configurations uploaded the artifact with a leading
+# `downloaded-artifacts/` path prefix, which results in a nested directory after
+# download: downloaded-artifacts/downloaded-artifacts/...
+ARTIFACTS_DIR_NESTED="downloaded-artifacts/downloaded-artifacts"
+
+pick_artifacts_dir() {
+    if [ -d "$ARTIFACTS_DIR" ]; then
+        echo "$ARTIFACTS_DIR"
+        return 0
+    fi
+    if [ -d "$ARTIFACTS_DIR_NESTED" ]; then
+        echo "$ARTIFACTS_DIR_NESTED"
+        return 0
+    fi
+    return 1
+}
+
+if ! EFFECTIVE_ARTIFACTS_DIR=$(pick_artifacts_dir); then
+    echo "Error: no downloaded artifacts directory found."
+    echo "Expected either '$ARTIFACTS_DIR/' or '$ARTIFACTS_DIR_NESTED/'"
+    exit 1
 fi
 
-if [ -f "downloaded-artifacts/linux-armv8/libpitaya_cpp.so" ]; then
-    echo "  - Linux ARMv8 library"
-    cp downloaded-artifacts/linux-armv8/libpitaya_cpp.so "$PACKAGE_DIR/Runtime/Plugins/runtimes/linux-armv8/"
-fi
+echo "Using artifacts directory: $EFFECTIVE_ARTIFACTS_DIR"
+
+copy_or_fail() {
+    local src="$1"
+    local dst_dir="$2"
+    local label="$3"
+    if [ -f "$src" ]; then
+        echo "  - $label ($(shasum -a 256 "$src" | awk '{print $1}'))"
+        cp "$src" "$dst_dir/"
+    else
+        echo "Error: missing expected artifact: $src"
+        exit 1
+    fi
+}
+
+copy_or_fail_rename() {
+    local src="$1"
+    local dst_dir="$2"
+    local dst_name="$3"
+    local label="$4"
+    if [ -f "$src" ]; then
+        echo "  - $label ($(shasum -a 256 "$src" | awk '{print $1}'))"
+        cp "$src" "$dst_dir/$dst_name"
+    else
+        echo "Error: missing expected artifact: $src"
+        exit 1
+    fi
+}
+
+copy_windows_dll() {
+    local artifacts_dir="$1"
+    local dst_dir="$2"
+
+    # CI produces `pitaya_cpp.dll` (CMake target name), but the Unity package layout
+    # expects `libpitaya_cpp.dll` for consistency with other platforms/docs.
+    if [ -f "$artifacts_dir/windows-x86_64/libpitaya_cpp.dll" ]; then
+        copy_or_fail_rename "$artifacts_dir/windows-x86_64/libpitaya_cpp.dll" "$dst_dir" "libpitaya_cpp.dll" "Windows x86_64 library"
+        return 0
+    fi
+    if [ -f "$artifacts_dir/windows-x86_64/pitaya_cpp.dll" ]; then
+        copy_or_fail_rename "$artifacts_dir/windows-x86_64/pitaya_cpp.dll" "$dst_dir" "libpitaya_cpp.dll" "Windows x86_64 library"
+        return 0
+    fi
+
+    echo "Error: missing expected Windows artifact:"
+    echo "  - $artifacts_dir/windows-x86_64/libpitaya_cpp.dll OR"
+    echo "  - $artifacts_dir/windows-x86_64/pitaya_cpp.dll"
+    exit 1
+}
+
+# Linux libraries
+copy_or_fail "$EFFECTIVE_ARTIFACTS_DIR/linux-x86_64/libpitaya_cpp.so" \
+             "$PACKAGE_DIR/Runtime/Plugins/runtimes/linux-x86_64" \
+             "Linux x86_64 library"
+
+copy_or_fail "$EFFECTIVE_ARTIFACTS_DIR/linux-armv8/libpitaya_cpp.so" \
+             "$PACKAGE_DIR/Runtime/Plugins/runtimes/linux-armv8" \
+             "Linux ARMv8 library"
 
 # macOS libraries
-if [ -f "downloaded-artifacts/macos-x86_64/libpitaya_cpp.dylib" ]; then
-    echo "  - macOS x86_64 library"
-    cp downloaded-artifacts/macos-x86_64/libpitaya_cpp.dylib "$PACKAGE_DIR/Runtime/Plugins/runtimes/macos-x86_64/"
-fi
+copy_or_fail "$EFFECTIVE_ARTIFACTS_DIR/macos-x86_64/libpitaya_cpp.dylib" \
+             "$PACKAGE_DIR/Runtime/Plugins/runtimes/macos-x86_64" \
+             "macOS x86_64 library"
 
-if [ -f "downloaded-artifacts/macos-arm64/libpitaya_cpp.dylib" ]; then
-    echo "  - macOS ARM64 library"
-    cp downloaded-artifacts/macos-arm64/libpitaya_cpp.dylib "$PACKAGE_DIR/Runtime/Plugins/runtimes/macos-arm64/"
-fi
+copy_or_fail "$EFFECTIVE_ARTIFACTS_DIR/macos-arm64/libpitaya_cpp.dylib" \
+             "$PACKAGE_DIR/Runtime/Plugins/runtimes/macos-arm64" \
+             "macOS ARM64 library"
 
 # Windows library
-if [ -f "downloaded-artifacts/windows-x86_64/libpitaya_cpp.dll" ]; then
-    echo "  - Windows x86_64 library"
-    cp downloaded-artifacts/windows-x86_64/libpitaya_cpp.dll "$PACKAGE_DIR/Runtime/Plugins/runtimes/windows-x86_64/"
-fi
+copy_windows_dll "$EFFECTIVE_ARTIFACTS_DIR" \
+                 "$PACKAGE_DIR/Runtime/Plugins/runtimes/windows-x86_64"
 
 # Update package.json version
 echo "Updating package.json version to $VERSION_CLEAN..."
