@@ -57,5 +57,13 @@ namespace NPitaya.Metrics
             }
         }
 
+        public static void ReportDistribution(string key, Dictionary<string, string> tags, double value)
+        {
+            foreach (var reporter in _reporters)
+            {
+                reporter.ReportDistribution(key, tags, value);
+            }
+        }
+
     }
 }

@@ -269,6 +269,15 @@ namespace NPitaya.Metrics
             summary.WithLabels(labelValues).Observe(value);
         }
 
+        public void ReportDistribution(string metricKey, Dictionary<string, string> tags, double value)
+        {
+            // Prometheus has no native Distribution type equivalent to Datadog's raw-sample Distribution
+            // (server-side percentile aggregation across clients). The closest analog is Summary, which
+            // computes quantiles client-side per process — so we forward to the summary path. Callers that
+            // rely on cross-process percentile aggregation must use the StatsD/Datadog reporter.
+            ReportSummary(metricKey, tags, value);
+        }
+
         private string[] _ensureLabels(Dictionary<string, string> labels, string[] labelNames)
         {
             var labelValues = new List<string>();
