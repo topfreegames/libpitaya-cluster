@@ -50,5 +50,11 @@ namespace NPitaya.Metrics
             var parsedTags = _dictTagsToStringSlice(tags);
             DogStatsd.Timer(metricKey, value, tags:parsedTags);
         }
+
+        public void ReportDistribution(string metricKey, Dictionary<string, string> tags, double value)
+        {
+            var parsedTags = _dictTagsToStringSlice(tags);
+            DogStatsd.Distribution(metricKey, value, tags:parsedTags);
+        }
     }
 }

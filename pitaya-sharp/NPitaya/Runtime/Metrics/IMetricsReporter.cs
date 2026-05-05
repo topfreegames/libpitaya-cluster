@@ -7,5 +7,6 @@ namespace NPitaya.Metrics
         void ReportCount(string metricKey, Dictionary<string, string> labels, double value);
         void ReportGauge(string metricKey, Dictionary<string, string> labels, double value);
         void ReportSummary(string metricKey, Dictionary<string, string> labels, double value);
+        void ReportDistribution(string metricKey, Dictionary<string, string> labels, double value);
     }
 }
