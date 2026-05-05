@@ -2,150 +2,135 @@
 
 ## Overview
 
-This document describes the automated release process for NPitaya packages. The release workflow is triggered when a new tag is pushed to the repository and automatically builds, packages, and publishes the package to Artifactory.
+NPitaya releases are triggered by pushing a tag to the repository. The `build-and-release.yml` GitHub Actions workflow then builds native libraries for 5 platforms, packages the Unity/npm artifact, and publishes it to Artifactory. OpenUPM picks up the new tag automatically a few minutes later.
 
-## Release Methods
+**Cut releases via the GitHub Releases UI — not from a developer machine.** Local commands like `git push origin <tag>` and `make release` exist as a fallback but should not be used for routine releases. They bypass code review of the version bump, skip generated release notes, and produce inconsistent state when something goes wrong. See [Recommended Release Flow](#recommended-release-flow).
 
-### Method 1: Make Command (Recommended)
-Use the `make release` command which automatically:
-1. Checks GitHub CLI installation and authentication
-2. Updates version references across all files
-3. Commits and pushes changes to the current branch
-4. Creates a git tag
-5. Creates a GitHub release with auto-generated notes
-6. Triggers the automated build and publish workflow
+This document is aimed at maintainers cutting releases. Contributors making changes to the project should open PRs as usual; the act of releasing is a separate, gated step.
 
-### Method 2: Manual Process
-Manually update versions, create tags, and trigger releases through the GitHub UI.
+## Versioning Conventions
+
+NPitaya follows [semantic versioning](https://semver.org). Tags use the format `vX.Y.Z`, with an optional pre-release suffix. The `v` prefix is required for the git tag and is stripped automatically when packaging for npm.
+
+### Suffix convention
+
+- `vX.Y.Z` — stable release.
+- `vX.Y.Z-rc.1`, `vX.Y.Z-rc.2`, … — release candidates used for staging before a stable release.
+- `vX.Y.Z-alpha.1`, `vX.Y.Z-alpha.2`, … — early prereleases used on feature branches for integration testing.
+
+### Pre-release ordering (important)
+
+Under semver pre-release rules: **`alpha < beta < rc < (no suffix)`**. This means `1.1.0-alpha.1` sorts *before* the already-shipped `1.1.0`, and a consumer resolving `^1.1.0` will skip it.
+
+**Rule:** once `vX.Y.Z` (no suffix) has shipped, do not publish `vX.Y.Z-alpha.N` or `vX.Y.Z-rc.N` against the same `X.Y.Z`. Bump the next minor or patch instead. Example: after `v1.1.0` ships, the next prerelease is `v1.2.0-alpha.1` (next minor) or `v1.1.1-alpha.1` (next patch line).
+
+### Branch policy
+
+The workflow triggers on any tag push, regardless of branch (`tags: "*"`). Convention:
+
+- **Stable releases (`vX.Y.Z`)**: target `master` after the change is merged.
+- **Release candidates and alphas**: target a feature branch when you need an integration build for downstream consumers. The published artifact reflects the tagged commit, not master.
 
 ## Prerequisites
 
-### GitHub CLI Installation
-The recommended release method requires GitHub CLI (`gh`). If not installed:
+The release flow runs in GitHub Actions. The following must be configured at the repository level:
 
-**macOS:**
-```bash
-brew install gh
-```
+### Repository secrets
 
-**Ubuntu/Debian:**
-```bash
-sudo apt install gh
-```
+In GitHub → Settings → Secrets and variables → Actions:
 
-**Windows:**
-```bash
-winget install GitHub.cli
-```
+- `ARTIFACTORY_USER` — Artifactory username with publish permission on `npm-local`.
+- `ARTIFACTORY_PASS` — corresponding password.
 
-**Or download from:** https://cli.github.com/
+### Maintainer permissions
 
-### GitHub CLI Authentication
-After installation, authenticate with GitHub:
+Maintainers cutting releases need:
 
-```bash
-gh auth login
-```
+- **Write access** to the repository (to merge PRs and create releases via the UI).
+- **Release create** permission (default for collaborators with write access).
 
-Follow the prompts to complete authentication.
+No local tooling is required for the recommended flow. GitHub CLI (`gh`) and other local scripts are only needed for the fallback path; see [Local Tooling Reference](#local-tooling-reference).
 
-### Repository Secrets
-The following secrets must be configured in the GitHub repository:
+## Pre-Release Checklist
 
-- `ARTIFACTORY_USER`: Artifactory username
-- `ARTIFACTORY_PASS`: Artifactory password
+Before cutting a release, confirm:
 
-## Release Workflow
+1. **Version bump merged**: a PR that updates `cpp-lib/version.txt`, `pitaya-sharp/NPitaya/package.json`, `pitaya-sharp/NPitaya-csproj/NPitaya.csproj`, and `unity/NPitaya.nuspec` to the target version is merged into the release target branch (`master` for stable; the feature branch for prereleases). The `update-version.sh` helper updates all four files in one shot — run it locally inside the version-bump PR branch and commit the changes.
+2. **Tag is unused**: confirm the tag does not exist on https://github.com/topfreegames/libpitaya-cluster/tags.
+3. **Version respects semver ordering**: see [Versioning Conventions](#versioning-conventions).
+4. **CHANGELOG.md updated** (stable releases only): move `[Unreleased]` items into a new `[X.Y.Z]` section, in the same PR as the version bump.
+5. **Repo secrets exist**: see [Prerequisites](#prerequisites).
+6. **Latest CI on the target branch is green**: confirm the version-bump PR merge built successfully.
 
-### Automated Workflow Process
-The `build-and-release.yml` workflow performs the following steps:
+## Recommended Release Flow
 
-1. **Cache Check**: Checks if consolidated libraries are cached (skips build if available)
-2. **Build**: Builds native libraries for all supported platforms (if cache miss)
-3. **Consolidate**: Processes and consolidates libraries from all platforms
-4. **Package**: Creates the NPM package with the correct version
-5. **Publish**: Publishes the package to Artifactory
+All routine releases go through GitHub's Releases UI. This creates the tag on the chosen branch, generates release notes, and triggers `build-and-release.yml`.
 
-### Trigger
-The release workflow is triggered automatically when a tag is pushed to the repository.
+1. **Open the release page**: https://github.com/topfreegames/libpitaya-cluster/releases/new
 
-## Release Process
+2. **Choose tag**: type the new tag (e.g., `v1.2.0`, `v1.3.0-rc.1`, `v1.4.0-alpha.1`). GitHub will offer to create the tag — accept.
 
-### Method 1: Make Command (Recommended)
+3. **Choose target branch**:
+   - `master` for stable releases (`vX.Y.Z`).
+   - The feature branch for prereleases. The published artifact reflects the tagged commit.
 
-#### Step 1: Ensure Build is Ready
-Before creating a release, make sure your changes are ready:
-1. All code changes are committed and pushed
-2. Tests pass locally
-3. You're on the correct branch
+4. **Title**: `Release vX.Y.Z`.
 
-#### Step 2: Run the Release Command
-```bash
-make release VERSION=v1.0.7
-```
+5. **Description**: click *Generate release notes*. Edit to highlight breaking changes or migration notes if relevant.
 
-This command will:
-1. ✅ Check if GitHub CLI is installed
-2. ✅ Verify GitHub CLI authentication
-3. ✅ Update version references in all files
-4. ✅ Commit changes only if files were actually modified
-5. ✅ Push changes to current branch
-6. ✅ Create and push git tag `v1.0.7`
-7. ✅ Create GitHub release with auto-generated notes
-8. ✅ Trigger automated build and publish workflow
+6. **Pre-release flag**: tick this box for any tag with `-alpha`, `-beta`, or `-rc` suffix.
 
-#### Step 3: Monitor the Process
-- Check the GitHub Actions tab to monitor the build and publish process
-- The package will be automatically published to Artifactory
+7. **Publish release**. GitHub creates the tag remotely; the tag push triggers `build-and-release.yml`.
 
-### Method 2: Manual Process
+8. Proceed to [Validation](#validation).
 
-#### Step 1: Update Version References
-```bash
-VERSION=v1.0.7 ./update-version.sh
-```
+## What the CI Pipeline Does
 
-#### Step 2: Commit and Push Changes
-```bash
-git add .
-git commit -m "chore: update version to v1.0.7"
-git push origin HEAD
-```
+`.github/workflows/build-and-release.yml` runs on tag push and contains these jobs:
 
-#### Step 3: Create Tag and Release
-```bash
-# Create and push tag
-git tag v1.0.7
-git push origin v1.0.7
+1. **`cache-check`** — looks for cached consolidated libraries keyed by the SHA of `cpp-lib/` and `vendor/`. On hit, the build matrix is skipped.
+2. **`build`** (5-platform matrix, parallel, cache-miss only) — Linux x86_64, Linux ARMv8, macOS x86_64, macOS ARM64, Windows x86_64. Uses Conan and CMake.
+3. **`consolidate`** — downloads platform artifacts and assembles the `runtimes/` tree.
+4. **`package`** — runs `package.sh VERSION=<tag>`. Strips the `v` prefix, copies sources and native libs into `package/`, and overwrites `package/package.json` with the tag version.
+5. **`publish`** — `npm publish` to `https://artifactory.tfgco.com/artifactory/api/npm/npm-local/` using `ARTIFACTORY_USER` / `ARTIFACTORY_PASS`.
 
-# Create GitHub release (if gh is available)
-gh release create v1.0.7 --title "Release v1.0.7" --generate-notes
-```
+A typical run takes ~30 minutes on a cache miss and ~5 minutes on a cache hit.
 
-#### Step 4: Monitor Release
-- Check the GitHub Actions tab to monitor the release process
-- The package will be automatically published to Artifactory
+> The published version is determined by the **tag name**, not by the version files in the repo at the tagged commit. `package.sh` rewrites `package.json` from the tag before publishing. The version files still need to be in sync (see [Pre-Release Checklist](#pre-release-checklist)) so consumers reading the source see the right version, and so locally-built NuGet artifacts are correct.
 
-## Build Workflow
+## Validation
 
-The build workflow (`.github/workflows/build-and-release.yml`) runs on:
-- Tag push (automatically triggered by release process)
+After publishing the release on GitHub, validate end-to-end. Skipping validation is the most common cause of broken releases reaching consumers.
 
-This workflow builds native libraries for all supported platforms:
-- Linux x86_64 (Ubuntu 22.04)
-- Linux ARMv8 (Ubuntu 22.04)
-- macOS x86_64
-- macOS ARM64
-- Windows x86_64
+### 1. Confirm the workflow ran
 
-The workflow includes intelligent caching:
-- **Conan Cache**: Caches build dependencies per platform
-- **Consolidated Cache**: Caches processed libraries (skips build if no changes)
-- **Smart Invalidation**: Cache invalidates when cpp-lib/vendor files change
+Visit https://github.com/topfreegames/libpitaya-cluster/actions/workflows/build-and-release.yml and confirm a run for the new tag is in progress or completed.
+
+All required jobs must succeed: `cache-check`, `build` (cache miss only), `consolidate`, `package`, `publish`.
+
+If no run started within ~30 seconds of clicking *Publish release*, the tag was likely created without triggering the workflow (rare GitHub timing). Delete the release and recreate it.
+
+### 2. Confirm the artifact on Artifactory
+
+Browse https://artifactory.tfgco.com → repositories → `npm-local` → `com.wildlifestudios.npitaya`. Confirm the new version `X.Y.Z` is listed and the tarball is downloadable.
+
+### 3. Confirm OpenUPM
+
+Visit https://openupm.com/packages/com.wildlifestudios.npitaya/. The new version should appear in the version list within ~10 minutes after CI succeeds. If it does not appear after ~30 minutes, click the OpenUPM build status link on that page and check for ingestion errors.
+
+### 4. Smoke-test in a Unity project (stable releases)
+
+In a fresh Unity project, add or update the package and confirm:
+
+- `Packages/manifest.json` resolves `com.wildlifestudios.npitaya@X.Y.Z`.
+- `Runtime/Plugins/runtimes/<platform>/libpitaya_cpp.{so,dylib,dll}` is present in the imported package on each target platform.
+- A simple `PitayaCluster.Configure()` call in Play Mode loads without `DllNotFoundException`.
+
+For prereleases this step is optional but recommended before promoting downstream.
 
 ## Package Structure
 
-The final package structure follows the Unity package format:
+The final package follows the Unity package format:
 
 ```
 package/
@@ -167,199 +152,94 @@ package/
 │   └── ... (other Unity package files)
 ```
 
-### NPM Version Format
-Versions should follow semantic versioning:
-- `1.0.7` (stable release)
-- `1.0.8-rc1` (release candidate)
-- `2.0.0-beta1` (beta release)
+## Caching
 
-The `v` prefix is removed for NPM release
+The workflow uses two caches to keep release builds fast:
 
-### Prerelease Support
-The release process supports prereleases (betas, release candidates, etc.):
+- **Conan cache**: per-platform build dependencies.
+- **Consolidated cache**: processed native libraries across all platforms, keyed by the contents of `cpp-lib/` and `vendor/`.
 
-- **Stable Release**: `make release VERSION=v1.0.7`
-- **Prerelease**: `make release VERSION=v1.0.8-rc1 PRERELEASE=true`
-- **Beta Release**: `make release VERSION=v2.0.0-beta1 PRERELEASE=true`
+Cache hits skip the entire build matrix and proceed directly to packaging and publishing. Cache misses run the full build for all platforms and write a fresh entry for subsequent releases.
 
-Prereleases are marked with the `--prerelease` flag in GitHub and are always created from the current branch.
+## Local Tooling Reference
 
-## Make Commands
+The following commands are useful for the version-bump PR or as fallbacks when the recommended UI-driven flow is unavailable. **None of them are part of the routine release flow.**
 
-### Available Commands
+### `update-version.sh`
 
-#### `make check-gh`
-Checks if GitHub CLI is installed and provides installation instructions if not.
+Updates all four version files in one shot. Use it inside the version-bump PR branch — not as part of cutting a release:
 
-#### `make signin-gh`
-Checks GitHub CLI authentication and prompts to sign in if needed.
-
-#### `make release VERSION=x.y.z [PRERELEASE=true]`
-Complete release process:
-- Checks GitHub CLI installation and authentication
-- Updates version references in all files
-- Commits changes only if files were actually modified
-- Creates git tag
-- Creates GitHub release (with optional prerelease flag)
-- Triggers automated build and publish
-
-### Examples
 ```bash
-# Check GitHub CLI setup
-make check-gh
-
-# Sign in to GitHub CLI
-make signin-gh
-
-# Create a stable release
-make release VERSION=v1.0.7
-
-# Create a prerelease (beta/rc)
-make release VERSION=v1.0.8-rc1 PRERELEASE=true
-
-# Create a prerelease from current branch
-make release VERSION=v2.0.0-beta1 PRERELEASE=true
+VERSION=1.2.0 ./update-version.sh
 ```
 
-## Package Script
+The script accepts versions with or without the `v` prefix. If changes are detected it commits with `chore: bump version to vX.Y.Z` and pushes to the current branch — within a normal PR workflow this means the bump commit lands on your PR branch.
 
-The `package.sh` script performs the following operations:
+Files updated:
+- `cpp-lib/version.txt`
+- `pitaya-sharp/NPitaya/package.json`
+- `pitaya-sharp/NPitaya-csproj/NPitaya.csproj`
+- `unity/NPitaya.nuspec`
 
-1. **Creates Package Directory**: Sets up the package structure
-2. **Copies Source Files**: Copies NPitaya C# source files
-3. **Copies Libraries**: Copies built native libraries to appropriate runtime folders
-4. **Updates Version**: Updates package.json with the release version
-5. **Verifies Package**: Checks that all expected libraries are present
+### `package.sh`
 
-### Usage
+Used by CI; not normally run locally. If you need to reproduce the packaging step locally to debug a CI failure, place pre-built native libraries in `downloaded-artifacts/` and run:
+
 ```bash
-VERSION=v1.0.7 ./package.sh
+VERSION=1.2.0 ./package.sh
 ```
 
-## Smart Commit Behavior
+### `make release` — fallback only
 
-The release process includes intelligent commit handling:
+`make release VERSION=vX.Y.Z [PRERELEASE=true]` runs `update-version.sh`, then calls `gh release create` to publish the release. It is provided for emergencies — for example, when the GitHub Releases UI is unavailable. **Do not use it for routine releases**:
 
-### How It Works
-1. **Checks for Changes**: After updating version references, checks if any files were actually modified
-2. **Conditional Commit**: Only commits if changes were detected
-3. **Skip Logic**: If all version files are already up to date, skips the commit step
+- It commits and pushes the version bump directly to the current branch, bypassing PR review.
+- It cannot be undone safely once it has triggered CI.
+- The CI side-effects are identical to the UI flow, so there is no functional advantage to running it locally.
 
-### Scenarios
+### NuGet packaging (`make nuget-pack` / `make nuget-push`)
 
-#### Scenario 1: Developer Already Updated Version
-```bash
-# Developer manually updated version
-VERSION=v1.0.7 ./update-version.sh
-git add . && git commit -m "Update version to v1.0.7"
-make release VERSION=v1.0.7
-```
-**Result**: ✅ Script detects no changes, skips commit, proceeds to tag and release
-
-#### Scenario 2: Developer Forgot to Update Version
-```bash
-# Developer forgot to update version (still 1.0.6)
-make release VERSION=v1.0.7
-```
-**Result**: ✅ Script detects changes, commits version bump, then proceeds to tag and release
-
-#### Scenario 3: Mixed Version References
-```bash
-# Some files updated, others not
-# version.txt: 1.0.7
-# package.json: 1.0.6
-make release VERSION=v1.0.7
-```
-**Result**: ✅ Script detects mismatched versions, updates all files, commits changes
-
-## Workflow Optimization
-
-The release workflow includes intelligent caching to optimize build times:
-
-### Cache Strategy
-- **Conan Cache**: Caches build dependencies per platform/architecture
-- **Consolidated Cache**: Caches processed libraries across all platforms
-- **Smart Invalidation**: Cache invalidates when source files or dependencies change
-
-### Cache Hit Scenario
-When no changes are made to cpp-lib or vendor files:
-1. ✅ Cache check finds existing consolidated libraries
-2. ✅ Skips entire build process
-3. ✅ Proceeds directly to packaging and publishing
-4. ✅ Significantly faster release process
-
-### Cache Miss Scenario
-When changes are made to cpp-lib or vendor files:
-1. ✅ Cache check finds no valid cache
-2. ✅ Runs full build for all platforms
-3. ✅ Processes and consolidates libraries
-4. ✅ Caches results for future releases
-5. ✅ Proceeds to packaging and publishing
-
-## Version Update Script
-
-The `update-version.sh` script updates all version references across the repository:
-
-1. **cpp-lib/version.txt**
-2. **pitaya-sharp/NPitaya/package.json**
-3. **pitaya-sharp/NPitaya-csproj/NPitaya.csproj**
-4. **unity/NPitaya.nuspec**
-5. **Any other files containing version references**
-
-### Usage
-```bash
-VERSION=v1.0.7 ./update-version.sh
-```
+The CI pipeline does not publish NuGet — this is a known gap. The Makefile provides `nuget-pack` (builds `NugetOutput/NPitaya.X.Y.Z.nupkg` from `unity/NPitaya.nuspec`) and `nuget-push NUGET_API_KEY=<key>` (pushes to nuget.org). These are local-only and follow the same caveats as `make release`. The recommended fix is to extend `build-and-release.yml` with a NuGet publish step; track this in an issue rather than relying on routine local pushes.
 
 ## Troubleshooting
 
-### GitHub CLI Issues
-If the make release command fails:
+### Workflow did not trigger
 
-1. **Installation Issues**: Run `make check-gh` for installation instructions
-2. **Authentication Issues**: Run `make signin-gh` to check and fix authentication
-3. **Permission Issues**: Ensure your GitHub account has push access to the repository
+If you published a release but no run started:
 
-### Build Failures
-If the build workflow fails:
-1. Check the GitHub Actions logs for specific error messages
-2. Verify that all dependencies are available
-3. Check that the build environment is properly configured
+1. Confirm the tag exists at https://github.com/topfreegames/libpitaya-cluster/tags.
+2. Delete the release and recreate it.
+3. If still nothing, file an issue — there may be a workflow trigger configuration regression.
 
-### Publishing Issues
-If publishing to Artifactory fails:
-1. Verify that `ARTIFACTORY_USER` and `ARTIFACTORY_PASS` secrets are set
-2. Check that the user has publish permissions
-3. Verify that the package version doesn't already exist
+### Build failures
 
-### Manual Release Issues
-If manual release process fails:
-1. Check that the `update-version.sh` script is executable
-2. Verify that all version files exist and are writable
-3. Ensure you have push access to create tags and releases
+Inspect the GitHub Actions logs for the failing job. Common causes:
 
-## Version Management
+- Conan dependency resolution failed — often a transient network issue; retry the run.
+- Native library mismatch on a specific platform — fix in `cpp-lib/` and cut a new patch version.
 
-### Version Updates
-When creating a new release:
-1. The automated workflow will update all version references
-2. Changes will be committed to master
-3. The package will be published with the new version
+### Publish failures
+
+If the `publish` job fails with auth errors:
+
+1. Confirm `ARTIFACTORY_USER` and `ARTIFACTORY_PASS` are set in repo secrets.
+2. Verify the credentials still have publish permission on `npm-local`.
+3. Confirm the version does not already exist on Artifactory — npm refuses to overwrite an existing version.
+
+### Rolling back a release
+
+Once a tarball is on Artifactory, **delete-and-republish is unsafe**. Package managers and OpenUPM may have cached the bad version. Prefer **rolling forward with a new patch release** (`vX.Y.Z+1`) cut via the recommended UI flow.
+
+If you must remove a release that should never have been cut (wrong target branch, semver-broken version), open a maintainer issue and coordinate with a release owner. Do not delete tags or releases unilaterally — releases that have triggered CI may already be live on Artifactory and OpenUPM, and ad-hoc deletion creates more inconsistency, not less.
 
 ## Artifactory Configuration
 
-The package is published to:
+The Unity/npm package is published to:
+
 - **Registry**: `https://artifactory.tfgco.com/artifactory/api/npm/npm-local`
 - **Scope**: `@wls`
-- **Package Name**: `com.wildlifestudios.npitaya`
+- **Package name**: `com.wildlifestudios.npitaya`
 
-## Support
+## CHANGELOG
 
-For issues with the release process:
-1. Check the GitHub Actions logs
-2. Review this documentation
-3. Contact the development team
-
-## Changelog
-
-Release notes should be updated in `CHANGELOG.md` before creating a new release tag.
+Release notes are tracked in `CHANGELOG.md`. As part of the version-bump PR for a stable release, move `[Unreleased]` items into a new `[X.Y.Z]` section. The auto-generated GitHub release notes complement, but do not replace, the CHANGELOG.
