@@ -59,10 +59,12 @@ The original [Pitaya](https://github.com/topfreegames/pitaya) project supports b
 
 <!-- **Note**: We currently do not support windows. However, it should however not be hard to add support for it. Feel free to make a PR! -->
 
-## Releasing a new version in OpenUPM
-- Wait for the Github Actions Pipeline to run, to generate the platform specific "libpitaya_cpp" binaries.
-- Do NOT commit native binaries. For local Unity testing, build them with `scripts/build-unity-native-libs.sh` (they are gitignored).
-- Change the version in the file pitaya-sharp/NPitaya/package.json
-- Create a new tag in the format "vX.Y.Z" and push it to the repository
+## Releasing a new version
 
-New lib version will be available in [OpenUPM](https://openupm.com/packages/com.wildlifestudios.npitaya/) in a few minutes. Read documentation [here](https://openupm.com/docs/#how-it-works) for more information.
+See [docs/RELEASE_PROCESS.md](docs/RELEASE_PROCESS.md) for the full release process, including the automated `make release` workflow, version management, and Artifactory publishing details.
+
+> Do NOT commit native binaries. For local Unity testing, build them with `scripts/build-unity-native-libs.sh` (they are gitignored).
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution guidelines.
