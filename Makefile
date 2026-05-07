@@ -77,6 +77,13 @@ signin-gh: check-gh
 	@echo "✅ GitHub CLI is authenticated"
 
 release: signin-gh
+	@echo "NOTE: 'make release' is a fallback for emergencies only."
+	@echo "Routine releases must be cut through the GitHub Releases UI:"
+	@echo "  https://github.com/topfreegames/libpitaya-cluster/releases/new"
+	@echo "Running this target bypasses PR review of the version bump and"
+	@echo "cannot be undone safely once it has triggered CI."
+	@echo "See docs/RELEASE_PROCESS.md (\"Local Tooling Reference\") for context."
+	@echo ""
 	@if [ -z "$(VERSION)" ]; then \
 		echo "❌ VERSION is required. Usage: make release VERSION=v1.0.7"; \
 		exit 1; \
