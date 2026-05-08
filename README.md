@@ -78,6 +78,7 @@ The shared protos live in the `pitaya-protos` submodule. Run `git submodule upda
 - **[CHANGELOG.md](CHANGELOG.md)** — release notes; new entries go under `## [Unreleased]`.
 - **[docs/RELEASE_PROCESS.md](docs/RELEASE_PROCESS.md)** — automated release flow (`make release`), versioning, Artifactory publishing.
 - **[docs/UBUNTU_22_04_COMPATIBILITY.md](docs/UBUNTU_22_04_COMPATIBILITY.md)** — Linux build / GLIBC notes.
+- **[docs/NATS_CONFIGURATION.md](docs/NATS_CONFIGURATION.md)** — `NatsConfig` reference: reconnect / ping / lame-duck parameters, defaults, and tuning rationale.
 - **[cpp-lib/docs/LAME_DUCK_MODE.md](cpp-lib/docs/LAME_DUCK_MODE.md)** — how the NATS client handles graceful server shutdowns, including message buffering, thread-safe operations, and reconnection strategies.
 - **[integration-test/](integration-test)** — README describing the lame-duck integration test harness.
 - Per-component READMEs under [cpp-lib/](cpp-lib), [python-lib/](python-lib), and [python-example/](python-example).

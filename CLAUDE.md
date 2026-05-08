@@ -101,5 +101,6 @@ Releases are automated via `make release VERSION=vX.Y.Z`. See [docs/RELEASE_PROC
 
 - [docs/RELEASE_PROCESS.md](docs/RELEASE_PROCESS.md) — release automation, version bumps, Artifactory.
 - [docs/UBUNTU_22_04_COMPATIBILITY.md](docs/UBUNTU_22_04_COMPATIBILITY.md) — Linux build / GLIBC notes.
+- [docs/NATS_CONFIGURATION.md](docs/NATS_CONFIGURATION.md) — `NatsConfig` reference: reconnect / ping / lame-duck parameters and tuning rationale.
 - [cpp-lib/docs/LAME_DUCK_MODE.md](cpp-lib/docs/LAME_DUCK_MODE.md) — NATS graceful-shutdown behavior.
 - [integration-test/](integration-test/) — has its own README describing the lame-duck test harness.
