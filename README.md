@@ -1,68 +1,94 @@
 # [WIP] pitaya-server
 
 ## Overview
-The original [Pitaya](https://github.com/topfreegames/pitaya) project supports building pitaya servers in Go. This project aims to provide the same functionality, however aimed towards other programming languages. Currently, however, the supported languages are C++ and C#.
 
-**Note**: This library is still in early stage, meaning the there might be several bugs. Also, the API is not stable.
+The original [Pitaya](https://github.com/topfreegames/pitaya) project supports building Pitaya servers in Go. This project provides the same functionality for other languages. Currently, the supported languages are **C++**, **C#**, and **Python**, plus a Unity integration via the C# wrapper.
 
-<!-- ## Requirements -->
-<!-- - Dotnet and Mono (for running csharp example) -->
-<!-- - Docker (for starting testing dependencies) -->
-<!-- - Cmake >= 3.23 for building -->
-<!-- - Conan >= 2.x for building -->
+> **Note**: This library is in early stage and the API is not stable. Bugs are expected, and breaking changes may land between minor versions. Read [CHANGELOG.md](CHANGELOG.md) before upgrading.
 
-<!-- ## Pitaya Dependencies -->
-<!-- for running go-server, csharp-example and unity-example you must have an etcd running into localhost, port 2379 and a nats instance running on port 4222, theres a docker-compose file in the project with these dependencies, you can start them with ```make start-deps``` -->
+## Requirements
 
-## About the components of the project
-- **cpp-lib**: the C++ core library.
-- **pitaya-sharp**: this is a solution with multiple C# projects. The main one is `NPitaya`, a library that wraps the native C++ library and provides a conveninent interface for writing pitaya servers in C#.
-- **python-lib**: this a python lib that wraps the shared library methods, you can include it in python projects to create python pitaya servers
-- **go-server**: thats an example server for using with the other components, you can run it with ```make run-go-server```
-- **unity-example**: this is an unity example that uses NPitaya. For running it you must place (or link) out/libpitaya_cluster.dylib into Assets/Plugins folder
+- **Conan** ≥ 2.x and **CMake** ≥ 3.26 — for building the C++ core.
+- **Docker** + **docker-compose** — to run NATS and etcd locally.
+- **.NET SDK** (and Mono on macOS, if needed) — for the C# library and examples.
+- **Python 3** — for the Python wrapper and example.
+- **Go** — only required if you want to run the Go example server.
+- **macOS only**: Xcode **14.3 / Clang 15**. gRPC 1.54.3 does not compile on Clang 17 (Xcode 16+); the `cpp-lib` Makefile pins the Conan profile to `compiler.version=15` to enforce this. Older Xcodes are available at https://developer.apple.com/download/all/.
+- **Windows is not supported** for the C++ build (explicitly excluded in `cpp-lib/conanfile.py`).
+
+## Pitaya dev dependencies (NATS + etcd)
+
+The `go-server`, C# examples, and the Unity integration all expect an etcd instance on `localhost:2379` and a NATS instance on `localhost:4222`. The repo ships a `docker-compose.yml` that runs both:
+
+```bash
+make start-deps   # docker-compose up -d
+make stop-deps    # docker-compose down
+```
+
+## Components
+
+- **[cpp-lib](cpp-lib)** — the C++ core library. Source of truth for the native binary (`libpitaya_cpp.{so,dylib,dll,bundle}`).
+- **[pitaya-sharp](pitaya-sharp)** — C# solution. The main project is `NPitaya`, a library that wraps the native C++ library and provides a convenient interface for writing Pitaya servers in C# (and consuming from Unity).
+- **[python-lib](python-lib)** — Python wrapper (`pitayaserver` package) over the C++ shared library. Used by `python-example/`.
+- **[go-server](go-server)** — example Pitaya server in Go (uses upstream Go Pitaya). Run with `make run-go-server`.
+- **[unity](unity)** — Unity project that consumes `NPitaya`. Native libraries land in `pitaya-sharp/NPitaya/Runtime/Plugins/` after a C++ build; Unity picks them up via the package layout.
+- **[integration-test](integration-test)** — end-to-end lame-duck-mode test harness (C++ + Docker, multi-node NATS cluster).
+
+## Installation
+
+| Language | Project location                  |
+| -------- | --------------------------------- |
+| C++      | [cpp-lib](cpp-lib)                |
+| C#       | [pitaya-sharp](pitaya-sharp)      |
+| Python   | [python-lib](python-lib)          |
+
+## Building
+
+Each component has its own Makefile. The most common targets:
+
+### C++ core
+```bash
+cd cpp-lib
+make build-mac-release       # macOS x86_64 + arm64
+make build-mac-unity         # macOS, with macosx_bundle=True (for Unity)
+make build-linux-release     # Linux native
+make build-docker-image && make build-linux-docker   # Linux build via Ubuntu 22.04 container
+```
+Outputs go to `cpp-lib/_builds/<platform>-<arch>-...-<config>/libpitaya_cpp.{dylib,so,bundle}`. The root `make build-cpp-on-mac` lipos per-arch dylibs and copies them into `pitaya-sharp/NPitaya/Runtime/Plugins/`.
+
+### C# (NPitaya)
+```bash
+cd pitaya-sharp
+make build   # dotnet build NPitaya-csproj --configuration Release
+make test    # dotnet test NPitaya.Tests (needs `make start-deps` running)
+```
+
+### Python
+```bash
+cd python-lib && pip install -e .
+cd ../python-example && python example.py
+```
+
+### Protobuf
+The shared protos live in the `pitaya-protos` submodule. Run `git submodule update --init --recursive` after cloning, then `make protos-compile` from the repo root to regenerate code for all languages.
 
 ## Documentation
 
-### C++ Library Documentation
-- **[NATS Lame Duck Mode Handling](cpp-lib/docs/LAME_DUCK_MODE.md)**: Comprehensive guide on how the NATS client handles graceful server shutdowns, including automatic message buffering, thread-safe operations, and reconnection strategies.
-## Build Requirements (macOS)
+- **[CONTRIBUTING.md](CONTRIBUTING.md)** — contribution guidelines, dev workflow, changelog format.
+- **[CHANGELOG.md](CHANGELOG.md)** — release notes; new entries go under `## [Unreleased]`.
+- **[docs/RELEASE_PROCESS.md](docs/RELEASE_PROCESS.md)** — automated release flow (`make release`), versioning, Artifactory publishing.
+- **[docs/UBUNTU_22_04_COMPATIBILITY.md](docs/UBUNTU_22_04_COMPATIBILITY.md)** — Linux build / GLIBC notes.
+- **[docs/NATS_CONFIGURATION.md](docs/NATS_CONFIGURATION.md)** — `NatsConfig` reference: reconnect / ping / lame-duck parameters, defaults, and tuning rationale.
+- **[cpp-lib/docs/LAME_DUCK_MODE.md](cpp-lib/docs/LAME_DUCK_MODE.md)** — how the NATS client handles graceful server shutdowns, including message buffering, thread-safe operations, and reconnection strategies.
+- **[integration-test/](integration-test)** — README describing the lame-duck integration test harness.
+- Per-component READMEs under [cpp-lib/](cpp-lib), [python-lib/](python-lib), and [python-example/](python-example).
 
-> **Important**: The gRPC library is not compatible with Clang 17 (Xcode 16+). If you are on an Apple device, you must use an older version such as **Xcode 14.3** (Clang 15) for the build to work.
->
-> You can download older Xcode versions from: https://developer.apple.com/download/all/
+## Releasing a new version
 
-## Installation
-| Language | Project Location             |
-| -------- |------------------------------|
-| C++      | [cpp-lib](cpp-lib)           |
-| C#       | [pitaya-sharp](pitaya-sharp) |
+See [docs/RELEASE_PROCESS.md](docs/RELEASE_PROCESS.md) for the full release process, including the automated `make release` workflow, version management, and Artifactory publishing details.
 
-<!-- ### C++ -->
-<!-- The C++ library can be built and used from C++ or could also be used from another programming language that can interoperate with C. The library uses [conan](https://conan.io) and git submodules in order to install the dependencies. -->
+> Do NOT commit native binaries — they are gitignored. Build them locally via the `cpp-lib` Make targets (see [cpp-lib](cpp-lib)).
 
-<!-- After having conan installed, building the library should be as easy as running the make targets inside `cpplib`: -->
+## Contributing
 
-<!-- ```bash -->
-<!-- make build-mac-unity -->
-<!-- make build-mac -->
-<!-- make build-linux -->
-<!-- ``` -->
-
-<!-- This targets will build for MacOS for usage in Unity, MacOS and Linux, in that order. If you are using MacOS and want to build for Linux without a VM, you can use docker for that. Simply run the following make targets: -->
-
-<!-- ```bash -->
-<!-- make build-docker-image -->
-<!-- make build-linux-docker -->
-<!-- ``` -->
-
-<!-- The binaries will be placed in the `_builds` folder, where each subdirectory will correspond to a different make target. -->
-
-<!-- **Note**: We currently do not support windows. However, it should however not be hard to add support for it. Feel free to make a PR! -->
-
-## Releasing a new version in OpenUPM
-- Wait for the Github Actions Pipeline to run, to generate the platform specific "libpitaya_cpp" binaries.
-- Do NOT commit native binaries. For local Unity testing, build them with `scripts/build-unity-native-libs.sh` (they are gitignored).
-- Change the version in the file pitaya-sharp/NPitaya/package.json
-- Create a new tag in the format "vX.Y.Z" and push it to the repository
-
-New lib version will be available in [OpenUPM](https://openupm.com/packages/com.wildlifestudios.npitaya/) in a few minutes. Read documentation [here](https://openupm.com/docs/#how-it-works) for more information.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution guidelines.
