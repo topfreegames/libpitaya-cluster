@@ -11,6 +11,12 @@ version to see which interfaces changed.
 
 ## [Unreleased]
 
+## [1.2.1-rc.1] - 2026-05-14
+
+### Fixed
+
+- Restore `libpitaya_cpp` inclusion in Unity 2021/2022 builds. The PluginImporter `serializedVersion 3` layout introduced in 1.0.11 does not filter the per-architecture natives correctly on pre-Unity 6: `linux-x86_64`/`linux-armv8` collide on the Linux64 slot, `macos-x86_64`/`macos-arm64` collide on OSXUniversal, Unity silently excludes them all, and the build then crashes at runtime with `DllNotFoundException`. A new build-output post-process (`NPitayaPluginConfigurator`) now stamps the correct native into the player's plugins directory after every build on Unity &lt; 6000, replacing any wrong-arch variant Unity may have copied and creating the file if Unity dropped them all. Source assets and `.meta` files are never touched. Unity 6 keeps using the authored `.meta` files.
+
 ## [1.2.0] - 2026-05-05
 
 ### Added
@@ -430,7 +436,8 @@ version to see which interfaces changed.
 - Removed hack used to process NATS RPCs.
 - Switched C# projects to MonoDevelop tooling.
 
-[Unreleased]: https://github.com/topfreegames/libpitaya-cluster/compare/v1.2.0...HEAD
+[Unreleased]: https://github.com/topfreegames/libpitaya-cluster/compare/v1.2.1-rc.1...HEAD
+[1.2.1-rc.1]: https://github.com/topfreegames/libpitaya-cluster/compare/v1.2.0...v1.2.1-rc.1
 [1.2.0]: https://github.com/topfreegames/libpitaya-cluster/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/topfreegames/libpitaya-cluster/compare/v1.0.13...v1.1.0
 [1.0.13]: https://github.com/topfreegames/libpitaya-cluster/compare/v1.0.12...v1.0.13
