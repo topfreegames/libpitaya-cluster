@@ -14,7 +14,7 @@ PluginImporter:
     Any:
       enabled: 0
       settings:
-        Exclude Editor: 1
+        Exclude Editor: 0
         Exclude Linux64: 0
         Exclude OSXUniversal: 0
         Exclude WebGL: 1
@@ -22,11 +22,11 @@ PluginImporter:
         Exclude Win64: 0
         Exclude iOS: 1
     Editor:
-      enabled: 0
+      enabled: 1
       settings:
-        CPU: AnyCPU
+        CPU: ARM64
         DefaultValueInitialized: true
-        OS: AnyOS
+        OS: Linux
     Linux64:
       enabled: 1
       settings:
