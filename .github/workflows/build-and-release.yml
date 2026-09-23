@@ -81,12 +81,12 @@ jobs:
             cppstd: gnu17
             runner: ubuntu-22.04-arm
             cmake_path: build/_builds/linux-armv8-release
-          - platform: windows-latest-x86_64
-            os: windows-latest
+          - platform: windows-2022-x86_64
+            os: windows-2022
             arch: x86_64
             preset: conan-windows-x86_64-release
             cppstd: "17"
-            runner: windows-latest
+            runner: windows-2022
             cmake_path: build/_builds/windows-x86_64-release
           - platform: macos-14-x86_64
             os: macos-14
@@ -105,7 +105,7 @@ jobs:
     steps:
       - name: Install Conan
         id: conan
-        uses: turtlebrowser/get-conan@main
+        uses: turtlebrowser/get-conan@v1.2
         env:
           PIP_BREAK_SYSTEM_PACKAGES: 1
 
@@ -176,7 +176,7 @@ jobs:
         working-directory: cpp-lib
 
       - name: Install Conan Dependencies - Windows
-        if: matrix.os == 'windows-latest'
+        if: matrix.os == 'windows-2022'
         env:
           CONAN_PARALLEL_DOWNLOAD: 8
           CONAN_PARALLEL_BUILD: 4
@@ -292,8 +292,8 @@ jobs:
           fi
 
           # Process Windows x86_64
-          if [ -d "prebuilt-libs-windows-latest-x86_64" ]; then
-            find prebuilt-libs-windows-latest-x86_64 -name "*.dll" -exec cp {} windows-x86_64/ \;
+          if [ -d "prebuilt-libs-windows-2022-x86_64" ]; then
+            find prebuilt-libs-windows-2022-x86_64 -name "*.dll" -exec cp {} windows-x86_64/ \;
           fi
 
           echo "✅ Processed libraries:"
