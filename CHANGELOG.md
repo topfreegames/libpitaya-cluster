@@ -11,6 +11,17 @@ version to see which interfaces changed.
 
 ## [Unreleased]
 
+### Fixed
+
+- `~NatsClientImpl` could hang forever during shutdown, leaving the process alive after it had
+  finished tearing down. `_connClosed` and `_shuttingDown` were plain `bool`s written from NATS
+  callback threads and read from the shutting-down thread, which is a data race; the wait loop
+  after `natsConnection_Close()` was also unbounded. They are now `std::atomic<bool>` (matching
+  `grpc::RpcServer`, which already did this) and the wait is capped at 5s, logging an error and
+  continuing instead of blocking forever. For an embedded server such as a Unity game room this
+  meant the container never exited and its orchestrator kept counting a dead process as a live
+  server. `_processingPendingRequests`, read outside its mutex in the same way, is now atomic too.
+
 ## [1.2.0] - 2026-05-05
 
 ### Added
