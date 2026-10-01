@@ -2,6 +2,8 @@
 
 This document explains how the Pitaya NATS client handles lame duck mode, a graceful shutdown mechanism used by NATS servers, featuring **zero-downtime hot-swap functionality** for mission-critical applications.
 
+> See also: [`docs/NATS_CONFIGURATION.md`](../../docs/NATS_CONFIGURATION.md) for the `NatsConfig` parameter reference and tuning rationale (reconnect, ping, lame-duck timings).
+
 ## Overview
 
 Lame duck mode is a NATS server feature that allows for graceful shutdown without causing a "thundering herd" problem where all clients simultaneously reconnect to other servers. When a NATS server enters lame duck mode:
