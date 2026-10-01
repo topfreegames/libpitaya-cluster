@@ -1,6 +1,6 @@
-# CLAUDE.md
+# AGENTS.md
 
-Guidance for Claude Code when working in this repo.
+Guidance for AI coding agents working in this repo.
 
 ## What this project is
 
@@ -86,9 +86,11 @@ make test-lame-duck   # full end-to-end with NATS cluster, validates ≥95% RPC/
 
 ## Release
 
-Releases are automated via `make release VERSION=vX.Y.Z`. See [docs/RELEASE_PROCESS.md](docs/RELEASE_PROCESS.md) for the full flow (GitHub Actions → Artifactory → OpenUPM-equivalent registry). Version source of truth: `cpp-lib/version.txt`.
+Releases are cut through the [GitHub Releases UI](https://github.com/topfreegames/libpitaya-cluster/releases/new). Publishing a release creates the tag, which triggers `build-and-release.yml` (GitHub Actions → Artifactory → OpenUPM). See [docs/RELEASE_PROCESS.md](docs/RELEASE_PROCESS.md) for the full flow. Version source of truth: `cpp-lib/version.txt`.
 
-**Prefer the automated `make release` flow.** Manual releases (hand-editing version files, tagging, and triggering the workflow) are documented in `docs/RELEASE_PROCESS.md` as a fallback only — they're error-prone and skip the version-bump and changelog steps that `make release` handles. Don't propose them unless the automated flow is broken.
+Before tagging, merge a version-bump PR into the release target branch. Run `update-version.sh` in that PR to update all four version files, and move `[Unreleased]` CHANGELOG items into a new `[X.Y.Z]` section (stable releases only).
+
+**Don't propose local release commands.** `make release` and `git push origin <tag>` are emergency fallbacks only — they bypass PR review of the version bump and can't be undone safely once CI has run.
 
 ## Style / convention notes
 

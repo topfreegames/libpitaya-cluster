@@ -76,7 +76,7 @@ The shared protos live in the `pitaya-protos` submodule. Run `git submodule upda
 
 - **[CONTRIBUTING.md](CONTRIBUTING.md)** — contribution guidelines, dev workflow, changelog format.
 - **[CHANGELOG.md](CHANGELOG.md)** — release notes; new entries go under `## [Unreleased]`.
-- **[docs/RELEASE_PROCESS.md](docs/RELEASE_PROCESS.md)** — automated release flow (`make release`), versioning, Artifactory publishing.
+- **[docs/RELEASE_PROCESS.md](docs/RELEASE_PROCESS.md)** — release flow (GitHub Releases UI), versioning, Artifactory publishing.
 - **[docs/UBUNTU_22_04_COMPATIBILITY.md](docs/UBUNTU_22_04_COMPATIBILITY.md)** — Linux build / GLIBC notes.
 - **[docs/NATS_CONFIGURATION.md](docs/NATS_CONFIGURATION.md)** — `NatsConfig` reference: reconnect / ping / lame-duck parameters, defaults, and tuning rationale.
 - **[cpp-lib/docs/LAME_DUCK_MODE.md](cpp-lib/docs/LAME_DUCK_MODE.md)** — how the NATS client handles graceful server shutdowns, including message buffering, thread-safe operations, and reconnection strategies.
@@ -85,7 +85,7 @@ The shared protos live in the `pitaya-protos` submodule. Run `git submodule upda
 
 ## Releasing a new version
 
-See [docs/RELEASE_PROCESS.md](docs/RELEASE_PROCESS.md) for the full release process, including the automated `make release` workflow, version management, and Artifactory publishing details.
+See [docs/RELEASE_PROCESS.md](docs/RELEASE_PROCESS.md) for the full release process, including the GitHub Releases UI flow, version management, and Artifactory publishing details.
 
 > Do NOT commit native binaries — they are gitignored. Build them locally via the `cpp-lib` Make targets (see [cpp-lib](cpp-lib)).
 
