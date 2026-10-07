@@ -7,6 +7,7 @@
 #include "spdlog/logger.h"
 
 #include <algorithm>
+#include <atomic>
 #include <chrono>
 #include <functional>
 #include <future>
@@ -143,9 +144,12 @@ private:
     natsOptions* _opts;
     natsConnection* _conn;
     natsSubscription* _sub;
-    bool _connClosed;
-    bool _shuttingDown;
-    bool _lameDuckMode; // Lame duck mode flag
+    // Written from NATS callback threads and read from the shutting-down thread,
+    // so these must be atomic: a plain bool is a data race and the compiler is
+    // free to hoist the load out of the wait loop in the destructor.
+    std::atomic<bool> _connClosed;
+    std::atomic<bool> _shuttingDown;
+    bool _lameDuckMode; // Lame duck mode flag, guarded by _lameDuckModeMutex
     std::function<void(std::shared_ptr<NatsMsg>)> _onMessage;
 
     // Hot-swap support for zero-downtime lame duck mode
@@ -166,7 +170,8 @@ private:
     mutable std::mutex _pendingRequestsMutex;
     std::vector<std::unique_ptr<PendingRequest>> _pendingRequests;
     std::thread _requestProcessingThread;
-    bool _processingPendingRequests;
+    // Read by ProcessPendingRequests() outside _pendingRequestsMutex.
+    std::atomic<bool> _processingPendingRequests;
 
     // Calculate max pending requests based on reconnectBufSize
     // Assumes average request size of ~1KB, so buffer can hold reconnectBufSize/1024 requests

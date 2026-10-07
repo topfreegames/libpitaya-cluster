@@ -8,6 +8,10 @@
 #include <signal.h>
 #include <string>
 
+// Upper bound on how long ~NatsClientImpl waits for ClosedCb to report the NATS
+// connection as closed. Unbounded waiting here wedges process shutdown.
+static constexpr std::chrono::milliseconds kConnectionCloseTimeout(5000);
+
 // #region agent log
 static std::mutex g_debugLogMutex;
 static void
@@ -182,10 +186,20 @@ NatsClientImpl::~NatsClientImpl()
     }
 
     natsConnection_Close(_conn);
-    while (!_connClosed) {
-        // Wait until the connection is actually closed. This will be reported on a different
-        // thread.
+    // Wait until the connection is actually closed. This will be reported on a different
+    // thread. The wait is bounded: if that callback never arrives we must still let the
+    // process exit, otherwise the game-room container hangs forever and its orchestrator
+    // keeps counting it as a live server.
+    const auto closeDeadline = std::chrono::steady_clock::now() + kConnectionCloseTimeout;
+    while (!_connClosed && std::chrono::steady_clock::now() < closeDeadline) {
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    }
+    if (!_connClosed) {
+        _log->error("Timed out after {}ms waiting for the NATS connection to report itself "
+                    "closed; continuing shutdown anyway",
+                    std::chrono::duration_cast<std::chrono::milliseconds>(
+                        kConnectionCloseTimeout)
+                        .count());
     }
     natsConnection_Destroy(_conn);
     natsOptions_Destroy(_opts);
