@@ -61,13 +61,13 @@ Trade-off: more wire chatter. With 1 s × 2 outstanding pings the cost is one ti
 
 Hard cap on reconnect attempts before NATS.c reports the connection as permanently closed. Combined with the 100 ms + 50 ms jitter wait, this is roughly a 3-7 s recovery window.
 
-NATS.c also uses this value to gate `RetryOnFailedConnect` (see [`nats_client.cpp:106-109`](../cpp-lib/src/pitaya/nats_client.cpp)): if it is `0`, the **initial** connection will fail immediately rather than retry, which can cause the server to refuse to start when NATS is briefly unavailable. Keep it `> 0` unless you specifically want fail-fast startup.
+NATS.c also uses this value to gate `RetryOnFailedConnect` (see `NatsClientImpl::CreateOptions` in [`nats_client.cpp`](../cpp-lib/src/pitaya/nats_client.cpp)): if it is `0`, the **initial** connection will fail immediately rather than retry, which can cause the server to refuse to start when NATS is briefly unavailable. Keep it `> 0` unless you specifically want fail-fast startup.
 
 ## Reconnect buffer
 
 `reconnectBufSize` is the in-memory queue NATS.c uses to hold outbound messages while the connection is down. Defaults to 8 MiB. When the buffer fills up, new sends are rejected with `NATS_INSUFFICIENT_BUFFER` and the application must treat them as non-retryable.
 
-The buffer interacts with hot-swap and request buffering during NATS server lame-duck mode. See [`cpp-lib/docs/LAME_DUCK_MODE.md`](../cpp-lib/docs/LAME_DUCK_MODE.md) for the full multi-level buffering architecture and per-environment sizing guidance (e.g. 64 MiB for high-throughput production, 8 MiB for dev).
+During a NATS server lame-duck switch, new traffic goes to the new connection, so this buffer is only used when a connection reconnects. See [`cpp-lib/docs/LAME_DUCK_MODE.md`](../cpp-lib/docs/LAME_DUCK_MODE.md).
 
 ## Lame-duck-mode parameters
 
@@ -106,4 +106,4 @@ Both produce identical effective configuration.
 - [NATS — Reconnect](https://docs.nats.io/using-nats/developer/connecting/reconnect)
 - [NATS — Reconnect buffer](https://docs.nats.io/using-nats/developer/connecting/reconnect/buffer)
 - [NATS — Lame duck mode](https://docs.nats.io/running-a-nats-service/nats_admin/lame_duck_mode)
-- [`cpp-lib/docs/LAME_DUCK_MODE.md`](../cpp-lib/docs/LAME_DUCK_MODE.md) — in-tree reference for graceful shutdown, hot-swap, and the multi-level buffering architecture.
+- [`cpp-lib/docs/LAME_DUCK_MODE.md`](../cpp-lib/docs/LAME_DUCK_MODE.md) — in-tree reference for the lame-duck connection swap and graceful shutdown.

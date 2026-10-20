@@ -21,11 +21,8 @@ public:
 
     MOCK_METHOD2(Publish, natsStatus(const char* reply, const std::vector<uint8_t>& buf));
     
-    // Lame duck mode and hot-swap methods
+    // Lame duck mode methods
     MOCK_CONST_METHOD0(IsInLameDuckMode, bool());
-    MOCK_METHOD1(SetHotSwapClient, void(std::shared_ptr<pitaya::NatsClient> newClient));
-    MOCK_CONST_METHOD0(GetHotSwapClient, std::shared_ptr<pitaya::NatsClient>());
-    MOCK_CONST_METHOD0(IsHotSwapAvailable, bool());
 };
 
 class MockNatsMsg : public pitaya::NatsMsg
