@@ -27,9 +27,8 @@ class PitayaCpp(ConanFile):
         'openssl/*:shared': False,
         'protobuf/*:debug_suffix': False,
         'cnats/*:shared': False,
-        'cnats/*:with_streaming': False,
+        'cnats/*:enable_streaming': False,
         'cnats/*:with_tls': True,
-        'cnats/*:tls_use_openssl_1_1_api': True,
         'etcd-cpp-apiv3/*:with_nats': True,
         'etcd-cpp-apiv3/*:nats_package_name': 'cnats',
     }
@@ -46,7 +45,7 @@ class PitayaCpp(ConanFile):
         self.requires("grpc/1.54.3")
         self.requires("protobuf-c/1.5.0")
         self.requires("etcd-cpp-apiv3/0.15.4")
-        self.requires("cnats/3.10.1")
+        self.requires("cnats/3.14.0")
         self.test_requires("gtest/1.10.0")
 
     def build_requirements(self):

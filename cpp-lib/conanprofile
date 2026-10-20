@@ -14,9 +14,8 @@ protobuf/*:debug_suffix=False
 openssl/*:shared=False
 cpprestsdk/*:with_websockets=False
 cnats/*:shared=False
-cnats/*:with_streaming=False
+cnats/*:enable_streaming=False
 cnats/*:with_tls=True
-cnats/*:tls_use_openssl_1_1_api=True
 etcd-cpp-apiv3/*:with_nats=True
 etcd-cpp-apiv3/*:nats_package_name=cnats
 
