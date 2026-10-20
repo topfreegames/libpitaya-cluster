@@ -675,7 +675,6 @@ NatsClientImpl::LameDuckModeCb(natsConnection* nc, void* user)
              "{\"hasSubscription\":" + std::string(hasSubscription ? "true" : "false") +
                  ",\"instance\":\"" + instanceAddr + "\"}");
     // #endregion
-    // 1. Drain existing subscriptions gracefully (in background)
     std::thread([instance, nc, instanceAddr]() {
         // #region agent log
         debugLog("nats_client.cpp:DrainThread:ENTRY",
@@ -683,50 +682,7 @@ NatsClientImpl::LameDuckModeCb(natsConnection* nc, void* user)
                  "D",
                  "{\"instance\":\"" + instanceAddr + "\"}");
         // #endregion
-        if (instance->_sub) {
-            // #region agent log
-            bool isSubValid = natsSubscription_IsValid(instance->_sub);
-            debugLog("nats_client.cpp:DrainThread",
-                     "Checking subscription before drain",
-                     "E",
-                     "{\"isValid\":" + std::string(isSubValid ? "true" : "false") +
-                         ",\"instance\":\"" + instanceAddr + "\"}");
-            // #endregion
-            instance->_log->debug("Draining subscription in background...");
-            natsStatus status = natsSubscription_Drain(instance->_sub);
-            // #region agent log
-            debugLog("nats_client.cpp:DrainThread",
-                     "Drain called",
-                     "E",
-                     "{\"status\":\"" + std::string(natsStatus_GetText(status)) +
-                         "\",\"instance\":\"" + instanceAddr + "\"}");
-            // #endregion
-            if (status == NATS_OK) {
-                instance->_log->debug("Successfully initiated subscription drain");
-
-                // Wait for drain completion with configurable timeout
-                status = natsSubscription_WaitForDrainCompletion(instance->_sub,
-                                                                 instance->_drainTimeout.count());
-                // #region agent log
-                debugLog("nats_client.cpp:DrainThread",
-                         "WaitForDrainCompletion returned",
-                         "E",
-                         "{\"status\":\"" + std::string(natsStatus_GetText(status)) +
-                             "\",\"instance\":\"" + instanceAddr + "\"}");
-                // #endregion
-                if (status == NATS_OK) {
-                    instance->_log->debug("Subscription drain completed successfully");
-                } else {
-                    instance->_log->warn("Subscription drain timeout or failed: {}",
-                                         natsStatus_GetText(status));
-                }
-            } else {
-                instance->_log->warn("Failed to drain subscription: {}",
-                                     natsStatus_GetText(status));
-            }
-        }
-
-        // 2. Flush pending messages to current server
+        // 1. Flush pending messages to current server
         instance->_log->debug("Flushing pending messages...");
         natsStatus status =
             natsConnection_FlushTimeout(nc, instance->_lameDuckModeFlushTimeout.count());
@@ -743,7 +699,7 @@ NatsClientImpl::LameDuckModeCb(natsConnection* nc, void* user)
             instance->_log->warn("Flush failed: {}", natsStatus_GetText(status));
         }
 
-        // 3. Trigger reconnection to other servers
+        // 2. Trigger reconnection to other servers
         instance->_log->debug("Initiating reconnection...");
         // #region agent log
         debugLog("nats_client.cpp:DrainThread",
