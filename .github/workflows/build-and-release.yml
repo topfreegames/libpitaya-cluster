@@ -86,7 +86,7 @@ jobs:
             arch: x86_64
             preset: conan-windows-x86_64-release
             cppstd: "17"
-            runner: windows-latest
+            runner: windows-2022
             cmake_path: build/_builds/windows-x86_64-release
           - platform: macos-14-x86_64
             os: macos-14
