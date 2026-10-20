@@ -67,7 +67,8 @@ static constexpr const char* kLogTag = "nats_client";
 //
 NatsClientImpl::NatsClientImpl(NatsApiType apiType,
                                const NatsConfig& config,
-                               const char* loggerName)
+                               const char* loggerName,
+                               bool isHotSwap)
     : _log(utils::CloneLoggerOrCreate(loggerName, kLogTag))
     , _config(config)
     , _opts(nullptr)
@@ -76,6 +77,7 @@ NatsClientImpl::NatsClientImpl(NatsApiType apiType,
     , _connClosed(false)
     , _shuttingDown(false)
     , _lameDuckMode(false)
+    , _isHotSwap(isHotSwap)
     , _onMessage(nullptr)
     , _hotSwapAvailable(false)
     , _processingPendingRequests(false)
@@ -117,7 +119,9 @@ NatsClientImpl::NatsClientImpl(NatsApiType apiType,
     natsOptions_SetDisconnectedCB(_opts, DisconnectedCb, this);
     natsOptions_SetReconnectedCB(_opts, ReconnectedCb, this);
     // Register lame duck mode handler
-    natsOptions_SetLameDuckModeCB(_opts, LameDuckModeCb, this);
+    if (!_isHotSwap) {
+        natsOptions_SetLameDuckModeCB(_opts, LameDuckModeCb, this);
+    }
 
     if (apiType == NatsApiType::Asynchronous) {
         natsOptions_SetMaxPendingMsgs(_opts, config.maxPendingMsgs);
@@ -437,12 +441,24 @@ NatsClientImpl::ReconnectedCb(natsConnection* nc, void* user)
             instance->_log->info("Lame duck mode flag reset after successful reconnection");
             // #region agent log
             debugLog("nats_client.cpp:ReconnectedCb",
-                     "Lame duck mode reset - BUT subscription NOT restored",
+                     "Lame duck mode reset",
                      "C",
                      "{\"instance\":\"" + instanceAddr +
                          "\",\"hasSub\":" + std::string(instance->_sub ? "true" : "false") + "}");
             // #endregion
         }
+    }
+
+    std::shared_ptr<NatsClient> staleHotSwapClient;
+    {
+        std::lock_guard<std::mutex> lock(instance->_hotSwapMutex);
+        staleHotSwapClient = std::move(instance->_hotSwapClient);
+        instance->_hotSwapAvailable = false;
+    }
+    if (staleHotSwapClient) {
+        instance->_log->info("Releasing hot-swap client after reconnection");
+        std::thread([client = std::move(staleHotSwapClient)]() mutable { client.reset(); })
+            .detach();
     }
 }
 
@@ -461,7 +477,7 @@ NatsClientImpl::ClosedCb(natsConnection* nc, void* user)
     // Signal main thread that the connection was actually closed
     instance->_log->warn("nats connection closed!");
     instance->_connClosed = true;
-    if (!instance->_shuttingDown) {
+    if (!instance->_shuttingDown && !instance->_isHotSwap) {
         // #region agent log
         debugLog("nats_client.cpp:ClosedCb",
                  "SENDING SIGTERM - all reconnection attempts failed",
@@ -641,7 +657,7 @@ NatsClientImpl::LameDuckModeCb(natsConnection* nc, void* user)
             // Create new client with same configuration but different logger name
             std::string hotSwapLoggerName = std::string(instance->_log->name()) + "_hotswap";
             auto hotSwapClient = std::make_shared<NatsClientImpl>(
-                NatsApiType::Synchronous, instance->_config, hotSwapLoggerName.c_str());
+                NatsApiType::Synchronous, instance->_config, hotSwapLoggerName.c_str(), true);
             // #region agent log
             debugLog("nats_client.cpp:LameDuckModeCb",
                      "Hot-swap client created, BEFORE SetHotSwapClient",

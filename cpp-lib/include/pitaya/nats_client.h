@@ -83,7 +83,10 @@ public:
 class NatsClientImpl : public NatsClient
 {
 public:
-    NatsClientImpl(NatsApiType apiType, const NatsConfig& opts, const char* loggerName = nullptr);
+    NatsClientImpl(NatsApiType apiType,
+                   const NatsConfig& opts,
+                   const char* loggerName = nullptr,
+                   bool isHotSwap = false);
     ~NatsClientImpl();
 
     natsStatus Request(std::shared_ptr<NatsMsg>* natsMsg,
@@ -146,6 +149,7 @@ private:
     bool _connClosed;
     bool _shuttingDown;
     bool _lameDuckMode; // Lame duck mode flag
+    bool _isHotSwap;
     std::function<void(std::shared_ptr<NatsMsg>)> _onMessage;
 
     // Hot-swap support for zero-downtime lame duck mode
