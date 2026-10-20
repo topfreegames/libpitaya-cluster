@@ -62,40 +62,6 @@ TEST_F(LameDuckModeTest, IsInLameDuckModeReturnsFalseByDefault)
     }
 }
 
-// Test hot-swap client functionality
-TEST_F(LameDuckModeTest, HotSwapClientFunctionality)
-{
-    auto primaryClient = CreateTestClient("primary_client");
-    
-    if (!primaryClient) {
-        GTEST_SKIP() << "NATS server not available - skipping test requiring active connection";
-        return;
-    }
-    
-    // Initially no hot-swap client
-    EXPECT_FALSE(primaryClient->IsHotSwapAvailable());
-    EXPECT_EQ(primaryClient->GetHotSwapClient(), nullptr);
-    
-    // Create hot-swap client
-    auto hotSwapClient = CreateTestClient("hotswap_client");
-    if (!hotSwapClient) {
-        GTEST_SKIP() << "Could not create hot-swap client - skipping test";
-        return;
-    }
-    
-    // Set hot-swap client
-    primaryClient->SetHotSwapClient(hotSwapClient);
-    
-    // Verify hot-swap client is set
-    EXPECT_TRUE(primaryClient->IsHotSwapAvailable());
-    EXPECT_NE(primaryClient->GetHotSwapClient(), nullptr);
-    
-    // Clear hot-swap client
-    primaryClient->SetHotSwapClient(nullptr);
-    EXPECT_FALSE(primaryClient->IsHotSwapAvailable());
-    EXPECT_EQ(primaryClient->GetHotSwapClient(), nullptr);
-}
-
 // Test that operations return NATS_ILLEGAL_STATE during lame duck mode
 TEST_F(LameDuckModeTest, OperationsBlockedDuringLameDuckMode)
 {
@@ -269,18 +235,6 @@ TEST_F(LameDuckModeTest, ZeroDowntimeScenarioSimulation)
     // Let requests run for a short period
     std::this_thread::sleep_for(std::chrono::milliseconds(200));
     
-    // Simulate lame duck mode by setting hot-swap client
-    auto hotSwapClient = CreateTestClient("zero_downtime_hotswap");
-    if (hotSwapClient) {
-        client->SetHotSwapClient(hotSwapClient);
-        
-        // Continue requests during "lame duck mode"
-        std::this_thread::sleep_for(std::chrono::milliseconds(300));
-        
-        // Clear hot-swap (simulate reconnection complete)
-        client->SetHotSwapClient(nullptr);
-    }
-    
     // Continue requests after "recovery"
     std::this_thread::sleep_for(std::chrono::milliseconds(200));
     
@@ -312,11 +266,6 @@ TEST_F(LameDuckModeTest, InterfaceAvailabilityTest)
     auto client = CreateTestClient("interface_test");
     if (client) {
         // Test that methods are available
-        EXPECT_NO_THROW({
-            client->IsInLameDuckMode();
-            client->IsHotSwapAvailable();
-            client->GetHotSwapClient();
-            client->SetHotSwapClient(nullptr);
-        });
+        EXPECT_NO_THROW({ client->IsInLameDuckMode(); });
     }
 }
