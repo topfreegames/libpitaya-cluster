@@ -7,6 +7,7 @@
 #include "spdlog/logger.h"
 
 #include <algorithm>
+#include <atomic>
 #include <chrono>
 #include <functional>
 #include <future>
@@ -131,6 +132,18 @@ private:
 
     void ProcessPendingRequests();
 
+    natsStatus QueueSubscribe();
+    void DrainSubscription();
+    std::string ConnectedServerId() const;
+    int64_t DrainTimeoutMs() const;
+    int64_t FlushTimeoutMs() const;
+    void SwitchAwayFromLameDuckServer(natsConnection* nc,
+                                      uint64_t generation,
+                                      std::string lameDuckServerId,
+                                      std::thread previousSwitchThread);
+    void RestoreSubscription(uint64_t generation, std::thread previousRestoreThread);
+    void ReleaseHotSwapClient();
+
 private:
     struct SubscriptionHandler
     {
@@ -140,16 +153,41 @@ private:
 private:
     std::shared_ptr<spdlog::logger> _log;
     NatsConfig _config; // Store original configuration for hot-swap client creation
+    NatsApiType _apiType;
     std::chrono::milliseconds _drainTimeout;
     std::chrono::milliseconds _lameDuckModeFlushTimeout;
     mutable std::mutex _lameDuckModeMutex;
     natsOptions* _opts;
     natsConnection* _conn;
     natsSubscription* _sub;
-    bool _connClosed;
-    bool _shuttingDown;
+    std::mutex _subMutex;
+    std::string _topic;
+    std::atomic<bool> _connClosed;
+    std::atomic<bool> _shuttingDown;
     bool _lameDuckMode; // Lame duck mode flag
     bool _isHotSwap;
+    std::atomic<int> _inFlightRequests;
+
+    enum class LameDuckSwitchState
+    {
+        Idle,
+        Switching,
+        Reconnecting,
+    };
+    std::mutex _lameDuckSwitchMutex;
+    LameDuckSwitchState _lameDuckSwitchState;
+    uint64_t _lameDuckSwitchGeneration;
+    std::thread _lameDuckSwitchThread;
+    uint64_t _restoreSubscriptionGeneration;
+    std::thread _restoreSubscriptionThread;
+
+    struct RetiringHotSwapClient
+    {
+        std::thread thread;
+        std::shared_ptr<std::atomic<bool>> done;
+    };
+    std::mutex _retiringHotSwapClientsMutex;
+    std::vector<RetiringHotSwapClient> _retiringHotSwapClients;
     std::function<void(std::shared_ptr<NatsMsg>)> _onMessage;
 
     // Hot-swap support for zero-downtime lame duck mode

@@ -2,6 +2,7 @@
 
 #include "pitaya/utils.h"
 
+#include <algorithm>
 #include <chrono>
 #include <iostream>
 #include <mutex>
@@ -61,6 +62,8 @@ NatsMsgImpl::GetReply() const
 }
 
 static constexpr const char* kLogTag = "nats_client";
+static constexpr std::chrono::milliseconds kSubscriptionPropagationDelay(1000);
+static constexpr std::chrono::milliseconds kRestoreSubscriptionRetryDelay(1000);
 
 //
 // NatsClientImpl
@@ -71,6 +74,7 @@ NatsClientImpl::NatsClientImpl(NatsApiType apiType,
                                bool isHotSwap)
     : _log(utils::CloneLoggerOrCreate(loggerName, kLogTag))
     , _config(config)
+    , _apiType(apiType)
     , _opts(nullptr)
     , _conn(nullptr)
     , _sub(nullptr)
@@ -78,6 +82,10 @@ NatsClientImpl::NatsClientImpl(NatsApiType apiType,
     , _shuttingDown(false)
     , _lameDuckMode(false)
     , _isHotSwap(isHotSwap)
+    , _inFlightRequests(0)
+    , _lameDuckSwitchState(LameDuckSwitchState::Idle)
+    , _lameDuckSwitchGeneration(0)
+    , _restoreSubscriptionGeneration(0)
     , _onMessage(nullptr)
     , _hotSwapAvailable(false)
     , _processingPendingRequests(false)
@@ -107,7 +115,9 @@ NatsClientImpl::NatsClientImpl(NatsApiType apiType,
     natsOptions_SetReconnectWait(_opts, config.reconnectWaitInMs.count());
     // Only enable RetryOnFailedConnect if maxReconnectionAttempts > 0
     // Otherwise the initial connection will hang indefinitely
-    bool retryOnFailedConnect = (config.maxReconnectionAttempts > 0);
+    // A hot-swap client fails fast, so that the lame duck switch and the destructor that
+    // waits for it do not block while NATS is unreachable.
+    bool retryOnFailedConnect = !_isHotSwap && (config.maxReconnectionAttempts > 0);
     natsOptions_SetRetryOnFailedConnect(_opts, retryOnFailedConnect, NULL, this);
     natsOptions_SetPingInterval(_opts, config.pingIntervalInMs.count());
     natsOptions_SetMaxPingsOut(_opts, config.maxPingsOut);
@@ -150,6 +160,43 @@ NatsClientImpl::~NatsClientImpl()
 {
     _shuttingDown = true;
 
+    std::thread lameDuckSwitchThread;
+    std::thread restoreSubscriptionThread;
+    {
+        std::lock_guard<std::mutex> lock(_lameDuckSwitchMutex);
+        lameDuckSwitchThread = std::move(_lameDuckSwitchThread);
+        restoreSubscriptionThread = std::move(_restoreSubscriptionThread);
+    }
+    if (lameDuckSwitchThread.joinable()) {
+        lameDuckSwitchThread.join();
+    }
+    if (restoreSubscriptionThread.joinable()) {
+        restoreSubscriptionThread.join();
+    }
+
+    // Drain the hot-swap subscriptions before the primary one. A completed drain also means
+    // that no message callback is still running. Only the threads joined above retire
+    // hot-swap clients, so no new one can be added after this point.
+    std::shared_ptr<NatsClient> hotSwapClient;
+    {
+        std::lock_guard<std::mutex> lock(_hotSwapMutex);
+        hotSwapClient = std::move(_hotSwapClient);
+        _hotSwapAvailable = false;
+    }
+    if (auto hotSwapClientImpl = std::dynamic_pointer_cast<NatsClientImpl>(hotSwapClient)) {
+        hotSwapClientImpl->DrainSubscription();
+    }
+    hotSwapClient.reset();
+
+    std::vector<RetiringHotSwapClient> retiringHotSwapClients;
+    {
+        std::lock_guard<std::mutex> lock(_retiringHotSwapClientsMutex);
+        retiringHotSwapClients.swap(_retiringHotSwapClients);
+    }
+    for (auto& retiring : retiringHotSwapClients) {
+        retiring.thread.join();
+    }
+
     // Stop request processing thread
     {
         std::lock_guard<std::mutex> lock(_pendingRequestsMutex);
@@ -160,30 +207,7 @@ NatsClientImpl::~NatsClientImpl()
     if (_requestProcessingThread.joinable()) {
         _requestProcessingThread.join();
     }
-    if (_sub) {
-        // Remove interest from the subscription. Note that pending message may still
-        // be received by the client.
-        natsStatus status;
-        _log->debug("Unsubscribing from NATS subscription");
-        status = natsSubscription_Unsubscribe(_sub);
-        if (status != NATS_OK) {
-            _log->error("Failed to unsubscribe");
-        }
-
-        _log->debug("Draining NATS subscription");
-        status = natsSubscription_Drain(_sub);
-        if (status != NATS_OK) {
-            _log->error("Failed to drain subscription");
-        }
-
-        status = natsSubscription_WaitForDrainCompletion(_sub, _drainTimeout.count());
-        if (status != NATS_OK) {
-            _log->error("Failed to wait for subscription drain");
-        }
-        // Called only here, because it needs to wait for the
-        // natsSubscription_WaitForDrainCompletion
-        natsSubscription_Destroy(_sub);
-    }
+    DrainSubscription();
 
     natsConnection_Close(_conn);
     while (!_connClosed) {
@@ -225,8 +249,10 @@ NatsClientImpl::ExecuteRequest(std::shared_ptr<NatsMsg>* msg,
                                std::chrono::milliseconds timeout)
 {
     natsMsg* reply = nullptr;
+    ++_inFlightRequests;
     natsStatus status = natsConnection_Request(
         &reply, _conn, topic.c_str(), data.data(), data.size(), timeout.count());
+    --_inFlightRequests;
 
     if (status == NATS_OK) {
         *msg = std::shared_ptr<NatsMsg>(new NatsMsgImpl(reply));
@@ -312,10 +338,86 @@ NatsClientImpl::Subscribe(const std::string& topic,
 
     _log->info("Subscribing to topic {}", topic);
     _onMessage = std::move(onMessage);
-    natsStatus status = natsConnection_Subscribe(&_sub, _conn, topic.c_str(), HandleMsg, this);
+    {
+        std::lock_guard<std::mutex> lock(_subMutex);
+        _topic = topic;
+    }
+    return QueueSubscribe();
+}
+
+void
+NatsClientImpl::DrainSubscription()
+{
+    natsSubscription* sub = nullptr;
+    {
+        // Clearing the topic keeps ReconnectedCb from subscribing again.
+        std::lock_guard<std::mutex> lock(_subMutex);
+        std::swap(sub, _sub);
+        _topic.clear();
+    }
+    if (!sub) {
+        return;
+    }
+
+    natsStatus status = natsSubscription_Drain(sub);
+    if (status == NATS_OK) {
+        status = natsSubscription_WaitForDrainCompletion(sub, DrainTimeoutMs());
+    }
     if (status != NATS_OK) {
-        _log->error("Failed to subscribe");
-        return status;
+        int pendingMsgs = 0;
+        natsSubscription_GetPending(sub, &pendingMsgs, nullptr);
+        _log->error("Subscription drain did not complete ({}), dropping {} messages",
+                    natsStatus_GetText(status),
+                    pendingMsgs);
+    }
+    // Destroy unsubscribes the subscription if the drain did not complete.
+    natsSubscription_Destroy(sub);
+}
+
+std::string
+NatsClientImpl::ConnectedServerId() const
+{
+    char serverId[256] = { 0 };
+    if (natsConnection_GetConnectedServerId(_conn, serverId, sizeof(serverId)) != NATS_OK) {
+        return std::string();
+    }
+    return std::string(serverId);
+}
+
+int64_t
+NatsClientImpl::DrainTimeoutMs() const
+{
+    // natsSubscription_WaitForDrainCompletion waits forever for a timeout that is not positive.
+    return _drainTimeout.count() > 0 ? _drainTimeout.count()
+                                     : PITAYA_NATS_DEFAULT_DRAIN_TIMEOUT_IN_MS;
+}
+
+int64_t
+NatsClientImpl::FlushTimeoutMs() const
+{
+    // natsConnection_FlushTimeout rejects a timeout that is not positive.
+    return _lameDuckModeFlushTimeout.count() > 0 ? _lameDuckModeFlushTimeout.count()
+                                                 : PITAYA_NATS_DEFAULT_FLUSH_TIMEOUT_IN_MS;
+}
+
+natsStatus
+NatsClientImpl::QueueSubscribe()
+{
+    // The topic is also the queue name, so that the subscriptions of the primary and the
+    // hot-swap clients can coexist during lame duck mode without delivering a message twice.
+    std::lock_guard<std::mutex> lock(_subMutex);
+    if (_shuttingDown) {
+        return NATS_ILLEGAL_STATE;
+    }
+    if (_sub || _topic.empty()) {
+        return NATS_OK;
+    }
+
+    natsStatus status = natsConnection_QueueSubscribe(
+        &_sub, _conn, _topic.c_str(), _topic.c_str(), HandleMsg, this);
+    if (status != NATS_OK) {
+        _sub = nullptr;
+        _log->error("Failed to subscribe: {}", natsStatus_GetText(status));
     }
     return status;
 }
@@ -375,14 +477,14 @@ NatsClientImpl::IsInLameDuckMode() const
 natsStatus
 NatsClientImpl::Publish(const char* reply, const std::vector<uint8_t>& buf)
 {
-    // During lame duck mode, allow publishing but it will be buffered by NATS.c
-    // This is different from other operations which are blocked
-    {
-        std::lock_guard<std::mutex> lock(_lameDuckModeMutex);
-        if (_lameDuckMode) {
-            _log->info(
-                "Publishing during lame duck mode - message will be buffered for reconnection");
+    // During lame duck mode, publish through the hot-swap client when it is available.
+    // Otherwise the message is buffered by NATS.c while the connection reconnects.
+    if (IsInLameDuckMode()) {
+        auto hotSwapClient = GetHotSwapClient();
+        if (hotSwapClient) {
+            return hotSwapClient->Publish(reply, buf);
         }
+        _log->info("Publishing during lame duck mode - message will be buffered for reconnection");
     }
 
     natsStatus status = natsConnection_Publish(_conn, reply, buf.data(), buf.size());
@@ -439,27 +541,122 @@ NatsClientImpl::ReconnectedCb(natsConnection* nc, void* user)
         if (instance->_lameDuckMode) {
             instance->_lameDuckMode = false;
             instance->_log->info("Lame duck mode flag reset after successful reconnection");
-            // #region agent log
-            debugLog("nats_client.cpp:ReconnectedCb",
-                     "Lame duck mode reset",
-                     "C",
-                     "{\"instance\":\"" + instanceAddr +
-                         "\",\"hasSub\":" + std::string(instance->_sub ? "true" : "false") + "}");
-            // #endregion
         }
     }
 
+    // The subscription is restored on a separate thread, because this callback runs on the
+    // NATS thread that serves the callbacks of all connections.
+    std::lock_guard<std::mutex> lock(instance->_lameDuckSwitchMutex);
+    instance->_lameDuckSwitchState = LameDuckSwitchState::Idle;
+    if (instance->_shuttingDown) {
+        return;
+    }
+    std::thread previousRestoreThread = std::move(instance->_restoreSubscriptionThread);
+    instance->_restoreSubscriptionThread =
+        std::thread(&NatsClientImpl::RestoreSubscription,
+                    instance,
+                    ++instance->_restoreSubscriptionGeneration,
+                    std::move(previousRestoreThread));
+}
+
+void
+NatsClientImpl::RestoreSubscription(uint64_t generation, std::thread previousRestoreThread)
+{
+    if (previousRestoreThread.joinable()) {
+        previousRestoreThread.join();
+    }
+
+    for (;;) {
+        {
+            std::lock_guard<std::mutex> lock(_lameDuckSwitchMutex);
+            if (_shuttingDown || generation != _restoreSubscriptionGeneration) {
+                return;
+            }
+        }
+
+        std::string topic;
+        bool needsSubscription;
+        {
+            std::lock_guard<std::mutex> lock(_subMutex);
+            topic = _topic;
+            needsSubscription = !topic.empty() && _sub == nullptr;
+        }
+
+        // The hot-swap client is released only when the primary subscription is confirmed
+        // by the server. Until then the hot-swap subscription keeps receiving the messages.
+        natsStatus status = NATS_OK;
+        if (!topic.empty()) {
+            if (needsSubscription) {
+                status = QueueSubscribe();
+            }
+            if (status == NATS_OK) {
+                status = natsConnection_FlushTimeout(_conn, FlushTimeoutMs());
+            }
+        }
+
+        if (status == NATS_OK) {
+            if (needsSubscription) {
+                _log->info("Subscription to {} restored after reconnection", topic);
+            }
+            std::lock_guard<std::mutex> lock(_lameDuckSwitchMutex);
+            // A new lame duck switch owns the hot-swap client from now on.
+            if (!_shuttingDown && generation == _restoreSubscriptionGeneration &&
+                _lameDuckSwitchState == LameDuckSwitchState::Idle) {
+                ReleaseHotSwapClient();
+            }
+            return;
+        }
+
+        _log->error("Failed to confirm subscription to {} after reconnection ({}) - retrying",
+                    topic,
+                    natsStatus_GetText(status));
+        auto retryAt = std::chrono::steady_clock::now() + kRestoreSubscriptionRetryDelay;
+        while (!_shuttingDown && std::chrono::steady_clock::now() < retryAt) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        }
+    }
+}
+
+void
+NatsClientImpl::ReleaseHotSwapClient()
+{
     std::shared_ptr<NatsClient> staleHotSwapClient;
     {
-        std::lock_guard<std::mutex> lock(instance->_hotSwapMutex);
-        staleHotSwapClient = std::move(instance->_hotSwapClient);
-        instance->_hotSwapAvailable = false;
+        std::lock_guard<std::mutex> lock(_hotSwapMutex);
+        staleHotSwapClient = std::move(_hotSwapClient);
+        _hotSwapAvailable = false;
     }
-    if (staleHotSwapClient) {
-        instance->_log->info("Releasing hot-swap client after reconnection");
-        std::thread([client = std::move(staleHotSwapClient)]() mutable { client.reset(); })
-            .detach();
+    if (!staleHotSwapClient) {
+        return;
     }
+
+    _log->info("Releasing hot-swap client after reconnection");
+    // The delay lets the restored primary subscription reach the whole cluster before the
+    // hot-swap subscription is drained. The destructor joins this thread, so it can use
+    // this instance.
+    auto done = std::make_shared<std::atomic<bool>>(false);
+    std::thread thread([this, client = std::move(staleHotSwapClient), done]() mutable {
+        auto drainAt = std::chrono::steady_clock::now() + kSubscriptionPropagationDelay;
+        while (!_shuttingDown && std::chrono::steady_clock::now() < drainAt) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        }
+        if (auto hotSwapClient = std::dynamic_pointer_cast<NatsClientImpl>(client)) {
+            hotSwapClient->DrainSubscription();
+        }
+        client.reset();
+        *done = true;
+    });
+
+    std::lock_guard<std::mutex> lock(_retiringHotSwapClientsMutex);
+    for (auto it = _retiringHotSwapClients.begin(); it != _retiringHotSwapClients.end();) {
+        if (*it->done) {
+            it->thread.join();
+            it = _retiringHotSwapClients.erase(it);
+        } else {
+            ++it;
+        }
+    }
+    _retiringHotSwapClients.push_back({ std::move(thread), std::move(done) });
 }
 
 void
@@ -590,14 +787,11 @@ NatsClientImpl::LameDuckModeCb(natsConnection* nc, void* user)
     auto instance = reinterpret_cast<NatsClientImpl*>(user);
 
     // #region agent log
-    static thread_local int recursionDepth = 0;
-    recursionDepth++;
     std::string instanceAddr = std::to_string(reinterpret_cast<uintptr_t>(instance));
     debugLog("nats_client.cpp:LameDuckModeCb:ENTRY",
              "Lame duck callback entered",
              "B",
-             "{\"recursionDepth\":" + std::to_string(recursionDepth) + ",\"instance\":\"" +
-                 instanceAddr + "\"}");
+             "{\"instance\":\"" + instanceAddr + "\"}");
     // #endregion
 
     instance->_log->info("=== LAME DUCK MODE DETECTED ===");
@@ -605,140 +799,203 @@ NatsClientImpl::LameDuckModeCb(natsConnection* nc, void* user)
     natsConnection_GetConnectedUrl(nc, serverUrl, sizeof(serverUrl));
     instance->_log->debug("Server: {}", serverUrl);
 
-    // #region agent log
-    debugLog("nats_client.cpp:LameDuckModeCb",
-             "BEFORE acquiring lameDuckModeMutex",
-             "A",
-             "{\"thread\":\"lameduck\",\"instance\":\"" + instanceAddr + "\"}");
-    // #endregion
     {
         std::lock_guard<std::mutex> lock(instance->_lameDuckModeMutex);
-        // #region agent log
-        debugLog("nats_client.cpp:LameDuckModeCb",
-                 "ACQUIRED lameDuckModeMutex",
-                 "A",
-                 "{\"thread\":\"lameduck\",\"instance\":\"" + instanceAddr + "\"}");
-        // #endregion
         instance->_lameDuckMode = true;
         instance->_log->debug("Lame duck mode flag set - preventing new operations");
     }
+
+    // An empty server ID means that the connection is no longer connected to the server in
+    // lame duck mode, so the reconnection is already in progress.
+    std::string lameDuckServerId = instance->ConnectedServerId();
+    if (lameDuckServerId.empty()) {
+        instance->_log->info("Connection already left the lame duck server - no switch needed");
+        return;
+    }
+
+    // The switch runs on a separate thread, because this callback runs on the NATS thread
+    // that serves the callbacks of all connections.
+    std::lock_guard<std::mutex> lock(instance->_lameDuckSwitchMutex);
+    if (instance->_shuttingDown || instance->_lameDuckSwitchState != LameDuckSwitchState::Idle) {
+        instance->_log->info("Lame duck switch already in progress - ignoring callback");
+        return;
+    }
+    instance->_lameDuckSwitchState = LameDuckSwitchState::Switching;
+    std::thread previousSwitchThread = std::move(instance->_lameDuckSwitchThread);
+    instance->_lameDuckSwitchThread = std::thread(&NatsClientImpl::SwitchAwayFromLameDuckServer,
+                                                  instance,
+                                                  nc,
+                                                  ++instance->_lameDuckSwitchGeneration,
+                                                  std::move(lameDuckServerId),
+                                                  std::move(previousSwitchThread));
+}
+
+void
+NatsClientImpl::SwitchAwayFromLameDuckServer(natsConnection* nc,
+                                             uint64_t generation,
+                                             std::string lameDuckServerId,
+                                             std::thread previousSwitchThread)
+{
+    // A previous switch that was stopped by a reconnection can still be finishing.
+    if (previousSwitchThread.joinable()) {
+        previousSwitchThread.join();
+    }
+
     // #region agent log
-    debugLog("nats_client.cpp:LameDuckModeCb",
-             "RELEASED lameDuckModeMutex, about to create hot-swap",
-             "A",
-             "{\"thread\":\"lameduck\",\"instance\":\"" + instanceAddr + "\"}");
+    std::string instanceAddr = std::to_string(reinterpret_cast<uintptr_t>(this));
+    debugLog("nats_client.cpp:DrainThread:ENTRY",
+             "Drain thread started",
+             "D",
+             "{\"instance\":\"" + instanceAddr + "\"}");
     // #endregion
 
-    // FIX: Check if we already have a hot-swap client to prevent recursive creation
-    // This can happen when the hot-swap client itself receives a lame duck callback
-    bool alreadyHasHotSwap = instance->IsHotSwapAvailable();
-    if (alreadyHasHotSwap) {
-        instance->_log->info(
-            "Hot-swap client already exists - skipping creation (prevents recursion)");
-        // #region agent log
-        debugLog("nats_client.cpp:LameDuckModeCb",
-                 "SKIPPING hot-swap creation - already exists (FIX: prevents infinite recursion)",
-                 "B",
-                 "{\"recursionDepth\":" + std::to_string(recursionDepth) + ",\"instance\":\"" +
-                     instanceAddr + "\"}");
-        // #endregion
-        // Don't return - still need to run the drain thread below
-    } else {
-        // ENHANCEMENT: Create hot-swap client immediately for zero-downtime
-        instance->_log->debug("Creating hot-swap client for zero-downtime failover...");
-        try {
-            // #region agent log
-            debugLog("nats_client.cpp:LameDuckModeCb",
-                     "BEFORE creating hot-swap client",
-                     "B",
-                     "{\"recursionDepth\":" + std::to_string(recursionDepth) + ",\"instance\":\"" +
-                         instanceAddr + "\"}");
-            // #endregion
-            // Create new client with same configuration but different logger name
-            std::string hotSwapLoggerName = std::string(instance->_log->name()) + "_hotswap";
-            auto hotSwapClient = std::make_shared<NatsClientImpl>(
-                NatsApiType::Synchronous, instance->_config, hotSwapLoggerName.c_str(), true);
-            // #region agent log
-            debugLog("nats_client.cpp:LameDuckModeCb",
-                     "Hot-swap client created, BEFORE SetHotSwapClient",
-                     "A,B",
-                     "{\"recursionDepth\":" + std::to_string(recursionDepth) + ",\"instance\":\"" +
-                         instanceAddr + "\"}");
-            // #endregion
+    // Must be called with _lameDuckSwitchMutex held. A reconnection resets the state in
+    // ReconnectedCb, but that callback can be queued behind other callbacks. The server ID
+    // shows a reconnection that ReconnectedCb has not reported yet.
+    auto isCurrentSwitch = [this, generation, &lameDuckServerId]() {
+        return !_shuttingDown && _lameDuckSwitchGeneration == generation &&
+               _lameDuckSwitchState == LameDuckSwitchState::Switching &&
+               ConnectedServerId() == lameDuckServerId;
+    };
 
-            instance->SetHotSwapClient(hotSwapClient);
-            instance->_log->debug("Hot-swap client created successfully");
+    // 1. Create the hot-swap client and subscribe it, so that it receives the messages
+    // while the primary subscription is drained and the primary connection reconnects.
+    if (!IsHotSwapAvailable()) {
+        _log->debug("Creating hot-swap client for zero-downtime failover...");
+        std::shared_ptr<NatsClientImpl> hotSwapClient;
+        try {
+            std::string hotSwapLoggerName = std::string(_log->name()) + "_hotswap";
+            hotSwapClient = std::make_shared<NatsClientImpl>(
+                _apiType, _config, hotSwapLoggerName.c_str(), true);
         } catch (const std::exception& e) {
-            // #region agent log
-            debugLog("nats_client.cpp:LameDuckModeCb",
-                     "EXCEPTION creating hot-swap client",
-                     "B",
-                     "{\"error\":\"" + std::string(e.what()) + "\",\"instance\":\"" + instanceAddr +
-                         "\"}");
-            // #endregion
-            instance->_log->error("Failed to create hot-swap client: {}", e.what());
+            _log->error("Failed to create hot-swap client: {}", e.what());
+        }
+        if (hotSwapClient) {
+            std::lock_guard<std::mutex> lock(_lameDuckSwitchMutex);
+            if (isCurrentSwitch()) {
+                SetHotSwapClient(hotSwapClient);
+            }
+        }
+        // If the switch already stopped, the hot-swap client is destroyed here.
+    }
+
+    bool hotSwapSubscribed = false;
+    std::string topic;
+    {
+        std::lock_guard<std::mutex> lock(_subMutex);
+        topic = _topic;
+    }
+    if (!topic.empty()) {
+        auto hotSwapClient = std::dynamic_pointer_cast<NatsClientImpl>(GetHotSwapClient());
+        if (hotSwapClient) {
+            bool alreadySubscribed;
+            {
+                std::lock_guard<std::mutex> lock(hotSwapClient->_subMutex);
+                alreadySubscribed = hotSwapClient->_sub != nullptr;
+            }
+            natsStatus status =
+                alreadySubscribed ? NATS_OK : hotSwapClient->Subscribe(topic, _onMessage);
+            if (status == NATS_OK) {
+                status = natsConnection_FlushTimeout(hotSwapClient->_conn,
+                                                     hotSwapClient->FlushTimeoutMs());
+            }
+            if (status == NATS_OK) {
+                hotSwapSubscribed = true;
+                _log->info("Hot-swap client subscribed to {}", topic);
+            } else {
+                _log->warn("Failed to subscribe hot-swap client: {}", natsStatus_GetText(status));
+            }
         }
     }
-    // #region agent log
-    recursionDepth--;
-    // #endregion
+    if (hotSwapSubscribed) {
+        std::this_thread::sleep_for(kSubscriptionPropagationDelay);
+    }
 
-    // #region agent log
-    bool hasSubscription = (instance->_sub != nullptr);
-    debugLog("nats_client.cpp:LameDuckModeCb",
-             "BEFORE starting drain thread",
-             "C,D,E",
-             "{\"hasSubscription\":" + std::string(hasSubscription ? "true" : "false") +
-                 ",\"instance\":\"" + instanceAddr + "\"}");
-    // #endregion
-    std::thread([instance, nc, instanceAddr]() {
-        // #region agent log
-        debugLog("nats_client.cpp:DrainThread:ENTRY",
-                 "Drain thread started",
-                 "D",
-                 "{\"instance\":\"" + instanceAddr + "\"}");
-        // #endregion
-        // 1. Flush pending messages to current server
-        instance->_log->debug("Flushing pending messages...");
-        natsStatus status =
-            natsConnection_FlushTimeout(nc, instance->_lameDuckModeFlushTimeout.count());
-        // #region agent log
-        debugLog("nats_client.cpp:DrainThread",
-                 "FlushTimeout returned",
-                 "D",
-                 "{\"status\":\"" + std::string(natsStatus_GetText(status)) + "\",\"instance\":\"" +
-                     instanceAddr + "\"}");
-        // #endregion
-        if (status == NATS_OK) {
-            instance->_log->debug("Successfully flushed pending messages");
-        } else {
-            instance->_log->warn("Flush failed: {}", natsStatus_GetText(status));
+    // 2. Drain the primary subscription only when the hot-swap subscription is active.
+    // Otherwise keep it, so that NATS.c sends it again to the new server.
+    natsSubscription* drainingSub = nullptr;
+    {
+        std::lock_guard<std::mutex> lock(_lameDuckSwitchMutex);
+        if (!isCurrentSwitch()) {
+            _log->info("Lame duck switch stopped: connection already reconnected");
+            return;
         }
+        if (hotSwapSubscribed) {
+            std::lock_guard<std::mutex> subLock(_subMutex);
+            std::swap(drainingSub, _sub);
+        }
+    }
+    // The drain and the requests in flight share one deadline, so that the switch ends
+    // well before the server closes the connection.
+    auto deadline = std::chrono::steady_clock::now() +
+                    std::max(std::chrono::milliseconds(DrainTimeoutMs()), _config.requestTimeout);
+    if (drainingSub) {
+        _log->debug("Draining primary subscription...");
+        natsStatus status = natsSubscription_Drain(drainingSub);
+        if (status == NATS_OK) {
+            auto remaining = std::chrono::duration_cast<std::chrono::milliseconds>(
+                deadline - std::chrono::steady_clock::now());
+            status = natsSubscription_WaitForDrainCompletion(
+                drainingSub, std::max<int64_t>(remaining.count(), 1));
+        }
+        if (status != NATS_OK) {
+            int pendingMsgs = 0;
+            natsSubscription_GetPending(drainingSub, &pendingMsgs, nullptr);
+            _log->error("Primary subscription drain did not complete ({}), dropping {} messages",
+                        natsStatus_GetText(status),
+                        pendingMsgs);
+        }
+        // Destroy unsubscribes the subscription if the drain did not complete.
+        natsSubscription_Destroy(drainingSub);
+    }
 
-        // 2. Trigger reconnection to other servers
-        instance->_log->debug("Initiating reconnection...");
-        // #region agent log
-        debugLog("nats_client.cpp:DrainThread",
-                 "BEFORE natsConnection_Reconnect",
-                 "D",
-                 "{\"instance\":\"" + instanceAddr + "\"}");
-        // #endregion
+    // 3. Wait for the requests sent on the primary connection, so that their replies are
+    // not lost. New requests use the hot-swap client or are buffered.
+    while (_inFlightRequests > 0 && !_shuttingDown &&
+           std::chrono::steady_clock::now() < deadline) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    }
+    if (_inFlightRequests > 0) {
+        _log->warn("Reconnecting with {} requests still in flight", _inFlightRequests.load());
+    }
+
+    // 4. Flush pending messages to current server
+    _log->debug("Flushing pending messages...");
+    natsStatus status = natsConnection_FlushTimeout(nc, FlushTimeoutMs());
+    // #region agent log
+    debugLog("nats_client.cpp:DrainThread",
+             "FlushTimeout returned",
+             "D",
+             "{\"status\":\"" + std::string(natsStatus_GetText(status)) + "\",\"instance\":\"" +
+                 instanceAddr + "\"}");
+    // #endregion
+    if (status == NATS_OK) {
+        _log->debug("Successfully flushed pending messages");
+    } else {
+        _log->warn("Flush failed: {}", natsStatus_GetText(status));
+    }
+
+    // 5. Trigger reconnection to other servers. ReconnectedCb restores the primary
+    // subscription and releases the hot-swap client. natsConnection_Reconnect only shuts
+    // down the socket, so it is called under the lock, right after the check.
+    {
+        std::lock_guard<std::mutex> lock(_lameDuckSwitchMutex);
+        if (!isCurrentSwitch()) {
+            _log->info("Lame duck switch stopped: connection already reconnected");
+            return;
+        }
+        _lameDuckSwitchState = LameDuckSwitchState::Reconnecting;
+        _log->debug("Initiating reconnection...");
         natsConnection_Reconnect(nc);
-        // #region agent log
-        debugLog("nats_client.cpp:DrainThread",
-                 "AFTER natsConnection_Reconnect",
-                 "D",
-                 "{\"instance\":\"" + instanceAddr + "\"}");
-        // #endregion
+    }
 
-        instance->_log->info("=== LAME DUCK MODE HANDLING COMPLETE ===");
-        // #region agent log
-        debugLog("nats_client.cpp:DrainThread:EXIT",
-                 "Drain thread completed",
-                 "D",
-                 "{\"instance\":\"" + instanceAddr + "\"}");
-        // #endregion
-    }).detach();
+    _log->info("=== LAME DUCK MODE HANDLING COMPLETE ===");
+    // #region agent log
+    debugLog("nats_client.cpp:DrainThread:EXIT",
+             "Drain thread completed",
+             "D",
+             "{\"instance\":\"" + instanceAddr + "\"}");
+    // #endregion
 }
 
 void

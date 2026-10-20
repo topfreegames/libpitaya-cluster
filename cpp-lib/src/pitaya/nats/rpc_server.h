@@ -47,6 +47,8 @@ private:
 
     // Tracks the number of RPCs that are being processed.
     utils::SyncVector<CallData*> _inProcessRpcs;
+    // Set when the server stops accepting RPCs. Guarded by the _inProcessRpcs lock.
+    bool _shuttingDown = false;
 };
 
 } // namespace pitaya
