@@ -330,7 +330,6 @@ Worker::StartLeaseKeepAlive()
                 _log->error("lease keep alive failed!");
                 std::lock_guard<decltype(_jobQueue)> lock(_jobQueue);
                 _jobQueue.PushBack(Job::NewEtcdReconnectionFailure());
-                _syncServersTicker.Stop();
                 _semaphore.Notify();
                 std::rethrow_exception(exc);
             }
