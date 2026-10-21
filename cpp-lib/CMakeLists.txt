@@ -192,13 +192,15 @@ if(BUILD_TESTING AND NOT BUILD_MACOSX_BUNDLE)
         test/lame_duck_mode_test.cpp
         test/main_test.cpp)
 
-    message(INFO "Adding profiling data into the library and the tests executable, do not ship this library to production (compile with -DBUILD_TESTING=OFF)")
+    if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+        message(INFO "Adding profiling data into the library and the tests executable, do not ship this library to production (compile with -DBUILD_TESTING=OFF)")
 
-    target_compile_options(pitaya_cpp
-      PRIVATE -fprofile-instr-generate -fcoverage-mapping -O0)
+        target_compile_options(pitaya_cpp
+          PRIVATE -fprofile-instr-generate -fcoverage-mapping -O0)
 
-    target_link_libraries(pitaya_cpp
-      PRIVATE -fprofile-instr-generate -fcoverage-mapping)
+        target_link_libraries(pitaya_cpp
+          PRIVATE -fprofile-instr-generate -fcoverage-mapping)
+    endif()
 
     target_include_directories(pitaya_cpp_tests PUBLIC src)
 

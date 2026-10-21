@@ -242,6 +242,82 @@ jobs:
             cpp-lib/build/**/*pitaya_cpp.so
             cpp-lib/build/**/*pitaya_cpp.dylib
 
+  test:
+    name: Test (ubuntu-22.04-x86_64)
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-22.04
+    services:
+      nats:
+        image: nats:2.10-alpine
+        ports:
+          - 4222:4222
+      etcd:
+        image: quay.io/coreos/etcd:v3.5.17
+        env:
+          ETCD_LISTEN_CLIENT_URLS: http://0.0.0.0:2379
+          ETCD_ADVERTISE_CLIENT_URLS: http://127.0.0.1:2379
+        ports:
+          - 2379:2379
+    steps:
+      - name: Install Conan
+        uses: turtlebrowser/get-conan@main
+        env:
+          PIP_BREAK_SYSTEM_PACKAGES: 1
+
+      - name: Configure Conan
+        run: |
+          conan profile detect
+          conan remote add conancenter https://center.conan.io 2>/dev/null || true
+          mkdir -p ~/.conan2
+          echo "core.download:retry=5" >> ~/.conan2/global.conf
+          echo "core.download:retry_wait=10" >> ~/.conan2/global.conf
+
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake make g++ gcc
+
+      - name: Restore the Conan cache of the Linux build
+        uses: actions/cache/restore@v3
+        env:
+          cache-name: cache-conan-modules
+        with:
+          path: ~/.conan2/
+          key: ${{ runner.os }}-x86_64-builder-${{ env.cache-name }}-${{ hashFiles('cpp-lib/conanfile.py', 'cpp-lib/conanprofile') }}
+          restore-keys: |
+            ${{ runner.os }}-x86_64-builder-${{ env.cache-name }}-
+            ${{ runner.os }}-x86_64-builder-
+
+      - name: Install Conan Dependencies
+        env:
+          CONAN_PARALLEL_DOWNLOAD: 8
+          CONAN_PARALLEL_BUILD: 4
+        run: |
+          for attempt in 1 2 3; do
+            if conan install . -pr conanprofile -of build -s build_type=${{env.BUILD_TYPE}} -s arch=x86_64 -s:b compiler.cppstd=gnu17 -s compiler.cppstd=gnu17 --build=missing --build=outdated; then
+              exit 0
+            fi
+            sleep 30
+          done
+          exit 1
+        working-directory: cpp-lib
+
+      - name: Configure CMake
+        run: cmake --preset conan-linux-x86_64-release -DBUILD_TESTING=ON
+        working-directory: cpp-lib
+
+      - name: Build tests
+        run: cmake --build build/_builds/linux-x86_64-release --config ${{env.BUILD_TYPE}} --target pitaya_cpp_tests sigterm_test -j 4
+        working-directory: cpp-lib
+
+      - name: Run tests
+        run: ctest --test-dir build/_builds/linux-x86_64-release --output-on-failure --timeout 900
+        working-directory: cpp-lib
+
   consolidate:
     name: Consolidate all libs into single package
     needs: [cache-check, build]
