@@ -31,6 +31,13 @@ struct LeaseRevokeResponse
     std::string errorMsg;
 };
 
+struct LeaseTimeToLiveResponse
+{
+    bool ok;
+    std::string errorMsg;
+    int64_t ttl;
+};
+
 struct SetResponse
 {
     bool ok;
@@ -64,6 +71,7 @@ public:
 
     virtual LeaseGrantResponse LeaseGrant(std::chrono::seconds seconds) = 0;
     virtual LeaseRevokeResponse LeaseRevoke(int64_t leaseId) = 0;
+    virtual LeaseTimeToLiveResponse LeaseTimeToLive(int64_t leaseId) = 0;
     virtual SetResponse Set(const std::string& key, const std::string& val, int64_t leaseId) = 0;
     virtual GetResponse Get(const std::string& key) = 0;
     virtual ListResponse List(const std::string& prefix) = 0;

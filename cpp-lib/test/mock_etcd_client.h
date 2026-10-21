@@ -10,8 +10,19 @@
 class MockEtcdClient : public pitaya::EtcdClient
 {
 public:
+    MockEtcdClient()
+    {
+        pitaya::LeaseTimeToLiveResponse res;
+        res.ok = true;
+        res.ttl = 3600;
+        EXPECT_CALL(*this, LeaseTimeToLive(::testing::_))
+            .Times(::testing::AnyNumber())
+            .WillRepeatedly(::testing::Return(res));
+    }
+
     MOCK_METHOD1(LeaseGrant, pitaya::LeaseGrantResponse(std::chrono::seconds));
     MOCK_METHOD1(LeaseRevoke, pitaya::LeaseRevokeResponse(int64_t));
+    MOCK_METHOD1(LeaseTimeToLive, pitaya::LeaseTimeToLiveResponse(int64_t));
     MOCK_METHOD3(Set, pitaya::SetResponse(const std::string&, const std::string&, int64_t));
     MOCK_METHOD1(Get, pitaya::GetResponse(const std::string&));
     MOCK_METHOD1(List, pitaya::ListResponse(const std::string&));

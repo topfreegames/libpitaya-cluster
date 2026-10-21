@@ -31,6 +31,7 @@ enum class JobInfo
     Watch,
     AddListener,
     EtcdReconnectionFailure,
+    LeaseProbe,
     WatchError,
     Shutdown,
     Invalid,
@@ -41,10 +42,12 @@ struct Job
     JobInfo info;
     service_discovery::Listener* listener;
     WatchResponse watchRes;
+    uint64_t leaseKeepAliveGeneration;
 
     Job()
         : info(JobInfo::Invalid)
         , listener(nullptr)
+        , leaseKeepAliveGeneration(0)
     {}
 
     static Job NewWatch(WatchResponse res)
@@ -58,7 +61,14 @@ struct Job
 
     static Job NewShutdown() { return Job(JobInfo::Shutdown); }
 
-    static Job NewEtcdReconnectionFailure() { return Job(JobInfo::EtcdReconnectionFailure); }
+    static Job NewEtcdReconnectionFailure(uint64_t leaseKeepAliveGeneration)
+    {
+        Job j(JobInfo::EtcdReconnectionFailure);
+        j.leaseKeepAliveGeneration = leaseKeepAliveGeneration;
+        return j;
+    }
+
+    static Job NewLeaseProbe() { return Job(JobInfo::LeaseProbe); }
 
     static Job NewSyncServers() { return Job(JobInfo::SyncServers); }
 
@@ -73,6 +83,7 @@ private:
     Job(JobInfo info)
         : info(info)
         , listener(nullptr)
+        , leaseKeepAliveGeneration(0)
     {}
 };
 
@@ -101,6 +112,8 @@ private:
     bool AddServerToEtcd(const pitaya::Server& server);
     void AddServer(const pitaya::Server& server);
     void SyncServers();
+    void ProbeLease();
+    void CheckLease();
     void PrintServers();
     void DeleteServer(const std::string& serverId);
 
@@ -127,8 +140,11 @@ private:
     boost::thread _workerThread;
 
     int _numKeepAliveRetriesLeft;
+    uint64_t _leaseKeepAliveGeneration;
+    std::chrono::steady_clock::time_point _lastLeaseProbeSuccess;
 
     utils::Ticker _syncServersTicker;
+    utils::Ticker _leaseProbeTicker;
 
     utils::Semaphore _semaphore;
     utils::SyncDeque<Job> _jobQueue;

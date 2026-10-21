@@ -8,6 +8,8 @@
 #include <etcd/KeepAlive.hpp>
 #include "spdlog/spdlog.h"
 
+#include <mutex>
+
 namespace pitaya {
 
 class EtcdClientV3 : public EtcdClient
@@ -21,6 +23,7 @@ public:
 
     LeaseGrantResponse LeaseGrant(std::chrono::seconds seconds) override;
     LeaseRevokeResponse LeaseRevoke(int64_t leaseId) override;
+    LeaseTimeToLiveResponse LeaseTimeToLive(int64_t leaseId) override;
     SetResponse Set(const std::string& key, const std::string& val, int64_t leaseId) override;
     GetResponse Get(const std::string& key) override;
     ListResponse List(const std::string& prefix) override;
@@ -33,6 +36,12 @@ public:
     void StopLeaseKeepAlive() override;
 
 private:
+    struct LeaseKeepAliveHandlerGate
+    {
+        std::mutex mutex;
+        bool open = true;
+    };
+
     void OnWatch(etcd::Response res);
 
 private:
@@ -42,7 +51,9 @@ private:
     etcd::Client _client;
     std::shared_ptr<etcd::Watcher> _watcher;
     std::function<void(WatchResponse)> _onWatch;
+    std::mutex _leaseKeepAliveMutex;
     std::shared_ptr<etcd::KeepAlive> _leaseKeepAlive;
+    std::shared_ptr<LeaseKeepAliveHandlerGate> _leaseKeepAliveHandlerGate;
 };
 
 } // namespace pitaya

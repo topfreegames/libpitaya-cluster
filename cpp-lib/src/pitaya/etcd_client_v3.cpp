@@ -3,9 +3,14 @@
 #include "pitaya.h"
 #include "pitaya/utils.h"
 
+#include <future>
+#include <thread>
+
 using std::placeholders::_1;
 
 namespace pitaya {
+
+static constexpr std::chrono::seconds kStopLeaseKeepAliveTimeout(3);
 
 EtcdClientV3::EtcdClientV3(const std::string& endpoint,
                            const std::string& prefix,
@@ -42,6 +47,20 @@ EtcdClientV3::LeaseRevoke(int64_t leaseId)
 
     LeaseRevokeResponse res;
     res.ok = etcdRes.is_ok();
+    if (!res.ok) {
+        res.errorMsg = etcdRes.error_message();
+    }
+    return res;
+}
+
+LeaseTimeToLiveResponse
+EtcdClientV3::LeaseTimeToLive(int64_t leaseId)
+{
+    etcd::Response etcdRes = _client.leasetimetolive(leaseId).get();
+
+    LeaseTimeToLiveResponse res;
+    res.ok = etcdRes.is_ok();
+    res.ttl = etcdRes.value().ttl();
     if (!res.ok) {
         res.errorMsg = etcdRes.error_message();
     }
@@ -93,16 +112,56 @@ EtcdClientV3::LeaseKeepAlive(int64_t ttl, int64_t leaseId, std::function<void(st
 {
 
     _log->info("Starting keepalive with {} seconds interval for leaseID: {}", ttl/3, leaseId );
-    _leaseKeepAlive = std::make_shared<etcd::KeepAlive>(_client, onExit, ttl/3, leaseId);
 
+    auto gate = std::make_shared<LeaseKeepAliveHandlerGate>();
+    auto handler = [gate, onExit](std::exception_ptr exc) {
+        std::lock_guard<std::mutex> lock(gate->mutex);
+        if (gate->open) {
+            onExit(exc);
+        }
+    };
+    auto keepAlive = std::make_shared<etcd::KeepAlive>(_client, handler, ttl/3, leaseId);
+
+    std::lock_guard<std::mutex> lock(_leaseKeepAliveMutex);
+    _leaseKeepAlive = std::move(keepAlive);
+    _leaseKeepAliveHandlerGate = std::move(gate);
 }
 
 void
 EtcdClientV3::StopLeaseKeepAlive()
 {
+    std::shared_ptr<etcd::KeepAlive> keepAlive;
+    std::shared_ptr<LeaseKeepAliveHandlerGate> gate;
+    {
+        std::lock_guard<std::mutex> lock(_leaseKeepAliveMutex);
+        keepAlive = std::move(_leaseKeepAlive);
+        gate = std::move(_leaseKeepAliveHandlerGate);
+    }
+
+    if (gate) {
+        std::lock_guard<std::mutex> lock(gate->mutex);
+        gate->open = false;
+    }
+
+    if (!keepAlive) {
+        return;
+    }
+
     std::cout << "Stopping lease keepalive" << std::endl;
-     _leaseKeepAlive.reset();
-     std::cout << "Stopped lease keepalive" << std::endl;
+
+    auto stopped = std::make_shared<std::promise<void>>();
+    auto stoppedFuture = stopped->get_future();
+    std::thread([keepAlive = std::move(keepAlive), stopped]() mutable {
+        keepAlive.reset();
+        stopped->set_value();
+    }).detach();
+
+    if (stoppedFuture.wait_for(kStopLeaseKeepAliveTimeout) == std::future_status::timeout) {
+        _log->warn("Lease keepalive did not stop in {} seconds, leaving it behind",
+                   kStopLeaseKeepAliveTimeout.count());
+        return;
+    }
+    std::cout << "Stopped lease keepalive" << std::endl;
 }
 
 void
