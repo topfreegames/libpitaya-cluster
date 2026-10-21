@@ -844,3 +844,87 @@ TEST_F(Etcdv3ServiceDiscoveryTest, ReconnectsAfterSomeRetrieUsingExponentialBack
         EXPECT_CALL(*_mockEtcdClient, LeaseRevoke(10101010));
     }
 }
+
+TEST_F(Etcdv3ServiceDiscoveryTest, ReconnectsWhenTheLeaseProbeFindsAnExpiredLease)
+{
+    auto firstLeaseGrantRes = NewSuccessfullLeaseGrantResponse(712381283);
+    auto secondLeaseGrantRes = NewSuccessfullLeaseGrantResponse(10101010);
+    auto setRes = NewSuccessfullSetResponse();
+
+    ListResponse listRes;
+    listRes.ok = true;
+
+    LeaseRevokeResponse revokeRes;
+    revokeRes.ok = true;
+
+    LeaseTimeToLiveResponse expiredRes;
+    expiredRes.ok = true;
+    expiredRes.ttl = -1;
+
+    EXPECT_CALL(*_mockEtcdClient, List(_)).WillRepeatedly(Return(listRes));
+    EXPECT_CALL(*_mockEtcdClient, CancelWatch()).Times(AnyNumber());
+    EXPECT_CALL(*_mockEtcdClient, StopLeaseKeepAlive()).Times(AnyNumber());
+    EXPECT_CALL(*_mockEtcdClient, LeaseRevoke(_)).WillRepeatedly(Return(revokeRes));
+    EXPECT_CALL(*_mockEtcdClient, LeaseTimeToLive(firstLeaseGrantRes.leaseId))
+        .WillRepeatedly(Return(expiredRes));
+
+    {
+        InSequence seq;
+        EXPECT_CALL(*_mockEtcdClient, LeaseGrant(Eq(_config.heartbeatTTLSec)))
+            .WillOnce(Return(firstLeaseGrantRes));
+        EXPECT_CALL(*_mockEtcdClient, Set(_, _, Eq(firstLeaseGrantRes.leaseId)))
+            .WillOnce(Return(setRes));
+        EXPECT_CALL(*_mockEtcdClient, LeaseKeepAlive(_, firstLeaseGrantRes.leaseId, _));
+        EXPECT_CALL(*_mockEtcdClient, LeaseGrant(Eq(_config.heartbeatTTLSec)))
+            .WillOnce(Return(secondLeaseGrantRes));
+        EXPECT_CALL(*_mockEtcdClient, Set(_, _, Eq(secondLeaseGrantRes.leaseId)))
+            .WillOnce(Return(setRes));
+        EXPECT_CALL(*_mockEtcdClient, LeaseKeepAlive(_, secondLeaseGrantRes.leaseId, _));
+    }
+
+    auto serviceDiscovery = CreateServiceDiscovery();
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(2500));
+}
+
+TEST_F(Etcdv3ServiceDiscoveryTest, IgnoresAFailureOfAReplacedLeaseKeepAlive)
+{
+    auto firstLeaseGrantRes = NewSuccessfullLeaseGrantResponse(712381283);
+    auto secondLeaseGrantRes = NewSuccessfullLeaseGrantResponse(10101010);
+    auto setRes = NewSuccessfullSetResponse();
+
+    ListResponse listRes;
+    listRes.ok = true;
+
+    LeaseRevokeResponse revokeRes;
+    revokeRes.ok = true;
+
+    EXPECT_CALL(*_mockEtcdClient, List(_)).WillRepeatedly(Return(listRes));
+    EXPECT_CALL(*_mockEtcdClient, CancelWatch()).Times(AnyNumber());
+    EXPECT_CALL(*_mockEtcdClient, StopLeaseKeepAlive()).Times(AnyNumber());
+    EXPECT_CALL(*_mockEtcdClient, LeaseRevoke(_)).WillRepeatedly(Return(revokeRes));
+
+    std::function<void(std::exception_ptr)> onFirstLeaseKeepAliveExit;
+    {
+        InSequence seq;
+        EXPECT_CALL(*_mockEtcdClient, LeaseGrant(Eq(_config.heartbeatTTLSec)))
+            .WillOnce(Return(firstLeaseGrantRes));
+        EXPECT_CALL(*_mockEtcdClient, Set(_, _, Eq(firstLeaseGrantRes.leaseId)))
+            .WillOnce(Return(setRes));
+        EXPECT_CALL(*_mockEtcdClient, LeaseKeepAlive(_, firstLeaseGrantRes.leaseId, _))
+            .WillOnce(SaveFunction<1,2>(&onFirstLeaseKeepAliveExit));
+        EXPECT_CALL(*_mockEtcdClient, LeaseGrant(Eq(_config.heartbeatTTLSec)))
+            .WillOnce(Return(secondLeaseGrantRes));
+        EXPECT_CALL(*_mockEtcdClient, Set(_, _, Eq(secondLeaseGrantRes.leaseId)))
+            .WillOnce(Return(setRes));
+        EXPECT_CALL(*_mockEtcdClient, LeaseKeepAlive(_, secondLeaseGrantRes.leaseId, _));
+    }
+
+    auto serviceDiscovery = CreateServiceDiscovery();
+
+    onFirstLeaseKeepAliveExit(std::make_exception_ptr(std::runtime_error("some_error")));
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+
+    onFirstLeaseKeepAliveExit(std::make_exception_ptr(std::runtime_error("late_error")));
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+}

@@ -39,7 +39,10 @@ try
     , _etcdClient(std::move(etcdClient))
     , _log(utils::CloneLoggerOrCreate(loggerName, kLogTag))
     , _numKeepAliveRetriesLeft(_config.maxNumberOfRetries)
-    , _syncServersTicker(config.syncServersIntervalSec, std::bind(&Worker::SyncServers, this)) {
+    , _leaseKeepAliveGeneration(0)
+    , _syncServersTicker(config.syncServersIntervalSec, std::bind(&Worker::SyncServers, this))
+    , _leaseProbeTicker(std::chrono::duration_cast<std::chrono::milliseconds>(config.heartbeatTTLSec) / 3,
+                        std::bind(&Worker::ProbeLease, this)) {
 
     if (_config.logServerSync) {
         _log->debug("Will synchronize servers every {} seconds",
@@ -99,6 +102,7 @@ Worker::Shutdown()
     // Make sure that we cancel the watch before destructing the worker thread.
     RevokeLease();
     _etcdClient->StopLeaseKeepAlive();
+    _leaseProbeTicker.Stop();
     _log->debug("Stopping servers ticker");
     _syncServersTicker.Stop();
     _log->debug("Servers ticker stopped");
@@ -241,31 +245,38 @@ Worker::StartThread()
                     break;
                 }
                 case JobInfo::EtcdReconnectionFailure: {
+                    if (job.leaseKeepAliveGeneration != _leaseKeepAliveGeneration) {
+                        _log->warn("Ignoring a failure of a replaced lease keep alive");
+                        break;
+                    }
+
                     _log->error("Reconnection failure, {} retries left out of {}!",
                                 _numKeepAliveRetriesLeft,
                                 _config.maxNumberOfRetries);
                     _etcdClient->StopLeaseKeepAlive();
                     _etcdClient->CancelWatch();
 
+                    _leaseProbeTicker.Stop();
                     _syncServersTicker.Stop();
 
                     while (_numKeepAliveRetriesLeft > 0) {
-                        _log->info("ETCD retries left: {}", _numKeepAliveRetriesLeft);
+                        _log->warn("ETCD retries left: {}", _numKeepAliveRetriesLeft);
                         auto delay_milliseconds =
                             _config.retryDelayMilliseconds
                             << (_config.maxNumberOfRetries - _numKeepAliveRetriesLeft);
-                        _log->info("ETCD retry waiting for {}ms", delay_milliseconds);
+                        _log->warn("ETCD retry waiting for {}ms", delay_milliseconds);
                         std::this_thread::sleep_for(std::chrono::milliseconds(delay_milliseconds));
 
                         --_numKeepAliveRetriesLeft;
                         auto ok = Bootstrap();
 
                         if (ok) {
-                            _log->info("Etcd reconnection successful");
+                            _log->warn("Etcd reconnection successful");
                             _numKeepAliveRetriesLeft = _config.maxNumberOfRetries;
-                            _log->info("Restarting etcd watcher");
+                            _log->warn("Restarting etcd watcher");
                             _etcdClient->Watch(std::bind(&Worker::OnWatch, this, _1));
                             StartLeaseKeepAlive();
+                            _leaseProbeTicker.Start();
                             _syncServersTicker.Start();
                             break;
                         }
@@ -274,13 +285,17 @@ Worker::StartThread()
                     if (_numKeepAliveRetriesLeft <= 0) {
                         _log->critical("Failed to reconnect to etcd, shutting down");
                         Shutdown();
-                        std::thread(std::bind(raise, SIGTERM)).detach();
+                        utils::RequestProcessTermination();
                         _log->debug("Exiting loop");
                         return;
                     }
 
                     _numKeepAliveRetriesLeft = _config.maxNumberOfRetries;
 
+                    break;
+                }
+                case JobInfo::LeaseProbe: {
+                    CheckLease();
                     break;
                 }
                 case JobInfo::WatchError: {
@@ -324,13 +339,15 @@ Worker::StartLeaseKeepAlive()
         return;
     }
 
-    std::function<void(std::exception_ptr)> handler = [this](std::exception_ptr exc) {
+    uint64_t generation = ++_leaseKeepAliveGeneration;
+    _lastLeaseProbeSuccess = std::chrono::steady_clock::now();
+
+    std::function<void(std::exception_ptr)> handler = [this, generation](std::exception_ptr exc) {
         try {
             if (exc) {
                 _log->error("lease keep alive failed!");
                 std::lock_guard<decltype(_jobQueue)> lock(_jobQueue);
-                _jobQueue.PushBack(Job::NewEtcdReconnectionFailure());
-                _syncServersTicker.Stop();
+                _jobQueue.PushBack(Job::NewEtcdReconnectionFailure(generation));
                 _semaphore.Notify();
                 std::rethrow_exception(exc);
             }
@@ -353,6 +370,7 @@ Worker::Init()
     }
 
     StartLeaseKeepAlive();
+    _leaseProbeTicker.Start();
     _syncServersTicker.Start();
     return true;
 }
@@ -417,6 +435,44 @@ Worker::SyncServers()
     std::lock_guard<decltype(_jobQueue)> lock(_jobQueue);
     _jobQueue.PushBack(Job::NewSyncServers());
     _semaphore.NotifyAll();
+}
+
+void
+Worker::ProbeLease()
+{
+    std::lock_guard<decltype(_jobQueue)> lock(_jobQueue);
+    _jobQueue.PushBack(Job::NewLeaseProbe());
+    _semaphore.Notify();
+}
+
+void
+Worker::CheckLease()
+{
+    LeaseTimeToLiveResponse res = _etcdClient->LeaseTimeToLive(_leaseId);
+    auto now = std::chrono::steady_clock::now();
+    int64_t minTtl = _config.heartbeatTTLSec.count() / 3;
+
+    if (res.ok && res.ttl > minTtl) {
+        _lastLeaseProbeSuccess = now;
+        return;
+    }
+
+    if (res.ok && res.ttl <= 0) {
+        _log->error("Lease {} expired", _leaseId);
+    } else if (res.ok) {
+        _log->error("Lease {} has only {} seconds left, the keep alive is not refreshing it",
+                    _leaseId,
+                    res.ttl);
+    } else if (now - _lastLeaseProbeSuccess < _config.heartbeatTTLSec) {
+        _log->warn("Lease probe failed: {}", res.errorMsg);
+        return;
+    } else {
+        _log->error("Lease probe failed for longer than the lease TTL: {}", res.errorMsg);
+    }
+
+    std::lock_guard<decltype(_jobQueue)> lock(_jobQueue);
+    _jobQueue.PushBack(Job::NewEtcdReconnectionFailure(_leaseKeepAliveGeneration));
+    _semaphore.Notify();
 }
 
 optional<pitaya::Server>

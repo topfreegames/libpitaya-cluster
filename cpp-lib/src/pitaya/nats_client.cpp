@@ -2,28 +2,11 @@
 
 #include "pitaya/utils.h"
 
+#include <algorithm>
 #include <chrono>
-#include <iostream>
 #include <mutex>
 #include <signal.h>
 #include <string>
-
-// #region agent log
-static std::mutex g_debugLogMutex;
-static void
-debugLog(const std::string& location,
-         const std::string& message,
-         const std::string& hypothesisId,
-         const std::string& data = "{}")
-{
-    std::lock_guard<std::mutex> lock(g_debugLogMutex);
-    auto now = std::chrono::system_clock::now();
-    auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count();
-    std::cout << "[DEBUG_AGENT] {\"location\":\"" << location << "\",\"message\":\"" << message
-              << "\",\"hypothesisId\":\"" << hypothesisId << "\",\"timestamp\":" << ms
-              << ",\"data\":" << data << "}" << std::endl;
-}
-// #endregion
 
 namespace pitaya {
 
@@ -61,26 +44,37 @@ NatsMsgImpl::GetReply() const
 }
 
 static constexpr const char* kLogTag = "nats_client";
+static constexpr std::chrono::milliseconds kSubscriptionPropagationDelay(1000);
+static constexpr std::chrono::milliseconds kNewConnectionRetryWindow(3000);
+static constexpr std::chrono::milliseconds kNewConnectionRetryDelay(200);
 
 //
 // NatsClientImpl
 //
+NatsClientImpl::Connection::~Connection()
+{
+    if (sub) {
+        natsSubscription_Destroy(sub);
+    }
+    if (conn) {
+        natsConnection_Destroy(conn);
+    }
+}
+
 NatsClientImpl::NatsClientImpl(NatsApiType apiType,
                                const NatsConfig& config,
                                const char* loggerName)
     : _log(utils::CloneLoggerOrCreate(loggerName, kLogTag))
     , _config(config)
-    , _opts(nullptr)
-    , _conn(nullptr)
-    , _sub(nullptr)
-    , _connClosed(false)
-    , _shuttingDown(false)
-    , _lameDuckMode(false)
-    , _onMessage(nullptr)
-    , _hotSwapAvailable(false)
-    , _processingPendingRequests(false)
     , _drainTimeout(config.drainTimeout)
     , _lameDuckModeFlushTimeout(config.flushTimeout)
+    , _opts(nullptr)
+    , _switchOpts(nullptr)
+    , _onMessage(nullptr)
+    , _shuttingDown(false)
+    , _openConnections(0)
+    , _switchInProgress(false)
+    , _pendingLameDuckConn(nullptr)
 {
     if (config.natsAddr.empty()) {
         throw PitayaException("NATS address should not be empty");
@@ -90,41 +84,6 @@ NatsClientImpl::NatsClientImpl(NatsApiType apiType,
         throw PitayaException("NATS max reconnection attempts should be positive");
     }
 
-    natsStatus status = natsOptions_Create(&_opts);
-    if (status != NATS_OK) {
-        std::string err_str("error configuring nats client - ");
-        err_str.append(natsStatus_GetText(status));
-        throw PitayaException(err_str);
-    }
-
-    natsOptions_SetTimeout(_opts, config.connectionTimeout.count());
-    natsOptions_SetMaxReconnect(_opts, config.maxReconnectionAttempts);
-
-    // Reconnect parameters
-    natsOptions_SetReconnectBufSize(_opts, config.reconnectBufSize);
-    natsOptions_SetReconnectWait(_opts, config.reconnectWaitInMs.count());
-    // Only enable RetryOnFailedConnect if maxReconnectionAttempts > 0
-    // Otherwise the initial connection will hang indefinitely
-    bool retryOnFailedConnect = (config.maxReconnectionAttempts > 0);
-    natsOptions_SetRetryOnFailedConnect(_opts, retryOnFailedConnect, NULL, this);
-    natsOptions_SetPingInterval(_opts, config.pingIntervalInMs.count());
-    natsOptions_SetMaxPingsOut(_opts, config.maxPingsOut);
-    natsOptions_SetReconnectJitter(
-        _opts, config.reconnectJitterInMs.count(), config.reconnectJitterInMs.count());
-
-    // Callbacks
-    natsOptions_SetClosedCB(_opts, ClosedCb, this);
-    natsOptions_SetDisconnectedCB(_opts, DisconnectedCb, this);
-    natsOptions_SetReconnectedCB(_opts, ReconnectedCb, this);
-    // Register lame duck mode handler
-    natsOptions_SetLameDuckModeCB(_opts, LameDuckModeCb, this);
-
-    if (apiType == NatsApiType::Asynchronous) {
-        natsOptions_SetMaxPendingMsgs(_opts, config.maxPendingMsgs);
-        natsOptions_SetErrorHandler(_opts, ErrHandler, this);
-    }
-    natsOptions_SetURL(_opts, config.natsAddr.c_str());
-
     _log->info("NATS Connection Timeout - " + std::to_string(config.connectionTimeout.count()));
     _log->info("NATS Max Reconnect Attempts - " + std::to_string(config.maxReconnectionAttempts));
     _log->info("NATS Reconnect Wait Time - " + std::to_string(config.reconnectWaitInMs.count()));
@@ -133,62 +92,113 @@ NatsClientImpl::NatsClientImpl(NatsApiType apiType,
     _log->info("NATS Max Pings Out - " + std::to_string(config.maxPingsOut));
     _log->info("NATS Reconnect Jitter - " + std::to_string(config.reconnectJitterInMs.count()));
 
+    // Only enable RetryOnFailedConnect if maxReconnectionAttempts > 0
+    // Otherwise the initial connection will hang indefinitely
+    _opts = CreateOptions(apiType, config.maxReconnectionAttempts > 0);
+    _switchOpts = CreateOptions(apiType, false);
+    if (!_opts || !_switchOpts) {
+        natsOptions_Destroy(_opts);
+        natsOptions_Destroy(_switchOpts);
+        throw PitayaException("error configuring nats client");
+    }
+
     // TODO, FIXME: Change so that connection happens NOT in the constructor.
-    status = natsConnection_Connect(&_conn, _opts);
+    natsConnection* conn = nullptr;
+    natsStatus status = natsConnection_Connect(&conn, _opts);
     if (status != NATS_OK) {
+        natsOptions_Destroy(_opts);
+        natsOptions_Destroy(_switchOpts);
         std::string err_str("unable to initialize nats server - ");
         err_str.append(natsStatus_GetText(status));
         throw PitayaException(err_str);
     }
+    ++_openConnections;
+    auto active = std::make_shared<Connection>();
+    active->conn = conn;
+    std::lock_guard<std::mutex> lock(_activeMutex);
+    _active = std::move(active);
+}
+
+natsOptions*
+NatsClientImpl::CreateOptions(NatsApiType apiType, bool retryOnFailedConnect)
+{
+    natsOptions* opts = nullptr;
+    natsStatus status = natsOptions_Create(&opts);
+    if (status != NATS_OK) {
+        _log->error("error configuring nats client - {}", natsStatus_GetText(status));
+        return nullptr;
+    }
+
+    natsOptions_SetTimeout(opts, _config.connectionTimeout.count());
+    natsOptions_SetMaxReconnect(opts, _config.maxReconnectionAttempts);
+
+    // Reconnect parameters
+    natsOptions_SetReconnectBufSize(opts, _config.reconnectBufSize);
+    natsOptions_SetReconnectWait(opts, _config.reconnectWaitInMs.count());
+    natsOptions_SetRetryOnFailedConnect(opts, retryOnFailedConnect, NULL, this);
+    natsOptions_SetPingInterval(opts, _config.pingIntervalInMs.count());
+    natsOptions_SetMaxPingsOut(opts, _config.maxPingsOut);
+    natsOptions_SetReconnectJitter(
+        opts, _config.reconnectJitterInMs.count(), _config.reconnectJitterInMs.count());
+
+    // Callbacks
+    natsOptions_SetClosedCB(opts, ClosedCb, this);
+    natsOptions_SetDisconnectedCB(opts, DisconnectedCb, this);
+    natsOptions_SetReconnectedCB(opts, ReconnectedCb, this);
+    natsOptions_SetLameDuckModeCB(opts, LameDuckModeCb, this);
+
+    if (apiType == NatsApiType::Asynchronous) {
+        natsOptions_SetMaxPendingMsgs(opts, _config.maxPendingMsgs);
+        natsOptions_SetErrorHandler(opts, ErrHandler, this);
+    }
+    natsOptions_SetURL(opts, _config.natsAddr.c_str());
+    return opts;
 }
 
 NatsClientImpl::~NatsClientImpl()
 {
     _shuttingDown = true;
 
-    // Stop request processing thread
+    std::thread switchThread;
     {
-        std::lock_guard<std::mutex> lock(_pendingRequestsMutex);
-        _processingPendingRequests = false;
+        std::lock_guard<std::mutex> lock(_switchMutex);
+        switchThread = std::move(_switchThread);
+    }
+    if (switchThread.joinable()) {
+        switchThread.join();
     }
 
-    // Wait for request processing thread to finish
-    if (_requestProcessingThread.joinable()) {
-        _requestProcessingThread.join();
+    // Only the switch thread replaces the active connection, so it does not change anymore.
+    std::shared_ptr<Connection> active;
+    {
+        std::lock_guard<std::mutex> lock(_activeMutex);
+        active = _active;
     }
-    if (_sub) {
-        // Remove interest from the subscription. Note that pending message may still
-        // be received by the client.
-        natsStatus status;
-        _log->debug("Unsubscribing from NATS subscription");
-        status = natsSubscription_Unsubscribe(_sub);
-        if (status != NATS_OK) {
-            _log->error("Failed to unsubscribe");
-        }
-
-        _log->debug("Draining NATS subscription");
-        status = natsSubscription_Drain(_sub);
-        if (status != NATS_OK) {
-            _log->error("Failed to drain subscription");
-        }
-
-        status = natsSubscription_WaitForDrainCompletion(_sub, _drainTimeout.count());
-        if (status != NATS_OK) {
-            _log->error("Failed to wait for subscription drain");
-        }
-        // Called only here, because it needs to wait for the
-        // natsSubscription_WaitForDrainCompletion
-        natsSubscription_Destroy(_sub);
+    // A completed drain also means that no message callback is still running.
+    DrainSubscription(*active);
+    natsConnection_Close(active->conn);
+    active.reset();
+    {
+        std::lock_guard<std::mutex> lock(_activeMutex);
+        _active.reset();
     }
 
-    natsConnection_Close(_conn);
-    while (!_connClosed) {
-        // Wait until the connection is actually closed. This will be reported on a different
-        // thread.
+    // The callbacks of every connection use this instance, so wait until the last one ran.
+    while (_openConnections > 0) {
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
-    natsConnection_Destroy(_conn);
     natsOptions_Destroy(_opts);
+    natsOptions_Destroy(_switchOpts);
+}
+
+std::shared_ptr<NatsClientImpl::Connection>
+NatsClientImpl::AcquireActiveConnection()
+{
+    // The count is taken under the lock, so that the switch thread sees every request that
+    // can still use a connection after it replaced it.
+    std::lock_guard<std::mutex> lock(_activeMutex);
+    ++_active->inFlight;
+    return _active;
 }
 
 natsStatus
@@ -197,191 +207,58 @@ NatsClientImpl::Request(std::shared_ptr<NatsMsg>* msg,
                         const std::vector<uint8_t>& data,
                         std::chrono::milliseconds timeout)
 {
-    // Check if in lame duck mode
-    if (IsInLameDuckMode()) {
-        // Try to use hot-swap client first
-        auto hotSwapClient = GetHotSwapClient();
-        if (hotSwapClient && IsHotSwapAvailable()) {
-            _log->info("Using hot-swap client for request during lame duck mode");
-            return hotSwapClient->Request(msg, topic, data, timeout);
-        }
-
-        // If no hot-swap client available, buffer the request
-        _log->info("Buffering request during lame duck mode - topic: {}", topic);
-        return BufferRequest(msg, topic, data, timeout);
-    }
-
-    return ExecuteRequest(msg, topic, data, timeout);
-}
-
-natsStatus
-NatsClientImpl::ExecuteRequest(std::shared_ptr<NatsMsg>* msg,
-                               const std::string& topic,
-                               const std::vector<uint8_t>& data,
-                               std::chrono::milliseconds timeout)
-{
+    auto connection = AcquireActiveConnection();
     natsMsg* reply = nullptr;
     natsStatus status = natsConnection_Request(
-        &reply, _conn, topic.c_str(), data.data(), data.size(), timeout.count());
+        &reply, connection->conn, topic.c_str(), data.data(), data.size(), timeout.count());
+    --connection->inFlight;
 
     if (status == NATS_OK) {
         *msg = std::shared_ptr<NatsMsg>(new NatsMsgImpl(reply));
-        return status;
     }
-
-    if (status == NATS_TIMEOUT) {
-        return status;
-    } else {
-        return status;
-    }
-}
-
-natsStatus
-NatsClientImpl::BufferRequest(std::shared_ptr<NatsMsg>* msg,
-                              const std::string& topic,
-                              const std::vector<uint8_t>& data,
-                              std::chrono::milliseconds timeout)
-{
-    auto request = std::make_unique<PendingRequest>();
-    request->topic = topic;
-    request->data = data;
-    request->timeout = timeout;
-    request->timestamp = std::chrono::steady_clock::now();
-
-    auto future = request->promise.get_future();
-
-    {
-        std::lock_guard<std::mutex> lock(_pendingRequestsMutex);
-
-        // Check if we're approaching the buffer limit
-        int maxPendingRequests = GetMaxPendingRequests();
-        if (_pendingRequests.size() >= maxPendingRequests) {
-            _log->warn("Application request buffer full ({} requests) - dropping new request for "
-                       "topic: {}",
-                       _pendingRequests.size(),
-                       topic);
-            return NATS_INSUFFICIENT_BUFFER;
-        }
-
-        _pendingRequests.push_back(std::move(request));
-        _log->debug("Buffered request for topic: {} (buffer: {}/{})",
-                    topic,
-                    _pendingRequests.size(),
-                    maxPendingRequests);
-
-        // Start processing thread if not already running
-        if (!_processingPendingRequests) {
-            _processingPendingRequests = true;
-            if (_requestProcessingThread.joinable()) {
-                _requestProcessingThread.join();
-            }
-            _requestProcessingThread = std::thread(&NatsClientImpl::ProcessPendingRequests, this);
-        }
-    }
-
-    // Wait for the request to be processed
-    try {
-        auto futureStatus = future.wait_for(timeout + std::chrono::seconds(5)); // Add 5s buffer
-        if (futureStatus == std::future_status::timeout) {
-            _log->warn("Buffered request timed out for topic: {}", topic);
-            return NATS_TIMEOUT;
-        }
-
-        auto result = future.get();
-        *msg = result.second;
-        return result.first;
-    } catch (const std::exception& e) {
-        _log->error("Error processing buffered request: {}", e.what());
-        return NATS_ERR;
-    }
+    return status;
 }
 
 natsStatus
 NatsClientImpl::Subscribe(const std::string& topic,
                           std::function<void(std::shared_ptr<NatsMsg>)> onMessage)
 {
-    // Check if in lame duck mode
-    if (IsInLameDuckMode()) {
+    // Holding the switch lock keeps a lame duck switch from starting meanwhile.
+    std::lock_guard<std::mutex> switchLock(_switchMutex);
+    if (_switchInProgress) {
         _log->warn("Attempting to subscribe during lame duck mode - operation skipped");
         return NATS_ILLEGAL_STATE;
     }
 
     _log->info("Subscribing to topic {}", topic);
     _onMessage = std::move(onMessage);
-    natsStatus status = natsConnection_Subscribe(&_sub, _conn, topic.c_str(), HandleMsg, this);
+
+    // The topic is also the queue name, so that the subscriptions of the old and the new
+    // connection can coexist during a lame duck switch without delivering a message twice.
+    std::lock_guard<std::mutex> lock(_activeMutex);
+    natsStatus status = natsConnection_QueueSubscribe(
+        &_active->sub, _active->conn, topic.c_str(), topic.c_str(), HandleMsg, this);
     if (status != NATS_OK) {
+        _active->sub = nullptr;
         _log->error("Failed to subscribe");
         return status;
     }
+    _topic = topic;
     return status;
-}
-
-// Hot-swap support for zero-downtime lame duck mode
-void
-NatsClientImpl::SetHotSwapClient(std::shared_ptr<NatsClient> newClient)
-{
-    // #region agent log
-    std::string instanceAddr = std::to_string(reinterpret_cast<uintptr_t>(this));
-    debugLog("nats_client.cpp:SetHotSwapClient",
-             "BEFORE acquiring hotSwapMutex",
-             "A",
-             "{\"instance\":\"" + instanceAddr + "\"}");
-    // #endregion
-    std::lock_guard<std::mutex> lock(_hotSwapMutex);
-    // #region agent log
-    debugLog("nats_client.cpp:SetHotSwapClient",
-             "ACQUIRED hotSwapMutex",
-             "A",
-             "{\"instance\":\"" + instanceAddr + "\"}");
-    // #endregion
-    _hotSwapClient = newClient;
-    _hotSwapAvailable = (newClient != nullptr);
-    if (_hotSwapAvailable) {
-        _log->info("Hot-swap client set - zero-downtime lame duck mode enabled");
-    }
-    // #region agent log
-    debugLog("nats_client.cpp:SetHotSwapClient",
-             "RELEASING hotSwapMutex",
-             "A",
-             "{\"instance\":\"" + instanceAddr + "\"}");
-    // #endregion
-}
-
-std::shared_ptr<NatsClient>
-NatsClientImpl::GetHotSwapClient() const
-{
-    std::lock_guard<std::mutex> lock(_hotSwapMutex);
-    return _hotSwapClient;
-}
-
-bool
-NatsClientImpl::IsHotSwapAvailable() const
-{
-    std::lock_guard<std::mutex> lock(_hotSwapMutex);
-    return _hotSwapAvailable;
 }
 
 bool
 NatsClientImpl::IsInLameDuckMode() const
 {
-    std::lock_guard<std::mutex> lock(_lameDuckModeMutex);
-    return _lameDuckMode;
+    return _switchInProgress;
 }
 
 natsStatus
 NatsClientImpl::Publish(const char* reply, const std::vector<uint8_t>& buf)
 {
-    // During lame duck mode, allow publishing but it will be buffered by NATS.c
-    // This is different from other operations which are blocked
-    {
-        std::lock_guard<std::mutex> lock(_lameDuckModeMutex);
-        if (_lameDuckMode) {
-            _log->info(
-                "Publishing during lame duck mode - message will be buffered for reconnection");
-        }
-    }
-
-    natsStatus status = natsConnection_Publish(_conn, reply, buf.data(), buf.size());
+    auto connection = AcquireActiveConnection();
+    natsStatus status = natsConnection_Publish(connection->conn, reply, buf.data(), buf.size());
+    --connection->inFlight;
 
     if (status != NATS_OK) {
         switch (status) {
@@ -389,7 +266,7 @@ NatsClientImpl::Publish(const char* reply, const std::vector<uint8_t>& buf)
                 _log->warn("NATS publish timeout");
                 return status;
             case NATS_INSUFFICIENT_BUFFER:
-                _log->warn("NATS reconnection buffer full during lame duck mode - message dropped");
+                _log->warn("NATS reconnection buffer full - message dropped");
                 return status;
             default:
                 _log->error("NATS publish failed: {}", natsStatus_GetText(status));
@@ -412,160 +289,53 @@ void
 NatsClientImpl::DisconnectedCb(natsConnection* nc, void* user)
 {
     auto instance = reinterpret_cast<NatsClientImpl*>(user);
-    // TODO: implement logic here
-    instance->_log->warn("nats disconnected");
+    bool isActiveConnection;
+    {
+        std::lock_guard<std::mutex> lock(instance->_activeMutex);
+        isActiveConnection = instance->_active && instance->_active->conn == nc;
+    }
+    // The destructor clears the active connection right after it closes it.
+    if (isActiveConnection || instance->_shuttingDown) {
+        instance->_log->warn("nats disconnected");
+    } else {
+        instance->_log->info("Replaced nats connection disconnected");
+    }
 }
 
 void
 NatsClientImpl::ReconnectedCb(natsConnection* nc, void* user)
 {
     auto instance = reinterpret_cast<NatsClientImpl*>(user);
-    // #region agent log
-    std::string instanceAddr = std::to_string(reinterpret_cast<uintptr_t>(instance));
-    debugLog("nats_client.cpp:ReconnectedCb",
-             "Reconnection callback received",
-             "C",
-             "{\"instance\":\"" + instanceAddr + "\"}");
-    // #endregion
+    // NATS.c sends the subscriptions of the connection again after a reconnection.
     instance->_log->warn("nats reconnected!");
-
-    // Reset lame duck mode flag after successful reconnection
-    {
-        std::lock_guard<std::mutex> lock(instance->_lameDuckModeMutex);
-        if (instance->_lameDuckMode) {
-            instance->_lameDuckMode = false;
-            instance->_log->info("Lame duck mode flag reset after successful reconnection");
-            // #region agent log
-            debugLog("nats_client.cpp:ReconnectedCb",
-                     "Lame duck mode reset - BUT subscription NOT restored",
-                     "C",
-                     "{\"instance\":\"" + instanceAddr +
-                         "\",\"hasSub\":" + std::string(instance->_sub ? "true" : "false") + "}");
-            // #endregion
-        }
-    }
 }
 
 void
 NatsClientImpl::ClosedCb(natsConnection* nc, void* user)
 {
     auto instance = reinterpret_cast<NatsClientImpl*>(user);
-    // #region agent log
-    std::string instanceAddr = std::to_string(reinterpret_cast<uintptr_t>(instance));
-    debugLog("nats_client.cpp:ClosedCb",
-             "Connection closed callback - CRITICAL",
-             "D",
-             "{\"instance\":\"" + instanceAddr + "\",\"shuttingDown\":" +
-                 std::string(instance->_shuttingDown ? "true" : "false") + "}");
-    // #endregion
-    // Signal main thread that the connection was actually closed
-    instance->_log->warn("nats connection closed!");
-    instance->_connClosed = true;
-    if (!instance->_shuttingDown) {
-        // #region agent log
-        debugLog("nats_client.cpp:ClosedCb",
-                 "SENDING SIGTERM - all reconnection attempts failed",
-                 "D",
-                 "{\"instance\":\"" + instanceAddr + "\"}");
-        // #endregion
+    bool isActiveConnection;
+    {
+        std::lock_guard<std::mutex> lock(instance->_activeMutex);
+        isActiveConnection = instance->_active && instance->_active->conn == nc;
+    }
+    bool shuttingDown = instance->_shuttingDown;
+    if (isActiveConnection || shuttingDown) {
+        instance->_log->warn("nats connection closed!");
+    } else {
+        instance->_log->warn("Replaced nats connection closed");
+    }
+
+    // The destructor can free the instance as soon as this count reaches zero, so this must
+    // be the last access to it.
+    --instance->_openConnections;
+
+    // A connection that was replaced in a lame duck switch is closed on purpose.
+    if (isActiveConnection && !shuttingDown) {
         // This was not initiated by a shutdown request.
         // Send SIGTERM as this was caused by all reconnection attempts failing
-        std::thread(std::bind(raise, SIGTERM)).detach();
+        utils::RequestProcessTermination();
     }
-}
-
-void
-NatsClientImpl::ProcessPendingRequests()
-{
-    _log->info("Started pending requests processing thread");
-
-    while (_processingPendingRequests && !_shuttingDown) {
-        std::vector<std::unique_ptr<PendingRequest>> currentRequests;
-
-        // Get current pending requests
-        {
-            std::lock_guard<std::mutex> lock(_pendingRequestsMutex);
-            if (_pendingRequests.empty()) {
-                std::this_thread::sleep_for(std::chrono::milliseconds(10));
-                continue;
-            }
-            currentRequests.swap(_pendingRequests);
-        }
-
-        // Process each request
-        for (auto& request : currentRequests) {
-            auto elapsed = std::chrono::steady_clock::now() - request->timestamp;
-            if (elapsed > request->timeout) {
-                // Request has timed out
-                request->promise.set_value({ NATS_TIMEOUT, nullptr });
-                continue;
-            }
-
-            // Check if hot-swap client is available or if lame duck mode has ended
-            std::shared_ptr<NatsClient> clientToUse = nullptr;
-            bool usePrimaryClient = false;
-
-            // #region agent log
-            debugLog("nats_client.cpp:ProcessPendingRequests",
-                     "BEFORE acquiring locks atomically (FIX: using std::lock to prevent deadlock)",
-                     "A",
-                     "{\"thread\":\"processing\"}");
-            // #endregion
-            {
-                // FIX: Use std::lock() to acquire both locks atomically, preventing ABBA deadlock
-                // Previously: acquired hotSwapMutex then lameDuckModeMutex (could deadlock with
-                // LameDuckModeCb) Now: acquire both atomically using std::lock()
-                std::unique_lock<std::mutex> hotSwapLock(_hotSwapMutex, std::defer_lock);
-                std::unique_lock<std::mutex> lameDuckLock(_lameDuckModeMutex, std::defer_lock);
-                std::lock(hotSwapLock, lameDuckLock);
-                // #region agent log
-                debugLog("nats_client.cpp:ProcessPendingRequests",
-                         "ACQUIRED both locks atomically (deadlock-free)",
-                         "A",
-                         "{\"thread\":\"processing\"}");
-                // #endregion
-
-                if (_hotSwapAvailable && _hotSwapClient) {
-                    clientToUse = _hotSwapClient;
-                    _log->info("Using hot-swap client for buffered request");
-                } else if (!_lameDuckMode) {
-                    usePrimaryClient = true;
-                    _log->info("Using primary client for buffered request (lame duck mode ended)");
-                }
-            }
-
-            if (clientToUse) {
-                // Use hot-swap client
-                std::shared_ptr<NatsMsg> msg;
-                natsStatus status =
-                    clientToUse->Request(&msg, request->topic, request->data, request->timeout);
-                request->promise.set_value({ status, msg });
-            } else if (usePrimaryClient) {
-                // Use primary client (lame duck mode has ended)
-                std::shared_ptr<NatsMsg> msg;
-                natsStatus status =
-                    ExecuteRequest(&msg, request->topic, request->data, request->timeout);
-                request->promise.set_value({ status, msg });
-            } else {
-                // Re-queue the request if neither client is available
-                std::lock_guard<std::mutex> lock(_pendingRequestsMutex);
-                _pendingRequests.push_back(std::move(request));
-            }
-        }
-
-        std::this_thread::sleep_for(std::chrono::milliseconds(10));
-    }
-
-    // Process any remaining requests with error
-    {
-        std::lock_guard<std::mutex> lock(_pendingRequestsMutex);
-        for (auto& request : _pendingRequests) {
-            request->promise.set_value({ NATS_ERR, nullptr });
-        }
-        _pendingRequests.clear();
-    }
-
-    _log->info("Stopped pending requests processing thread");
 }
 
 void
@@ -573,200 +343,209 @@ NatsClientImpl::LameDuckModeCb(natsConnection* nc, void* user)
 {
     auto instance = reinterpret_cast<NatsClientImpl*>(user);
 
-    // #region agent log
-    static thread_local int recursionDepth = 0;
-    recursionDepth++;
-    std::string instanceAddr = std::to_string(reinterpret_cast<uintptr_t>(instance));
-    debugLog("nats_client.cpp:LameDuckModeCb:ENTRY",
-             "Lame duck callback entered",
-             "B",
-             "{\"recursionDepth\":" + std::to_string(recursionDepth) + ",\"instance\":\"" +
-                 instanceAddr + "\"}");
-    // #endregion
-
-    instance->_log->info("=== LAME DUCK MODE DETECTED ===");
+    instance->_log->warn("=== LAME DUCK MODE DETECTED ===");
     char serverUrl[256];
     natsConnection_GetConnectedUrl(nc, serverUrl, sizeof(serverUrl));
     instance->_log->debug("Server: {}", serverUrl);
 
-    // #region agent log
-    debugLog("nats_client.cpp:LameDuckModeCb",
-             "BEFORE acquiring lameDuckModeMutex",
-             "A",
-             "{\"thread\":\"lameduck\",\"instance\":\"" + instanceAddr + "\"}");
-    // #endregion
+    // The switch runs on its own thread, because this callback runs on the NATS thread that
+    // serves the callbacks of all connections.
+    std::lock_guard<std::mutex> switchLock(instance->_switchMutex);
+    if (instance->_shuttingDown) {
+        return;
+    }
+    if (instance->_switchInProgress) {
+        // The connection can be the new one of the switch in progress. The switch thread
+        // checks it when it finishes.
+        instance->_log->warn("Lame duck switch in progress - checking this connection after it");
+        instance->_pendingLameDuckConn = nc;
+        return;
+    }
     {
-        std::lock_guard<std::mutex> lock(instance->_lameDuckModeMutex);
-        // #region agent log
-        debugLog("nats_client.cpp:LameDuckModeCb",
-                 "ACQUIRED lameDuckModeMutex",
-                 "A",
-                 "{\"thread\":\"lameduck\",\"instance\":\"" + instanceAddr + "\"}");
-        // #endregion
-        instance->_lameDuckMode = true;
-        instance->_log->debug("Lame duck mode flag set - preventing new operations");
-    }
-    // #region agent log
-    debugLog("nats_client.cpp:LameDuckModeCb",
-             "RELEASED lameDuckModeMutex, about to create hot-swap",
-             "A",
-             "{\"thread\":\"lameduck\",\"instance\":\"" + instanceAddr + "\"}");
-    // #endregion
-
-    // FIX: Check if we already have a hot-swap client to prevent recursive creation
-    // This can happen when the hot-swap client itself receives a lame duck callback
-    bool alreadyHasHotSwap = instance->IsHotSwapAvailable();
-    if (alreadyHasHotSwap) {
-        instance->_log->info(
-            "Hot-swap client already exists - skipping creation (prevents recursion)");
-        // #region agent log
-        debugLog("nats_client.cpp:LameDuckModeCb",
-                 "SKIPPING hot-swap creation - already exists (FIX: prevents infinite recursion)",
-                 "B",
-                 "{\"recursionDepth\":" + std::to_string(recursionDepth) + ",\"instance\":\"" +
-                     instanceAddr + "\"}");
-        // #endregion
-        // Don't return - still need to run the drain thread below
-    } else {
-        // ENHANCEMENT: Create hot-swap client immediately for zero-downtime
-        instance->_log->debug("Creating hot-swap client for zero-downtime failover...");
-        try {
-            // #region agent log
-            debugLog("nats_client.cpp:LameDuckModeCb",
-                     "BEFORE creating hot-swap client",
-                     "B",
-                     "{\"recursionDepth\":" + std::to_string(recursionDepth) + ",\"instance\":\"" +
-                         instanceAddr + "\"}");
-            // #endregion
-            // Create new client with same configuration but different logger name
-            std::string hotSwapLoggerName = std::string(instance->_log->name()) + "_hotswap";
-            auto hotSwapClient = std::make_shared<NatsClientImpl>(
-                NatsApiType::Synchronous, instance->_config, hotSwapLoggerName.c_str());
-            // #region agent log
-            debugLog("nats_client.cpp:LameDuckModeCb",
-                     "Hot-swap client created, BEFORE SetHotSwapClient",
-                     "A,B",
-                     "{\"recursionDepth\":" + std::to_string(recursionDepth) + ",\"instance\":\"" +
-                         instanceAddr + "\"}");
-            // #endregion
-
-            instance->SetHotSwapClient(hotSwapClient);
-            instance->_log->debug("Hot-swap client created successfully");
-        } catch (const std::exception& e) {
-            // #region agent log
-            debugLog("nats_client.cpp:LameDuckModeCb",
-                     "EXCEPTION creating hot-swap client",
-                     "B",
-                     "{\"error\":\"" + std::string(e.what()) + "\",\"instance\":\"" + instanceAddr +
-                         "\"}");
-            // #endregion
-            instance->_log->error("Failed to create hot-swap client: {}", e.what());
+        // _active is null only while the constructor has not finished.
+        std::lock_guard<std::mutex> lock(instance->_activeMutex);
+        if (!instance->_active || instance->_active->conn != nc) {
+            instance->_log->warn("Connection in lame duck mode is not the active one - ignoring");
+            return;
         }
     }
-    // #region agent log
-    recursionDepth--;
-    // #endregion
+    instance->_switchInProgress = true;
+    std::thread previousSwitchThread = std::move(instance->_switchThread);
+    instance->_switchThread = std::thread(
+        &NatsClientImpl::SwitchConnection, instance, std::move(previousSwitchThread));
+}
 
-    // #region agent log
-    bool hasSubscription = (instance->_sub != nullptr);
-    debugLog("nats_client.cpp:LameDuckModeCb",
-             "BEFORE starting drain thread",
-             "C,D,E",
-             "{\"hasSubscription\":" + std::string(hasSubscription ? "true" : "false") +
-                 ",\"instance\":\"" + instanceAddr + "\"}");
-    // #endregion
-    // 1. Drain existing subscriptions gracefully (in background)
-    std::thread([instance, nc, instanceAddr]() {
-        // #region agent log
-        debugLog("nats_client.cpp:DrainThread:ENTRY",
-                 "Drain thread started",
-                 "D",
-                 "{\"instance\":\"" + instanceAddr + "\"}");
-        // #endregion
-        if (instance->_sub) {
-            // #region agent log
-            bool isSubValid = natsSubscription_IsValid(instance->_sub);
-            debugLog("nats_client.cpp:DrainThread",
-                     "Checking subscription before drain",
-                     "E",
-                     "{\"isValid\":" + std::string(isSubValid ? "true" : "false") +
-                         ",\"instance\":\"" + instanceAddr + "\"}");
-            // #endregion
-            instance->_log->debug("Draining subscription in background...");
-            natsStatus status = natsSubscription_Drain(instance->_sub);
-            // #region agent log
-            debugLog("nats_client.cpp:DrainThread",
-                     "Drain called",
-                     "E",
-                     "{\"status\":\"" + std::string(natsStatus_GetText(status)) +
-                         "\",\"instance\":\"" + instanceAddr + "\"}");
-            // #endregion
-            if (status == NATS_OK) {
-                instance->_log->debug("Successfully initiated subscription drain");
+void
+NatsClientImpl::SwitchConnection(std::thread previousSwitchThread)
+{
+    // The previous switch has already finished, except for its last instructions.
+    if (previousSwitchThread.joinable()) {
+        previousSwitchThread.join();
+    }
 
-                // Wait for drain completion with configurable timeout
-                status = natsSubscription_WaitForDrainCompletion(instance->_sub,
-                                                                 instance->_drainTimeout.count());
-                // #region agent log
-                debugLog("nats_client.cpp:DrainThread",
-                         "WaitForDrainCompletion returned",
-                         "E",
-                         "{\"status\":\"" + std::string(natsStatus_GetText(status)) +
-                             "\",\"instance\":\"" + instanceAddr + "\"}");
-                // #endregion
-                if (status == NATS_OK) {
-                    instance->_log->debug("Subscription drain completed successfully");
-                } else {
-                    instance->_log->warn("Subscription drain timeout or failed: {}",
-                                         natsStatus_GetText(status));
-                }
-            } else {
-                instance->_log->warn("Failed to drain subscription: {}",
-                                     natsStatus_GetText(status));
-            }
+    for (;;) {
+        bool switched = SwitchOnce();
+
+        // If the new connection entered lame duck mode during the switch, switch again.
+        std::lock_guard<std::mutex> switchLock(_switchMutex);
+        natsConnection* pending = _pendingLameDuckConn;
+        _pendingLameDuckConn = nullptr;
+        bool switchAgain = false;
+        if (switched && pending && !_shuttingDown) {
+            std::lock_guard<std::mutex> lock(_activeMutex);
+            switchAgain = (_active->conn == pending);
         }
+        if (!switchAgain) {
+            _switchInProgress = false;
+            return;
+        }
+        _log->warn("New connection entered lame duck mode during the switch - switching again");
+    }
+}
 
-        // 2. Flush pending messages to current server
-        instance->_log->debug("Flushing pending messages...");
-        natsStatus status =
-            natsConnection_FlushTimeout(nc, instance->_lameDuckModeFlushTimeout.count());
-        // #region agent log
-        debugLog("nats_client.cpp:DrainThread",
-                 "FlushTimeout returned",
-                 "D",
-                 "{\"status\":\"" + std::string(natsStatus_GetText(status)) + "\",\"instance\":\"" +
-                     instanceAddr + "\"}");
-        // #endregion
+bool
+NatsClientImpl::SwitchOnce()
+{
+    std::shared_ptr<Connection> old;
+    std::string topic;
+    {
+        std::lock_guard<std::mutex> lock(_activeMutex);
+        old = _active;
+        topic = _topic;
+    }
+
+    // 1. Open a new connection. A server in lame duck mode does not accept new connections,
+    // so it connects to another server. The NATS address can still send a connection to the
+    // server in lame duck mode, so retry for a short time, well inside the grace period.
+    auto fresh = std::make_shared<Connection>();
+    auto connectUntil = std::chrono::steady_clock::now() + kNewConnectionRetryWindow;
+    natsStatus status;
+    for (;;) {
+        status = natsConnection_Connect(&fresh->conn, _switchOpts);
         if (status == NATS_OK) {
-            instance->_log->debug("Successfully flushed pending messages");
-        } else {
-            instance->_log->warn("Flush failed: {}", natsStatus_GetText(status));
+            ++_openConnections;
+            break;
         }
+        fresh->conn = nullptr;
+        if (_shuttingDown || std::chrono::steady_clock::now() >= connectUntil) {
+            break;
+        }
+        _log->warn("Failed to open a new NATS connection ({}) - retrying",
+                   natsStatus_GetText(status));
+        std::this_thread::sleep_for(kNewConnectionRetryDelay);
+    }
 
-        // 3. Trigger reconnection to other servers
-        instance->_log->debug("Initiating reconnection...");
-        // #region agent log
-        debugLog("nats_client.cpp:DrainThread",
-                 "BEFORE natsConnection_Reconnect",
-                 "D",
-                 "{\"instance\":\"" + instanceAddr + "\"}");
-        // #endregion
-        natsConnection_Reconnect(nc);
-        // #region agent log
-        debugLog("nats_client.cpp:DrainThread",
-                 "AFTER natsConnection_Reconnect",
-                 "D",
-                 "{\"instance\":\"" + instanceAddr + "\"}");
-        // #endregion
+    // 2. Subscribe the new connection, and flush so that the server confirms the
+    // subscription before the old one is drained.
+    if (status == NATS_OK && !topic.empty()) {
+        status = natsConnection_QueueSubscribe(
+            &fresh->sub, fresh->conn, topic.c_str(), topic.c_str(), HandleMsg, this);
+        if (status != NATS_OK) {
+            fresh->sub = nullptr;
+        } else {
+            status = natsConnection_FlushTimeout(fresh->conn, FlushTimeoutMs());
+        }
+    }
 
-        instance->_log->info("=== LAME DUCK MODE HANDLING COMPLETE ===");
-        // #region agent log
-        debugLog("nats_client.cpp:DrainThread:EXIT",
-                 "Drain thread completed",
-                 "D",
-                 "{\"instance\":\"" + instanceAddr + "\"}");
-        // #endregion
-    }).detach();
+    if (status != NATS_OK || _shuttingDown) {
+        // Keep the old connection. When the server closes it, NATS.c reconnects it to
+        // another server and sends its subscription again. The new subscription can
+        // already have received messages, so drain it.
+        _log->error("Lame duck switch failed ({}) - keeping the current connection",
+                    natsStatus_GetText(status));
+        DrainSubscription(*fresh);
+        fresh.reset();
+        return false;
+    }
+
+    // 3. Make the new connection the active one. New requests and publishes use it.
+    {
+        std::lock_guard<std::mutex> lock(_activeMutex);
+        _active = fresh;
+    }
+    _log->warn("Switched to a new NATS connection");
+
+    // If the new connection closed before it became the active one, its ClosedCb did not
+    // stop the process. Nothing would receive the messages, so stop it here.
+    if (natsConnection_IsClosed(fresh->conn) && !_shuttingDown) {
+        _log->critical("New NATS connection closed during the lame duck switch");
+        utils::RequestProcessTermination();
+    }
+
+    // 4. Let the new subscription reach the whole cluster, then drain the old one. Both
+    // subscriptions are in the same queue group, so each message is delivered once.
+    if (old->sub) {
+        auto drainAt = std::chrono::steady_clock::now() + kSubscriptionPropagationDelay;
+        while (!_shuttingDown && std::chrono::steady_clock::now() < drainAt) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        }
+    }
+    auto deadline = std::chrono::steady_clock::now() +
+                    std::max(std::chrono::milliseconds(DrainTimeoutMs()), _config.requestTimeout);
+    DrainSubscription(*old);
+
+    // 5. Wait for the requests and publishes that still use the old connection, so that their
+    // replies are not lost.
+    while (old->inFlight > 0 && !_shuttingDown && std::chrono::steady_clock::now() < deadline) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    }
+    if (old->inFlight > 0) {
+        _log->warn("Closing the old connection with {} requests still in flight",
+                   old->inFlight.load());
+    }
+
+    // 6. Flush and close the old connection. If the old connection is reconnecting, the
+    // flush waits for the reconnection, because Close only flushes a connected connection.
+    // The connection is destroyed when the last request that uses it releases it.
+    status = natsConnection_FlushTimeout(old->conn, FlushTimeoutMs());
+    if (status != NATS_OK) {
+        _log->warn("Failed to flush the old connection: {}", natsStatus_GetText(status));
+    }
+    natsConnection_Close(old->conn);
+    old.reset();
+
+    _log->warn("=== LAME DUCK MODE HANDLING COMPLETE ===");
+    return true;
+}
+
+void
+NatsClientImpl::DrainSubscription(Connection& connection)
+{
+    natsSubscription* sub = connection.sub;
+    connection.sub = nullptr;
+    if (!sub) {
+        return;
+    }
+
+    natsStatus status = natsSubscription_Drain(sub);
+    if (status == NATS_OK) {
+        status = natsSubscription_WaitForDrainCompletion(sub, DrainTimeoutMs());
+    }
+    if (status != NATS_OK) {
+        int pendingMsgs = 0;
+        natsSubscription_GetPending(sub, &pendingMsgs, nullptr);
+        _log->error("Subscription drain did not complete ({}), dropping {} messages",
+                    natsStatus_GetText(status),
+                    pendingMsgs);
+    }
+    // Destroy unsubscribes the subscription if the drain did not complete.
+    natsSubscription_Destroy(sub);
+}
+
+int64_t
+NatsClientImpl::DrainTimeoutMs() const
+{
+    // natsSubscription_WaitForDrainCompletion waits forever for a timeout that is not positive.
+    return _drainTimeout.count() > 0 ? _drainTimeout.count()
+                                     : PITAYA_NATS_DEFAULT_DRAIN_TIMEOUT_IN_MS;
+}
+
+int64_t
+NatsClientImpl::FlushTimeoutMs() const
+{
+    // natsConnection_FlushTimeout rejects a timeout that is not positive.
+    return _lameDuckModeFlushTimeout.count() > 0 ? _lameDuckModeFlushTimeout.count()
+                                                 : PITAYA_NATS_DEFAULT_FLUSH_TIMEOUT_IN_MS;
 }
 
 void

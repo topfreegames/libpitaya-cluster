@@ -6,6 +6,7 @@
 #include "pitaya/grpc/rpc_server.h"
 #include "pitaya/nats/rpc_client.h"
 #include "pitaya/nats/rpc_server.h"
+#include "pitaya/utils.h"
 
 #include "spdlog/logger.h"
 #include "spdlog/sinks/base_sink.h"
@@ -20,8 +21,18 @@
 #include <cpprest/json.h>
 #include <cstdio>
 
+#include <atomic>
+#include <cerrno>
+#include <condition_variable>
+#include <cstring>
+#include <mutex>
+#include <thread>
+
 #ifdef _WIN32
 #include <signal.h>
+#else
+#include <fcntl.h>
+#include <unistd.h>
 #endif
 
 using namespace std;
@@ -42,7 +53,19 @@ ConvertToCString(const std::string& str)
 }
 
 static std::shared_ptr<spdlog::logger> gLogger;
-static void (*gSignalHandler)() = nullptr;
+static std::atomic<void (*)()> gSignalHandler(nullptr);
+
+// The signal handler only wakes the thread that waits in tfg_pitc_WaitForSignal. Managed code
+// (the C# handlers) must not run inside a signal handler.
+static std::once_flag gSignalHandlerInstallOnce;
+static std::atomic<bool> gSignalHandlerInstalled(false);
+#ifdef _WIN32
+static std::mutex gPendingSignalsMutex;
+static std::condition_variable gPendingSignalsCond;
+static int gPendingSignals = 0;
+#else
+static int gSignalPipe[2] = { -1, -1 };
+#endif
 
 void
 FromPitayaServer(CServer* server, const pitaya::Server& pServer)
@@ -183,12 +206,82 @@ CBindingStorageConfig::ToConfig()
     return config;
 }
 
-void
+static void
 OnSignal(int signum)
 {
-    if (gSignalHandler) {
-        gSignalHandler();
+#ifdef _WIN32
+    // The C runtime of Windows resets the handler before it calls it, and runs it as normal code.
+    signal(signum, OnSignal);
+    {
+        std::lock_guard<std::mutex> lock(gPendingSignalsMutex);
+        ++gPendingSignals;
     }
+    gPendingSignalsCond.notify_one();
+#else
+    // Only async-signal-safe calls here.
+    int savedErrno = errno;
+    char byte = 1;
+    ssize_t written = write(gSignalPipe[1], &byte, 1);
+    (void)written;
+    errno = savedErrno;
+#endif
+}
+
+static bool
+InstallSignalHandler()
+{
+    std::call_once(gSignalHandlerInstallOnce, [] {
+#ifdef _WIN32
+        signal(SIGINT, OnSignal);
+        signal(SIGTERM, OnSignal);
+#else
+        if (pipe(gSignalPipe) != 0) {
+            if (gLogger) {
+                gLogger->error("Failed to create the signal pipe: {}", strerror(errno));
+            }
+            return;
+        }
+        fcntl(gSignalPipe[0], F_SETFD, FD_CLOEXEC);
+        fcntl(gSignalPipe[1], F_SETFD, FD_CLOEXEC);
+        // A full pipe already wakes the waiting thread, so the handler never needs to block.
+        fcntl(gSignalPipe[1], F_SETFL, O_NONBLOCK);
+
+        struct sigaction action = {};
+        action.sa_handler = OnSignal;
+        sigemptyset(&action.sa_mask);
+        action.sa_flags = SA_RESTART;
+        sigaction(SIGINT, &action, nullptr);
+        sigaction(SIGTERM, &action, nullptr);
+#endif
+        gSignalHandlerInstalled = true;
+    });
+    return gSignalHandlerInstalled;
+}
+
+static bool
+WaitForSignal()
+{
+    if (!gSignalHandlerInstalled) {
+        return false;
+    }
+#ifdef _WIN32
+    std::unique_lock<std::mutex> lock(gPendingSignalsMutex);
+    gPendingSignalsCond.wait(lock, [] { return gPendingSignals > 0; });
+    --gPendingSignals;
+    return true;
+#else
+    for (;;) {
+        char byte;
+        ssize_t bytesRead = read(gSignalPipe[0], &byte, 1);
+        if (bytesRead == 1) {
+            return true;
+        }
+        if (bytesRead < 0 && errno == EINTR) {
+            continue;
+        }
+        return false;
+    }
+#endif
 }
 
 static std::shared_ptr<spdlog::logger>
@@ -276,7 +369,7 @@ extern "C"
         } catch (const PitayaException& exc) {
             gLogger->error("Failed to create cluster instance: {}", exc.what());
             gLogger->error("Sending SIGTERM to terminate process due to initialization failure");
-            std::raise(SIGTERM);
+            utils::RequestProcessTermination();
             return false;
         }
     }
@@ -321,7 +414,7 @@ extern "C"
         } catch (const PitayaException& exc) {
             gLogger->error("Failed to create cluster instance: {}", exc.what());
             gLogger->error("Sending SIGTERM to terminate process due to initialization failure");
-            std::raise(SIGTERM);
+            utils::RequestProcessTermination();
             return false;
         }
     }
@@ -507,17 +600,45 @@ extern "C"
         FreePitayaError(err);
     }
 
+    // Installs the SIGINT and SIGTERM handler. A caller then waits for the signals with
+    // tfg_pitc_WaitForSignal, on a thread of its own.
+    bool tfg_pitc_InstallSignalHandler()
+    {
+        if (gLogger) {
+            gLogger->info("Installing signal handler");
+        }
+        return InstallSignalHandler();
+    }
+
+    // Blocks until SIGINT or SIGTERM is received. Returns false if the handler is not installed.
+    bool tfg_pitc_WaitForSignal()
+    {
+        return WaitForSignal();
+    }
+
+    // Calls signalHandler on a thread of the library when SIGINT or SIGTERM is received.
+    // Managed runtimes should use tfg_pitc_InstallSignalHandler and tfg_pitc_WaitForSignal from
+    // a managed thread instead, so that no native thread of the library calls into managed code.
     void tfg_pitc_OnSignal(void (*signalHandler)())
     {
         if (gLogger) {
             gLogger->info("Adding signal handler");
         }
         gSignalHandler = signalHandler;
-        signal(SIGINT, OnSignal);
-        signal(SIGTERM, OnSignal);
-#ifndef _WIN32
-        signal(SIGKILL, OnSignal);
-#endif
+        if (!InstallSignalHandler()) {
+            return;
+        }
+        static std::once_flag startOnce;
+        std::call_once(startOnce, [] {
+            std::thread([] {
+                while (WaitForSignal()) {
+                    auto handler = gSignalHandler.load();
+                    if (handler) {
+                        handler();
+                    }
+                }
+            }).detach();
+        });
     }
 
     struct CRpc

@@ -7,12 +7,17 @@
 #include "spdlog/sinks/stdout_color_sinks.h"
 
 #include <assert.h>
+#include <csignal>
 #include <boost/format.hpp>
 #include <mutex>
 #include <random>
 #include <string>
 #include <thread>
 #include <unordered_map>
+
+#ifndef _WIN32
+#include <unistd.h>
+#endif
 
 using std::string;
 
@@ -123,6 +128,17 @@ CloneLoggerOrCreate(const char* loggerNameToClone, const char* loggerName)
     auto logger = std::make_shared<spdlog::logger>(loggerName, sink);
     logger->set_level(spdlog::default_logger()->level());
     return logger;
+}
+
+void
+RequestProcessTermination()
+{
+#ifdef _WIN32
+    std::raise(SIGTERM);
+#else
+    // A signal sent to the process, unlike raise(), is not bound to the calling thread.
+    kill(getpid(), SIGTERM);
+#endif
 }
 
 } // namespace utils

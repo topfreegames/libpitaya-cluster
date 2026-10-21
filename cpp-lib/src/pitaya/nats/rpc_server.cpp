@@ -120,6 +120,16 @@ NatsRpcServer::NatsRpcServer(const Server& server,
 NatsRpcServer::~NatsRpcServer()
 {
     _log->info("Stopping rpc server");
+    {
+        std::lock_guard<decltype(_inProcessRpcs)> lock(_inProcessRpcs);
+        _shuttingDown = true;
+    }
+    // Destroy the NATS client first: until its subscriptions are drained they can deliver
+    // messages to OnNewMessage, which uses the members that are destroyed after it. reset()
+    // would set the pointer to null before the client is destroyed, so delete the client
+    // first and only then release the pointer.
+    delete _natsClient.get();
+    (void)_natsClient.release();
     _log->flush();
 }
 
@@ -147,6 +157,12 @@ void
 NatsRpcServer::Shutdown()
 {
     assert(_handlerFunc);
+
+    // Stop accepting new RPCs.
+    {
+        std::lock_guard<decltype(_inProcessRpcs)> lock(_inProcessRpcs);
+        _shuttingDown = true;
+    }
 
     // Check if we need to wait for RPCs to finish.
     bool shouldWait = false;
@@ -201,9 +217,14 @@ NatsRpcServer::OnNewMessage(std::shared_ptr<NatsMsg> msg)
 
     // Check wether the rpc should be processed or not.
     bool shouldProcessRpc;
+    bool shuttingDown;
     {
         std::lock_guard<decltype(_inProcessRpcs)> lock(_inProcessRpcs);
-        if (_inProcessRpcs.Size() == _config.serverMaxNumberOfRpcs) {
+        shuttingDown = _shuttingDown;
+        if (shuttingDown) {
+            _log->debug("Will NOT process rpc: server is shutting down");
+            shouldProcessRpc = false;
+        } else if (_inProcessRpcs.Size() == _config.serverMaxNumberOfRpcs) {
             _log->debug("Will NOT process rpc");
             shouldProcessRpc = false;
         } else {
@@ -216,9 +237,13 @@ NatsRpcServer::OnNewMessage(std::shared_ptr<NatsMsg> msg)
     if (shouldProcessRpc) {
         _handlerFunc(req, callData);
     } else {
+        delete callData;
+
         auto error = new protos::Error();
         error->set_code(constants::kCodeServiceUnavailable);
-        error->set_msg("The server is already processing the maximum amount of RPC's");
+        error->set_msg(shuttingDown
+                           ? "The server is shutting down"
+                           : "The server is already processing the maximum amount of RPC's");
 
         protos::Response res;
         res.set_allocated_error(error);
