@@ -98,6 +98,8 @@ TEST_F(Etcdv3ServiceDiscoveryTest, ThrowsIfInvalidServerPassed)
     for (const auto& pair : arr) {
         EXPECT_THROW(MakeServiceDiscovery(pair.serverId, pair.serverType), PitayaException);
     }
+
+    delete _mockEtcdClient;
 }
 
 TEST_F(Etcdv3ServiceDiscoveryTest, NoneIsReturnedWhenThereAreNoServers)
@@ -776,6 +778,8 @@ TEST_F(Etcdv3ServiceDiscoveryTest, FailsAfterMaxRetrieUsingExponentialBackoff)
     onLeaseKeepAliveExit(std::make_exception_ptr(std::runtime_error("some_error")));
     std::this_thread::sleep_for(std::chrono::milliseconds(15100)); // Sleeping 1 second should retry 2 times.
     }, testing::KilledBySignal(SIGTERM), "");
+
+    delete _mockEtcdClient;
 }
 
 TEST_F(Etcdv3ServiceDiscoveryTest, ReconnectsAfterSomeRetrieUsingExponentialBackoff)
