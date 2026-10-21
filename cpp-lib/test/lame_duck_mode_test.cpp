@@ -208,6 +208,16 @@ TEST_F(LameDuckModeTest, ZeroDowntimeScenarioSimulation)
         return;
     }
     
+    auto responder = CreateTestClient("zero_downtime_responder");
+    ASSERT_NE(responder, nullptr);
+    auto responderPtr = responder.get();
+    ASSERT_EQ(responder->Subscribe("zero.downtime.test",
+                                   [responderPtr](std::shared_ptr<pitaya::NatsMsg> msg) {
+                                       responderPtr->Publish(msg->GetReply(), { 'o', 'k' });
+                                   }),
+              NATS_OK);
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
     std::atomic<bool> testRunning(true);
     std::atomic<int> totalRequests(0);
     std::atomic<int> successfulRequests(0);

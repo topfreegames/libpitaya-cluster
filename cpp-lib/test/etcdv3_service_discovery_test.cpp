@@ -98,6 +98,8 @@ TEST_F(Etcdv3ServiceDiscoveryTest, ThrowsIfInvalidServerPassed)
     for (const auto& pair : arr) {
         EXPECT_THROW(MakeServiceDiscovery(pair.serverId, pair.serverType), PitayaException);
     }
+
+    delete _mockEtcdClient;
 }
 
 TEST_F(Etcdv3ServiceDiscoveryTest, NoneIsReturnedWhenThereAreNoServers)
@@ -120,7 +122,7 @@ TEST_F(Etcdv3ServiceDiscoveryTest, NoneIsReturnedWhenThereAreNoServers)
         InSequence seq;
         EXPECT_CALL(*_mockEtcdClient, LeaseKeepAlive(Eq(_config.heartbeatTTLSec.count()), _, _));
         EXPECT_CALL(*_mockEtcdClient, CancelWatch());
-        EXPECT_CALL(*_mockEtcdClient, StopLeaseKeepAlive());
+        EXPECT_CALL(*_mockEtcdClient, StopLeaseKeepAlive()).Times(2);
     }
 
     auto serviceDiscovery = CreateServiceDiscovery();
@@ -158,7 +160,7 @@ TEST_F(Etcdv3ServiceDiscoveryTest, WatchesForKeysAddedAndRemoved)
         InSequence seq;
         EXPECT_CALL(*_mockEtcdClient, LeaseKeepAlive(Eq(_config.heartbeatTTLSec.count()), _, _));
         EXPECT_CALL(*_mockEtcdClient, CancelWatch());
-        EXPECT_CALL(*_mockEtcdClient, StopLeaseKeepAlive());
+        EXPECT_CALL(*_mockEtcdClient, StopLeaseKeepAlive()).Times(2);
     }
 
     auto serviceDiscovery = CreateServiceDiscovery();
@@ -232,7 +234,7 @@ TEST_F(Etcdv3ServiceDiscoveryTest, SynchronizesServersEveryInterval)
         InSequence seq;
         EXPECT_CALL(*_mockEtcdClient, LeaseKeepAlive(Eq(_config.heartbeatTTLSec.count()), _, _));
         EXPECT_CALL(*_mockEtcdClient, CancelWatch());
-        EXPECT_CALL(*_mockEtcdClient, StopLeaseKeepAlive());
+        EXPECT_CALL(*_mockEtcdClient, StopLeaseKeepAlive()).Times(2);
     }
 
     {
@@ -332,7 +334,7 @@ TEST_F(Etcdv3ServiceDiscoveryTest, ListenersCanBeAddedAndRemoved)
         InSequence seq;
         EXPECT_CALL(*_mockEtcdClient, LeaseKeepAlive(Eq(_config.heartbeatTTLSec.count()), _, _));
         EXPECT_CALL(*_mockEtcdClient, CancelWatch());
-        EXPECT_CALL(*_mockEtcdClient, StopLeaseKeepAlive());
+        EXPECT_CALL(*_mockEtcdClient, StopLeaseKeepAlive()).Times(2);
     }
 
     {
@@ -422,7 +424,7 @@ TEST_F(Etcdv3ServiceDiscoveryTest, ServerIsIgnoredInSyncServersIfGetFromEtcdFail
         InSequence seq;
         EXPECT_CALL(*_mockEtcdClient, LeaseKeepAlive(Eq(_config.heartbeatTTLSec.count()), _, _));
         EXPECT_CALL(*_mockEtcdClient, CancelWatch());
-        EXPECT_CALL(*_mockEtcdClient, StopLeaseKeepAlive());
+        EXPECT_CALL(*_mockEtcdClient, StopLeaseKeepAlive()).Times(2);
     }
 
     {
@@ -499,7 +501,7 @@ TEST_F(Etcdv3ServiceDiscoveryTest, ServerIsIgnoredInSyncServersIfTheServerTypeIs
         InSequence seq;
         EXPECT_CALL(*_mockEtcdClient, LeaseKeepAlive(Eq(_config.heartbeatTTLSec.count()), _, _));
         EXPECT_CALL(*_mockEtcdClient, CancelWatch());
-        EXPECT_CALL(*_mockEtcdClient, StopLeaseKeepAlive());
+        EXPECT_CALL(*_mockEtcdClient, StopLeaseKeepAlive()).Times(2);
     }
 
     {
@@ -553,6 +555,8 @@ ACTION_TEMPLATE(SaveFunction,
 
 TEST_F(Etcdv3ServiceDiscoveryTest, ReconnectsIfLosesConnectionToEtcd)
 {
+    EXPECT_CALL(*_mockEtcdClient, CancelWatch()).Times(2);
+    EXPECT_CALL(*_mockEtcdClient, StopLeaseKeepAlive()).Times(2);
     // First lease grant will succeed but the second will fail.
     auto firstLeaseGrantRes = NewSuccessfullLeaseGrantResponse(712381283);
     auto setRes = NewSuccessfullSetResponse();
@@ -579,8 +583,6 @@ TEST_F(Etcdv3ServiceDiscoveryTest, ReconnectsIfLosesConnectionToEtcd)
         InSequence seq;
         EXPECT_CALL(*_mockEtcdClient, LeaseKeepAlive(Eq(_config.heartbeatTTLSec.count()), firstLeaseGrantRes.leaseId, _))
         .WillOnce(SaveFunction<1,2>(&onLeaseKeepAliveExit));
-        EXPECT_CALL(*_mockEtcdClient, CancelWatch());
-        EXPECT_CALL(*_mockEtcdClient, StopLeaseKeepAlive());
     }
     
     auto secondLeaseGrantRes = NewSuccessfullLeaseGrantResponse(10101010);
@@ -623,6 +625,8 @@ TEST_F(Etcdv3ServiceDiscoveryTest, ReconnectsIfLosesConnectionToEtcd)
 
 TEST_F(Etcdv3ServiceDiscoveryTest, SyncIsStillCalledAfterReconnection)
 {
+    EXPECT_CALL(*_mockEtcdClient, CancelWatch()).Times(2);
+    EXPECT_CALL(*_mockEtcdClient, StopLeaseKeepAlive()).Times(2);
     // First lease grant will succeed but the second will fail.
     auto firstLeaseGrantRes = NewSuccessfullLeaseGrantResponse(712381283);
     auto setRes = NewSuccessfullSetResponse();
@@ -660,8 +664,6 @@ TEST_F(Etcdv3ServiceDiscoveryTest, SyncIsStillCalledAfterReconnection)
         InSequence seq;
         EXPECT_CALL(*_mockEtcdClient, LeaseKeepAlive(Eq(_config.heartbeatTTLSec.count()), firstLeaseGrantRes.leaseId, _))
         .WillOnce(SaveFunction<1,2>(&onLeaseKeepAliveExit));
-        EXPECT_CALL(*_mockEtcdClient, CancelWatch());
-        EXPECT_CALL(*_mockEtcdClient, StopLeaseKeepAlive());
     }
     
     auto secondLeaseGrantRes = NewSuccessfullLeaseGrantResponse(10101010);
@@ -776,10 +778,14 @@ TEST_F(Etcdv3ServiceDiscoveryTest, FailsAfterMaxRetrieUsingExponentialBackoff)
     onLeaseKeepAliveExit(std::make_exception_ptr(std::runtime_error("some_error")));
     std::this_thread::sleep_for(std::chrono::milliseconds(15100)); // Sleeping 1 second should retry 2 times.
     }, testing::KilledBySignal(SIGTERM), "");
+
+    delete _mockEtcdClient;
 }
 
 TEST_F(Etcdv3ServiceDiscoveryTest, ReconnectsAfterSomeRetrieUsingExponentialBackoff)
 {
+    EXPECT_CALL(*_mockEtcdClient, CancelWatch()).Times(2);
+    EXPECT_CALL(*_mockEtcdClient, StopLeaseKeepAlive()).Times(2);
     // lease response with failure
     LeaseGrantResponse failedLeaseGrantRes;
     failedLeaseGrantRes.ok = false;
@@ -810,8 +816,6 @@ TEST_F(Etcdv3ServiceDiscoveryTest, ReconnectsAfterSomeRetrieUsingExponentialBack
         InSequence seq;
         EXPECT_CALL(*_mockEtcdClient, LeaseKeepAlive(Eq(_config.heartbeatTTLSec.count()), firstLeaseGrantRes.leaseId, _))
         .WillOnce(SaveFunction<1,2>(&onLeaseKeepAliveExit));
-        EXPECT_CALL(*_mockEtcdClient, CancelWatch());
-        EXPECT_CALL(*_mockEtcdClient, StopLeaseKeepAlive());
     }
 
     {

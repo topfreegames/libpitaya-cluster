@@ -1,11 +1,22 @@
 name: Build and Release NPitaya Native Libraries
 on:
   push:
+    branches:
+      - master
     tags:
       - "*"
   pull_request:
     branches:
       - master
+  # Keeps the master Conan caches alive. GitHub evicts caches that are not used for 7 days, and
+  # tags and pull requests can only restore caches that master saved.
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
   BUILD_TYPE: Release
@@ -19,7 +30,7 @@ jobs:
       cpp-lib-sha: ${{ steps.get-sha.outputs.cpp-lib-sha }}
     steps:
       - name: Checkout repo (for git SHA computation)
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0 # Full history needed for accurate git log
 
@@ -35,7 +46,7 @@ jobs:
 
       - name: Restore consolidated libraries cache
         id: cache-consolidated-restore
-        uses: actions/cache/restore@v3
+        uses: actions/cache/restore@v6
         with:
           path: downloaded-artifacts
           # Use git SHA instead of hashFiles() - more reliable for large directories
@@ -61,7 +72,7 @@ jobs:
   build:
     name: Build
     needs: cache-check
-    if: needs.cache-check.outputs.cache-hit != 'true'
+    if: needs.cache-check.outputs.cache-hit != 'true' || github.event_name == 'schedule'
     runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
@@ -129,7 +140,7 @@ jobs:
           echo "📄 global.conf contents:"
           cat ~/.conan2/global.conf
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           submodules: recursive
 
@@ -145,7 +156,7 @@ jobs:
 
       - name: Using the builtin GitHub Cache Action for .conan
         id: cache-conan-restore
-        uses: actions/cache/restore@v3
+        uses: actions/cache/restore@v6
         env:
           cache-name: cache-conan-modules
         with:
@@ -227,20 +238,102 @@ jobs:
         run: cmake --build ${{matrix.cmake_path}} --config ${{env.BUILD_TYPE}} --target pitaya_cpp
         working-directory: cpp-lib
 
-      - uses: actions/cache/save@v3
+      - name: Remove Conan sources and build folders
+        if: github.ref == 'refs/heads/master' && steps.cache-conan-restore.outputs.cache-hit != 'true'
+        run: conan cache clean "*" --source --build --download --temp
+
+      - name: Save the Conan cache (master only)
+        if: github.ref == 'refs/heads/master' && steps.cache-conan-restore.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v6
         env:
           cache-name: cache-conan-modules
         with:
           path: ~/.conan2/
           key: ${{ runner.os }}-${{ matrix.arch }}-builder-${{ env.cache-name }}-${{ hashFiles('cpp-lib/conanfile.py', 'cpp-lib/conanprofile') }}
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: prebuilt-libs-${{ matrix.platform }}
           path: |
             cpp-lib/build/**/*pitaya_cpp.dll
             cpp-lib/build/**/*pitaya_cpp.so
             cpp-lib/build/**/*pitaya_cpp.dylib
+
+  test:
+    name: Test (ubuntu-22.04-x86_64)
+    if: ${{ !startsWith(github.ref, 'refs/tags/') }}
+    runs-on: ubuntu-22.04
+    services:
+      nats:
+        image: nats:2.10-alpine
+        ports:
+          - 4222:4222
+      etcd:
+        image: quay.io/coreos/etcd:v3.5.17
+        env:
+          ETCD_LISTEN_CLIENT_URLS: http://0.0.0.0:2379
+          ETCD_ADVERTISE_CLIENT_URLS: http://127.0.0.1:2379
+        ports:
+          - 2379:2379
+    steps:
+      - name: Install Conan
+        uses: turtlebrowser/get-conan@main
+        env:
+          PIP_BREAK_SYSTEM_PACKAGES: 1
+
+      - name: Configure Conan
+        run: |
+          conan profile detect
+          conan remote add conancenter https://center.conan.io 2>/dev/null || true
+          mkdir -p ~/.conan2
+          echo "core.download:retry=5" >> ~/.conan2/global.conf
+          echo "core.download:retry_wait=10" >> ~/.conan2/global.conf
+
+      - uses: actions/checkout@v7
+        with:
+          submodules: recursive
+
+      - name: Install build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake make g++ gcc
+
+      - name: Restore the Conan cache of the Linux build
+        uses: actions/cache/restore@v6
+        env:
+          cache-name: cache-conan-modules
+        with:
+          path: ~/.conan2/
+          key: ${{ runner.os }}-x86_64-builder-${{ env.cache-name }}-${{ hashFiles('cpp-lib/conanfile.py', 'cpp-lib/conanprofile') }}
+          restore-keys: |
+            ${{ runner.os }}-x86_64-builder-${{ env.cache-name }}-
+            ${{ runner.os }}-x86_64-builder-
+
+      - name: Install Conan Dependencies
+        env:
+          CONAN_PARALLEL_DOWNLOAD: 8
+          CONAN_PARALLEL_BUILD: 4
+        run: |
+          for attempt in 1 2 3; do
+            if conan install . -pr conanprofile -of build -s build_type=${{env.BUILD_TYPE}} -s arch=x86_64 -s:b compiler.cppstd=gnu17 -s compiler.cppstd=gnu17 --build=missing --build=outdated; then
+              exit 0
+            fi
+            sleep 30
+          done
+          exit 1
+        working-directory: cpp-lib
+
+      - name: Configure CMake
+        run: cmake --preset conan-linux-x86_64-release -DBUILD_TESTING=ON
+        working-directory: cpp-lib
+
+      - name: Build tests
+        run: cmake --build build/_builds/linux-x86_64-release --config ${{env.BUILD_TYPE}} --target pitaya_cpp_tests sigterm_test -j 4
+        working-directory: cpp-lib
+
+      - name: Run tests
+        run: ctest --test-dir build/_builds/linux-x86_64-release --output-on-failure --timeout 900
+        working-directory: cpp-lib
 
   consolidate:
     name: Consolidate all libs into single package
@@ -254,13 +347,13 @@ jobs:
     steps:
       - name: Download platform specific artifacts
         if: needs.cache-check.outputs.cache-hit != 'true'
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           path: downloaded-artifacts
 
       - name: Restore cached artifacts (cache hit)
         if: needs.cache-check.outputs.cache-hit == 'true'
-        uses: actions/cache/restore@v3
+        uses: actions/cache/restore@v6
         with:
           path: downloaded-artifacts
           # Use the SHA computed in cache-check job for consistency
@@ -301,7 +394,7 @@ jobs:
         working-directory: downloaded-artifacts
 
       - name: "Upload Artifact"
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: prebuilt-libs-all-archs
           path: |
@@ -317,7 +410,7 @@ jobs:
 
       - name: Cache consolidated artifacts
         if: needs.cache-check.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v3
+        uses: actions/cache/save@v6
         with:
           path: downloaded-artifacts
           # Use the SHA computed in cache-check job for consistency
@@ -326,16 +419,16 @@ jobs:
   package:
     name: Package
     needs: consolidate
-    if: github.event_name == 'push'
+    if: startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           submodules: recursive
 
       - name: Download artifacts from consolidate step
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: prebuilt-libs-all-archs
           path: downloaded-artifacts
@@ -344,7 +437,7 @@ jobs:
         run: VERSION=${{ github.ref_name }} ./package.sh
 
       - name: Upload package directory
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: npm-package
           path: package/
@@ -353,18 +446,18 @@ jobs:
   publish:
     name: Publish
     needs: package
-    if: github.event_name == 'push'
+    if: startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
     steps:
       - name: Download package directory
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: npm-package
           path: package
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
-          node-version: 20
+          node-version: 24
 
       - run: npm install -g npm-cli-login
       - run: npm-cli-login login -u "${{ secrets.ARTIFACTORY_USER }}" -p "${{ secrets.ARTIFACTORY_PASS }}" -e "tools-team@tfgco.com" -r "https://artifactory.tfgco.com/artifactory/api/npm/npm-local" -s @wls

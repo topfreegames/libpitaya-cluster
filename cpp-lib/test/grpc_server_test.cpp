@@ -248,8 +248,8 @@ TEST_F(GrpcServerTest, HasForcefulShutdownIfDeadlinePasses)
     auto res = c.client->Call(_server, req);
     ASSERT_FALSE(called);
     ASSERT_TRUE(res.has_error());
-    EXPECT_EQ(res.error().code(), constants::kCodeInternalError);
-    EXPECT_TRUE(std::regex_search(res.error().msg(), std::regex("Call RPC failed")));
+    EXPECT_EQ(res.error().code(), constants::kCodeServiceUnavailable);
+    EXPECT_TRUE(std::regex_search(res.error().msg(), std::regex("server may be")));
 
     if (t.joinable()) {
         t.join();
