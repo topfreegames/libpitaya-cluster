@@ -250,20 +250,20 @@ Worker::StartThread()
                     _syncServersTicker.Stop();
 
                     while (_numKeepAliveRetriesLeft > 0) {
-                        _log->info("ETCD retries left: {}", _numKeepAliveRetriesLeft);
+                        _log->warn("ETCD retries left: {}", _numKeepAliveRetriesLeft);
                         auto delay_milliseconds =
                             _config.retryDelayMilliseconds
                             << (_config.maxNumberOfRetries - _numKeepAliveRetriesLeft);
-                        _log->info("ETCD retry waiting for {}ms", delay_milliseconds);
+                        _log->warn("ETCD retry waiting for {}ms", delay_milliseconds);
                         std::this_thread::sleep_for(std::chrono::milliseconds(delay_milliseconds));
 
                         --_numKeepAliveRetriesLeft;
                         auto ok = Bootstrap();
 
                         if (ok) {
-                            _log->info("Etcd reconnection successful");
+                            _log->warn("Etcd reconnection successful");
                             _numKeepAliveRetriesLeft = _config.maxNumberOfRetries;
-                            _log->info("Restarting etcd watcher");
+                            _log->warn("Restarting etcd watcher");
                             _etcdClient->Watch(std::bind(&Worker::OnWatch, this, _1));
                             StartLeaseKeepAlive();
                             _syncServersTicker.Start();

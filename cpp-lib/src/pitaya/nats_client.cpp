@@ -45,6 +45,8 @@ NatsMsgImpl::GetReply() const
 
 static constexpr const char* kLogTag = "nats_client";
 static constexpr std::chrono::milliseconds kSubscriptionPropagationDelay(1000);
+static constexpr std::chrono::milliseconds kNewConnectionRetryWindow(3000);
+static constexpr std::chrono::milliseconds kNewConnectionRetryDelay(200);
 
 //
 // NatsClientImpl
@@ -287,8 +289,17 @@ void
 NatsClientImpl::DisconnectedCb(natsConnection* nc, void* user)
 {
     auto instance = reinterpret_cast<NatsClientImpl*>(user);
-    // TODO: implement logic here
-    instance->_log->warn("nats disconnected");
+    bool isActiveConnection;
+    {
+        std::lock_guard<std::mutex> lock(instance->_activeMutex);
+        isActiveConnection = instance->_active && instance->_active->conn == nc;
+    }
+    // The destructor clears the active connection right after it closes it.
+    if (isActiveConnection || instance->_shuttingDown) {
+        instance->_log->warn("nats disconnected");
+    } else {
+        instance->_log->info("Replaced nats connection disconnected");
+    }
 }
 
 void
@@ -309,7 +320,11 @@ NatsClientImpl::ClosedCb(natsConnection* nc, void* user)
         isActiveConnection = instance->_active && instance->_active->conn == nc;
     }
     bool shuttingDown = instance->_shuttingDown;
-    instance->_log->warn("nats connection closed!");
+    if (isActiveConnection || shuttingDown) {
+        instance->_log->warn("nats connection closed!");
+    } else {
+        instance->_log->warn("Replaced nats connection closed");
+    }
 
     // The destructor can free the instance as soon as this count reaches zero, so this must
     // be the last access to it.
@@ -328,7 +343,7 @@ NatsClientImpl::LameDuckModeCb(natsConnection* nc, void* user)
 {
     auto instance = reinterpret_cast<NatsClientImpl*>(user);
 
-    instance->_log->info("=== LAME DUCK MODE DETECTED ===");
+    instance->_log->warn("=== LAME DUCK MODE DETECTED ===");
     char serverUrl[256];
     natsConnection_GetConnectedUrl(nc, serverUrl, sizeof(serverUrl));
     instance->_log->debug("Server: {}", serverUrl);
@@ -342,7 +357,7 @@ NatsClientImpl::LameDuckModeCb(natsConnection* nc, void* user)
     if (instance->_switchInProgress) {
         // The connection can be the new one of the switch in progress. The switch thread
         // checks it when it finishes.
-        instance->_log->info("Lame duck switch in progress - checking this connection after it");
+        instance->_log->warn("Lame duck switch in progress - checking this connection after it");
         instance->_pendingLameDuckConn = nc;
         return;
     }
@@ -350,7 +365,7 @@ NatsClientImpl::LameDuckModeCb(natsConnection* nc, void* user)
         // _active is null only while the constructor has not finished.
         std::lock_guard<std::mutex> lock(instance->_activeMutex);
         if (!instance->_active || instance->_active->conn != nc) {
-            instance->_log->info("Connection in lame duck mode is not the active one - ignoring");
+            instance->_log->warn("Connection in lame duck mode is not the active one - ignoring");
             return;
         }
     }
@@ -384,7 +399,7 @@ NatsClientImpl::SwitchConnection(std::thread previousSwitchThread)
             _switchInProgress = false;
             return;
         }
-        _log->info("New connection entered lame duck mode during the switch - switching again");
+        _log->warn("New connection entered lame duck mode during the switch - switching again");
     }
 }
 
@@ -400,13 +415,24 @@ NatsClientImpl::SwitchOnce()
     }
 
     // 1. Open a new connection. A server in lame duck mode does not accept new connections,
-    // so it connects to another server.
+    // so it connects to another server. The NATS address can still send a connection to the
+    // server in lame duck mode, so retry for a short time, well inside the grace period.
     auto fresh = std::make_shared<Connection>();
-    natsStatus status = natsConnection_Connect(&fresh->conn, _switchOpts);
-    if (status == NATS_OK) {
-        ++_openConnections;
-    } else {
+    auto connectUntil = std::chrono::steady_clock::now() + kNewConnectionRetryWindow;
+    natsStatus status;
+    for (;;) {
+        status = natsConnection_Connect(&fresh->conn, _switchOpts);
+        if (status == NATS_OK) {
+            ++_openConnections;
+            break;
+        }
         fresh->conn = nullptr;
+        if (_shuttingDown || std::chrono::steady_clock::now() >= connectUntil) {
+            break;
+        }
+        _log->warn("Failed to open a new NATS connection ({}) - retrying",
+                   natsStatus_GetText(status));
+        std::this_thread::sleep_for(kNewConnectionRetryDelay);
     }
 
     // 2. Subscribe the new connection, and flush so that the server confirms the
@@ -437,7 +463,7 @@ NatsClientImpl::SwitchOnce()
         std::lock_guard<std::mutex> lock(_activeMutex);
         _active = fresh;
     }
-    _log->info("Switched to a new NATS connection");
+    _log->warn("Switched to a new NATS connection");
 
     // If the new connection closed before it became the active one, its ClosedCb did not
     // stop the process. Nothing would receive the messages, so stop it here.
@@ -478,7 +504,7 @@ NatsClientImpl::SwitchOnce()
     natsConnection_Close(old->conn);
     old.reset();
 
-    _log->info("=== LAME DUCK MODE HANDLING COMPLETE ===");
+    _log->warn("=== LAME DUCK MODE HANDLING COMPLETE ===");
     return true;
 }
 

@@ -17,7 +17,7 @@ The existing connections work normally until the server closes them. The client 
 
 The switch thread does these steps:
 
-1. **Open a new connection.** The server in lame duck mode does not accept it, so the new connection goes to another server. This connection does not retry its first connect, so that a switch does not block while NATS is unreachable.
+1. **Open a new connection.** The server in lame duck mode does not accept it, so the new connection goes to another server. The NATS address can still send a connection attempt to the server in lame duck mode, so the client retries every 200ms for up to 3s. It does not retry longer, so that a switch does not block while NATS is unreachable.
 2. **Subscribe the new connection** to the server topic, and flush, so that the server confirms the subscription.
 3. **Make the new connection the active one.** New requests and publishes use it.
 4. **Wait 1s, then drain the old subscription.** The wait lets the new subscription reach all servers of the cluster. The drain sends `UNSUB` and then delivers the messages that the client already received.
@@ -43,7 +43,7 @@ flowchart TD
     Active -- No --> Ignore
     Active -- Yes --> Start["Start the switch thread"]
 
-    Start --> S1["1. Open a new connection to another server"]
+    Start --> S1["1. Open a new connection to another server, retrying for up to 3s"]
     S1 --> S1ok{"Connected?"}
     S1ok -- No --> Keep
     S1ok -- Yes --> S2["2. Queue-subscribe the topic and flush"]
@@ -80,9 +80,9 @@ flowchart TD
 | `drainTimeout` | 1000 ms | Time limit for each subscription drain |
 | `flushTimeout` | 1000 ms | Time limit for each flush |
 | `requestTimeout` | 2000 ms | Also limits the wait for requests in flight on the old connection |
-| `connectionTimeout` | 2000 ms | Time limit to open the new connection |
+| `connectionTimeout` | 2000 ms | Time limit for each attempt to open the new connection |
 
-A switch takes about 5 to 6s in the worst case. Make sure that the `lame_duck_grace_period` of the NATS cluster is longer than that.
+A switch takes about 8s in the worst case (3s of connection retries, `connectionTimeout`, the 1s wait, `max(drainTimeout, requestTimeout)` and `flushTimeout`). Make sure that the `lame_duck_grace_period` of the NATS cluster is longer than that.
 
 ## Limits
 
