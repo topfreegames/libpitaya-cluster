@@ -159,7 +159,8 @@ TEST_F(GrpcClientTest, RpcsCanFail)
         Property(&protos::Request::msg, Property(&protos::Msg::data, "this is my custom data"));
     auto reqMatcher = AllOf(Property(&protos::Request::type, protos::RPCType::User), msgMatcher);
 
-    EXPECT_CALL(*mockStub, Call(_, reqMatcher, _)).WillOnce(Return(grpc::Status::CANCELLED));
+    EXPECT_CALL(*mockStub, Call(_, reqMatcher, _))
+        .WillOnce(Return(grpc::Status(grpc::StatusCode::INTERNAL, "internal error")));
 
     auto server = pitaya::Server(pitaya::Server::Kind::Frontend, "server-id", "server-type")
                       .WithMetadata(pitaya::constants::kGrpcHostKey, "localhost")
