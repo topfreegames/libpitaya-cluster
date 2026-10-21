@@ -11,6 +11,37 @@ version to see which interfaces changed.
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-10-21
+
+### Added
+
+- C API: `tfg_pitc_InstallSignalHandler` and `tfg_pitc_WaitForSignal` let a caller wait for `SIGTERM` and `SIGINT` on a thread of its own. NPitaya (C#) uses them ([#83](https://github.com/topfreegames/libpitaya-cluster/pull/83)).
+- etcd service discovery checks its lease every third of the lease TTL. It reconnects when the lease expired, when the keep-alive does not refresh it, or when the check fails for longer than the TTL ([#83](https://github.com/topfreegames/libpitaya-cluster/pull/83)).
+
+### Changed
+
+- NATS lame duck mode: the client now opens a new connection and subscribes on it before it drains and closes the connection to the server in lame duck mode. It retries the new connection for up to 3 seconds. `IsInLameDuckMode()` now reports whether a switch is in progress. See [cpp-lib/docs/LAME_DUCK_MODE.md](cpp-lib/docs/LAME_DUCK_MODE.md) ([#83](https://github.com/topfreegames/libpitaya-cluster/pull/83)).
+- NPitaya (C#) runs the signal handlers on a managed background thread (`PitayaSignal`), not inside the POSIX signal handler. The C API `tfg_pitc_OnSignal` now runs its callback on a library thread ([#83](https://github.com/topfreegames/libpitaya-cluster/pull/83)).
+- The NATS lame duck and switch events and the etcd reconnection steps are logged at warning level, so they show in servers that log only warnings and errors ([#83](https://github.com/topfreegames/libpitaya-cluster/pull/83)).
+- Upgraded cnats from 3.10.1 to 3.14.0. If you build `cpp-lib` yourself, the Conan option `cnats/*:with_streaming` is now `cnats/*:enable_streaming`, and `tls_use_openssl_1_1_api` is removed ([#83](https://github.com/topfreegames/libpitaya-cluster/pull/83)).
+- Unity: the Editor imports a native plugin only on a host with the same OS and CPU (macOS, Linux x86_64 and Windows x86_64). The Windows Editor import from 1.0.13 is narrowed from any OS to Windows x86_64 ([#82](https://github.com/topfreegames/libpitaya-cluster/pull/82)).
+- CI: the C++ tests run on every pull request, on master, and weekly. Conan caches are shared from master, so most builds no longer rebuild the Conan dependencies. The Windows build runs on `windows-2022`, and the GitHub Actions are upgraded ([#82](https://github.com/topfreegames/libpitaya-cluster/pull/82), [#83](https://github.com/topfreegames/libpitaya-cluster/pull/83), [#85](https://github.com/topfreegames/libpitaya-cluster/pull/85)).
+- Documentation: README, contributing, release process, NATS configuration and lame duck docs rewritten ([#79](https://github.com/topfreegames/libpitaya-cluster/pull/79), [#83](https://github.com/topfreegames/libpitaya-cluster/pull/83)).
+
+### Removed
+
+- C++: the NATS client hot-swap API (`SetHotSwapClient`, `GetHotSwapClient`, `IsHotSwapAvailable`) and the request buffering during lame duck mode. The C# and Python interfaces are not affected ([#83](https://github.com/topfreegames/libpitaya-cluster/pull/83)).
+
+### Fixed
+
+- NATS lame duck mode: a server no longer stops receiving RPCs after a lame duck event. The subscription was drained and never sent to the new server, so the server stayed registered in etcd but did not answer ([#83](https://github.com/topfreegames/libpitaya-cluster/pull/83)).
+- NATS lame duck mode: the client no longer leaks a connection on every NATS rollout ([#83](https://github.com/topfreegames/libpitaya-cluster/pull/83)).
+- NATS RPC server: RPCs that arrive after `Shutdown()` starts get a "server is shutting down" error, and message callbacks can no longer use members that are already destroyed ([#83](https://github.com/topfreegames/libpitaya-cluster/pull/83)).
+- etcd: a deadlock between the lease keep-alive failure handler and the server sync ticker ([#83](https://github.com/topfreegames/libpitaya-cluster/pull/83)).
+- etcd: when the network drops the packets to etcd, the lease keep-alive blocked forever. The lease expired, the server was removed from etcd, and the process kept running. The lease check above now detects this, and stopping a keep-alive waits at most 3 seconds, so shutdown no longer hangs at "Stopping lease keepalive" ([#83](https://github.com/topfreegames/libpitaya-cluster/pull/83)).
+- The library now sends `SIGTERM` to the whole process when it must exit (NATS connection closed, etcd reconnection failed). Before, it raised the signal on a short-lived thread ([#83](https://github.com/topfreegames/libpitaya-cluster/pull/83)).
+- Unity: each native plugin now imports only for the OS and CPU it was built for. Linux ARM64 builds get the ARM64 `libpitaya_cpp.so` (Unity 6 and later) and no longer fail with duplicate plugin errors ([#82](https://github.com/topfreegames/libpitaya-cluster/pull/82)).
+
 ## [1.2.0] - 2026-05-05
 
 ### Added
@@ -430,7 +461,8 @@ version to see which interfaces changed.
 - Removed hack used to process NATS RPCs.
 - Switched C# projects to MonoDevelop tooling.
 
-[Unreleased]: https://github.com/topfreegames/libpitaya-cluster/compare/v1.2.0...HEAD
+[Unreleased]: https://github.com/topfreegames/libpitaya-cluster/compare/v1.3.0...HEAD
+[1.3.0]: https://github.com/topfreegames/libpitaya-cluster/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/topfreegames/libpitaya-cluster/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/topfreegames/libpitaya-cluster/compare/v1.0.13...v1.1.0
 [1.0.13]: https://github.com/topfreegames/libpitaya-cluster/compare/v1.0.12...v1.0.13
