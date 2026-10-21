@@ -28,6 +28,9 @@ bool ParseEtcdKey(const std::string& key,
 std::shared_ptr<spdlog::logger> CloneLoggerOrCreate(const char* loggerNameToClone,
                                                     const char* loggerName);
 
+// Sends SIGTERM to the whole process, so that the registered signal handler stops it.
+void RequestProcessTermination();
+
 inline void SetThreadName(const char* name, std::shared_ptr<spdlog::logger> log)
 {
 #ifdef linux

@@ -274,7 +274,7 @@ Worker::StartThread()
                     if (_numKeepAliveRetriesLeft <= 0) {
                         _log->critical("Failed to reconnect to etcd, shutting down");
                         Shutdown();
-                        std::thread(std::bind(raise, SIGTERM)).detach();
+                        utils::RequestProcessTermination();
                         _log->debug("Exiting loop");
                         return;
                     }

@@ -25,13 +25,14 @@ namespace NPitaya
         private static readonly int ProcessorsCount = Environment.ProcessorCount;
         private static ISerializer _serializer = new ProtobufSerializer();
         public delegate string RemoteNameFunc(string methodName);
-        private delegate void OnSignalFunc();
         private static readonly Dictionary<string, RemoteMethod> RemotesDict = new Dictionary<string, RemoteMethod>();
         private static readonly Dictionary<string, RemoteMethod> HandlersDict = new Dictionary<string, RemoteMethod>();
         private static readonly LimitedConcurrencyLevelTaskScheduler Lcts = new LimitedConcurrencyLevelTaskScheduler(ProcessorsCount);
         private static TaskFactory _rpcTaskFactory = new TaskFactory(Lcts);
 
         private static Action _onSignalEvent;
+        private static readonly object SignalThreadLock = new object();
+        private static Thread _signalThread;
 
         public enum ServiceDiscoveryAction
         {
@@ -57,14 +58,38 @@ namespace NPitaya
         public static void AddSignalHandler(Action cb)
         {
             _onSignalEvent += cb;
-            OnSignalInternal(OnSignal);
+            lock (SignalThreadLock)
+            {
+                if (_signalThread != null)
+                {
+                    return;
+                }
+                if (!InstallSignalHandlerInternal())
+                {
+                    Logger.Error("Failed to install the signal handler");
+                    return;
+                }
+                // The native signal handler only wakes this thread, so that the handlers run as
+                // normal managed code, never inside a signal handler or on a native thread.
+                _signalThread = new Thread(WaitForSignals) { Name = "PitayaSignal", IsBackground = true };
+                _signalThread.Start();
+            }
         }
 
-        [MonoPInvokeCallback(typeof(OnSignalFunc))]
-        private static void OnSignal()
+        private static void WaitForSignals()
         {
-            Logger.Info("Invoking signal handler");
-            _onSignalEvent?.Invoke();
+            while (WaitForSignalInternal())
+            {
+                Logger.Info("Invoking signal handler");
+                try
+                {
+                    _onSignalEvent?.Invoke();
+                }
+                catch (Exception e)
+                {
+                    Logger.Error("Signal handler failed: {0}", e);
+                }
+            }
         }
 
         public static void Initialize(GrpcConfig grpcCfg,

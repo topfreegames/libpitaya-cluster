@@ -30,8 +30,13 @@ namespace NPitaya
         [DllImport(LibName, CallingConvention = CallingConvention.Cdecl, EntryPoint = "tfg_pitc_FreeMemoryBuffer")]
         private static extern unsafe void FreeMemoryBufferInternal(MemoryBuffer *ptr);
 
-        [DllImport(LibName, CallingConvention = CallingConvention.Cdecl, EntryPoint = "tfg_pitc_OnSignal")]
-        private static extern void OnSignalInternal(OnSignalFunc ptr);
+        [DllImport(LibName, CallingConvention = CallingConvention.Cdecl, EntryPoint = "tfg_pitc_InstallSignalHandler")]
+        [return: MarshalAs(UnmanagedType.I1)]
+        private static extern bool InstallSignalHandlerInternal();
+
+        [DllImport(LibName, CallingConvention = CallingConvention.Cdecl, EntryPoint = "tfg_pitc_WaitForSignal")]
+        [return: MarshalAs(UnmanagedType.I1)]
+        private static extern bool WaitForSignalInternal();
 
         [DllImport(LibName, CallingConvention = CallingConvention.Cdecl, EntryPoint = "tfg_pitc_FreePitayaError")]
         private static extern unsafe void FreePitayaErrorInternal(ref Error err);

@@ -334,7 +334,7 @@ NatsClientImpl::ClosedCb(natsConnection* nc, void* user)
     if (isActiveConnection && !shuttingDown) {
         // This was not initiated by a shutdown request.
         // Send SIGTERM as this was caused by all reconnection attempts failing
-        std::thread(std::bind(raise, SIGTERM)).detach();
+        utils::RequestProcessTermination();
     }
 }
 
@@ -469,7 +469,7 @@ NatsClientImpl::SwitchOnce()
     // stop the process. Nothing would receive the messages, so stop it here.
     if (natsConnection_IsClosed(fresh->conn) && !_shuttingDown) {
         _log->critical("New NATS connection closed during the lame duck switch");
-        std::thread(std::bind(raise, SIGTERM)).detach();
+        utils::RequestProcessTermination();
     }
 
     // 4. Let the new subscription reach the whole cluster, then drain the old one. Both
