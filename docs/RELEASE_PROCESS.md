@@ -86,15 +86,16 @@ All routine releases go through GitHub's Releases UI. This creates the tag on th
 
 ## What the CI Pipeline Does
 
-`.github/workflows/build-and-release.yml` runs on tag push and contains these jobs:
+`.github/workflows/build-and-release.yml` runs on tag push, on pull requests to `master`, on push to `master`, every Monday, and on demand. It contains these jobs:
 
-1. **`cache-check`** — looks for cached consolidated libraries keyed by the SHA of `cpp-lib/` and `vendor/`. On hit, the build matrix is skipped.
+1. **`cache-check`** — looks for cached consolidated libraries keyed by the SHA of `cpp-lib/` and `vendor/`. On hit, the build matrix is skipped (except on the weekly run).
 2. **`build`** (5-platform matrix, parallel, cache-miss only) — Linux x86_64, Linux ARMv8, macOS x86_64, macOS ARM64, Windows x86_64. Uses Conan and CMake.
-3. **`consolidate`** — downloads platform artifacts and assembles the `runtimes/` tree.
-4. **`package`** — runs `package.sh VERSION=<tag>`. Strips the `v` prefix, copies sources and native libs into `package/`, and overwrites `package/package.json` with the tag version.
-5. **`publish`** — `npm publish` to `https://artifactory.tfgco.com/artifactory/api/npm/npm-local/` using `ARTIFACTORY_USER` / `ARTIFACTORY_PASS`.
+3. **`test`** (not on tags) — builds the C++ tests on Linux x86_64 and runs them with NATS and etcd as service containers.
+4. **`consolidate`** — downloads platform artifacts and assembles the `runtimes/` tree.
+5. **`package`** (tags only) — runs `package.sh VERSION=<tag>`. Strips the `v` prefix, copies sources and native libs into `package/`, and overwrites `package/package.json` with the tag version.
+6. **`publish`** (tags only) — `npm publish` to `https://artifactory.tfgco.com/artifactory/api/npm/npm-local/` using `ARTIFACTORY_USER` / `ARTIFACTORY_PASS`.
 
-A typical run takes ~30 minutes on a cache miss and ~5 minutes on a cache hit.
+A run takes ~30 minutes when the Conan dependencies must be built from source, and ~5 minutes when the Conan cache from `master` is available.
 
 > The published version is determined by the **tag name**, not by the version files in the repo at the tagged commit. `package.sh` rewrites `package.json` from the tag before publishing. The version files still need to be in sync (see [Pre-Release Checklist](#pre-release-checklist)) so consumers reading the source see the right version, and so locally-built NuGet artifacts are correct.
 
@@ -156,10 +157,10 @@ package/
 
 The workflow uses two caches to keep release builds fast:
 
-- **Conan cache**: per-platform build dependencies.
-- **Consolidated cache**: processed native libraries across all platforms, keyed by the contents of `cpp-lib/` and `vendor/`.
+- **Conan cache**: per-platform build dependencies, keyed by `cpp-lib/conanfile.py` and `cpp-lib/conanprofile`. Only runs on `master` save it, and only when the exact key is missing. Sources and build folders are removed first, so the cache holds only packages. GitHub lets a tag or a pull request restore only its own caches and the caches of `master`, so this is the cache that tags and pull requests use. The weekly run keeps it from expiring (GitHub removes caches that are not used for 7 days).
+- **Consolidated cache**: processed native libraries across all platforms, keyed by the SHA of the last commit that changed `cpp-lib/` or `vendor/`. A hit skips the entire build matrix and proceeds directly to packaging and publishing. A miss runs the full build for all platforms and writes a fresh entry for subsequent runs of the same ref.
 
-Cache hits skip the entire build matrix and proceed directly to packaging and publishing. Cache misses run the full build for all platforms and write a fresh entry for subsequent releases.
+A pull request that changes `conanfile.py` or `conanprofile` restores the older `master` cache and builds only the changed packages. Its runs do not save the new cache; the first `master` run after the merge does.
 
 ## Local Tooling Reference
 

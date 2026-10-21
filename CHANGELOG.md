@@ -11,6 +11,35 @@ version to see which interfaces changed.
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-10-21
+
+### Fixed
+
+- **Servers stopped answering after a NATS restart.** When a NATS server restarted (lame duck mode), a game server could stay registered but stop receiving requests, and it never recovered. The client now opens a new connection before it leaves the old one, so it keeps receiving requests during NATS restarts ([#83](https://github.com/topfreegames/libpitaya-cluster/pull/83)).
+- **Leaked NATS connections.** Each NATS restart left one extra connection open ([#83](https://github.com/topfreegames/libpitaya-cluster/pull/83)).
+- **Servers kept running after they lost etcd.** When the network to etcd went silent, the library did not notice: the server dropped out of service discovery, but the process kept running. The library now checks its etcd registration regularly, reconnects, and shuts down if it cannot reconnect ([#83](https://github.com/topfreegames/libpitaya-cluster/pull/83)).
+- **Shutdown could hang on etcd** at "Stopping lease keepalive". It now waits at most 3 seconds ([#83](https://github.com/topfreegames/libpitaya-cluster/pull/83)).
+- **Rare deadlock** when the etcd connection failed while the server list was being refreshed ([#83](https://github.com/topfreegames/libpitaya-cluster/pull/83)).
+- **Requests during shutdown** now get a clear "server is shutting down" error ([#83](https://github.com/topfreegames/libpitaya-cluster/pull/83)).
+- **Safer signal handling (C#).** `SIGTERM`/`SIGINT` handlers no longer run inside the OS signal handler, where managed code is unsafe. They run on a background thread named `PitayaSignal` ([#83](https://github.com/topfreegames/libpitaya-cluster/pull/83)).
+- **Unity: wrong native library in Linux ARM64 builds.** Every `libpitaya_cpp` binary was enabled for every platform, so Linux ARM64 builds (Unity 6) got the x86_64 library or failed with duplicate plugin errors. Each binary is now used only on its own platform ([#82](https://github.com/topfreegames/libpitaya-cluster/pull/82)).
+
+### Changed
+
+- Lame duck switches and etcd reconnections are logged at warning level, so they show up in servers that only log warnings and errors ([#83](https://github.com/topfreegames/libpitaya-cluster/pull/83)).
+- Unity Editor: the native library loads in the Editor on macOS, Linux x86_64 and Windows x86_64 hosts ([#82](https://github.com/topfreegames/libpitaya-cluster/pull/82)).
+- cnats upgraded to 3.14.0. Only matters if you build `cpp-lib` yourself: the Conan option `cnats/*:with_streaming` is now `cnats/*:enable_streaming` ([#83](https://github.com/topfreegames/libpitaya-cluster/pull/83)).
+- CI runs the C++ tests on every pull request, and most builds are much faster because they reuse cached dependencies ([#82](https://github.com/topfreegames/libpitaya-cluster/pull/82), [#83](https://github.com/topfreegames/libpitaya-cluster/pull/83), [#85](https://github.com/topfreegames/libpitaya-cluster/pull/85)).
+- Documentation rewritten, including how lame duck mode works ([#79](https://github.com/topfreegames/libpitaya-cluster/pull/79), [#83](https://github.com/topfreegames/libpitaya-cluster/pull/83)).
+
+### Added
+
+- C API: `tfg_pitc_InstallSignalHandler` and `tfg_pitc_WaitForSignal`, for wrappers that want to handle signals on their own thread ([#83](https://github.com/topfreegames/libpitaya-cluster/pull/83)).
+
+### Removed
+
+- C++ only: the NATS client hot-swap API (`SetHotSwapClient`, `GetHotSwapClient`, `IsHotSwapAvailable`). C# and Python are not affected ([#83](https://github.com/topfreegames/libpitaya-cluster/pull/83)).
+
 ## [1.2.0] - 2026-05-05
 
 ### Added
@@ -430,7 +459,8 @@ version to see which interfaces changed.
 - Removed hack used to process NATS RPCs.
 - Switched C# projects to MonoDevelop tooling.
 
-[Unreleased]: https://github.com/topfreegames/libpitaya-cluster/compare/v1.2.0...HEAD
+[Unreleased]: https://github.com/topfreegames/libpitaya-cluster/compare/v1.3.0...HEAD
+[1.3.0]: https://github.com/topfreegames/libpitaya-cluster/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/topfreegames/libpitaya-cluster/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/topfreegames/libpitaya-cluster/compare/v1.0.13...v1.1.0
 [1.0.13]: https://github.com/topfreegames/libpitaya-cluster/compare/v1.0.12...v1.0.13
