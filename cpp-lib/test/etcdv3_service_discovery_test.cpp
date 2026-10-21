@@ -553,6 +553,8 @@ ACTION_TEMPLATE(SaveFunction,
 
 TEST_F(Etcdv3ServiceDiscoveryTest, ReconnectsIfLosesConnectionToEtcd)
 {
+    EXPECT_CALL(*_mockEtcdClient, CancelWatch()).Times(2);
+    EXPECT_CALL(*_mockEtcdClient, StopLeaseKeepAlive()).Times(2);
     // First lease grant will succeed but the second will fail.
     auto firstLeaseGrantRes = NewSuccessfullLeaseGrantResponse(712381283);
     auto setRes = NewSuccessfullSetResponse();
@@ -585,6 +587,7 @@ TEST_F(Etcdv3ServiceDiscoveryTest, ReconnectsIfLosesConnectionToEtcd)
     {
         // These are called after the disconnection
         InSequence seq;
+        EXPECT_CALL(*_mockEtcdClient, StopLeaseKeepAlive());
         EXPECT_CALL(*_mockEtcdClient, LeaseGrant(Eq(_config.heartbeatTTLSec)))
         .WillOnce(Return(secondLeaseGrantRes));
         EXPECT_CALL(*_mockEtcdClient, Set(_, _, Eq(secondLeaseGrantRes.leaseId)))
@@ -596,8 +599,6 @@ TEST_F(Etcdv3ServiceDiscoveryTest, ReconnectsIfLosesConnectionToEtcd)
     }
 
     _config.syncServersIntervalSec = std::chrono::seconds(1);
-    EXPECT_CALL(*_mockEtcdClient, CancelWatch()).Times(2);
-    EXPECT_CALL(*_mockEtcdClient, StopLeaseKeepAlive()).Times(3);
     auto serviceDiscovery = CreateServiceDiscovery();
     ASSERT_NE(_mockEtcdClient->onWatch, nullptr);
     
@@ -622,6 +623,8 @@ TEST_F(Etcdv3ServiceDiscoveryTest, ReconnectsIfLosesConnectionToEtcd)
 
 TEST_F(Etcdv3ServiceDiscoveryTest, SyncIsStillCalledAfterReconnection)
 {
+    EXPECT_CALL(*_mockEtcdClient, CancelWatch()).Times(2);
+    EXPECT_CALL(*_mockEtcdClient, StopLeaseKeepAlive()).Times(2);
     // First lease grant will succeed but the second will fail.
     auto firstLeaseGrantRes = NewSuccessfullLeaseGrantResponse(712381283);
     auto setRes = NewSuccessfullSetResponse();
@@ -665,6 +668,7 @@ TEST_F(Etcdv3ServiceDiscoveryTest, SyncIsStillCalledAfterReconnection)
     {
         // These are called after the disconnection
         InSequence seq;
+        EXPECT_CALL(*_mockEtcdClient, StopLeaseKeepAlive());
         EXPECT_CALL(*_mockEtcdClient, LeaseGrant(Eq(_config.heartbeatTTLSec)))
         .WillOnce(Return(secondLeaseGrantRes));
         EXPECT_CALL(*_mockEtcdClient, Set(_, _, Eq(secondLeaseGrantRes.leaseId)))
@@ -676,8 +680,6 @@ TEST_F(Etcdv3ServiceDiscoveryTest, SyncIsStillCalledAfterReconnection)
     }
     
     _config.syncServersIntervalSec = std::chrono::seconds(1);
-    EXPECT_CALL(*_mockEtcdClient, CancelWatch()).Times(2);
-    EXPECT_CALL(*_mockEtcdClient, StopLeaseKeepAlive()).Times(3);
     auto serviceDiscovery = CreateServiceDiscovery();
     ASSERT_NE(_mockEtcdClient->onWatch, nullptr);
     
@@ -778,6 +780,8 @@ TEST_F(Etcdv3ServiceDiscoveryTest, FailsAfterMaxRetrieUsingExponentialBackoff)
 
 TEST_F(Etcdv3ServiceDiscoveryTest, ReconnectsAfterSomeRetrieUsingExponentialBackoff)
 {
+    EXPECT_CALL(*_mockEtcdClient, CancelWatch()).Times(2);
+    EXPECT_CALL(*_mockEtcdClient, StopLeaseKeepAlive()).Times(2);
     // lease response with failure
     LeaseGrantResponse failedLeaseGrantRes;
     failedLeaseGrantRes.ok = false;
@@ -813,6 +817,7 @@ TEST_F(Etcdv3ServiceDiscoveryTest, ReconnectsAfterSomeRetrieUsingExponentialBack
     {
         // These are called after the disconnection
         InSequence seq;
+        EXPECT_CALL(*_mockEtcdClient, StopLeaseKeepAlive());
         // fails two times to grant lease
         EXPECT_CALL(*_mockEtcdClient, LeaseGrant(Eq(_config.heartbeatTTLSec)))
         .WillOnce(Return(failedLeaseGrantRes))
@@ -821,8 +826,6 @@ TEST_F(Etcdv3ServiceDiscoveryTest, ReconnectsAfterSomeRetrieUsingExponentialBack
 
     _config.retryDelayMilliseconds = 300; // set retry delay (in milliseconds)
     _config.maxNumberOfRetries = 5;
-    EXPECT_CALL(*_mockEtcdClient, CancelWatch()).Times(2);
-    EXPECT_CALL(*_mockEtcdClient, StopLeaseKeepAlive()).Times(3);
     auto serviceDiscovery = CreateServiceDiscovery();
     ASSERT_NE(_mockEtcdClient->onWatch, nullptr);
 
