@@ -99,21 +99,31 @@ jobs:
             cppstd: "17"
             runner: windows-2022
             cmake_path: build/_builds/windows-x86_64-release
-          - platform: macos-14-x86_64
-            os: macos-14
+          - platform: macos-15-x86_64
+            os: macos-15
             arch: x86_64
             preset: conan-macos-x86_64-macosx_bundle_false-release
             cppstd: gnu17
-            runner: macos-14
+            runner: macos-15
             cmake_path: build/_builds/macos-x86_64-macosx_bundle_false-release
-          - platform: macos-14-armv8
-            os: macos-14
+          - platform: macos-15-armv8
+            os: macos-15
             arch: armv8
             preset: conan-macos-armv8-macosx_bundle_false-release
             cppstd: gnu17
-            runner: macos-14
+            runner: macos-15
             cmake_path: build/_builds/macos-armv8-macosx_bundle_false-release
     steps:
+      # Select Xcode before `conan profile detect`, so the detected Apple Clang
+      # matches the compiler that builds the dependencies. The default Xcode of
+      # macos-15 (16.4, Apple Clang 17) fails to build grpc 1.54.3 with
+      # -Wmissing-template-arg-list-after-template-kw. Xcode 16.2 has Apple Clang 16.
+      - name: Select Xcode 16.2 (macOS)
+        if: matrix.os == 'macos-15'
+        run: |
+          sudo xcode-select -s /Applications/Xcode_16.2.app/Contents/Developer
+          clang --version
+
       - name: Install Conan
         id: conan
         uses: turtlebrowser/get-conan@main
@@ -151,7 +161,7 @@ jobs:
           sudo apt-get install -y cmake make g++ gcc
 
       - name: Install Numpy for macOS builds
-        if: matrix.os == 'macos-14'
+        if: matrix.os == 'macos-15'
         run: pip3 install numpy --break-system-packages
 
       - name: Using the builtin GitHub Cache Action for .conan
@@ -210,16 +220,19 @@ jobs:
         working-directory: cpp-lib
 
       - name: Install Conan Dependencies - macOS
-        if: matrix.os == 'macos-14'
+        if: matrix.os == 'macos-15'
         env:
           CONAN_PARALLEL_DOWNLOAD: 8
           CONAN_PARALLEL_BUILD: 4
         run: |
           # Retry logic for transient network failures (GitHub 504 errors, etc.)
-          # macOS 14 uses Xcode 15 with Apple Clang 15
+          # GitHub retired the macos-14 runners on 2026-11-02. macos-15 does not have
+          # Xcode 15, so the build uses Xcode 16.2 (Apple Clang 16, selected above).
+          # os.version keeps the minimum macOS of the dylibs at 14.0, as in the
+          # macos-14 builds; without it, the minimum would be the SDK version.
           for attempt in 1 2 3; do
             echo "🔄 Attempt $attempt of 3..."
-            if conan install . -pr conanprofile -of build -s build_type=${{env.BUILD_TYPE}} -s arch=${{matrix.arch}} -s:b compiler.cppstd=${{ matrix.cppstd }} -s compiler.cppstd=${{ matrix.cppstd }} -s:b compiler.libcxx=libc++ -s compiler.libcxx=libc++ -s:b compiler.version=15 -s compiler.version=15 --build=missing --build=outdated; then
+            if conan install . -pr conanprofile -of build -s build_type=${{env.BUILD_TYPE}} -s arch=${{matrix.arch}} -s:b compiler.cppstd=${{ matrix.cppstd }} -s compiler.cppstd=${{ matrix.cppstd }} -s:b compiler.libcxx=libc++ -s compiler.libcxx=libc++ -s:b compiler.version=16 -s compiler.version=16 -s os.version=14.0 --build=missing --build=outdated; then
               echo "✅ Conan install succeeded on attempt $attempt"
               exit 0
             fi
@@ -365,13 +378,13 @@ jobs:
           mkdir -p macos-arm64 macos-x86_64 linux-x86_64 linux-armv8 windows-x86_64
 
           # Process macOS ARM64
-          if [ -d "prebuilt-libs-macos-14-armv8" ]; then
-            find prebuilt-libs-macos-14-armv8 -name "*.dylib" -exec cp {} macos-arm64/ \;
+          if [ -d "prebuilt-libs-macos-15-armv8" ]; then
+            find prebuilt-libs-macos-15-armv8 -name "*.dylib" -exec cp {} macos-arm64/ \;
           fi
 
           # Process macOS x86_64
-          if [ -d "prebuilt-libs-macos-14-x86_64" ]; then
-            find prebuilt-libs-macos-14-x86_64 -name "*.dylib" -exec cp {} macos-x86_64/ \;
+          if [ -d "prebuilt-libs-macos-15-x86_64" ]; then
+            find prebuilt-libs-macos-15-x86_64 -name "*.dylib" -exec cp {} macos-x86_64/ \;
           fi
 
           # Process Linux x86_64

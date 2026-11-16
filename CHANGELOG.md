@@ -11,9 +11,15 @@ version to see which interfaces changed.
 
 ## [Unreleased]
 
+## [1.3.1] - 2026-11-16
+
 ### Fixed
 
-- **Requests to a server timed out for minutes after its NATS connection was cut.** Since 1.3.0, the server subscribed to its topic with a queue subscription. When a load balancer or a network failure cut the connection without notice, the NATS server kept the dead subscription until its ping check closed it (4 to 6 minutes with the default `ping_interval`), and delivered about half of the requests to it. The server now uses a plain subscription again. During a lame duck switch, the old and the new subscription both receive each request, and the client drops the second copy by its reply subject. Affects all language interfaces; no API change.
+- **Requests to a server timed out for minutes after its NATS connection was cut.** Since 1.3.0, the server subscribed to its topic with a queue subscription. When a load balancer or a network failure cut the connection without notice, the NATS server kept the dead subscription until its ping check closed it (4 to 6 minutes with the default `ping_interval`), and delivered about half of the requests to it. The server now uses a plain subscription again. During a lame duck switch, the old and the new subscription both receive each request, and the client drops the second copy by its reply subject. Affects all language interfaces; no API change ([#87](https://github.com/topfreegames/libpitaya-cluster/pull/87)).
+
+### Changed
+
+- CI builds the macOS libraries on `macos-15` runners, because GitHub retired the `macos-14` runners on 2026-11-02. The libraries still run on macOS 14.0 and later.
 
 ## [1.3.0] - 2026-10-21
 
@@ -463,7 +469,8 @@ version to see which interfaces changed.
 - Removed hack used to process NATS RPCs.
 - Switched C# projects to MonoDevelop tooling.
 
-[Unreleased]: https://github.com/topfreegames/libpitaya-cluster/compare/v1.3.0...HEAD
+[Unreleased]: https://github.com/topfreegames/libpitaya-cluster/compare/v1.3.1...HEAD
+[1.3.1]: https://github.com/topfreegames/libpitaya-cluster/compare/v1.3.0...v1.3.1
 [1.3.0]: https://github.com/topfreegames/libpitaya-cluster/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/topfreegames/libpitaya-cluster/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/topfreegames/libpitaya-cluster/compare/v1.0.13...v1.1.0
