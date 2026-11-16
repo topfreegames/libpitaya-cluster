@@ -11,6 +11,10 @@ version to see which interfaces changed.
 
 ## [Unreleased]
 
+### Fixed
+
+- **Requests to a server timed out for minutes after its NATS connection was cut.** Since 1.3.0, the server subscribed to its topic with a queue subscription. When a load balancer or a network failure cut the connection without notice, the NATS server kept the dead subscription until its ping check closed it (4 to 6 minutes with the default `ping_interval`), and delivered about half of the requests to it. The server now uses a plain subscription again. During a lame duck switch, the old and the new subscription both receive each request, and the client drops the second copy by its reply subject. Affects all language interfaces; no API change.
+
 ## [1.3.0] - 2026-10-21
 
 ### Fixed
