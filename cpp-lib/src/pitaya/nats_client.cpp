@@ -48,6 +48,46 @@ static constexpr std::chrono::milliseconds kSubscriptionPropagationDelay(1000);
 static constexpr std::chrono::milliseconds kNewConnectionRetryWindow(3000);
 static constexpr std::chrono::milliseconds kNewConnectionRetryDelay(200);
 
+// The old subscription of a lame duck switch receives copies of the requests until it is
+// drained, kSubscriptionPropagationDelay after the switch and for up to the drain timeout.
+// The request timeout is added as a margin for a copy that waits in a subscription queue.
+static std::chrono::milliseconds
+DuplicateRequestWindow(const NatsConfig& config)
+{
+    auto drainTimeout = config.drainTimeout.count() > 0
+                            ? config.drainTimeout
+                            : std::chrono::milliseconds(PITAYA_NATS_DEFAULT_DRAIN_TIMEOUT_IN_MS);
+    return kSubscriptionPropagationDelay + drainTimeout + config.requestTimeout;
+}
+
+//
+// RecentReplySubjects
+//
+RecentReplySubjects::RecentReplySubjects(std::chrono::milliseconds window)
+    : _window(window)
+{
+}
+
+bool
+RecentReplySubjects::Add(const char* reply, std::chrono::steady_clock::time_point now)
+{
+    if (!reply || reply[0] == '\0') {
+        return true;
+    }
+
+    std::lock_guard<std::mutex> lock(_mutex);
+    while (!_byTime.empty() && now - _byTime.front().first >= _window) {
+        _seen.erase(_byTime.front().second);
+        _byTime.pop_front();
+    }
+
+    if (!_seen.emplace(reply, now).second) {
+        return false;
+    }
+    _byTime.emplace_back(now, reply);
+    return true;
+}
+
 //
 // NatsClientImpl
 //
@@ -72,6 +112,7 @@ NatsClientImpl::NatsClientImpl(NatsApiType apiType,
     , _switchOpts(nullptr)
     , _onMessage(nullptr)
     , _shuttingDown(false)
+    , _recentReplies(DuplicateRequestWindow(config))
     , _openConnections(0)
     , _switchInProgress(false)
     , _pendingLameDuckConn(nullptr)
@@ -233,11 +274,14 @@ NatsClientImpl::Subscribe(const std::string& topic,
     _log->info("Subscribing to topic {}", topic);
     _onMessage = std::move(onMessage);
 
-    // The topic is also the queue name, so that the subscriptions of the old and the new
-    // connection can coexist during a lame duck switch without delivering a message twice.
+    // A plain subscription, not a queue subscription. When a connection is cut without notice,
+    // the NATS server keeps its subscription until the server's ping check closes it, which
+    // takes minutes. In a queue group, that dead subscription would get about half of the
+    // requests until then. During a lame duck switch, the old and the new subscription both
+    // receive each request, and HandleMsg drops the second copy.
     std::lock_guard<std::mutex> lock(_activeMutex);
-    natsStatus status = natsConnection_QueueSubscribe(
-        &_active->sub, _active->conn, topic.c_str(), topic.c_str(), HandleMsg, this);
+    natsStatus status =
+        natsConnection_Subscribe(&_active->sub, _active->conn, topic.c_str(), HandleMsg, this);
     if (status != NATS_OK) {
         _active->sub = nullptr;
         _log->error("Failed to subscribe");
@@ -282,6 +326,14 @@ NatsClientImpl::HandleMsg(natsConnection* nc, natsSubscription* sub, natsMsg* ms
 {
     auto natsClient = static_cast<NatsClientImpl*>(user);
     assert(natsClient->_onMessage);
+
+    // During a lame duck switch, both subscriptions receive each request.
+    const char* reply = natsMsg_GetReply(msg);
+    if (!natsClient->_recentReplies.Add(reply)) {
+        natsClient->_log->debug("Dropping a duplicate request, reply subject {}", reply);
+        natsMsg_Destroy(msg);
+        return;
+    }
     natsClient->_onMessage(std::shared_ptr<NatsMsg>(new NatsMsgImpl(msg)));
 }
 
@@ -438,8 +490,7 @@ NatsClientImpl::SwitchOnce()
     // 2. Subscribe the new connection, and flush so that the server confirms the
     // subscription before the old one is drained.
     if (status == NATS_OK && !topic.empty()) {
-        status = natsConnection_QueueSubscribe(
-            &fresh->sub, fresh->conn, topic.c_str(), topic.c_str(), HandleMsg, this);
+        status = natsConnection_Subscribe(&fresh->sub, fresh->conn, topic.c_str(), HandleMsg, this);
         if (status != NATS_OK) {
             fresh->sub = nullptr;
         } else {
@@ -472,8 +523,8 @@ NatsClientImpl::SwitchOnce()
         utils::RequestProcessTermination();
     }
 
-    // 4. Let the new subscription reach the whole cluster, then drain the old one. Both
-    // subscriptions are in the same queue group, so each message is delivered once.
+    // 4. Let the new subscription reach the whole cluster, then drain the old one. Until then,
+    // both subscriptions receive each request, and HandleMsg drops the second copy.
     if (old->sub) {
         auto drainAt = std::chrono::steady_clock::now() + kSubscriptionPropagationDelay;
         while (!_shuttingDown && std::chrono::steady_clock::now() < drainAt) {

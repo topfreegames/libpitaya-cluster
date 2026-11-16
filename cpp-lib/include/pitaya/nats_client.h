@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <atomic>
 #include <chrono>
+#include <deque>
 #include <functional>
 #include <future>
 #include <memory>
@@ -16,6 +17,8 @@
 #include <nats/nats.h>
 #include <string>
 #include <thread>
+#include <unordered_map>
+#include <utility>
 #include <vector>
 
 namespace pitaya {
@@ -41,6 +44,27 @@ public:
 
 private:
     natsMsg* _msg;
+};
+
+// Remembers the reply subjects of the requests received in the last `window`. During a lame
+// duck switch, the old and the new subscription both receive each request. The reply subject
+// identifies the request, so the second copy can be dropped.
+class RecentReplySubjects
+{
+public:
+    explicit RecentReplySubjects(std::chrono::milliseconds window);
+
+    // Returns false if the reply subject was already added in the last `window`. A message
+    // without a reply subject is never a duplicate.
+    bool Add(const char* reply,
+             std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now());
+
+private:
+    std::chrono::milliseconds _window;
+    std::mutex _mutex;
+    std::unordered_map<std::string, std::chrono::steady_clock::time_point> _seen;
+    // The same reply subjects as _seen, oldest first, to forget them after the window.
+    std::deque<std::pair<std::chrono::steady_clock::time_point, std::string>> _byTime;
 };
 
 enum class NatsStatus
@@ -133,6 +157,8 @@ private:
     natsOptions* _switchOpts;
     std::function<void(std::shared_ptr<NatsMsg>)> _onMessage;
     std::atomic<bool> _shuttingDown;
+    // Drops the second copy of a request received by both subscriptions of a lame duck switch.
+    RecentReplySubjects _recentReplies;
 
     // Guards _active and _topic.
     mutable std::mutex _activeMutex;

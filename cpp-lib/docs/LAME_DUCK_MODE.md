@@ -24,7 +24,9 @@ The switch thread does these steps:
 5. **Wait for the requests in flight** on the old connection, so that their replies are not lost. The wait is limited to `max(drainTimeout, requestTimeout)`.
 6. **Flush and close the old connection.**
 
-The server topic uses a queue subscription, with the topic as the queue name. Thus the old and the new subscription can exist at the same time, and NATS delivers each message to only one of them.
+The server topic uses a plain subscription. While the old and the new subscription both exist, NATS delivers each request to both of them. The client remembers the reply subjects of recent requests and drops the second copy, so the server handles each request once.
+
+The subscription is not a queue subscription on purpose. When a connection is cut without notice (for example, a load balancer resets it), the NATS server keeps its subscription until the server's ping check closes it, which takes minutes with the default `ping_interval` of 2 minutes. In a queue group, NATS would deliver about half of the requests to that dead subscription until then, and they would time out. With plain subscriptions, the subscription of the reconnected client still receives every request.
 
 If step 1 or step 2 fails, the client keeps the old connection. When the server closes it, NATS.c reconnects it to another server and sends its subscription again. In that case, messages that are sent to the server topic during the reconnection can be lost.
 
@@ -46,7 +48,7 @@ flowchart TD
     Start --> S1["1. Open a new connection to another server, retrying for up to 3s"]
     S1 --> S1ok{"Connected?"}
     S1ok -- No --> Keep
-    S1ok -- Yes --> S2["2. Queue-subscribe the topic and flush"]
+    S1ok -- Yes --> S2["2. Subscribe the topic and flush"]
     S2 --> S2ok{"Subscribed and flushed?"}
     S2ok -- No --> DrainNew["Drain the new subscription and close the new connection"]
     DrainNew --> Keep["Keep the old connection: NATS.c reconnects it later and sends its subscription again"]
@@ -88,4 +90,5 @@ A switch takes about 8s in the worst case (3s of connection retries, `connection
 
 - NATS core delivers each message at most once. The connection swap removes the loss windows in this client. A client that sends a request to this server, and that is itself connected to the server in lame duck mode, depends on its own lame duck handling.
 - During the switch, message callbacks can run on two subscription threads at the same time.
+- Duplicate requests are detected by their reply subject, for `drainTimeout + requestTimeout + 1s`. A message without a reply subject is not checked, so it can be handled twice during a switch.
 - No automated test triggers lame duck mode. To test the switch, do a rolling restart of a NATS cluster while a server that uses this library is running.

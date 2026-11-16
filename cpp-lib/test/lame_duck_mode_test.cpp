@@ -279,3 +279,67 @@ TEST_F(LameDuckModeTest, InterfaceAvailabilityTest)
         EXPECT_NO_THROW({ client->IsInLameDuckMode(); });
     }
 }
+
+// During a lame duck switch, the old and the new subscription both receive each request.
+// RecentReplySubjects is what makes the server handle it once.
+TEST(RecentReplySubjectsTest, DropsTheSecondCopyOfARequest)
+{
+    pitaya::RecentReplySubjects replies(std::chrono::milliseconds(1000));
+    auto now = std::chrono::steady_clock::now();
+
+    EXPECT_TRUE(replies.Add("_INBOX.abc.1", now));
+    EXPECT_FALSE(replies.Add("_INBOX.abc.1", now + std::chrono::milliseconds(10)));
+}
+
+TEST(RecentReplySubjectsTest, DifferentRequestsAreNotDuplicates)
+{
+    pitaya::RecentReplySubjects replies(std::chrono::milliseconds(1000));
+    auto now = std::chrono::steady_clock::now();
+
+    EXPECT_TRUE(replies.Add("_INBOX.abc.1", now));
+    EXPECT_TRUE(replies.Add("_INBOX.abc.2", now));
+    EXPECT_TRUE(replies.Add("_INBOX.xyz.1", now));
+}
+
+TEST(RecentReplySubjectsTest, MessagesWithoutReplyAreNeverDuplicates)
+{
+    pitaya::RecentReplySubjects replies(std::chrono::milliseconds(1000));
+    auto now = std::chrono::steady_clock::now();
+
+    EXPECT_TRUE(replies.Add(nullptr, now));
+    EXPECT_TRUE(replies.Add(nullptr, now));
+    EXPECT_TRUE(replies.Add("", now));
+    EXPECT_TRUE(replies.Add("", now));
+}
+
+TEST(RecentReplySubjectsTest, ForgetsRepliesAfterTheWindow)
+{
+    pitaya::RecentReplySubjects replies(std::chrono::milliseconds(100));
+    auto now = std::chrono::steady_clock::now();
+
+    EXPECT_TRUE(replies.Add("_INBOX.abc.1", now));
+    EXPECT_FALSE(replies.Add("_INBOX.abc.1", now + std::chrono::milliseconds(99)));
+    EXPECT_TRUE(replies.Add("_INBOX.abc.1", now + std::chrono::milliseconds(100)));
+}
+
+TEST(RecentReplySubjectsTest, IsSafeToUseFromTwoSubscriptionThreads)
+{
+    pitaya::RecentReplySubjects replies(std::chrono::milliseconds(10000));
+    constexpr int kRequests = 2000;
+    std::atomic<int> handled{ 0 };
+
+    // Each thread plays one subscription and receives a copy of every request.
+    auto subscription = [&]() {
+        for (int i = 0; i < kRequests; i++) {
+            if (replies.Add(("_INBOX.abc." + std::to_string(i)).c_str())) {
+                handled++;
+            }
+        }
+    };
+    std::thread oldSubscription(subscription);
+    std::thread newSubscription(subscription);
+    oldSubscription.join();
+    newSubscription.join();
+
+    EXPECT_EQ(handled.load(), kRequests);
+}
